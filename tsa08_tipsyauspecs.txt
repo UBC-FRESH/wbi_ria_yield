@@ -1,0 +1,219 @@
+TIPSY AU-wise input columns 
+AU	
+TBLno	
+BEC	
+Proportion	
+Regen_Delay	
+Density	
+Regen_Method	
+Util_DBH_cm	
+OAF1	
+OAF2	
+FIZ	
+SPP_1	
+PCT_1	
+SI	
+GW_1	
+GW_age_1	
+SPP_2	
+PCT_2	
+GW_2	
+GW_age_2	
+SPP_3	
+PCT_3	
+GW_3	
+GW_age_3	
+SPP_4	
+PCT_4	
+GW_4	
+GW_age_4	
+SPP_5	
+PCT_5	
+GW_5	
+GW_age_5
+
+
+SBS_SP_SX
+   H
+    median SI (VRI)                16.9
+    median SI (siteprod)           19.1
+    median SI ratio (VRI/siteprod)  0.88
+    species SX  100
+
+BWBS_DE_PL
+   H
+    median SI (VRI)                16.4
+    median SI (siteprod)           19.1
+    median SI ratio (VRI/siteprod)  0.86
+    species PL  100
+
+SBS_SP_PLI
+   H
+    median SI (VRI)                17.2
+    median SI (siteprod)           20.4
+    median SI ratio (VRI/siteprod)  0.84
+    species PLI  84
+    species SX   16
+
+BWBS_SP_PL
+   H
+    median SI (VRI)                16.0
+    median SI (siteprod)           17.9
+    median SI ratio (VRI/siteprod)  0.89
+    species PL   87
+    species SX   13
+
+BWBS_DE_SW
+   L
+    median SI (VRI)                11.5
+    median SI (siteprod)           19.5
+    median SI ratio (VRI/siteprod)  0.59
+    species SW   86
+    species SB   14
+   M
+    median SI (VRI)                14.4
+    median SI (siteprod)           19.7
+    median SI ratio (VRI/siteprod)  0.73
+    species SW  100
+   H
+    median SI (VRI)                17.5
+    median SI (siteprod)           20.1
+    median SI ratio (VRI/siteprod)  0.87
+    species SW  100
+
+SBS_DE_PLI
+   M
+    median SI (VRI)                18.0
+    median SI (siteprod)           20.4
+    median SI ratio (VRI/siteprod)  0.88
+    species PLI 100
+   H
+    median SI (VRI)                21.0
+    median SI (siteprod)           20.7
+    median SI ratio (VRI/siteprod)  1.02
+    species PLI 100
+
+BWBS_DE_EP
+   L
+    median SI (VRI)                11.8
+    median SI (siteprod)           18.0
+    median SI ratio (VRI/siteprod)  0.65
+    species EP   73
+    species AT   27
+   M
+    median SI (VRI)                13.9
+    median SI (siteprod)           18.8
+    median SI ratio (VRI/siteprod)  0.74
+    species EP   76
+    species AT   24
+   H
+    median SI (VRI)                15.9
+    median SI (siteprod)           19.1
+    median SI ratio (VRI/siteprod)  0.83
+    species EP   81
+    species AT   19
+
+SBS_DE_SX
+   L
+    median SI (VRI)                12.0
+    median SI (siteprod)           19.6
+    median SI ratio (VRI/siteprod)  0.61
+    species SX   73
+    species BL   14
+    species PL   13
+   M
+    median SI (VRI)                16.2
+    median SI (siteprod)           19.4
+    median SI ratio (VRI/siteprod)  0.83
+    species SX   84
+    species BL   16
+   H
+    median SI (VRI)                20.7
+    median SI (siteprod)           19.7
+    median SI ratio (VRI/siteprod)  1.05
+    species SX   87
+    species BL   13
+
+BWBS_SP_SW
+   H
+    median SI (VRI)                16.0
+    median SI (siteprod)           19.5
+    median SI ratio (VRI/siteprod)  0.82
+    species SW  100
+
+BWBS_SP_SX
+   H
+    median SI (VRI)                16.8
+    median SI (siteprod)           18.4
+    median SI ratio (VRI/siteprod)  0.91
+    species SX   86
+    species PL   14
+
+ESSF_DE_SX
+   H
+    median SI (VRI)                12.0
+    median SI (siteprod)           19.3
+    median SI ratio (VRI/siteprod)  0.62
+    species SX   66
+    species BL   18
+    species PL   16
+
+ESSF_DE_SW
+   H
+    median SI (VRI)                11.4
+    median SI (siteprod)           18.5
+    median SI ratio (VRI/siteprod)  0.61
+    species SW  100
+
+BWBS_DE_PLI
+   H
+    median SI (VRI)                15.9
+    median SI (siteprod)           18.0
+    median SI ratio (VRI/siteprod)  0.88
+    species PLI 100
+
+SBS_SP_PL
+   H
+    median SI (VRI)                18.2
+    median SI (siteprod)           19.4
+    median SI ratio (VRI/siteprod)  0.94
+    species PL   87
+    species SX   13
+
+BWBS_DE_SX
+   L
+    median SI (VRI)                11.5
+    median SI (siteprod)           21.8
+    median SI ratio (VRI/siteprod)  0.53
+    species SX   86
+    species PL   14
+   M
+    median SI (VRI)                14.5
+    median SI (siteprod)           21.8
+    median SI ratio (VRI/siteprod)  0.67
+    species SX  100
+   H
+    median SI (VRI)                17.3
+    median SI (siteprod)           22.2
+    median SI ratio (VRI/siteprod)  0.78
+    species SX  100
+
+BWBS_DE_SW+AT
+   L
+    median SI (VRI)                13.0
+    median SI (siteprod)           19.5
+    median SI ratio (VRI/siteprod)  0.67
+    species SW   68
+    species AT   32
+   M
+    median SI (VRI)                15.4
+    median SI (siteprod)           20.0
+    median SI ratio (VRI/siteprod)  0.77
+    species SW   66
+    species AT   34
+   H
+    median SI (VRI)                18.3
+    median SI (siteprod)           20.2
+    median SI ratio (VRI/siteprod)  0.91
+    species SW   65
+    species AT   35

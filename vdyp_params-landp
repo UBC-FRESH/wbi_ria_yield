@@ -1,0 +1,44 @@
+-ini .\vdyp_io\VDYP.INI
+-ifmt hcsv
+
+#-i   .\vdyp_io\Console 
+#-o   .\vdyp_io\ConsoleOutput.txt 
+#-e   .\vdyp_io\ConsoleErrors.txt 
+-c   .\vdyp_io\VDYP_CFG\  
+-d   .\vdyp_io 
+-dbg No
+-v7save No
+ 
+-util AC=12.5
+-util AT=12.5 
+-util B=12.5 
+-util C=12.5 
+-util D=12.5 
+-util E=12.5 
+-util F=12.5 
+-util H=12.5 
+-util L=12.5 
+-util MB=12.5 
+-util PA=12.5 
+-util PL=12.5 
+-util PW=12.5 
+-util PY=12.5 
+-util S=12.5 
+-util Y=12.5 
+#-yearstart 2000
+#-yearend   2300
+-agestart 1 
+-ageend   300 
+-inc 1
+-forcerefyear  Yes
+-forcecrntyear Yes
+#-forceyear     2010
+# -includeagerows  No
+-includeyearrows No
+# -filterformaintainer 001
+# -filterformapsheet 092I092
+# -filterforpolygon 1154
+ -progressFrequency Never
+# -progressFrequency Polygon
+# -progressFrequency Mapsheet
+#-progressFrequency 50
