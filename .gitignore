@@ -1,10 +1,7 @@
 *.pkl
 *.jupyterlab-workspace
-data/*
 ArcRasterRescue
 .ipynb_checkpoints
 tipsy44
-VDYP7
-plots/*
-vdyp_io/VDYP_CFG/*
+
 
