@@ -1,0 +1,7 @@
+-srcdb    .\OriginalData\INCOSADA\*.MDB
+-template .\Template\Template.mdb
+-load     .\MDBConvert.load 
+-destdb   .\Combined.mdb
+-rpt      .\Step01-CombineMaps.log
+-binary   ..\DTSRun.exe
+-run

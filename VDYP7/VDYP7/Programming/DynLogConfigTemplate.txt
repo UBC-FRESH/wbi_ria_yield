@@ -1,0 +1,726 @@
+#
+# Dynamic Logging Library template configuration file.
+#
+# This file includes and describes all options available for
+# configuring a single Dynamic Logging context.
+#
+# This file contains sample values for each option and may also
+# indicate numerous examples for a single option.  If used for
+# an actual implementation, care should be taken to apply the 
+# project specific settings for all properties and values.
+#
+# Individual applications may not need to use all the capabilities
+# implied by this file.  If that is the case, unwanted options can
+# be removed or commented out.
+#
+# A single application may, in theory, run numerous independent
+# logging contexts; each of those contexts would need to be
+# loaded from separate configuration files.
+#
+#
+# In general, all settings are case insensitive.
+# Thus  Enabled == enabled == eNABLED
+#
+#  and  True == TRUE == true == tRUE
+#
+# One exception to this is for File Names: file names maintain
+# case.
+#
+#
+# There is no implied ordering of options in this file.  It is safe
+# to completely reverse the lines in this file or randomly shuffle them.
+#
+# This file is scanned in three passes:
+#		1.	To load in context level options.
+#		2. To load in appender options and definitions.
+#		3. To load in logger options and definitions.
+#
+# Once the entire file has been loaded, only then are the
+# definitions acted upon.  Specifically, the appenders do not
+# start until after all configuration is complete.
+#
+#
+
+#===============================================================
+#
+# Context Configuration:
+#
+# All context settings take the form of:
+#
+#    context.<PropertyName> = <PropertyValue>
+#
+# Any property names that are not recognized are quietly 
+# ignored.
+#
+# For any recognized property for which an unrecognizeable
+# value is supplied, the previously set value or an internal
+# default will be used.
+#
+#
+
+
+#
+# context.Enabled = <Boolean>
+#
+#		Enables/Disables the global logging system to be in a
+#		active or inactive state.  This state will remain in
+#		effect until changed with an internal API call to the
+#		'DynLog_EnableContext' routine.
+#
+#		Property value may be any of True/False/Yes/No.
+#
+#
+
+context.Enabled = Yes
+
+
+
+#
+# context.EstimatedNumAppenders = number
+#
+#     Sets the estimated number of appenders expected to be
+#		used from this configuration file.  For efficiency, this
+#		should be rounded up to a power of 2 but this is not
+#		essential.
+#
+#		It is not particularly important if the actual number of
+#		appenders is larger or smaller than this estimate, but the
+#		more the actual numbers exceeds this value, the slower
+#		the logging system will become.
+#
+#		Appenders are only defined from within this configuration
+#		file.
+#
+#		If left commented out, an internal (and probably adequate)
+#		estimate will be used.
+#
+#		context.EstimatedNumAppenders = 8		
+#
+
+context.EstimatedNumAppenders = 8
+
+
+#
+# context.EstimatedNumLoggers = number
+#
+#     Sets the estimated number of loggers expected to be used/created
+#		from this configuration file and during program execution.
+#		Loggers are likely to be created on the fly during program 
+#		execution due the hierarchical nature of the logger relationships.
+#
+#		Loggers are created as soon as they are referenced in the code.
+#
+#		For efficiency, this should be rounded up to a power of 2 but this
+#		is not essential.
+#
+#		It is not particularly important if the actual number of
+#		loggers is larger or smaller than this estimate, but the
+#		more the actual numbers exceeds this value, the slower
+#		the logging system will become.
+#
+#		If left commented out, an internal (and probably adequate) estimate 
+#		will be used.
+#
+#		context.EstimatedNumLoggers = 512
+#
+
+
+context.EstimatedNumLoggers = 512
+
+
+
+#===============================================================
+#
+# Appender Configuration:
+#
+# All appender settings take the form of:
+#
+#    appender.<PropertyName>.<AppenderName> = <PropertyValue>
+#
+# Any property names that are not recognized are quietly 
+# ignored.
+#
+# For any recognized property for which an unrecognizeable
+# value is supplied, the previously set value or an internal
+# default will be used.
+#
+# A new appender will be created each time a new appender name
+# is encountered in this configuration file.  In theory, there
+# may be many appenders defined.
+#
+# Appender names may be any combination of alpha-numeric
+# characters.
+#
+#
+
+
+#
+# appender.Enabled.AppenderName = <Boolean>
+#
+#		Enables/Disables the named appender
+#
+#		Property value may be any of True/False/Yes/No.
+#
+#
+#     appender.Enabled.newAppender = True
+#
+#
+#     This example defines two appenders named 
+#		'appender1' and 'appender2' respectively.
+#     These names are case insensitive and you can
+#		equivalently refer to them as 'Appender1' or
+#		'APPENDER2'.
+#
+#		Appenders are enabled by default and so this
+#		option is not usually required.
+#
+#		Default:	TRUE
+#
+
+appender.Enabled.appender1       = Yes
+appender.Enabled.appender2       = Yes
+
+
+#
+# appender.Destination.AppenderName = StdOut|StdErr|<FileName>
+#
+#		Determines where this appender will write formatted data to.
+#
+#		If the selected option is 'StdOut' or 'StdErr', the appender
+#		will write to the console's 'standard output' or 'standard error'
+#		streams.
+#
+#		Any other destination will be interpreted as a file name and the
+#		appender will write formatted data to the named file (if it exists
+#		and/or can be created).
+#
+#		appender.Destination.standard = StdOut
+#
+#		This example directs the output for each appender to individual
+#		files.  Notice that each appender could also be directed to the
+#		standard output or standard error for the process.
+#
+#		Default: Zero length string
+#
+
+appender.Destination.appender1 = C:\TEMP\Output\Appender1Output.txt
+# appender.Destination.appender1 = stdout
+# appender.Destination.appender1 = stderr
+
+appender.Destination.appender2 = C:\TEMP\Output\Appender2Output.txt
+
+
+
+#
+# appender.AppendMode.AppenderName = <Boolean Value>
+#
+#		Determines if the appender will append to any existing data
+#		found or will overwrite and create all new data.
+#
+#		This property only has meaning if the appender type is
+#		writing to a file; it has no effect if writing to Standard
+#		Output or to Standard Error.
+#
+#		Property value may be any of: True/False/Yes/No.
+#
+#		appender.AppendMode.standard = FALSE
+#
+#		In this example, appender1 always starts with a fresh clean
+#		file, while appender2 continues its output file where it left
+#		off.
+#
+#		Default: FALSE
+#
+#
+
+appender.AppendMode.appender1 = No
+appender.AppendMode.appender2 = Yes
+
+
+
+#
+# appender.MinMsgPriority.AppenderName = <Msg Priority Value>
+# appender.MaxMsgPriority.AppenderName = <Msg Priority Value>
+#
+#		These two properties sets the minimum and maximum message
+#		priorities that will be accepted by the appender.  If the
+#		message priority to be logged falls within these limits, the
+#		formatted message will be sent to the appender destination.
+#
+#		If the message priority lies outside these constraints,
+#		the message will not be output by this appender (but other
+#		appenders may well output the message).
+#
+#		Allowed values for these priorities (from highest priority
+#		to lowest priority):
+#
+#			HIGHEST  ==  NONE == 32767
+#        FATAL             == 32500
+#        ERROR             == 27500
+#        WARN              == 22500
+#        INFO              == 17500
+#        TRACE             == 12500
+#        DEBUG             == 11000
+#        LOWEST   ==  ALL  == 10000
+#
+#		If you choose to use one of the predefined constants, you may
+#	   use that word representing that priority level.  Otherwise, you
+#		supply any integer value in the range of 10000 to 32767 
+#     (including an integer that matches one of the named constants).
+#     Values outside this range will be capped to the appropriate limit.
+#
+#     The choice for the range of valid message priorities was
+#     deliberate:
+#        - 10000 to 32767 provides all messages priorities to be
+#          exactly 5 digits long and therefore display uniformly
+#          when printed.
+#        - Printed integers will sort alphabetically without worrying
+#          about left or right justification.
+#        - They fit within the range of positive signed integers.
+#          Some programming languages do not support unsigned 16-bit
+#          integers so it was important to keep these number signed
+#          without having to worry about the negative sign.
+#
+#		The default for appenders is to allow all messages.  That is
+#		max priority is set to HIGHEST and min priority is set to
+#		LOWEST.  If that is your intended range, these options can be
+#		ignored.
+#
+#		Each appender may have an independent range of messages it
+#		produces output for.  This is handy, for instance, if you want
+#		an appender to only collect Warnings and higher error messages
+#		or if you want an appender to produce output for TRACE and DEBUG
+#		messages.
+#
+#		Care must be taken to ensure the Min priority does not exceed
+#		the maximum priority, otherwise no output will occur (equivalent
+#		to disabling the appender.
+#
+#		Default MinMsgPriority:	LOWEST
+#		Default MaxMsgPriority: HIGHEST
+#
+#
+
+appender.MinMsgPriority.appender1 = LOWEST
+appender.MaxMsgPriority.appender2 = HIGHEST
+
+appender.MinMsgPriority.appender2 = LOWEST
+appender.MaxMsgPriority.appender2 = HIGHEST
+
+
+#
+# 	appender.TimeStamps.AppenderName
+#  appender.LibEXEName.AppenderName
+#  appender.ModuleName.AppenderName
+#  appender.FunctionName.AppenderName
+#  appender.QualifyingName.AppenderName
+#  appender.FullyQualifiedName.AppenderName
+# 	appender.LocalName.AppenderName
+# 	appender.LineNumbers.AppenderName
+# 	appender.Indent.AppenderName
+#	appender.MsgPriorities.AppenderName
+#
+#		These boolean properties turn on or off the output of the specified
+#		values in a log message line.  Currently, there is no way to create an
+#		arbitrarily formatted output line; the lines are fixed format and order
+#		with the ability to enable or disable certain features of that line.
+#
+#		Each of these properties take boolean values.
+#
+#		The default for each option is:
+#			TimeStamps:				Yes
+#			LibEXEName:				No
+#			ModuleName:				No
+#			FunctionName:			No
+#			QualifyingName:		No
+#			FullyQualifiedName:	No
+#			AbbreviatedName:     No
+#			LocalName:				Yes
+#			LineNumbers:			No
+#			Indent:					Yes
+#			MsgPriority:			Yes
+#
+#		The abbreviated name is the same as the fully qualified name except
+#		only the first letters of higher names are printed.
+#
+#		Therefore, the abbreviated names for the fully qualified names would be:
+#			'vdyp7console':											'vdyp7console'
+#			'vdyp7console.csvinput':								'v.csvinput'
+#			'vdyp7console.csvinput.scsvinp_createhandle':	'v.c.scsvinp_createhandle'
+#
+
+appender.TimeStamps.appender1         = Yes
+appender.LibEXEName.appender1         = No
+appender.ModuleName.appender1         = No
+appender.FunctionName.appender1       = No
+appender.QualifyingName.appender1     = No
+appender.FullyQualifiedName.appender1 = No
+appender.AbbreviatedName.appender1    = No
+appender.LocalName.appender1          = Yes
+appender.LineNumbers.appender1        = No
+appender.Indent.appender1             = Yes
+appender.MsgPriority.appender1        = No
+
+appender.TimeStamps.appender2  = Yes
+appender.LocalName.appender2   = No
+appender.LineNumbers.appender2 = No
+appender.Indent.appender2      = Yes
+appender.Priority.appender2    = Yes
+
+
+#===============================================================
+#
+# Logger Configuration:
+#
+# All logger settings take the form of:
+#
+#    logger.<PropertyName>.<LoggerName> = <PropertyValue>
+#
+# Any property names that are not recognized are quietly 
+# ignored.
+#
+# For any recognized property for which an unrecognizeable
+# value is supplied, the previously set value or an internal
+# default will be used.
+#
+# A new logger will be created each time a new logger name
+# is encountered in this configuration file.  In theory, there
+# may be many loggers defined through this configuration file.
+#
+# Logger names may be any combination of alpha-numeric
+# characters.
+#
+# Loggers are hierarchical in nature in much the same way that
+# a file system directory structurre is hierarchical; Loggers
+# are owned by their parent loggers.
+#
+# If there are parent loggers there is also an implied logger
+# that is the root of all loggers.  This 'rootLogger' is always
+# defined and, for the purposes of this configuration file, is
+# equivalently named: 'root' or 'rootLogger'.
+#
+# Loggers are named using alpha-numeric characters and have a
+# '.' (period) that separates the name components.  Therefore,
+# a logger with the name 'toplevel.midlevel.lowlevel.logrname'
+# involves 5 loggers:
+#
+#		1. The root logger implied by the hierarchy.
+#		2. The first named logger: 'toplevel' which is a direct
+#		   descendent of the root logger.
+#		3. The second named logger: 'midlevel' which is a direct
+#        descendent of the 'toplevel' logger.
+#     4. The third named logger: 'lowlevel' which is a direct
+#		   descendent of the 'midlevel' logger.
+#		5. The last named logger: 'logrname' which is a direct
+#			descendent of the 'lowlevel' logger.
+#
+# Logger hierarchy structures can be arbitrarily complex in the
+# same way that file system folder structures are arbitrarily
+# complex.  A logger may appear at any depth in the logger hierarchy.
+#
+# All loggers are known by their fully qualified logger name.
+# Using the example above, the fully qualified logger name for the
+# logger 5th in the chain is: 'toplevel.midlevel.lowlevel.logrname'
+#
+# Similarly, for the logger with the name 'midlevel', its fully 
+# qualified logger name is 'toplevel.midlevel'.
+#
+# The root logger has an implied name and for the purposes of this
+# configuration file can be referenced with the name 'root' or
+# 'rootLogger' (case insensitive: 'root' is equivalent to 'Root').
+# All names are case insensitive.
+#
+# Loggers are created by merely referencing them.  Therefore, if you
+# reference the logger 'toplevel.midlevel.lowlevel.logrname' for the
+# first time, you are really creating 4 loggers in order to establish
+# the full hierarchy:
+#
+#		1. toplevel
+#		2. toplevel.midlevel
+#     3. toplevel.midlevel.lowlevel
+#     4. toplevel.midlevel.lowlevel.logrname
+#
+# The root logger always exists and is always available for configuration
+# and is the anchor point for the logger hierarchy.
+#
+# By convention, and there is no requirement that any logger follow this
+# convention, the top three logger name levels are given special meaning
+# with the fourth level providing additional specificity to make the logger
+# unique:
+#
+#		1. Main Library or Executable the logger was coded in.
+#		2. Module Name within the library or executable.
+#		3. Function Name within the module.
+#     4. Arbitrarily complex qualifying name (if any).
+#
+# In this way, logger names can be made to be self-documenting.
+#
+# With a VDYP7 example: if you had the fully qualified logger:
+#     'vdyp7interface.vdyp7merge.v7ext_mergelayers.block1.subblock2'
+#
+#		The 'vdyp7interface' represents the Extender CoreModule library.
+#		The 'vdyp7merge' represents the Module Name.
+#		The 'v7ext_mergelayers' represents the Function Name.
+#		The 'block1.subblock2' represents an arbitrarily complex qualifying
+#			name to create a unique logger name.
+#
+# All configuration properties are normally inherited from the logger's 
+# parent.  When the log system is created, the root logger is also created
+# and initialized with a set of default property values (which can be
+# overridden).
+#
+# For instance, the root logger's Min Message Priority property is
+# set to 'LOWEST' on creation.  If you then create the logger:
+# 'toplevel.midlevel.lowlevel.logrname', all four loggers implied by that
+# reference inherit the Min Message Priority property value from their
+# respective parents - all the way up to the root logger.  Therefore, each
+# of the loggers will have an effective Min Message Priority property
+# value of 'LOWEST'.
+#
+# Any logger may be assigned a specific property value.  This property value
+# then overrides any value it may have inherited from a parent logger without
+# affecting any parent loggers.
+#
+# This assigned value also affects all descendent loggers that are rooted at
+# that logger unless they, in turn, have an assigned value for that property.
+#
+# Messages that are logged through a logger are given a priority.  If that 
+# message priority falls within the loggers minimum and maximum priority
+# levels, the message is processed by that logger and then passed on to its
+# parent logger for processing and continues all the way up to the root
+# logger.
+#
+# If the message, at any point while traversing through the hierarchy chain,
+# encounters a logger for which the priority does not match the logger's 
+# minimum and maximum priority range, the message stops flowing, and 
+# importantly, is not passed on to that logger's parent.
+#
+# If a logger does process a message, that message is passed to each appender
+# associated with that logger (if any - a logger may well have zero appenders
+# associated with it).  Each appender also has a minimum and maximum message
+# priority.  If the message priority matches the appender's priority range, the
+# message is sent out through that appender.  However, if the converse is
+# true, the message is not output by the appender.  In this case, the message
+# will flow on to the next appender associated with the logger (if any) and
+# the logger continues to pass the message on to its parent logger.
+#
+#
+
+#
+# logger.Enabled.Fully.Qualified.Logger.Name = <Boolean>
+#
+#		Enables/Disables the named logger.  If disabled, this is equivalent
+#		to the message priority not matching any incoming messages.
+#		Disabling a parent logger is an effective way of preventing any
+#		messages from any of a host of child loggers from displaying
+#		messages coming from them without individually disabling each
+#		child logger.
+#
+#		If the logger is disabled, regardless of the message priority and
+#		the priority range of the logger, all messages do not flow through
+#		the logger.
+#
+#		Property value may be any of True/False/Yes/No.
+#
+#
+#     logger.Enabled.rootLogger = True
+#
+#		The default for any logger (whether explcitly created or not)
+#		is for the 'Enabled' state to be inherited from its parent.
+#		The root logger is enabled by default.
+#
+#     In the example below, we explicitly enable the root logger
+#		(which is not necessary) and explicitly disable the 'vdyp7interface'
+#		logger.
+#
+#		This set up would cause any message produced within the vdyp7interface
+#		family of loggers to be suppressed while any other messages generated
+#		through loggers from anywhere else in the application to continue to 
+#		be processed normally.
+#
+#
+
+logger.Enabled.rootLogger        = Yes
+logger.Enabled.vdyp7interface    = No
+
+
+#
+# Loggers that are created implicitly or explicitly as a result of
+# parsing this configuration file, will not have separate the individual
+# names assigned to them by virtue of the mechanism they are created.
+#
+# These names can be assigned after the fact through these configuration
+# lines.
+#
+# Note that the names assigned (to the right of the equality sign) are case
+# sensitive and that case will be preserved.
+#
+# It is very important that the names do not have spaces as the space will
+# cut the name off at that point.
+#
+#
+
+logger.LibEXEName.vdyp7console.csvinput.scsvinp_openhandle.block1     = AssignedLibName
+logger.ModuleName.vdyp7console.csvinput.scsvinp_openhandle.block1     = AssignedModuleName
+logger.FunctionName.vdyp7console.csvinput.scsvinp_openhandle.block1   = AssignedFunctionName
+logger.QualifyingName.vdyp7console.csvinput.scsvinp_openhandle.block1 = AssignedQualifyingName
+
+
+
+#
+# logger.MinMsgPriority.Fully.Qualified.Logger.Name = <Msg Priority>
+# logger.MaxMsgPriority.Fully.Qualified.Logger.Name = <Msg Priority>
+#
+#		This option sets the range of message priorities the logger will
+#		accept.
+#
+#		If the logger is disabled, the allowed message priority range is
+#		ignored.
+#
+#		If the logger accepts the message, the logger routes the message
+#		to any appenders that may be attached to that logger (usually
+#		there are zero appenders attached to any particular logger, but
+#		there might be).
+#
+#		After all locally attached appenders have had a chance to process
+#		he message, the logger passes the message on up to its parent and
+#		the cycle repeats until either: a logger stops the message because
+#		it is disabled, or the message priority does not meet the logger's
+#		message priority range, or the root logger has finished processing
+#		the message (there are no further parents to pass the logger on to).
+#
+#		Allowed values for these priorities (from highest priority
+#		to lowest priority):
+#
+#			HIGHEST  ==  NONE == 32767
+#        FATAL             == 32500
+#        ERROR             == 27500
+#        WARN              == 22500
+#        INFO              == 17500
+#        TRACE             == 12500
+#        DEBUG             == 11000
+#        LOWEST   ==  ALL  == 10000
+#
+#		If you choose to use one of the predefined constants, you may
+#	   use that word representing that priority level.  Otherwise, you
+#		supply any integer value in the range of 10000 to 32767 
+#     (including an integer that matches one of the named constants).
+#     Values outside this range will be capped to the appropriate limit.
+#
+#     The choice for the range of valid message priorities was
+#     deliberate:
+#        - 10000 to 32767 provides all messages priorities to be
+#          exactly 5 digits long and therefore display uniformly
+#          when printed.
+#        - Printed integers will sort alphabetically without worrying
+#          about left or right justification.
+#        - They fit within the range of positive signed integers.
+#          Some programming languages do not support unsigned 16-bit
+#          integers so it was important to keep these number signed
+#          without having to worry about the negative sign.
+#
+#		Loggers normally inherit the allowed range of message priorities
+#		from their parent.  However, any logger may have a specific
+#		range assigned.
+#
+#		The default for the root logger is to allow all message priorities
+#		from LOWEST to HIGHEST.
+#
+#		In this example, the root logger is explicitly set to allow all
+#		message priorities (not required, as that is the default), while
+#		the 'vdyp7interface.vdyp7estsi' logger (and its children is set to 
+#		not allow any messages to flow through.
+#
+#
+
+logger.MinMsgPriority.rootLogger = LOWEST
+logger.MaxMsgPriority.root       = HIGHEST
+
+logger.MinMsgPriority.vdyp7interface.vdyp7estsi = NONE
+logger.MaxMsgPriority.vdyp7interface.vdyp7estsi = NONE
+
+
+#
+# logger.AllowPropagation.Fully.Qualified.Logger.Name = <Boolean>
+#
+#		After a message to be logged passes through the loggers
+#		Min and Maximum Priority gates, this property indicates 
+#		whether a logger is allowed to pass the message on to 
+#		its immediate parent once it has finished applying the 
+#     message to each Appender that may have been attached to 
+#     that logger.
+#
+#		Normally, messages are passed on to the logger's parent
+#		for processing, but it may be convenient to prevent any
+#     messages from propagating out of a logger when the message
+#     only makes sense in the context of a particular logger.
+#
+#		One example of this would be to route all messages originating
+#		somewhere within a particular library to a particular Appender
+#		attached at the Library/EXE level.  After that, you would not
+#		want to pass the message on up to the root logger for possibly
+#		generating a second instance of the message.
+#
+#		A second example is when messages are routed to appenders with
+#		a different format than is intended for other appenders.
+#		In this case, once the message has been sent to the appender
+#		configured to handle that message, we don't want to present it
+#		again in another Appender not well equipped to handle the
+#		message.
+#
+#		Default: TRUE for all loggers (except the root logger).
+#
+#					This property is never inherited from a parent logger.  
+#					It must be explicitly changed at each logger where this
+#					requires a change.
+#
+#
+
+logger.AllowPropagation.vdyp7interface = FALSE
+logger.AllowPropagation.vdyp7console   = Yes
+
+
+
+#
+# logger.Appender.Fully.Qualified.Logger.Name = <Appender Name>
+#
+#		Associates the named appender with a specific logger.
+#
+#		Appenders do the work of generating the final output and
+#		presenting that output to its output stream.  In order to
+#		get any output, there must be at least one appender and it
+#		it must be associated with at least one logger.
+#
+#		An individual appender may be associated with multiple loggers.
+#		This is useful for associating a logger to distinct branches of
+#		the logger tree.
+#	
+#		It is also possible to associate appenders to individual loggers
+#		in the same hierarchy, however, this raises the possibility that
+#     the same log message will be presented multiple times as the
+#		message traverses up the logger hierarchy chain.
+#
+#		Usually appenders are associated with the root logger, but this
+#		is not required.  One could, for instance, create a separate
+#		appender for each individual main branch of the logger hierarchy
+#		and this would segregate each logger branch's output to their
+#		own appenders.
+#
+#		Appenders are NOT inherited by child loggers from their parents.
+#
+#		The default is for all loggers, including the root logger to have
+#		no appenders associated with it.
+#
+#		All appenders must be explicitly associated with a logger.
+#
+#		There is no requirement that the root logger have an appender
+#		associated to it.  If this is the case, then any message which
+#		flows up to the root logger will quietly disappear there as there
+#		are no further loggers to pass the message on to.  In this situation,
+#		it is hoped that the message encountered a logger with an appender
+#		somewhere in its traversal of the logger hierarchy.
+#
+#
+
+logger.Appender.rootLogger       = appender1
+logger.Appender.rootLogger       = appender2

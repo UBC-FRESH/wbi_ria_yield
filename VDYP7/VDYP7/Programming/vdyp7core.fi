@@ -1,0 +1,1101 @@
+      !
+      ! Define names of files used throughout this Library
+      !
+      !
+
+      include 'vdyp7core_types.fi'
+
+      ! Define the externally exposed routines.
+      interface
+          subroutine VDYP7CORE_CoreDLLVersion( sVersion )
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_CoreDLLVersion
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_CoreDLLVersion
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_CoreDLLVersion
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_CoreDLLVersion
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_CoreDLLVersion
+
+              character*(*)   sVersion
+
+          end subroutine
+
+          subroutine VDYP7CORE_CalcLIBVersion( sVersion )
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_CalcLIBVersion
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_CalcLIBVersion
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_CalcLIBVersion
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_CalcLIBVersion
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_CalcLIBVersion
+
+              character*(*)   sVersion
+
+          end subroutine
+
+          function VDYP7CORE_Init( sConfigDir,
+     &                             bSaveIntermediate,
+     &                             bFileIO,
+     &                             iLogContext,
+     &                             sLogContextConfigurationFile )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_Init
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_Init
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_Init
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_Init
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_Init
+
+              integer*4       VDYP7CORE_Init
+              character*(*)   sConfigDir
+              logical*2       bSaveIntermediate, bFileIO
+              integer*4       iLogContext
+              character*(*)   sLogContextConfigurationFile
+
+          end function
+
+          subroutine VDYP7CORE_Shutdown
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_Shutdown
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_Shutdown
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_Shutdown
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_Shutdown
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_Shutdown
+
+          end subroutine
+
+          integer*4 function VDYP7CORE_SetFIPPolygon( sDistrict,
+     &                                                sMapSheet,
+     &                                                sMapQuad,
+     &                                                sMapSubQuad,
+     &                                                iPolyNumber,
+     &                                                iMeasurementYear,
+     &                                                cFIZ,
+     &                                                sBEC,
+     &                                                fPctFLand,
+     &                                                iMode,
+     &                                                sNonProdDesc,
+     &                                                fYldFactor )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetFIPPolygon
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetFIPPolygon
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetFIPPolygon
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetFIPPolygon
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetFIPPolygon
+
+              integer*4   iPolyNumber, iMeasurementYear, iMode
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad, cFIZ
+              character*4 sBEC
+              character*5 sNonProdDesc
+              real*4      fPctFLand, fYldFactor
+
+          end function
+
+          integer*4 function VDYP7CORE_WriteFIPPolygon( sDistrict,
+     &                                                  sMapSheet,
+     &                                                  sMapQuad,
+     &                                                  sMapSubQuad,
+     &                                                  iPolyNumber,
+     &                                                  iMeasurementYr,
+     &                                                  cFIZ,
+     &                                                  sBEC,
+     &                                                  fPctFLand,
+     &                                                  iMode,
+     &                                                  sNonProdDesc,
+     &                                                  fYldFactor )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPPolygon
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPPolygon
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteFIPPolygon
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPPolygon
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPPolygon
+
+              integer*4   iPolyNumber, iMeasurementYr, iMode
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad, cFIZ
+              character*4 sBEC
+              character*5 sNonProdDesc
+              real*4      fPctFLand, fYldFactor
+
+          end function
+
+          integer*4 function VDYP7CORE_SetFIPLayer( sDistrict,
+     &                                              sMapSheet,
+     &                                              sMapQuad,
+     &                                              sMapSubQuad,
+     &                                              iPolyNumber,
+     &                                              iMeasurementYear,
+     &                                              cLayer,
+     &                                              fCC,
+     &                                              iNumSP0Spcs,
+     &                                              sSP0Spcs,
+     &                                              fSP0Pcnt,
+     &                                              sSiteSpecies,
+     &                                              sSiteSpeciesClass,
+     &                                              fTotalAge,
+     &                                              fHeight,
+     &                                              iSiteCurve,
+     &                                              fSI,
+     &                                              fYTBH,
+     &                                              fBHAge,
+     &                                              iNumWinSpcs,
+     &                                              sWinSpcs,
+     &                                              sWinGenus,
+     &                                              fWinPcnt )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetFIPLayer
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetFIPLayer
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetFIPLayer
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetFIPLayer
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetFIPLayer
+
+              integer*4   iPolyNumber, iMeasurementYear, iNumWinSpcs
+              integer*4   iNumSP0Spcs
+              integer*4   iSiteCurve(1:6)
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad, cLayer
+              character*3 sWinSpcs(1:6), sSiteSpecies(1:6)
+              character*2 sWinGenus(1:6), sSiteSpeciesClass(1:6)
+              character*2 sSP0Spcs(1:6)
+              real*4      fTotalAge(1:6)
+              real*4      fCC, fWinPcnt(1:6), fSP0Pcnt(1:6)
+              real*4      fHeight(1:6),fSI(1:6),fYTBH(1:6),fBHAge(1:6)
+
+          end function
+
+          integer*4 function VDYP7CORE_SetFIPLayerEnd( sDistrict,
+     &                                                 sMapSheet,
+     &                                                 sMapQuad,
+     &                                                 sMapSubQuad,
+     &                                                 iPolyNumber,
+     &                                                 iMeasurementYear)
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetFIPLayerEnd
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetFIPLayerEnd
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetFIPLayerEnd
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetFIPLayerEnd
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetFIPLayerEnd
+
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad
+              integer*4   iPolyNumber, iMeasurementYear
+
+          end function
+
+          integer*4 function VDYP7CORE_WriteFIPLayer( sDistrict,
+     &                                                sMapSheet,
+     &                                                sMapQuad,
+     &                                                sMapSubQuad,
+     &                                                iPolyNumber,
+     &                                                iMeasurementYear,
+     &                                                sLayer,
+     &                                                fCC,
+     &                                                sSiteSP64,
+     &                                                sSiteSP0,
+     &                                                fTotalAge,
+     &                                                fHeight,
+     &                                                iSiteCurve,
+     &                                                fSI,
+     &                                                fYTBH,
+     &                                                fBHAge )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPLayer
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPLayer
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteFIPLayer
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPLayer
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPLayer
+
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapSubQuad, sMapQuad, sLayer
+              integer*4   iPolyNumber, iMeasurementYear
+              real*4      fCC, fTotalAge, fHeight, fSI, fYTBH, fBHAge
+              character*3 sSiteSP64
+              character*2 sSiteSP0
+              integer*4   iSiteCurve
+
+          end function
+
+          integer*4 function VDYP7CORE_WriteFIPLayerEnd( sDistrict,
+     &                                                   sMapSheet,
+     &                                                   sMapQuad,
+     &                                                   sMapSubQuad,
+     &                                                   iPolyNumber,
+     &                                                   iMeasYear )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPLayerEnd
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPLayerEnd
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteFIPLayerEnd
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPLayerEnd
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPLayerEnd
+
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad
+              integer*4   iPolyNumber, iMeasYear
+
+          end function
+
+          integer*4 function VDYP7CORE_WriteFIPSpecies( sDistrict,
+     &                                                  sMapSheet,
+     &                                                  sMapQuad,
+     &                                                  sMapSubQuad,
+     &                                                  iPolyNumber,
+     &                                                  iMeasurementYr,
+     &                                                  sLayer,
+     &                                                  sSP0,
+     &                                                  fSP0Pcnt,
+     &                                                  sSP64,
+     &                                                  fSP64Pcnt )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPSpecies
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPSpecies
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteFIPSpecies
+
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPSpecies
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPSpecies
+
+              character*3     sDistrict
+              character*7     sMapsheet
+              integer*4       iPolyNumber, iMeasurementYr
+              character*1     sMapQuad, sMapSubQuad, sLayer
+              character*2     sSP0
+              character*3     sSP64(1:6)
+              real*4          fSP0Pcnt, fSP64Pcnt(1:6)
+
+          end function
+
+          integer*4 function VDYP7CORE_WriteFIPSpeciesEnd( sDistrict,
+     &                                                     sMapSheet,
+     &                                                     sMapQuad,
+     &                                                     sMapSubQuad,
+     &                                                     iPolyNumber,
+     &                                                     iMeasYear )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPSpeciesEnd
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPSpeciesEnd
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteFIPSpeciesEnd
+
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteFIPSpeciesEnd
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteFIPSpeciesEnd
+
+              character*3     sDistrict
+              character*7     sMapsheet
+              integer*4       iPolyNumber, iMeasYear
+              character*1     sMapQuad, sMapSubQuad
+
+          end function
+
+          integer*4 function VDYP7CORE_RunFIPModel( iRunCode )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_RunFIPModel
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RunFIPModel
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_RunFIPModel
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_RunFIPModel
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RunFIPModel
+
+              integer*4   iRunCode
+
+          end function
+
+
+          integer*4 function VDYP7CORE_WriteVRIPolygon( sDistrict,
+     2                                                  sMapSheet,
+     3                                                  sMapQuad,
+     4                                                  sMapSubQuad,
+     5                                                  iPolyNumber,
+     6                                                  iMeasurementYr,
+     7                                                  sBEC,
+     8                                                  fPctFLand,
+     9                                                  iMode,
+     1                                                  sNonProdDesc,
+     2                                                  fYldFactor )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRIPolygon
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRIPolygon
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteVRIPolygon
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRIPolygon
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRIPolygon
+
+              integer*4   iPolyNumber, iMeasurementYr, iMode
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad
+              character*4 sBEC
+              character*5 sNonProdDesc
+              real*4      fPctFLand, fYldFactor
+
+          end function
+
+
+          integer*4 function VDYP7CORE_WriteVRILayer( sDistrict,
+     &                                                sMapSheet,
+     &                                                sMapQuad,
+     &                                                sMapSubQuad,
+     &                                                iPolygonNumber,
+     &                                                iMeasurementYear,
+     &                                                sLayerID,
+     &                                                fCrownClosure,
+     &                                                fBasalArea,
+     &                                                fTreesPerHectare,
+     &                                                fUtilLevel )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRILayer
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRILayer
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteVRILayer
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRILayer
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRILayer
+
+              character*3  sDistrict
+              character*7  sMapSheet
+              integer*4    iPolygonNumber, iMeasurementYear
+              character*1  sMapQuad, sMapSubQuad, sLayerID
+              real*4       fCrownClosure, fBasalArea, fTreesPerHectare
+              real*4       fUtilLevel
+
+          end function
+
+
+          integer*4 function VDYP7CORE_WriteVRILayerEnd( sDistrict,
+     2                                                   sMapSheet,
+     3                                                   sMapQuad,
+     4                                                   sMapSubQuad,
+     5                                                   iPolyNumber,
+     6                                                   iMeasYear )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRILayerEnd
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRILayerEnd
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteVRILayerEnd
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRILayerEnd
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRILayerEnd
+
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad
+              integer*4   iPolyNumber, iMeasYear
+
+          end function
+
+
+          integer*4 function VDYP7CORE_WriteVRISpecies( sDistrict,
+     &                                                  sMapSheet,
+     &                                                  sMapQuad,
+     &                                                  sMapSubQuad,
+     &                                                  iPolyNumber,
+     &                                                  iMeasurementYr,
+     &                                                  sLayer,
+     &                                                  sSP0,
+     &                                                  fSP0Pcnt,
+     &                                                  sSP64,
+     &                                                  fSP64Pcnt )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRISpecies
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRISpecies
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteVRISpecies
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRISpecies
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRISpecies
+
+              character*3     sDistrict, sSP64(1:6)
+              character*7     sMapSheet
+              character*1     sMapQuad, sMapSubQuad, sLayer
+              integer*4       iPolyNumber, iMeasurementYr
+              character*2     sSP0
+              real*4          fSP0Pcnt, fSP64Pcnt(1:6)
+
+          end function
+
+
+          integer*4 function VDYP7CORE_WriteVRISpeciesEnd( sDistrict,
+     &                                                     sMapSheet,
+     &                                                     sMapQuad,
+     &                                                     sMapSubQuad,
+     &                                                     iPolyNumber,
+     &                                                     iMeasYear )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRISpeciesEnd
+!DEC$ ATTRIBUTES DLLEXPORT :: VDYP7CORE_WriteVRISpeciesEnd
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteVRISpeciesEnd
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRISpeciesEnd
+!GCC$ ATTRIBUTES DLLEXPORT :: VDYP7CORE_WriteVRISpeciesEnd
+
+              character*3     sDistrict
+              character*7     sMapSheet
+              character*1     sMapQuad, sMapSubQuad
+              integer*4       iPolyNumber, iMeasYear
+
+          end function
+
+
+          integer*4 function VDYP7CORE_WriteVRISiteIndex( sDistrict,
+     &                                                    sMapSheet,
+     &                                                    sMapQuad,
+     &                                                    sMapSubQuad,
+     &                                                    iPolyNumber,
+     &                                                    iMeasYear,
+     &                                                    sLayer,
+     &                                                    fTotalAge,
+     &                                                    fDomHeight,
+     &                                                    fSiteIndex,
+     &                                                    sSiteSP0,
+     &                                                    sSiteSP64,
+     &                                                    fYTBH,
+     &                                                    fBHAge,
+     &                                                    iSiteCurve )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRISiteIndex
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRISiteIndex
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteVRISiteIndex
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRISiteIndex
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRISiteIndex
+
+              character*3     sDistrict, sSiteSP64
+              character*7     sMapSheet
+              character*1     sMapQuad, sMapSubQuad, sLayer
+              integer*4       iPolyNumber, iMeasYear, iSiteCurve
+              character*2     sSiteSP0
+              real*4          fTotalAge, fDomHeight, fSiteIndex
+              real*4          fYTBH, fBHAge
+
+          end function
+
+
+          integer*4 function VDYP7CORE_WriteVRISiteIndexEnd(sDistrict,
+     &                                                      sMapSheet,
+     &                                                      sMapQuad,
+     &                                                      sMapSubQuad,
+     &                                                      iPolyNumber,
+     &                                                      iMeasYear )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRISiteIndexEnd
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRISiteIndexEnd
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_WriteVRISiteIndexEnd
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_WriteVRISiteIndexEnd
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_WriteVRISiteIndexEnd
+
+              character*3     sDistrict
+              character*7     sMapSheet
+              character*1     sMapQuad, sMapSubQuad
+              integer*4       iPolyNumber, iMeasYear
+
+          end function
+
+
+          integer*4 function VDYP7CORE_SetVRIPolygon( sDistrict,
+     2                                                sMapSheet,
+     3                                                sMapQuad,
+     4                                                sMapSubQuad,
+     5                                                iPolyNumber,
+     6                                                iMeasurementYear,
+     7                                                sBEC,
+     8                                                fPctFLand,
+     9                                                iMode,
+     1                                                sNonProdDesc,
+     2                                                fYldFactor )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetVRIPolygon
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetVRIPolygon
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetVRIPolygon
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetVRIPolygon
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetVRIPolygon
+
+              integer*4   iPolyNumber, iMeasurementYear, iMode
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad
+              character*4 sBEC
+              character*5 sNonProdDesc
+              real*4      fPctFLand, fYldFactor
+
+          end function
+
+
+          integer*4 function VDYP7CORE_SetVRILayer( sDistrict,
+     &                                              sMapSheet,
+     &                                              sMapQuad,
+     &                                              sMapSubQuad,
+     &                                              iPolyNumber,
+     &                                              iMeasurementYear,
+     &                                              cLayer,
+     &                                              fCC,
+     &                                              fBA,
+     &                                              fTPH,
+     &                                              fUtilLevel,
+     &                                              iNumSP0Spcs,
+     &                                              sSP0Spcs,
+     &                                              fSP0Pcnt,
+     &                                              sSiteSpecies,
+     &                                              sSiteSpeciesClass,
+     &                                              fTotalAge,
+     &                                              fHeight,
+     &                                              iSiteCurve,
+     &                                              fSI,
+     &                                              fYTBH,
+     &                                              fBHAge,
+     &                                              iNumWinSpcs,
+     &                                              sWinSpcs,
+     &                                              sWinGenus,
+     &                                              fWinPcnt )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetVRILayer
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetVRILayer
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetVRILayer
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetVRILayer
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetVRILayer
+
+              integer*4   iPolyNumber, iMeasurementYear, iNumWinSpcs
+              real*4      fTotalAge(1:6)
+              integer*4   iSiteCurve(1:6), iNumSP0Spcs
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad, cLayer
+              character*3 sWinSpcs(1:6), sSiteSpecies(1:6)
+              character*2 sWinGenus(1:6), sSiteSpeciesClass(1:6)
+              character*2 sSP0Spcs(1:6)
+              real*4      fWinPcnt(1:6), fSP0Pcnt(1:6)
+              real*4      fCC, fHeight(1:6), fSI(1:6), fYTBH(1:6)
+              real*4      fBA, fTPH, fBHAge(1:6), fUtilLevel
+
+          end function
+
+
+          integer*4 function VDYP7CORE_SetVRILayerEnd( sDistrict,
+     &                                                 sMapSheet,
+     &                                                 sMapQuad,
+     &                                                 sMapSubQuad,
+     &                                                 iPolyNumber,
+     &                                                 iMeasurementYear)
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetVRILayerEnd
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetVRILayerEnd
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetVRILayerEnd
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetVRILayerEnd
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetVRILayerEnd
+
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad
+              integer*4   iPolyNumber, iMeasurementYear
+
+          end function
+
+
+          integer*4 function VDYP7CORE_RunVRIModel( iRunCode )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_RunVRIModel
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RunVRIModel
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_RunVRIModel
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_RunVRIModel
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RunVRIModel
+
+              integer*4   iRunCode
+
+          end function
+
+          function VDYP7CORE_GetFIPVRIProcessingInfo( iMode,
+     1                                                iYearYields,
+     2                                                fPctFLand )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_GetFIPVRIProcessingInfo
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_GetFIPVRIProcessingInfo
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_GetFIPVRIProcessingInfo
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_GetFIPVRIProcessingInfo
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_GetFIPVRIProcessingInfo
+
+              integer*4       VDYP7CORE_GetFIPVRIProcessingInfo
+              integer*4       iMode
+              integer*4       iYearYields
+              real*4          fPctFLand
+
+          end function
+
+
+          integer*4 function VDYP7CORE_RetrieveADJSTSeeds( fOutBA075,
+     &                                                     fOutLoreyHt,
+     &                                                     fOutWSV075,
+     &                                                     fOutBA125,
+     &                                                     fOutWSV125,
+     &                                                     fOutV_CU125,
+     &                                                     fOutV_D125,
+     &                                                     fOutV_DW125,
+     &                                                     fOutRSRVD1,
+     &                                                     fOutRSRVD2,
+     &                                                     fOutRSRVD3,
+     &                                                     iReqLayer )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_RetrieveADJSTSeeds
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RetrieveADJSTSeeds
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_RetrieveADJSTSeeds
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_RetrieveADJSTSeeds
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RetrieveADJSTSeeds
+
+              real*4          fOutBA075, fOutLoreyHt, fOutWSV075
+              real*4          fOutBA125, fOutWSV125
+              real*4          fOutV_CU125, fOutV_D125, fOutV_DW125
+              real*4          fOutRSRVD1, fOutRSRVD2, fOutRSRVD3
+              integer*4       iReqLayer
+
+          end function
+
+
+
+          integer*4 function VDYP7CORE_SetADJSTAdjustments( sDistrict,
+     &                                                      sMapSheet,
+     &                                                      sMapQuad,
+     &                                                      sMapSubQuad,
+     &                                                      iPolyNum,
+     &                                                      iMeasYear,
+     &                                                      cLayer,
+     &                                                      iMode,
+     &                                                      sSP0,
+     &                                                      fLoreyHt,
+     &                                                      fWSV075,
+     &                                                      fBA125,
+     &                                                      fWSV125,
+     &                                                      fV_CU125,
+     &                                                      fV_D125,
+     &                                                      fV_DW125,
+     &                                                      fRSRVD1,
+     &                                                      fRSRVD2,
+     &                                                      fRSRVD3 )
+
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetADJSTAdjustments
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetADJSTAdjustments
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetADJSTAdjustments
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetADJSTAdjustments
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetADJSTAdjustments
+
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad, cLayer
+              character*2 sSP0
+              integer*4   iPolyNum, iMeasYear, iMode
+              real*4      fLoreyHt, fWSV075, fBA125, fWSV125
+              real*4      fV_CU125, fV_D125, fV_DW125
+              real*4      fRSRVD1, fRSRVD2, fRSRVD3
+
+          end function
+
+
+          integer*4
+     1        function VDYP7CORE_SetADJSTAdjustmentsEnd( sDistrict,
+     3                                                   sMapSheet,
+     4                                                   sMapQuad,
+     5                                                   sMapSubQuad,
+     6                                                   iPolyNumber,
+     7                                                   iMeasYear )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetADJSTAdjustmentsEnd
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetADJSTAdjustmentsEnd
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetADJSTAdjustmentsEnd
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetADJSTAdjustmentsEnd
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetADJSTAdjustmentsEnd
+
+              character*3 sDistrict
+              character*7 sMapSheet
+              character*1 sMapQuad, sMapSubQuad
+              integer*4   iPolyNumber, iMeasYear
+
+          end function
+
+
+          subroutine VDYP7CORE_RunADJSTModel( lRtrnCode,
+     1                                        lRunCode,
+     2                                        bPassThroughMode )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_RunADJSTModel
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RunADJSTModel
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_RunADJSTModel
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_RunADJSTModel
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RunADJSTModel
+
+              logical*2               bPassThroughMode
+              integer*4               lRtrnCode, lRunCode
+
+          end subroutine
+
+
+          subroutine VDYP7CORE_RunVDYPModel( iVDYP7Rtrn,
+     &                                       iVDYP7RunCode,
+     &                                       iBACKRtrn,
+     &                                       iBACKRunCode,
+     &                                       iMeasurementYear,
+     &                                       fStandAge,
+     &                                       iStartYear,
+     &                                       iFinishYear,
+     &                                       sSP0Spcs,
+     &                                       iRprtUtils,
+     &                                       bDisableVDYP7,
+     &                                       bDisableBACK )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_RunVDYPModel
+!DEC$ ATTRIBUTES DLLEXPORT :: VDYP7CORE_RunVDYPModel
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_RunVDYPModel
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_RunVDYPModel
+!GCC$ ATTRIBUTES DLLEXPORT :: VDYP7CORE_RunVDYPModel
+
+              integer*4   iVDYP7Rtrn, iVDYP7RunCode
+              integer*4   iBACKRtrn,  iBACKRunCode
+              integer*4   iMeasurementYear
+              integer*4   iStartYear, iFinishYear
+              real*4      fStandAge
+              character*2 sSP0Spcs(1:6)
+              integer*4   iRprtUtils(1:6)
+              logical*2   bDisableVDYP7
+              logical*2   bDisableBACK
+
+          end subroutine
+
+
+          subroutine VDYP7CORE_ReloadProjectionData( iVDYP7Rtrn,
+     &                                               iBACKRtrn,
+     &                                               iPrjType,
+     &                                               iMeasurementYear,
+     &                                               fStandAge,
+     &                                               iStartYear,
+     &                                               iFinishYear,
+     &                                               sSP0Spcs,
+     &                                               iRprtUtils,
+     &                                               bDisableVDYP7,
+     &                                               bDisableBACK )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_ReloadProjectionData
+!DEC$ ATTRIBUTES DLLEXPORT :: VDYP7CORE_ReloadProjectionData
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_ReloadProjectionData
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_ReloadProjectionData
+!GCC$ ATTRIBUTES DLLEXPORT :: VDYP7CORE_ReloadProjectionData
+
+              integer*4   iVDYP7Rtrn, iBACKRtrn
+              integer*4   iPrjType, iMeasurementYear
+              integer*4   iStartYear, iFinishYear
+              real*4      fStandAge
+              character*2 sSP0Spcs(1:6)
+              integer*4   iRprtUtils(1:6)
+              logical*2   bDisableVDYP7
+              logical*2   bDisableBACK
+
+          end subroutine
+
+          integer*4 function VDYP7CORE_RequestYearData( bYearProjected,
+     &                                                  bDominantSP0,
+     &                                                  fTotalAge,
+     &                                                  fDomHeight,
+     &                                                  fLoreyHeight,
+     &                                                  fSI,
+     &                                                  fDiameter,
+     &                                                  fTPH,
+     &                                                  fVolumeWS,
+     &                                                  fVolumeCU,
+     &                                                  fVolumeD,
+     &                                                  fVolumeDW,
+     &                                                  fVolumeDWB,
+     &                                                  fBasalArea,
+     &                                                  fStndPcnt,
+     &                                                  iSICurveUsed,
+     &                                                  iYear,
+     &                                                  iLayer,
+     &                                                  iSP0Ndx )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_RequestYearData
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RequestYearData
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_RequestYearData
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_RequestYearData
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_RequestYearData
+
+              logical*2   bYearProjected
+              logical*2   bDominantSP0
+              real*4      fTotalAge
+              real*4      fDomHeight
+              real*4      fLoreyHeight
+              real*4      fSI
+              real*4      fDiameter
+              real*4      fTPH
+              real*4      fVolumeWS
+              real*4      fVolumeCU
+              real*4      fVolumeD
+              real*4      fVolumeDW
+              real*4      fVolumeDWB
+              real*4      fBasalArea
+              real*4      fStndPcnt
+              integer*4   iSICurveUsed
+              integer*4   iYear
+              integer*4   iLayer
+              integer*4   iSP0Ndx
+
+          end function
+
+
+          function VDYP7CORE_NUMBECS()
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_NUMBECS
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_NUMBECS
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_NUMBECS
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_NUMBECS
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_NUMBECS
+
+              integer*4     VDYP7CORE_NUMBECS
+
+          end function
+
+          subroutine VDYP7CORE_BECCODE( becCode, becIndx )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_BECCODE
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_BECCODE
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_BECCODE
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_BECCODE
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_BECCODE
+
+              integer*4        becIndx
+              character*(*)    becCode
+
+          end subroutine
+
+          subroutine VDYP7CORE_BECNAME( becName, becIndx )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_BECNAME
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_BECNAME
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_BECNAME
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_BECNAME
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_BECNAME
+
+              integer*4        becIndx
+              character*(*)    becName
+
+          end subroutine
+
+          function VDYP7CORE_BECISCOASTAL( becIndx )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_BECISCOASTAL
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_BECISCOASTAL
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_BECISCOASTAL
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_BECISCOASTAL
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_BECISCOASTAL
+
+              logical*2     VDYP7CORE_BECISCOASTAL
+              integer*4     becIndx
+
+          end function
+
+
+          function VDYP7CORE_BECINDEX( becCode )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_BECINDEX
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_BECINDEX
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_BECINDEX
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_BECINDEX
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_BECINDEX
+
+              integer*2       VDYP7CORE_BECINDEX
+              character*(*)   becCode
+
+          end function
+
+
+
+          function VDYP7CORE_NUMSPECIES()
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_NUMSPECIES
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_NUMSPECIES
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_NUMSPECIES
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_NUMSPECIES
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_NUMSPECIES
+
+              integer*4  VDYP7CORE_NUMSPECIES
+
+          end function
+
+
+
+          subroutine VDYP7CORE_SPECIESCODE( spcsCode, spcsIndx )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SPECIESCODE
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SPECIESCODE
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SPECIESCODE
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SPECIESCODE
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SPECIESCODE
+
+              integer*4     spcsIndx
+              character*(*) spcsCode
+
+          end subroutine
+
+
+
+          function VDYP7CORE_SPECIESINDEX( spcsCode )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SPECIESINDEX
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SPECIESINDEX
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SPECIESINDEX
+
+              implicit none
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SPECIESINDEX
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SPECIESINDEX
+
+              integer*4     VDYP7CORE_SPECIESINDEX
+              character*(*) spcsCode
+
+          end function
+
+
+          SUBROUTINE  VDYP7CORE_SetProjectionType( newPrjType )
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetProjectionType
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetProjectionType
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_SetProjectionType
+
+          IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_SetProjectionType
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_SetProjectionType
+
+          INTEGER*4           newPrjType
+
+          END SUBROUTINE
+
+
+
+
+          function VDYP7CORE_GetProjectionType()
+
+!DEC$ ATTRIBUTES STDCALL :: VDYP7CORE_GetProjectionType
+!DEC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_GetProjectionType
+!DEC$ ATTRIBUTES REFERENCE :: VDYP7CORE_GetProjectionType
+
+          IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: VDYP7CORE_GetProjectionType
+!GCC$ ATTRIBUTES DLLIMPORT :: VDYP7CORE_GetProjectionType
+
+          integer*4           VDYP7CORE_GetProjectionType
+
+          end function
+
+      end interface

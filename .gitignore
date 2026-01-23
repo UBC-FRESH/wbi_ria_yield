@@ -3,5 +3,8 @@
 ArcRasterRescue
 .ipynb_checkpoints
 tipsy44
-
-
+.venv
+data/
+*.pyc
+vdyp_io/tmp*
+.vscode

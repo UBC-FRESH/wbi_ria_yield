@@ -1,0 +1,5 @@
+-load     .\InitializePIT.load
+-destdb   .\Combined.mdb
+-rpt      .\Step02-InitializePIT.log
+-binary   ..\DTSRun.exe
+-run

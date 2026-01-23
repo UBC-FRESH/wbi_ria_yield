@@ -1,0 +1,6 @@
+-load     .\PGDB2Text.load 
+-srcdb    .\OriginalData\PGDB\PGDBSample.MDB
+-destdb   .\Console
+-rpt      .\Step01-PGDB2Text.log
+-binary   ..\DTSRun.exe
+-run

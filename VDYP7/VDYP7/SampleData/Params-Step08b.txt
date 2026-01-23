@@ -1,0 +1,8 @@
+-srcdb   .\Combined.mdb
+-rpt     .\Step08b-ProduceYieldTables.out
+-err     .\Step08b-ProduceYieldTables.err
+-start   50
+-end     250
+-inc     10
+-binary  ..\VDYP7Batch.exe
+-run

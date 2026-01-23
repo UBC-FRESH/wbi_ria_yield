@@ -1,0 +1,7 @@
+-srcdbase  .\Combined.MDB
+-i         .\Template2PGDB.load 
+-origdb    .\OriginalData\PGDB\PGDBSample.mdb
+-dstdbase  .\PGDBAdjusted.mdb
+-rpt       .\Step08c-Template2PGDB.out
+-binary    ..\DTSRun.exe
+-run

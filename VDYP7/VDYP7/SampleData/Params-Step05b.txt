@@ -1,0 +1,6 @@
+-load   .\LoadVRISTARTStrata.load
+-srcdb  .\Strata.mdb
+-destdb .\Combined.mdb
+-rpt    .\Step05b-LoadVRISTARTStrata.log
+-binary ..\DTSRun.exe
+-run

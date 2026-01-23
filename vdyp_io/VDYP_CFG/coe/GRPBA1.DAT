@@ -1,0 +1,192 @@
+AC CDF     1    GRPBA1.DAT  Seq 30  Defines group # = f(SP0_P, BEC) 
+AC CWH     1    Note   Leading AC  D  and MB all common group 
+AC MH      1
+AC SWB     1    
+AC BWBS    1
+AC SBPS    1
+AC SBS     1
+AC ESSF    1
+AC MS      1
+AC PP      1
+AC IDF     1
+AC ICH     1
+AT CDF    11      Break out ITG 42 separately as group 12
+AT CWH    11
+AT MH     11
+AT SWB    13      Break out ITG 42 separately as group 14
+AT BWBS   13
+AT SBPS   13
+AT SBS    12
+AT ESSF   12
+AT MS     11
+AT PP     11
+AT IDF    11
+AT ICH    11
+B  CDF    21     Break out ITG 18 as group 22
+B  CWH    21
+B  MH     21
+B  SWB    23      Break out ITG 18 as group 24
+B  BWBS   23
+B  SBPS   23
+B  SBS    23
+B  ESSF   25     Break out ITG 18 as group 26
+B  MS     27
+B  PP     27
+B  IDF    27
+B  ICH    27
+C  CDF    31
+C  CWH    31
+C  MH     31
+C  SWB    32
+C  BWBS   32
+C  SBPS   32
+C  SBS    32
+C  ESSF   32
+C  MS     32
+C  PP     33   Break out ITG 9 as 34  and ITG 10 as 35
+C  IDF    33
+C  ICH    33
+D  CDF     1
+D  CWH     1
+D  MH      1
+D  SWB     1
+D  BWBS    1
+D  SBPS    1
+D  SBS     1
+D  ESSF    1
+D  MS      1
+D  PP      1
+D  IDF     1
+D  ICH     1
+E  CDF    41
+E  CWH    41
+E  MH     41
+E  SWB    42
+E  BWBS   42
+E  SBPS   42
+E  SBS    42
+E  ESSF   41
+E  MS     41
+E  PP     41
+E  IDF    41
+E  ICH    41
+F  CDF    51   Break out ITG 1 as group 52
+F  CWH    51
+F  MH     51
+F  SWB    53  Break out ITG 4 as group 54
+F  BWBS   53
+F  SBPS   53
+F  SBS    53
+F  ESSF   55
+F  MS     56
+F  PP     57  Break out ITG's 1 7 and 8 as group 60; 2 3 and 4 as 61
+F  IDF    57  
+F  ICH    58 Break out ITG's 1 7 and 8 as group 62; 2 3 and 4 as 63
+H  CDF    71 12 and 17 to 72;  13 to 73  14 to 74  15 to 75
+H  CWH    71
+H  MH     71
+H  SWB    76
+H  BWBS   76
+H  SBPS   76
+H  SBS    76
+H  ESSF   76
+H  MS     76
+H  PP     76
+H  IDF    76
+H  ICH    77 12 and 17 to 78  13 to 79  14 to 80
+L  CDF    91  ITG 33   will get group 92
+L  CWH    91
+L  MH     91
+L  SWB    91
+L  BWBS   91
+L  SBPS   91
+L  SBS    91
+L  ESSF   91
+L  MS     91
+L  PP     91
+L  IDF    91
+L  ICH    91
+MB CDF     1
+MB CWH     1
+MB MH      1
+MB SWB     1
+MB BWBS    1
+MB SBPS    1
+MB SBS     1
+MB ESSF    1
+MB MS      1
+MB PP      1
+MB IDF     1
+MB ICH     1
+PA CDF   101  Note: Alt design:  Match PL
+PA CWH   101
+PA MH    101
+PA SWB   101
+PA BWBS  101
+PA SBPS  101
+PA SBS   101
+PA ESSF  101
+PA MS    101
+PA PP    101
+PA IDF   101
+PA ICH   101
+PL CDF   111
+PL CWH   111
+PL MH    111
+PL SWB   112  ITGs 29 and 30 use group 113   ITG 31 uses 114
+PL BWBS  112
+PL SBPS  112
+PL SBS   112
+PL ESSF  115  ITG 29 30 and 31 use group 116
+PL MS    117  ITG 29 30 and 31 use group 118
+PL PP    119  ITG 29 30 and 31 use group 120
+PL IDF   119  
+PL ICH   121  ITG 29 and 31 use group 122   ITG 30 uses 123
+PW CDF   131
+PW CWH   131
+PW MH    131
+PW SWB   131
+PW BWBS  131
+PW SBPS  131
+PW SBS   131
+PW ESSF  131
+PW MS    131
+PW PP    131
+PW IDF   131
+PW ICH   131
+PY CDF   141
+PY CWH   141
+PY MH    141
+PY SWB   141
+PY BWBS  141
+PY SBPS  141
+PY SBS   141
+PY ESSF  141
+PY MS    141
+PY PP    141
+PY IDF   141
+PY ICH   141
+S  CDF   151
+S  CWH   151
+S  MH    151
+S  SWB   152  itg 21 gets 153
+S  BWBS  154  itg 21 to 155   itg 25 to 156   itg 26 to 157
+S  SBPS  154
+S  SBS   158  itg 21 to 159   itg 25 to 160  itg 26 to 161
+S  ESSF  162  itg 21 to 163   itg 24 to 164   25 and 26 to 165
+S  MS    162
+S  PP    162
+S  IDF   166
+S  ICH   166  itg 21 to 167   itg 24 to 168   25 and 26 to 169
+Y  CDF   171   Alt  Same  as C  31/32/33
+Y  CWH   171
+Y  MH    171
+Y  SWB   171
+Y  BWBS  171
+Y  SBPS  171
+Y  SBS   171
+Y  ESSF  171
+Y  MS    171
+Y  PP    171
+Y  IDF   171
+Y  ICH   171

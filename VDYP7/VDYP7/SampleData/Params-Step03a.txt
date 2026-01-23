@@ -1,0 +1,6 @@
+-destdb .\Combined.mdb
+-rpt    .\Step03a-ProjectToGroundSamplingYear.out
+-err    .\Step03a-ProjectToGroundSamplingYear.err
+-year   2007
+-binary ..\VDYP7Batch.exe
+-run

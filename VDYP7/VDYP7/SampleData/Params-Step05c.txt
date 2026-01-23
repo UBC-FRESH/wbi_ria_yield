@@ -1,0 +1,5 @@
+-load     .\ExpandVRISTARTStrataIntoPIT.load
+-destdb   .\Combined.mdb
+-rpt      .\Step05c-ExpandVRISTARTStrataIntoPIT.log
+-binary   ..\DTSRun.exe
+-run

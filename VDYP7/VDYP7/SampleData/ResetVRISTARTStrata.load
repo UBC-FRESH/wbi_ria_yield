@@ -1,0 +1,292 @@
+[Administration]
+FileType=DTS Package Specification
+FormatVersion=1.0.0
+PackageName=Load Reference Data
+
+
+;================================================================
+;
+; Define each of the data sources
+;
+;
+
+
+[Data Connection - Destination Data]
+DatabaseType=MSAccess
+Database=$(DestinationDatabase)
+
+AfterOpeningEnvVar_1_Name=DatasetName
+AfterOpeningEnvVar_1_Value=Default
+
+AfterOpeningEnvvar_2_Name=VRIADJSTPhaseName
+AfterOpeningEnvVar_2_Value=VRIADJST Inputs (At GSYr)
+
+AfterOpeningEnvVar_3_Name=GroundSampleYearPhaseName
+AfterOpeningEnvVar_3_Value=VRISTART Inputs (At GSYr)
+
+AfterOpeningEnvVar_4_Name=ReferenceYearParamName
+AfterOpeningEnvVar_4_Value=Reference Year
+
+
+;=================================================================
+;=================================================================
+;
+; Step Definitions:
+;
+; Possible Step Types are:
+;	Do Nothing
+;		Relevant Properties
+;               	NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;
+;		The rest of the step definition is optional
+;		and ignored.
+;
+;	DataLoad
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection
+;			SourceTableName
+;			TargetConnection
+;			TargetTableName
+;			SourceToDestinationColumnMappingSection
+;
+;	Count Records
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			TargetConnection
+;			TargetTableName
+;
+;	Custom SQL
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection or TargetConnection (in that preference order)
+;			SQLStatement or SQLStatement_Line_nnn
+;
+;
+
+;=================================================================
+;=================================================================
+
+;=================================================================
+;
+; Copy Records over from the source data to the destination.
+;
+;
+
+
+[Step 1]
+StepName=Reset Projected LAYER Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE tblLAYER INNER JOIN tblPOLYGON 
+SQLStatement_Line_002=                ON         tblLAYER.POLYGON_RCRD_ID = tblPOLYGON.POLYGON_RCRD_ID 
+SQLStatement_Line_003=SET    tblLAYER.MEAN_QUADRATIC_DIAM         = NULL
+SQLStatement_Line_004=     , tblLAYER.PROJECTED_BASAL_AREA        = NULL
+SQLStatement_Line_005=     , tblLAYER.GROSS_WHOLE_STEM_VOL_PER_HA = NULL
+SQLStatement_Line_006=     , tblLAYER.NET_DWB_VOL_PER_HA          = NULL
+SQLStatement_Line_007=     , tblLAYER.PROJECTED_STEMS_HA          = NULL
+SQLStatement_Line_008=     , tblLAYER.SUPPLIED_SITE_INDEX         = NULL
+SQLStatement_Line_009=WHERE  tblPOLYGON.IGNORE_POLYGON = 0
+
+
+
+[Step 2]
+StepName=Reset Projected SPECIES Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE (tblPOLYGON INNER JOIN tblLAYER   ON tblPOLYGON.POLYGON_RCRD_ID = tblLAYER.POLYGON_RCRD_ID) 
+SQLStatement_Line_002=                   INNER JOIN tblSPECIES ON tblLAYER.LAYER_RCRD_ID = tblSPECIES.LAYER_RCRD_ID 
+SQLStatement_Line_003=SET    tblSPECIES.GROSS_WHOLE_STEM_VOL_PER_HA = NULL
+SQLStatement_Line_004=     , tblSPECIES.NET_DWB_VOL_PER_HA          = NULL
+SQLStatement_Line_005=     , tblSPECIES.MEAN_QUADRATIC_DIAM         = NULL
+SQLStatement_Line_006=     , tblSPECIES.PROJECTED_STEMS_HA          = NULL
+SQLStatement_Line_007=     , tblSPECIES.UTIL_LEVEL                  = NULL
+SQLStatement_Line_008=WHERE  tblPOLYGON.IGNORE_POLYGON = 0
+
+
+
+[Step 3]
+StepName=Reset Projected SPECIES ATTRIBUTES Values
+StepType=Custom SQL
+ 
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE ((tblPOLYGON INNER JOIN tblLAYER              ON tblPOLYGON.POLYGON_RCRD_ID = tblLAYER.POLYGON_RCRD_ID) 
+SQLStatement_Line_002=                    INNER JOIN tblSPECIES            ON tblLAYER.LAYER_RCRD_ID     = tblSPECIES.LAYER_RCRD_ID) 
+SQLStatement_Line_003=                    INNER JOIN tblSPECIES_ATTRIBUTES ON tblSPECIES.SPECIES_RCRD_ID = tblSPECIES_ATTRIBUTES.SPECIES_RCRD_ID 
+SQLStatement_Line_004=SET    tblSPECIES_ATTRIBUTES.PROJECTED_AGE    = NULL
+SQLStatement_Line_005=     , tblSPECIES_ATTRIBUTES.PROJECTED_HEIGHT = NULL
+SQLStatement_Line_006=     , tblSPECIES_ATTRIBUTES.SITE_INDEX       = NULL
+SQLStatement_Line_007=WHERE  tblPOLYGON.IGNORE_POLYGON = 0
+
+
+
+[Step 4]
+StepName=Delete VRIADJST Adjustable Parameter Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_INPUT_ADJUSTMENT
+SQLStatement_Line_002=WHERE PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID FROM tblPROJECTION_INPUT_DATASET WHERE PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)')
+SQLStatement_Line_004=  AND PROJECTION_PHASE_RCRD_ID IN
+SQLStatement_Line_005=         (SELECT PROJECTION_PHASE_RCRD_ID FROM tblPROJECTION_PHASE WHERE PROJECTION_PHASE_NAME = '$(VRIADJSTPhaseName)')
+SQLStatement_Line_006=  AND POLYGON_RCRD_ID IN
+SQLStatement_Line_007=         (SELECT POLYGON_RCRD_ID FROM tblPOLYGON WHERE IGNORE_POLYGON = 0)
+
+
+
+[Step 5]
+StepName=Delete VRIADJST Non-Adjustable Parameter Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_INPUT_VALUE
+SQLStatement_Line_002=WHERE PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID FROM tblPROJECTION_INPUT_DATASET WHERE PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)')
+SQLStatement_Line_004=  AND PROJECTION_PHASE_RCRD_ID IN
+SQLStatement_Line_005=         (SELECT PROJECTION_PHASE_RCRD_ID FROM tblPROJECTION_PHASE WHERE PROJECTION_PHASE_NAME = '$(VRIADJSTPhaseName)')
+SQLStatement_Line_006=  AND POLYGON_RCRD_ID IN
+SQLStatement_Line_007=         (SELECT POLYGON_RCRD_ID FROM tblPOLYGON WHERE IGNORE_POLYGON = 0)
+
+
+
+[Step 6]
+StepName=Delete VRIADJST Parameter Strings
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_INPUT_STRING
+SQLStatement_Line_002=WHERE PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID FROM tblPROJECTION_INPUT_DATASET WHERE PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)')
+SQLStatement_Line_004=  AND PROJECTION_PHASE_RCRD_ID IN
+SQLStatement_Line_005=         (SELECT PROJECTION_PHASE_RCRD_ID FROM tblPROJECTION_PHASE WHERE PROJECTION_PHASE_NAME = '$(VRIADJSTPhaseName)')
+SQLStatement_Line_006=  AND POLYGON_RCRD_ID IN
+SQLStatement_Line_007=         (SELECT POLYGON_RCRD_ID FROM tblPOLYGON WHERE IGNORE_POLYGON = 0)
+
+
+
+[Step 7]
+StepName=Delete Polygon Strata Input Parameter Adjustments
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_PARAMETER_OFFSET
+
+
+
+[Step 8]
+StepName=Delete Polygon Strata Assignments
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Delete Polygon Strata Input Parameter Adjustments
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_POLYGON_STRATA
+
+
+
+[Step 9]
+StepName=Delete Strata Parameter Adjustments
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_STRATA_PARAMETER
+
+
+[Step 10]
+StepName=Delete Strata
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Delete Polygon Strata Assignments
+PrerequisiteTarget_2=Delete Strata Parameter Adjustments
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_STRATA
+
+
+
+[Step 11]
+StepName=Reset VRISTART Strata Adjustments
+StepType=Custom SQL
+
+SourceConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_STRATA_PARAMETER
+SQLStatement_Line_002=WHERE (PROJECTION_INPUT_DATASET_RCRD_ID IN 
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID
+SQLStatement_Line_004=          FROM   tblPROJECTION_INPUT_DATASET
+SQLStatement_Line_005=          WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'))
+SQLStatement_Line_006=  AND (PROJECTION_PHASE_RCRD_ID IN
+SQLStatement_Line_007=         (SELECT PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_008=          FROM   tblPROJECTION_PHASE
+SQLStatement_Line_009=          WHERE  PROJECTION_PHASE_NAME = '$(GroundSampleYearPhaseName)'))
+
+
+
+[Step 12]
+StepName=Delete VRISTART Polygon Strata Assignments
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_POLYGON_STRATA
+SQLStatement_Line_002=WHERE (PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=          (SELECT PROJECTION_INPUT_DATASET_RCRD_ID
+SQLStatement_Line_004=           FROM   tblPROJECTION_INPUT_DATASET
+SQLStatement_Line_005=           WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'))
+SQLStatement_Line_006=  AND (PROJECTION_PHASE_RCRD_ID IN
+SQLStatement_Line_007=          (SELECT PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_008=           FROM   tblPROJECTION_PHASE
+SQLStatement_Line_009=           WHERE  PROJECTION_PHASE_NAME = '$(GroundSampleYearPhaseName)'))
+SQLStatement_Line_010=  AND (POLYGON_RCRD_ID IN
+SQLStatement_Line_011=          (SELECT POLYGON_RCRD_ID
+SQLStatement_Line_012=           FROM   tblPOLYGON
+SQLStatement_Line_013=           WHERE  IGNORE_POLYGON = 0))
+
+
+
+[Step 13]
+StepName=Reset PIT Adjustments
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE tblPROJECTION_INPUT_ADJUSTMENT
+SQLStatement_Line_002=SET A        = 0.0
+SQLStatement_Line_003=  , B        = 1.0
+SQLStatement_Line_004=  , C        = 0.0
+SQLStatement_Line_005=  , K        = 1.0
+SQLStatement_Line_006=  , MODIFIED = 0
+SQLStatement_Line_007=WHERE (PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_008=          (SELECT PROJECTION_INPUT_DATASET_RCRD_ID
+SQLStatement_Line_009=           FROM   tblPROJECTION_INPUT_DATASET
+SQLStatement_Line_010=           WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'))
+SQLStatement_Line_011=  AND (PROJECTION_PHASE_RCRD_ID IN
+SQLStatement_Line_012=          (SELECT PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_013=           FROM   tblPROJECTION_PHASE
+SQLStatement_Line_014=           WHERE  PROJECTION_PHASE_NAME = '$(GroundSampleYearPhaseName)'))
+SQLStatement_Line_015=  AND (POLYGON_RCRD_ID IN
+SQLStatement_Line_016=          (SELECT POLYGON_RCRD_ID
+SQLStatement_Line_017=           FROM   tblPOLYGON
+SQLStatement_Line_018=           WHERE  IGNORE_POLYGON = 0))
+
+
+
+
+

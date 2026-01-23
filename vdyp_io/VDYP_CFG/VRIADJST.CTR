@@ -1,0 +1,42 @@
+  0    VRIADJST      control input file for VRIADJST        (Revision date 29MAR2002)
+  0    General Format is col 1-3   0 OR a parameter number
+  0                                (note: zero or blank implies COMMENT)
+  0                      col 5-54  Parameters or file names
+
+001 00999999                                          Max # of Adjustment records to process (I8)
+
+010 coe\sp0def.dat                                    Standard SP0 Codes        RD_SP0
+  
+011 vp.dat                                            VDYP7 Polygon input
+012 vs.dat                                            VDYP7 Layer by Species (ht&Age), input
+013 vu_.dat                                           VDYP7 Layer by SP0 by Util, input 
+014 Adjustment.dat                                    ADJUSTMENT file 
+
+015 vp_adj.dat                                        VDYP7 Polygon  out
+016 vs_adj.dat                                        VDYP7 Layer by SP0 (Ht & Age) out
+018 vu_adj.dat                                        VDYP7 Layer by SP0 by Util out
+
+022 coe\bgrp.dat                                      Defines Breakage Groups   RD_BGRP      IPSJF157
+
+095 coe\regbreak.coe                                  Breakage                   RD_EMP95 IPSJF157
+
+101    1   0   2   1   0                              Control Switches (10I4)
+                                                      First value  1: 1 input record/polygon (P or X)
+                                                                  2: Multiple records/poly incl separator
+                                                      Second Value 0: Ignore polygon data which lacks adj records.
+                                                                   1: Copy these data to output files (unchanged).
+                                                      Third Value  0: Changes in TPH by sp Not allowed.
+                                                                   1: Allowed if absolutely required.
+                                                                   2: Allowed if better DBH distrs result.
+                                                      Fourth Value: 0: Changes >0.05 in BA12.5 Not allowed
+                                                                   1: Changes allowed. (Warning)
+                                                                   2: Changes allowed. (No warning)
+                                                      Fifth Value  0: Unmatched adjustment records sets ADJ_SUB err 1
+                                                                   1: Unmatched adjustment records ignored.
+199  0 0 0 0 0 0 1 0 0 0                              Debug switches (25) 0=default  See IPSJF155  App IX
+                                                      (5) = 0 does full suppresion of MATH77 messages.
+                                                            1 shows some errors.  2 shows all.
+                                                      (7) = 0 Stop on errors; 1 - continue to next poly.
+                                                           (1 can bypass computational problems, not I/O errors)
+                                            
+                                                      

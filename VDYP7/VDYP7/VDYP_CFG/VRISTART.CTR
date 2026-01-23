@@ -1,0 +1,82 @@
+  0    VRISTART.ctr
+  0    General Format is col 1-3   0 OR a parameter number
+  0                                (note: zero or blank implies COMMENT)
+  0                      col 5-54  Parameters or file names
+  0  
+  0 ***********  BA and DQ = f(CC and FIP caracteristics)
+
+001 00999999                                          Max # of Polygons to process (I8)
+                                                      (poly's with MODE = -1 NOT counted)
+009 coe\BECDEF.dat                                    List of BECs [are ALSO hardcoded]
+010 coe\SP0DEF.dat                                    Standard SP0 Codes        RD_SP0
+
+011>\bcgrow\vritest\VRINP01.dat                       
+012 \bcgrow\vritest\VRINL01.dat                       Layer: BA, TPH, CC        (VRIGETL)
+013 \bcgrow\vritest\VRINSI01.dat                      Height-age-SI data        (VRIGETSI)
+014 \bcgrow\vritest\VRINSP01.dat                      Species distribution file (VRIGETSP)
+
+015 \bcgrow\vritest\VP_01.dat                         VDYP7 Polygon
+016 \bcgrow\vritest\VS_01.dat                         VDYP7 Layer by Species
+018 \bcgrow\vritest\VU_01.dat                         VDYP7 Layer by SP0 by Util
+
+020 coe\VGRPDEF1.dat                                  Defines Volume Eqn groups RD_VGRP
+021 coe\DGRP.dat                                      Defines Decay Groups      RD_DGRP
+022 coe\BGRP.dat                                      Defines Breakage Groups   RD_BGRP
+025 coe\SIEQN.prm                                     Site Curve Numbers (SCN) assigned RD_E025
+025                                                   Nullifies above siteCurve #
+026 coe\SIAGEMAX.prm                                  Max ages for ht incr, by SCN   RD_E026
+
+030 coe\GRPBA1.dat                                    Default Eq # BA=f(CC)     RD_GRBA1
+031 coe\GMODBA1.dat                                   Eqn modifiers for above   RD_GMBA1 
+033 coe\fipstkR.prm                                   Stocking class factors    RD_STK33
+
+040 coe\regba25.coe                                   Coe BA=f(CC)              RD_E040 IPSJF128
+041 coe\regdq26.coe                                   Coe DQ=f(CC)              RD_E041 IPSJF129
+043 coe\upperb02.coe                                  Upper BA by C/I SP0_P     RD_E043 IPSJF128 
+
+050 coe\REGYHLP.coe                                    HL, Primary SP, Eqn P1     RD_YHL1 
+051 coe\REGYHLPA.coe                                   HL, Primary SP, Eqn P2     RD_YHL2
+052 coe\REGYHLPB.dat                                   HL, Primary SP, Eqn P3     RD_YHL3
+053 coe\REGHL.coe                                      HL, Non-primary Species    RD_YHL4
+
+060 coe\REGDQI04.coe                                   By-species DQ              RD_E060    IPFJF125
+061 coe\COMPLIM.coe                                    Species component size limits RD_E061 IPSJF158
+
+070 coe\REGBAC.dat                                     Util. Comp, BA             RD_UBA1
+071 coe\REGDQC.dat                                     Util. Comp, DQ             RD_UDQ1
+
+080 coe\REGPR1C.dat                                    Small Comp., Probability   RD_SBA1
+081 coe\REGBA2C.dat                                    Small Comp., BA            RD_SBA2
+082 coe\REGDQ4C.dat                                    Small Comp., DQ            RD_SDQ1
+085 coe\REGHL1C.dat                                    Small Comp., HL            RD_SHL1
+086 coe\REGV1C.dat                                    Small Comp., WS Volume     RD_SVT1
+
+090 coe\VTOTREG4.coe                                  Total stand WholeStem Vol  RD_YVT1  IPSJF117
+091 coe\REGVU.coe                                     Util Comp, WS volume       RD_YVT2  IPSJF121
+092 coe\REGVCU.coe                                    Close Utilization Vol      RD_YVC1  IPSJF122
+093 coe\regvdu.coe                                    Vol net of Decay           RD_YVD1  IPSJF123
+094 coe\regvwu.coe                                    Vol net of (Decay+Waste)   RD_YVW1  IPSJF123
+095 coe\REGBREAK.coe                                  Breakage                   RD_EMP95
+
+096 coe\VETVOL1.dat                                   Vet-layer volume adjust    RD_YVET                         
+097 coe\VETDQ2.dat                                    DQ for Vet layer           RD_YDQV
+098 coe\REGBAV01.coe                                  VET BA, IPSJF168.doc       RD_E098
+106 coe\YLDBA407.coe                                  BA Yield (Primary layer)   RD_E106 ipsjf160
+107 coe\YLDDQ45.coe                                   DQ Yield (Primary layer)   RD_E107 ipsjf161
+108 coe\PCT_407.coe                                   Upper bounds (BA, DQ)  RD_E108  ipsjf160 (emp106, emp107)
+
+
+197    6.0   0.0   2.0  10.0                          Min Ht, Min BA, Min Pred BA, Min Vet Ht (or 0); BA'a fully stocked.
+                                                                            (3rd parameter should ALWAYS be >= 0.5)
+198 coe\MOD19813.prm                                  Modifier file (IPSJF155, XII) RD_E198
+
+199  0 0 0 0 0 0 0 050 0                              Debug switches (0 by default) See IPSJF155  App IX
+                                                      (1)  Controls where BA,TPH errors (Mode 1)are fatal
+                                                           0=NO  2=Yes
+                                                           (switch 9 can lessen the probability of errors)
+                                                      (2) Calculation of HL for nonprimary species
+                                                           0= from its HD, 1=from primary HD
+                                                      (5) MATH77 error messages 0:suppress 
+                                                            1: show some  2:show all.
+                                                      (9) Percentage expansion of by-species DQ
+                                                          limits if needed for TPH recovery.                  

@@ -1,0 +1,1125 @@
+[Administration]
+FileType=DTS Package Specification
+FormatVersion=1.0.0
+PackageName=Load Reference Data
+
+
+
+;================================================================
+;
+; Define each of the data sources
+;
+;
+
+
+[Data Connection - Source Data]
+DatabaseType=MSAccess
+Server=
+Database=$(SourceDatabase)
+UserID=$(SourceUser)
+Password=$(SourcePassword)
+
+
+[Data Connection - Destination Data]
+DatabaseType=TextFile
+Server=
+Database=$(DestinationDatabase)
+
+
+
+;=================================================================
+;=================================================================
+;
+; Step Definitions:
+;
+; Possible Step Types are:
+;	Do Nothing
+;		Relevant Properties
+;               	NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;
+;		The rest of the step definition is optional
+;		and ignored.
+;
+;	DataLoad
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection
+;			SourceTableName
+;			TargetConnection
+;			TargetTableName
+;			SourceToDestinationColumnMappingSection
+;
+;	Count Records
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			TargetConnection
+;			TargetTableName
+;
+;	Custom SQL
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection or TargetConnection (in that preference order)
+;			SQLStatement or SQLStatement_Line_nnn
+;
+;
+
+;=================================================================
+;=================================================================
+
+;=================================================================
+;
+; Copy Records over from the source data to the destination.
+;
+;
+
+
+
+[Step 1]
+StepName=Purge POLYGON_ID
+StepType=External Command
+
+ExternalCommandLine=ECHO POLYGON_RCRD_ID,MAINTAINER,MAP_ID,MAP_QUAD,MAP_SUB_QUAD,POLYGON_ID > POLYGON_ID.csv
+ExternalStartingFolder=$(DestinationDatabase)
+
+
+
+[Step 2]
+StepName=Copy POLYGON_ID
+StepType=DataLoad
+
+PrerequisiteTarget_1=Purge POLYGON_ID
+PrerequisiteTarget_2=Create MapSheet Information 2
+PrerequisiteTarget_3=Sequence Polygons
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   vcpa.FOREST_COVER_OBJECT_ID AS POLYGON_RCRD_ID
+SQLStatement_Line_002=       , msg.MAINTAINER
+SQLStatement_Line_003=       , msg.MAP_ID
+SQLStatement_Line_004=       , msg.MAP_QUAD
+SQLStatement_Line_005=       , msg.MAP_SUB_QUAD
+SQLStatement_Line_006=       , msg.POLYGON_ID
+SQLStatement_Line_007=FROM                VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_008=         INNER JOIN tmpMapSheetGenerator         msg
+SQLStatement_Line_009=                 ON msg.FOREST_COVER_OBJECT_ID = vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_010=ORDER BY vcpa.FOREST_COVER_OBJECT_ID
+
+TargetConnection=Destination Data
+TargetTableName=POLYGON_ID.csv
+
+SourceToDestinationColumnMappingSection=POLYGON_ID Column Mapping
+
+
+
+[POLYGON_ID Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=POLYGON_RCRD_ID
+TargetColumn_1=POLYGON_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=MAINTAINER
+TargetColumn_2=MAINTAINER
+
+SourceMappingType_3=Copy
+SourceColumn_3=MAP_ID
+TargetColumn_3=MAP_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=MAP_QUAD
+TargetColumn_4=MAP_QUAD
+
+SourceMappingType_5=Copy
+SourceColumn_5=MAP_SUB_QUAD
+TargetColumn_5=MAP_SUB_QUAD
+
+SourceMappingType_6=Copy
+SourceColumn_6=POLYGON_ID
+TargetColumn_6=POLYGON_ID
+
+
+
+
+[Step 3]
+StepName=Purge POLYGON
+StepType=External Command
+
+ExternalCommandLine=ECHO POLYGON_RCRD_ID,INVENTORY_STANDARD,MEASUREMENT_YEAR,FIZ,BEC_ZONE,PCT_STOCKABLE,NON_PROD_DESC,YIELD_FACTOR > POLYGON.csv
+ExternalStartingFolder=$(DestinationDatabase)
+
+
+
+[Step 4]
+StepName=Copy POLYGON
+StepType=DataLoad
+
+PrerequisiteTarget_1=Purge POLYGON
+PrerequisiteTarget_2=Sequence Polygons
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   vcpa.FOREST_COVER_OBJECT_ID            AS POLYGON_RCRD_ID
+SQLStatement_Line_002=       , fco.INVENTORY_STANDARD_CODE            AS INVENTORY_STANDARD
+SQLStatement_Line_003=       , fco.REFERENCE_YEAR
+SQLStatement_Line_004=       , NULL                                   AS FIZ
+SQLStatement_Line_005=       , BEC_ZONE_CODE                          AS BEC_ZONE
+SQLStatement_Line_006=       , ROUND( STOCKABILITY, 1 )               AS PCT_STOCKABLE
+SQLStatement_Line_007=       , TRIM( NON_PRODUCTIVE_DESCRIPTOR_CODE ) AS NON_PROD_DESC
+SQLStatement_Line_008=       , ROUND( YIELD_FACTOR, 3 )               AS YIELD_FACTOR
+SQLStatement_Line_009=FROM                VEGETATION_COVER_POLYGON_ADJ    vcpa
+SQLStatement_Line_010=         INNER JOIN FOREST_COVER_OBJECT             fco
+SQLStatement_Line_011=                 ON fco.FOREST_COVER_OBJECT_ID = vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_012=ORDER BY vcpa.FOREST_COVER_OBJECT_ID
+
+TargetConnection=Destination Data
+TargetTableName=POLYGON.csv
+
+SourceToDestinationColumnMappingSection=POLYGON Column Mapping
+
+
+
+[POLYGON Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=POLYGON_RCRD_ID
+TargetColumn_1=POLYGON_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=INVENTORY_STANDARD
+TargetColumn_2=INVENTORY_STANDARD
+
+SourceMappingType_3=Copy
+SourceColumn_3=REFERENCE_YEAR
+TargetColumn_3=REFERENCE_YEAR
+
+SourceMappingType_4=Copy
+SourceColumn_4=FIZ
+TargetColumn_4=FIZ
+
+SourceMappingType_5=Copy
+SourceColumn_5=BEC_ZONE
+TargetColumn_5=BEC_ZONE
+
+SourceMappingType_6=Copy
+SourceColumn_6=PCT_STOCKABLE
+TargetColumn_6=PCT_STOCKABLE
+
+SourceMappingType_7=Copy
+SourceColumn_7=NON_PROD_DESC
+TargetColumn_7=NON_PROD_DESC
+
+SourceMappingType_8=Copy
+SourceColumn_8=YIELD_FACTOR
+TargetColumn_8=YIELD_FACTOR
+
+
+
+
+
+
+[Step 5]
+StepName=Purge NON_VEG
+StepType=External Command
+
+ExternalCommandLine=ECHO POLYGON_RCRD_ID,NON_VEG_ID,NON_VEG_COVER_TYPE,NON_VEG_COVER_PCT > NON_VEG.csv
+ExternalStartingFolder=$(DestinationDatabase)
+
+
+
+[Step 6]
+StepName=Copy NON_VEG
+StepType=DataLoad
+
+PrerequisiteTarget_1=Purge NON_VEG
+PrerequisiteTarget_2=Sequence Polygons
+PrerequisiteTarget_3=Sequence NonVeg
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   nvca.FOREST_COVER_OBJECT_ID AS POLYGON_RCRD_ID
+SQLStatement_Line_002=       , NON_VEG_ORDER               AS NON_VEG_ID
+SQLStatement_Line_003=       , NON_VEG_COVER_TYPE_CODE     AS NON_VEG_COVER_TYPE
+SQLStatement_Line_004=       , NON_VEG_COVER_PCT
+SQLStatement_Line_005=FROM                NON_VEGETATIVE_COVER_ADJ nvca
+SQLStatement_Line_006=         INNER JOIN tmpNonVegSequencing      tnvs
+SQLStatement_Line_007=                 ON tnvs.NON_VEGETATIVE_COVER_ADJ_ID = nvca.NON_VEGETATIVE_COVER_ADJ_ID
+SQLStatement_Line_008=ORDER BY nvca.FOREST_COVER_OBJECT_ID, NON_VEG_ORDER
+
+
+TargetConnection=Destination Data
+TargetTableName=NON_VEG.csv
+
+SourceToDestinationColumnMappingSection=NON_VEG Column Mapping
+
+
+
+[NON_VEG Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=POLYGON_RCRD_ID
+TargetColumn_1=POLYGON_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=NON_VEG_ID
+TargetColumn_2=NON_VEG_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=NON_VEG_COVER_TYPE
+TargetColumn_3=NON_VEG_COVER_TYPE
+
+SourceMappingType_4=Copy
+SourceColumn_4=NON_VEG_COVER_PCT
+TargetColumn_4=NON_VEG_COVER_PCT
+
+
+
+
+[Step 7]
+StepName=Purge OTHER_VEG
+StepType=External Command
+
+ExternalCommandLine=ECHO POLYGON_RCRD_ID,OTHER_VEG_ID,LAND_COVER_CD,LAND_COVER_PCT > OTHER_VEG.csv
+ExternalStartingFolder=$(DestinationDatabase)
+
+
+
+[Step 8]
+StepName=Copy OTHER_VEG
+StepType=DataLoad
+
+PrerequisiteTarget_1=Purge OTHER_VEG
+PrerequisiteTarget_2=Sequence OtherVeg
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT NON_TREE.FOREST_COVER_OBJECT_ID AS POLYGON_RCRD_ID
+SQLStatement_Line_002=     , LAND_COVER_ORDER                AS OTHER_VEG_ID
+SQLStatement_Line_003=     , LAND_COVER_CLASS_CD             AS LAND_COVER_CD
+SQLStatement_Line_004=     , COVERAGE_PCT                    AS LAND_COVER_PCT
+SQLStatement_Line_005=FROM (
+SQLStatement_Line_006=      SELECT FOREST_COVER_OBJECT_ID
+SQLStatement_Line_007=           , 1                      AS LAND_COVER_ORDER
+SQLStatement_Line_008=           , 'SH'                   AS LAND_COVER_CLASS_CD
+SQLStatement_Line_009=           , SHRUB_CROWN_CLOSURE    AS COVERAGE_PCT
+SQLStatement_Line_010=      FROM   VEGETATION_COVER_POLYGON_ADJ
+SQLStatement_Line_011=      WHERE  SHRUB_CROWN_CLOSURE IS NOT NULL
+SQLStatement_Line_012=     UNION
+SQLStatement_Line_013=      SELECT FOREST_COVER_OBJECT_ID
+SQLStatement_Line_014=           , 2                      AS LAND_COVER_ORDER
+SQLStatement_Line_015=           , 'HE'                   AS LAND_COVER_CLASS_CD
+SQLStatement_Line_016=           , HERB_COVER_PCT         AS COVERAGE_PCT
+SQLStatement_Line_017=      FROM   VEGETATION_COVER_POLYGON_ADJ
+SQLStatement_Line_018=      WHERE  HERB_COVER_PCT IS NOT NULL
+SQLStatement_Line_019=     UNION
+SQLStatement_Line_020=      SELECT FOREST_COVER_OBJECT_ID
+SQLStatement_Line_021=           , 3                      AS LAND_COVER_ORDER
+SQLStatement_Line_022=           , 'BR'                   AS LAND_COVER_CLASS_CD
+SQLStatement_Line_023=           , BRYOID_COVER_PCT       AS COVERAGE_PCT
+SQLStatement_Line_024=      FROM VEGETATION_COVER_POLYGON_ADJ
+SQLStatement_Line_025=      WHERE BRYOID_COVER_PCT IS NOT NULL
+SQLStatement_Line_026=     ) AS NON_TREE
+SQLStatement_Line_027=    INNER JOIN tmpOtherVegSequencing tovs
+SQLStatement_Line_028=            ON tovs.FOREST_COVER_OBJECT_ID = NON_TREE.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_029=ORDER BY tovs.OTHERVEG_SEQUENCE_ORDER, LAND_COVER_ORDER
+
+TargetConnection=Destination Data
+TargetTableName=OTHER_VEG.csv
+
+SourceToDestinationColumnMappingSection=OTHER_VEG Column Mapping
+
+
+
+[OTHER_VEG Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=POLYGON_RCRD_ID
+TargetColumn_1=POLYGON_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=OTHER_VEG_ID
+TargetColumn_2=OTHER_VEG_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=LAND_COVER_CD
+TargetColumn_3=LAND_COVER_CD
+
+SourceMappingType_4=Copy
+SourceColumn_4=LAND_COVER_PCT
+TargetColumn_4=LAND_COVER_PCT
+
+
+
+
+
+
+[Step 9]
+StepName=Purge LAYER
+StepType=External Command
+
+ExternalCommandLine=ECHO LAYER_RCRD_ID,POLYGON_RCRD_ID,LAYER_ID,VDYP7_LAYER_ID,RANK_CODE,NON_FOREST_DESC,MEAS_UTIL_LEVEL,CC,BA,TPH,EST_SI_SPCS,EST_SI > LAYER.csv
+ExternalStartingFolder=$(DestinationDatabase)
+
+
+
+[Step 10]
+StepName=Copy LAYER
+StepType=DataLoad
+
+PrerequisiteTarget_1=Purge LAYER
+PrerequisiteTarget_2=Sequence Layers
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   tls.LAYER_SEQUENCE_ORDER          AS LAYER_RCRD_ID
+SQLStatement_Line_002=       , tcla.FOREST_COVER_OBJECT_ID       AS POLYGON_RCRD_ID
+SQLStatement_Line_003=       , LAYER_LEVEL_CODE                  AS LAYER_ID
+SQLStatement_Line_004=       , PROJECTION_LAYER_CODE             AS VDYP7_LAYER_ID
+SQLStatement_Line_005=       , FOREST_COVER_RANK_CODE            AS RANK_CODE
+SQLStatement_Line_006=       , NON_FOREST_DESCRIPTOR_CODE        AS NON_FOREST_DESC
+SQLStatement_Line_007=       , 7.5                               AS MEAS_UTIL_LEVEL
+SQLStatement_Line_008=       , CROWN_CLOSURE_PCT                 AS CC
+SQLStatement_Line_009=       , ROUND( BASAL_AREA, 6 )            AS BA
+SQLStatement_Line_010=       , ROUND( VRI_LIVE_STEMS_PER_HA, 3 ) AS TPH
+SQLStatement_Line_011=       , TREE_SPECIES_CODE                 AS EST_SI_SPCS
+SQLStatement_Line_012=       , ROUND( ESTIMATED_SITE_INDEX, 3 )  AS EST_SI
+SQLStatement_Line_013=FROM             (TREE_COVER_LAYER_ADJUSTED tcla
+SQLStatement_Line_014=       INNER JOIN tmpLayerSequencing tls
+SQLStatement_Line_015=               ON tls.TREE_COVER_LAYER_ADJUSTED_ID = tcla.TREE_COVER_LAYER_ADJUSTED_ID)
+SQLStatement_Line_016=ORDER BY tls.LAYER_SEQUENCE_ORDER 
+
+TargetConnection=Destination Data
+TargetTableName=LAYER.csv
+
+SourceToDestinationColumnMappingSection=LAYER Column Mapping
+
+
+
+[LAYER Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=LAYER_RCRD_ID
+TargetColumn_1=LAYER_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=POLYGON_RCRD_ID
+TargetColumn_2=POLYGON_RCRD_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=LAYER_ID
+TargetColumn_3=LAYER_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=VDYP7_LAYER_ID
+TargetColumn_4=VDYP7_LAYER_ID
+
+SourceMappingType_5=Copy
+SourceColumn_5=RANK_CODE
+TargetColumn_5=RANK_CODE
+
+SourceMappingType_6=Copy
+SourceColumn_6=NON_FOREST_DESC
+TargetColumn_6=NON_FOREST_DESC
+
+SourceMappingType_7=Copy
+SourceColumn_7=MEAS_UTIL_LEVEL
+TargetColumn_7=MEAS_UTIL_LEVEL
+
+SourceMappingType_8=Copy
+SourceColumn_8=CC
+TargetColumn_8=CC
+
+SourceMappingType_9=Copy
+SourceColumn_9=BA
+TargetColumn_9=BA
+
+SourceMappingType_10=Copy
+SourceColumn_10=TPH
+TargetColumn_10=TPH
+
+SourceMappingType_11=Copy
+SourceColumn_11=EST_SI_SPCS
+TargetColumn_11=EST_SI_SPCS
+
+SourceMappingType_12=Copy
+SourceColumn_12=EST_SI
+TargetColumn_12=EST_SI
+
+
+
+
+
+
+[Step 11]
+StepName=Purge HISTORY
+StepType=External Command
+
+ExternalCommandLine=ECHO HISTORY_RCRD_ID,LAYER_RCRD_ID,HISTORY_ID,SILV_BASE_CD,START_YEAR,END_YEAR,LAYER_PCT > HISTORY.csv
+ExternalStartingFolder=$(DestinationDatabase)
+
+
+
+[Step 12]
+StepName=Copy HISTORY
+StepType=DataLoad
+
+PrerequisiteTarget_1=Purge HISTORY
+PrerequisiteTarget_2=Sequence History
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   vcpa.FOREST_COVER_OBJECT_ID      AS HISTORY_RCRD_ID
+SQLStatement_Line_002=       , pl.LAYER_SEQUENCE_ORDER          AS PRIMARY_LAYER_RCRD_ID
+SQLStatement_Line_003=       , 1                                AS HISTORY_ID
+SQLStatement_Line_004=       , DISTURBANCE_CODE                 AS SILV_BASE_CD
+SQLStatement_Line_005=       , Year(fco.DISTURBANCE_START_YEAR) AS START_YEAR
+SQLStatement_Line_006=       , Year(fco.DISTURBANCE_END_YEAR)   AS END_YEAR
+SQLStatement_Line_007=       , NULL                             AS LAYER_PCT
+SQLStatement_Line_008=FROM          ((FOREST_COVER_OBJECT fco
+SQLStatement_Line_009=     INNER JOIN VEGETATION_COVER_POLYGON_ADJ vcpa ON vcpa.FOREST_COVER_OBJECT_ID = fco.FOREST_COVER_OBJECT_ID)
+SQLStatement_Line_010=     LEFT  JOIN ( SELECT  tcla.FOREST_COVER_OBJECT_ID, tcla.TREE_COVER_LAYER_ADJUSTED_ID, tls.LAYER_SEQUENCE_ORDER
+SQLStatement_Line_011=                  FROM         (( SELECT   FOREST_COVER_OBJECT_ID
+SQLStatement_Line_012=                                         , MIN( IIF( FOREST_COVER_RANK_CODE = '1', '0', LAYER_LEVEL_CODE ) ) AS LAYER_SCORE
+SQLStatement_Line_013=                                  FROM     TREE_COVER_LAYER_ADJUSTED
+SQLStatement_Line_014=                                  GROUP BY FOREST_COVER_OBJECT_ID ) ls
+SQLStatement_Line_015=                       INNER JOIN TREE_COVER_LAYER_ADJUSTED tcla ON ls.FOREST_COVER_OBJECT_ID = tcla.FOREST_COVER_OBJECT_ID)
+SQLStatement_Line_016=                       INNER JOIN tmpLayerSequencing tls ON tls.TREE_COVER_LAYER_ADJUSTED_ID = tcla.TREE_COVER_LAYER_ADJUSTED_ID
+SQLStatement_Line_017=                  WHERE IIF( tcla.FOREST_COVER_RANK_CODE = '1', '0', LAYER_LEVEL_CODE ) = ls.LAYER_SCORE ) pl
+SQLStatement_Line_018=             ON fco.FOREST_COVER_OBJECT_ID = pl.FOREST_COVER_OBJECT_ID)
+SQLStatement_Line_019=      INNER JOIN tmpHistorySequencing ths ON ths.FOREST_COVER_OBJECT_ID = vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_020=WHERE    fco.DISTURBANCE_CODE = 'DI'
+SQLStatement_Line_021=  AND    pl.TREE_COVER_LAYER_ADJUSTED_ID IS NOT NULL
+SQLStatement_Line_022=ORDER BY ths.HISTORY_SEQUENCE_ORDER
+
+
+TargetConnection=Destination Data
+TargetTableName=HISTORY.csv
+
+SourceToDestinationColumnMappingSection=HISTORY Column Mapping
+
+
+
+[HISTORY Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=HISTORY_RCRD_ID
+TargetColumn_1=HISTORY_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=PRIMARY_LAYER_RCRD_ID
+TargetColumn_2=LAYER_RCRD_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=HISTORY_ID
+TargetColumn_3=HISTORY_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=SILV_BASE_CD
+TargetColumn_4=SILV_BASE_CD
+
+SourceMappingType_5=Copy
+SourceColumn_5=START_YEAR
+TargetColumn_5=START_YEAR
+
+SourceMappingType_6=Copy
+SourceColumn_6=END_YEAR
+TargetColumn_6=END_YEAR
+
+SourceMappingType_7=Copy
+SourceColumn_7=LAYER_PCT
+TargetColumn_7=LAYER_PCT
+
+
+
+
+
+
+[Step 13]
+StepName=Purge SPECIES
+StepType=External Command
+
+ExternalCommandLine=ECHO SPECIES_RCRD_ID,LAYER_RCRD_ID,SPECIES_ID,SPECIES_CD,SPECIES_PCT,AGE,HEIGHT,SI,YTBH,BHAGE,SITE_CURVE > SPECIES.csv
+ExternalStartingFolder=$(DestinationDatabase)
+
+
+
+[Step 14]
+StepName=Copy SPECIES
+StepType=DataLoad
+
+PrerequisiteTarget_1=Purge SPECIES
+PrerequisiteTarget_2=Sequence Species
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   tss.SPECIES_SEQUENCE_ORDER   AS SPECIES_RCRD_ID
+SQLStatement_Line_002=       , tls.LAYER_SEQUENCE_ORDER     AS LAYER_RCRD_ID
+SQLStatement_Line_003=       , SPECIES_ORDER                AS SPECIES_ID
+SQLStatement_Line_004=       , TREE_SPECIES_CODE            AS SPECIES_CD
+SQLStatement_Line_005=       , ROUND( SPECIES_PCT, 2 )      AS SPECIES_PCT
+SQLStatement_Line_006=       , ROUND( AGE, 1 )              AS AGE
+SQLStatement_Line_007=       , ROUND( HEIGHT, 3 )           AS HEIGHT
+SQLStatement_Line_008=       , NULL                         AS SI
+SQLStatement_Line_009=       , NULL                         AS YTBH
+SQLStatement_Line_010=       , NULL                         AS BHAGE
+SQLStatement_Line_011=       , NULL                         AS SITE_CURVE
+SQLStatement_Line_012=FROM               (TREE_SPECIES_ADJUSTED tsa
+SQLStatement_Line_013=         INNER JOIN tmpSpeciesSequencing tss 
+SQLStatement_Line_014=                 ON tss.TREE_SPECIES_ADJUSTED_ID = tsa.TREE_SPECIES_ADJUSTED_ID)
+SQLStatement_Line_015=         INNER JOIN tmpLayerSequencing   tls 
+SQLStatement_Line_016=                 ON tls.TREE_COVER_LAYER_ADJUSTED_ID = tsa.TREE_COVER_LAYER_ADJUSTED_ID
+SQLStatement_Line_017=ORDER BY tss.SPECIES_SEQUENCE_ORDER
+
+TargetConnection=Destination Data
+TargetTableName=SPECIES.csv
+
+SourceToDestinationColumnMappingSection=SPECIES Column Mapping
+
+
+
+[SPECIES Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=SPECIES_RCRD_ID
+TargetColumn_1=SPECIES_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=LAYER_RCRD_ID
+TargetColumn_2=LAYER_RCRD_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=SPECIES_ID
+TargetColumn_3=SPECIES_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=SPECIES_CD
+TargetColumn_4=SPECIES_CD
+
+SourceMappingType_5=Copy
+SourceColumn_5=SPECIES_PCT
+TargetColumn_5=SPECIES_PCT
+
+SourceMappingType_6=Copy
+SourceColumn_6=AGE
+TargetColumn_6=AGE
+
+SourceMappingType_7=Copy
+SourceColumn_7=HEIGHT
+TargetColumn_7=HEIGHT
+
+SourceMappingType_8=Copy
+SourceColumn_8=SI
+TargetColumn_8=SI
+
+SourceMappingType_9=Copy
+SourceColumn_9=YTBH
+TargetColumn_9=YTBH
+
+SourceMappingType_10=Copy
+SourceColumn_10=BHAGE
+TargetColumn_10=BHAGE
+
+SourceMappingType_11=Copy
+SourceColumn_11=SITE_CURVE
+TargetColumn_11=SITE_CURVE
+
+
+
+
+
+
+[Step 15]
+StepName=Purge VRIADJST
+StepType=External Command
+
+ExternalCommandLine=ECHO VRIADJST_RCRD_ID,POLYGON_RCRD_ID,LAYER_ID,LH_075,BA_125,WSV_075,WSV_125,VCU_125,VD_125,VDW_125 > VRIADJST.csv
+ExternalStartingFolder=$(DestinationDatabase)
+
+
+
+[Step 16]
+StepName=Copy VRIADJST
+StepType=DataLoad
+
+PrerequisiteTarget_1=Purge VRIADJST
+PrerequisiteTarget_2=Sequence VRIADJST
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   tvs.VRIADJST_SEQUENCE_ORDER             AS VRIADJST_RCRD_ID
+SQLStatement_Line_002=       , tcla.FOREST_COVER_OBJECT_ID             AS POLYGON_RCRD_ID
+SQLStatement_Line_003=       , tcla.LAYER_LEVEL_CODE                   AS LAYER_ID
+SQLStatement_Line_004=       , ROUND( LOREY_HEIGHT, 5 )                AS LH_075
+SQLStatement_Line_005=       , ROUND( BASAL_AREA_12_5CM, 6 )           AS BA_125
+SQLStatement_Line_006=       , ROUND( WHOLE_STEM_VOLUME_7_5CM, 5 )     AS WSV_075
+SQLStatement_Line_007=       , ROUND( WHOLE_STEM_VOLUME_12_5CM, 5 )    AS WSV_125
+SQLStatement_Line_008=       , ROUND( CLOSE_UTIL_VOLUME_12_5CM, 5 )    AS VCU_125
+SQLStatement_Line_009=       , ROUND( CLOSE_UTIL_NET_DECAY_VOLUME, 5 ) AS VD_125
+SQLStatement_Line_010=       , ROUND( CLOSE_UTIL_NET_WASTE_VOLUME, 5 ) AS VDW_125            
+SQLStatement_Line_011=FROM             (ADJUSTMENT_INPUT_ADJUSTED aia
+SQLStatement_Line_012=       INNER JOIN TREE_COVER_LAYER_ADJUSTED tcla
+SQLStatement_Line_013=               ON aia.VRI_ADJST_LAYER_ID = tcla.TREE_COVER_LAYER_ADJUSTED_ID)
+SQLStatement_Line_014=       INNER JOIN tmpVRIADJSTSequencing tvs
+SQLStatement_Line_015=               ON tvs.ADJUSTMENT_INPUT_ADJUSTED_ID = aia.ADJUSTMENT_INPUT_ADJUSTED_ID
+SQLStatement_Line_016=ORDER BY tvs.VRIADJST_SEQUENCE_ORDER
+
+TargetConnection=Destination Data
+TargetTableName=VRIADJST.csv
+
+SourceToDestinationColumnMappingSection=VRIADJST Column Mapping
+
+
+
+[VRIADJST Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=VRIADJST_RCRD_ID
+TargetColumn_1=VRIADJST_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=POLYGON_RCRD_ID
+TargetColumn_2=POLYGON_RCRD_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=LAYER_ID
+TargetColumn_3=LAYER_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=LH_075
+TargetColumn_4=LH_075
+
+SourceMappingType_5=Copy
+SourceColumn_5=BA_125
+TargetColumn_5=BA_125
+
+SourceMappingType_6=Copy
+SourceColumn_6=WSV_075
+TargetColumn_6=WSV_075
+
+SourceMappingType_7=Copy
+SourceColumn_7=WSV_125
+TargetColumn_7=WSV_125
+
+SourceMappingType_8=Copy
+SourceColumn_8=VCU_125
+TargetColumn_8=VCU_125
+
+SourceMappingType_9=Copy
+SourceColumn_9=VD_125
+TargetColumn_9=VD_125
+
+SourceMappingType_10=Copy
+SourceColumn_10=VDW_125
+TargetColumn_10=VDW_125
+
+
+
+[Step 17]
+StepName=Create Temp MapSheet Generating Table 1
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpMapSheetGenerator
+SQLStatement_Line_002=    ( UNIQUE_ID               COUNTER PRIMARY KEY
+SQLStatement_Line_003=    , FOREST_COVER_OBJECT_ID  INTEGER
+SQLStatement_Line_004=    , POLYGON_NUMBER          TEXT(16)
+SQLStatement_Line_005=    , MAINTAINER              TEXT(3)
+SQLStatement_Line_006=    , MAP_ID                  TEXT(7)
+SQLStatement_Line_007=    , MAP_QUAD                TEXT(1)
+SQLStatement_Line_008=    , MAP_SUB_QUAD            TEXT(1)
+SQLStatement_Line_009=    , POLYGON_ID              INTEGER
+SQLStatement_Line_010=    , NUMBER_IN_GROUP         INTEGER
+SQLStatement_Line_011=    , FIRST_ID_IN_GROUP       INTEGER )
+
+
+
+[Step 18]
+StepName=Create Temp MapSheet Generating Table 2
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpMapSheetGroupCount
+SQLStatement_Line_002=    ( POLYGON_NUMBER          TEXT(16) PRIMARY KEY
+SQLStatement_Line_003=    , POLYGON_COUNT           INTEGER
+SQLStatement_Line_004=    , FIRST_UNIQUE_ID         INTEGER )
+
+
+
+
+[Step 19]
+StepName=Create MapSheet Information 1
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Create Temp MapSheet Generating Table 1
+
+SQLStatement_Line_001=INSERT INTO tmpMapSheetGenerator ( FOREST_COVER_OBJECT_ID
+SQLStatement_Line_002=                                 , POLYGON_NUMBER
+SQLStatement_Line_003=                                 , MAP_ID
+SQLStatement_Line_004=                                 , MAP_QUAD
+SQLStatement_Line_005=                                 , MAP_SUB_QUAD
+SQLStatement_Line_006=                                 , POLYGON_ID )
+SQLStatement_Line_007=SELECT   FOREST_COVER_OBJECT_ID
+SQLStatement_Line_008=       , POLYGON_NUMBER
+SQLStatement_Line_009=       , LEFT$( POLYGON_NUMBER, 7 )      AS MAP_ID
+SQLStatement_Line_010=       , '0'                             AS MAP_QUAD
+SQLStatement_Line_011=       , '0'                             AS MAP_SUB_QUAD
+SQLStatement_Line_012=       , CLng( MID$( POLYGON_NUMBER, 8 ) ) AS POLYGON_ID
+SQLStatement_Line_013=FROM     FOREST_COVER_OBJECT
+SQLStatement_Line_014=ORDER BY POLYGON_NUMBER
+
+
+
+
+[Step 20]
+StepName=Generate Polygon Group Counts
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Create MapSheet Information 1
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=INSERT INTO tmpMapSheetGroupCount ( POLYGON_NUMBER
+SQLStatement_Line_002=                                  , POLYGON_COUNT
+SQLStatement_Line_003=                                  , FIRST_UNIQUE_ID )
+SQLStatement_Line_004=SELECT      POLYGON_NUMBER
+SQLStatement_Line_005=          , COUNT( * )        AS POLYGON_COUNT
+SQLStatement_Line_006=          , MIN( UNIQUE_ID )  AS FIRST_UNIQUE_ID
+SQLStatement_Line_007=FROM        tmpMapSheetGenerator
+SQLStatement_Line_008=GROUP BY    POLYGON_NUMBER
+
+
+
+[Step 21]
+StepName=Create MapSheet Information 2
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Create Temp MapSheet Generating Table 2
+PrerequisiteTarget_2=Generate Polygon Group Counts
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=UPDATE            tmpMapSheetGenerator 
+SQLStatement_Line_002=       INNER JOIN tmpMapSheetGroupCount grpCount 
+SQLStatement_Line_003=               ON tmpMapSheetGenerator.POLYGON_NUMBER = grpCount.POLYGON_NUMBER
+SQLStatement_Line_004=SET    NUMBER_IN_GROUP   = grpCount.POLYGON_COUNT
+SQLStatement_Line_005=     , FIRST_ID_IN_GROUP = grpCount.FIRST_UNIQUE_ID
+SQLStatement_Line_006=     , MAINTAINER        = RIGHT$( "000" + CStr( tmpMapSheetGenerator.UNIQUE_ID - grpCount.FIRST_UNIQUE_ID + 1 ), 3 )
+
+
+
+[Step 22]
+StepName=Drop Temp MapSheet Generating Table 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Create MapSheet Information 2
+PrerequisiteTarget_2=Copy POLYGON_ID
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=DROP TABLE tmpMapSheetGroupCount
+
+
+
+
+[Step 23]
+StepName=Drop Temp MapSheet Generating Table 2
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Drop Temp MapSheet Generating Table 1
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=DROP TABLE tmpMapSheetGenerator
+
+
+
+[Step 24]
+StepName=Create Polygon Sequencing Table
+StepType=Do Nothing
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpPolygonSequencing
+SQLStatement_Line_002=    ( POLYGON_SEQUENCE_ORDER    		COUNTER
+SQLStatement_Line_003=    , FOREST_COVER_OBJECT_ID		INTEGER PRIMARY KEY )
+
+
+
+[Step 25]
+StepName=Create NonVeg Sequencing Table
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpNonVegSequencing
+SQLStatement_Line_002=    ( NONVEG_SEQUENCE_ORDER      		COUNTER
+SQLStatement_Line_003=    , NON_VEGETATIVE_COVER_ADJ_ID		INTEGER PRIMARY KEY )
+
+
+
+[Step 26]
+StepName=Create OtherVeg Sequencing Table
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpOtherVegSequencing
+SQLStatement_Line_002=    ( OTHERVEG_SEQUENCE_ORDER    		COUNTER
+SQLStatement_Line_003=    , FOREST_COVER_OBJECT_ID		INTEGER PRIMARY KEY )
+
+
+
+[Step 27]
+StepName=Create Layer Sequencing Table
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpLayerSequencing
+SQLStatement_Line_002=    ( LAYER_SEQUENCE_ORDER       		COUNTER
+SQLStatement_Line_003=    , TREE_COVER_LAYER_ADJUSTED_ID	INTEGER PRIMARY KEY )
+
+
+
+[Step 28]
+StepName=Create History Sequencing Table
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpHistorySequencing
+SQLStatement_Line_002=    ( HISTORY_SEQUENCE_ORDER     		COUNTER
+SQLStatement_Line_003=    , FOREST_COVER_OBJECT_ID		INTEGER PRIMARY KEY )
+
+
+
+[Step 29]
+StepName=Create Species Sequencing Table
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpSpeciesSequencing
+SQLStatement_Line_002=    ( SPECIES_SEQUENCE_ORDER     		COUNTER
+SQLStatement_Line_003=    , TREE_SPECIES_ADJUSTED_ID		INTEGER PRIMARY KEY )
+
+
+
+[Step 30]
+StepName=Create VRIADJST Sequencing Table
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+SQLStatement_Line_001=CREATE TABLE tmpVRIADJSTSequencing
+SQLStatement_Line_002=    ( VRIADJST_SEQUENCE_ORDER    		COUNTER
+SQLStatement_Line_003=    , ADJUSTMENT_INPUT_ADJUSTED_ID	INTEGER PRIMARY KEY )
+
+
+
+[Step 31]
+StepName=Sequence Polygons
+StepType=Do Nothing
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Create Polygon Sequencing Table
+
+SQLStatement_Line_001=INSERT INTO tmpPolygonSequencing ( FOREST_COVER_OBJECT_ID )
+SQLStatement_Line_002=SELECT      FOREST_COVER_OBJECT_ID
+SQLStatement_Line_003=FROM        VEGETATION_COVER_POLYGON_ADJ
+SQLStatement_Line_004=ORDER BY    FOREST_COVER_OBJECT_ID
+
+
+
+
+[Step 32]
+StepName=Sequence NonVeg
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Create NonVeg Sequencing Table
+
+SQLStatement_Line_001=INSERT INTO tmpNonVegSequencing ( NON_VEGETATIVE_COVER_ADJ_ID )
+SQLStatement_Line_002=SELECT      NON_VEGETATIVE_COVER_ADJ_ID
+SQLStatement_Line_003=FROM        NON_VEGETATIVE_COVER_ADJ
+SQLStatement_Line_004=ORDER BY    FOREST_COVER_OBJECT_ID, LAYER_LEVEL_CODE, NON_VEG_ORDER
+
+
+
+
+[Step 33]
+StepName=Sequence OtherVeg
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Create OtherVeg Sequencing Table
+
+SQLStatement_Line_001=INSERT INTO tmpOtherVegSequencing ( FOREST_COVER_OBJECT_ID )
+SQLStatement_Line_002=SELECT      FOREST_COVER_OBJECT_ID
+SQLStatement_Line_003=FROM        VEGETATION_COVER_POLYGON_ADJ
+SQLStatement_Line_004=ORDER BY    FOREST_COVER_OBJECT_ID
+
+
+
+
+[Step 34]
+StepName=Sequence Layers
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Create Layer Sequencing Table
+
+SQLStatement_Line_001=INSERT INTO tmpLayerSequencing ( TREE_COVER_LAYER_ADJUSTED_ID )
+SQLStatement_Line_002=SELECT      TREE_COVER_LAYER_ADJUSTED_ID
+SQLStatement_Line_003=FROM        TREE_COVER_LAYER_ADJUSTED
+SQLStatement_Line_004=ORDER BY    FOREST_COVER_OBJECT_ID, LAYER_ORDER
+
+
+
+
+[Step 35]
+StepName=Sequence History
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Create History Sequencing Table
+
+SQLStatement_Line_001=INSERT INTO tmpHistorySequencing ( FOREST_COVER_OBJECT_ID )
+SQLStatement_Line_002=SELECT      FOREST_COVER_OBJECT_ID
+SQLStatement_Line_003=FROM        VEGETATION_COVER_POLYGON_ADJ
+SQLStatement_Line_004=ORDER BY    FOREST_COVER_OBJECT_ID
+
+
+
+[Step 36]
+StepName=Sequence Species
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Create Species Sequencing Table
+PrerequisiteTarget_2=Sequence Layers
+
+SQLStatement_Line_001=INSERT INTO tmpSpeciesSequencing ( TREE_SPECIES_ADJUSTED_ID )
+SQLStatement_Line_002=SELECT      tsa.TREE_SPECIES_ADJUSTED_ID
+SQLStatement_Line_003=FROM        TREE_SPECIES_ADJUSTED tsa INNER JOIN tmpLayerSequencing ls
+SQLStatement_Line_004=         ON tsa.TREE_COVER_LAYER_ADJUSTED_ID = ls.TREE_COVER_LAYER_ADJUSTED_ID
+SQLStatement_Line_005=ORDER BY    ls.LAYER_SEQUENCE_ORDER, tsa.SPECIES_ORDER
+
+
+
+
+[Step 37]
+StepName=Sequence VRIADJST
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Create VRIADJST Sequencing Table
+
+SQLStatement_Line_001=INSERT INTO tmpVRIADJSTSequencing ( ADJUSTMENT_INPUT_ADJUSTED_ID )
+SQLStatement_Line_002=SELECT      ADJUSTMENT_INPUT_ADJUSTED_ID
+SQLStatement_Line_003=FROM        ADJUSTMENT_INPUT_ADJUSTED
+SQLStatement_Line_004=ORDER BY    FOREST_COVER_OBJECT_ID
+
+
+
+
+[Step 38]
+StepName=Drop Polygon Sequencing Table
+StepType=Do Nothing
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Sequence Polygons
+PrerequisiteTarget_2=Copy POLYGON_ID
+PrerequisiteTarget_3=Copy POLYGON
+PrerequisiteTarget_4=Copy NON_VEG
+
+SQLStatement_Line_001=DROP TABLE tmpPolygonSequencing
+
+
+
+
+[Step 39]
+StepName=Drop NonVeg Sequencing Table
+;StepType=Do Nothing
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Sequence NonVeg
+PrerequisiteTarget_2=Copy NON_VEG
+
+SQLStatement_Line_001=DROP TABLE tmpNonVegSequencing
+
+
+
+
+[Step 40]
+StepName=Drop OtherVeg Sequencing Table
+;StepType=Do Nothing
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Sequence OtherVeg
+
+SQLStatement_Line_001=DROP TABLE tmpOtherVegSequencing
+
+
+
+
+[Step 41]
+StepName=Drop Layer Sequencing Table
+;StepType=Do Nothing
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Sequence Layers
+PrerequisiteTarget_2=Copy Species
+PrerequisiteTarget_3=Copy VRIADJST
+
+SQLStatement_Line_001=DROP TABLE tmpLayerSequencing
+
+
+
+
+[Step 42]
+StepName=Drop History Sequencing Table
+;StepType=Do Nothing
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Sequence History
+PrerequisiteTarget_2=Copy History
+
+SQLStatement_Line_001=DROP TABLE tmpHistorySequencing
+
+
+
+
+[Step 43]
+StepName=Drop Species Sequencing Table
+;StepType=Do Nothing
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Sequence Species
+PrerequisiteTarget_2=Copy Species
+
+SQLStatement_Line_001=DROP TABLE tmpSpeciesSequencing
+
+
+
+
+[Step 44]
+StepName=Drop VRIADJST Sequencing Table
+;StepType=Do Nothing
+StepType=Custom SQL
+
+TargetConnection=Source Data
+
+PrerequisiteTarget_1=Sequence VRIADJST
+PrerequisiteTarget_2=Copy VRIADJST
+
+SQLStatement_Line_001=DROP TABLE tmpVRIADJSTSequencing

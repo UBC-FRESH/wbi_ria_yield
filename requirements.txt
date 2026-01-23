@@ -1,0 +1,14 @@
+matplotlib
+pandas
+geopandas
+seaborn
+scipy
+rasterio
+geocube
+pympler
+ipyparallel
+mapply
+swifter
+fiona
+distance
+nbformat

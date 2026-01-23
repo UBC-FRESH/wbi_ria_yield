@@ -1,0 +1,1364 @@
+!*============================================================================
+!*
+!* Module Name....    Dynamic Logging Library Definitions
+!* Filename.......    dynlog\dynlog.fi
+!*
+!* Copyright......    Source Code (c) 2013 - 2016
+!*                    Government of British Columbia
+!*                    All Rights Reserved
+!*
+!*
+!*----------------------------------------------------------------------------
+!*
+!* Contents:
+!* ---------
+!*
+!* NULL_LOG_CONTEXT
+!* NULL_LOGGER
+!* LogMsgPriority
+!*
+!* dynlog_for_version
+!* dynlog_for_createcontext
+!* dynlog_for_destroycontext
+!* dynlog_for_iscontextenabled
+!* dynlog_for_enablecontext
+!* dynlog_for_getlogger
+!* dynlog_for_getrootlogger
+!* dynlog_for_entry
+!* dynlog_for_exit
+!* dynlog_for_incrindent
+!* dynlog_for_decrindent
+!* dynlog_for_cmnt
+!* dynlog_for_str
+!* dynlog_for_bool2
+!* dynlog_for_int2
+!* dynlog_for_int4
+!* dynlog_for_r4
+!* dynlog_for_r8
+!* dynlog_for_crnttime
+!* dynlog_for_loggingpri
+!*
+!*
+!*----------------------------------------------------------------------------
+!*
+!* Notes:
+!* ------
+!*
+!* Written in ANSI C
+!*
+!* This library provides a generic and portable interface to logging
+!* services written using the FORTRAN language interface definitions.
+!*
+!*
+!=============================================================================
+!*
+!*
+!* Modification History:
+!* ---------------------
+!*
+!*
+!*  Date       |  Details
+!* ------------+--------------------------------------------------------------
+!*  yyyy/mm/dd |
+!*             |
+!*  2013/07/13 |  Mantis 0000052
+!*             |  Initial Implementation of FORTRAN interface to DynLog
+!*             |  routines
+!*             |  (Shawn Brant)
+!*             |
+!*  2016/01/06 |  00116:
+!*             |  Significant changes for the new Dynamic Logging library.
+!*             |  (Shawn Brant)
+!*             |
+!*  2016/02/19 |  00125
+!*             |  Convert message priorities/logging levels to be signed
+!*             |  16-bit values rather than unsigned 16-bit values to
+!*             |  support languages such as Visual Basic and FORTRAN which
+!*             |  do not support the idea of 'unsigned'.
+!*             |  (Shawn Brant)
+!*             |
+!*  2016/11/16 |  00133
+!*             |  Integrated the ability to define and reference environment
+!*             |  (substitution) variables when loading the configuration
+!*             |  from a configuration file.
+!*             |  (Shawn Brant)
+!*             |
+!*
+!*/
+
+
+!*=============================================================================
+!*
+!*  File Dependencies:
+!*
+!*/
+
+
+!*=============================================================================
+!*
+!*  Data and Data Structures
+!*
+!*/
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* LogMsgPriority
+!* ==============
+!*
+!*    Identify the priority for a particular log message.
+!*
+!*
+!* Members
+!* -------
+!*
+!*    MSG_PRI_NONE
+!*    MSG_PRI_HIGHEST
+!*       The highest priority possible message.  No message can be issued with
+!*       a higher priority.  Further, if used as a maximum priority filter in
+!*       a logger or an appender, all messages will be logged as all messages
+!*       must be of equal priority or lower.
+!*
+!*    MSG_PRI_FATAL
+!*    MSG_PRI_ERROR
+!*    MSG_PRI_WARN
+!*    MSG_PRI_INFO
+!*    MSG_PRI_TRACE
+!*    MSG_PRI_DEBUG
+!*       Provides message priorities for some standard message types.
+!*
+!*    MSG_PRI_ALL
+!*    MSG_PRI_LOWEST
+!*       The lowest priority possible message.  No message can be issued with
+!*       a lower priority.  Further, if used as a minimum priority filter in
+!*       a logger or an appender, all messages will be logged as all messages
+!*       must be of equal priority or higher.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    Log messages are all given a priority when submitted for logging and
+!*    fall into the range of logging priorities implied by the LogMsgPriority
+!*    data type.
+!*
+!*    In addition, some typical log priorities are defined.  These message
+!*    priorities do not limit you from defining other message priorities.
+!*    A message priority is simply a number with some standard priorities
+!*    defined.  Any other number in the range of a SWU16 can be used.
+!*
+!*    The allowed range of message priorities is deliberately chosen:
+!*       - Message priorities are all defined to be 5 digit numbers
+!*         meaning if they are printed, they have a consistency throughout.
+!*       - Numbers always filling a field will sort alphabetically as well
+!*         as numerically without having to worry about left or right
+!*         justification as well.
+!*       - The numbers are all positive so no concerns about the negative sign.
+!*       - The range accommodates signed 16-bit integers.  Not all languages
+!*         support unsigned integers, this range is consistent with a signed
+!*         integer.
+!*       - Even with the constrained range, there is still lots of room between
+!*         the predefined priorities and the min and max priorities for new
+!*         message priorities to be defined.
+!*/
+
+      INTEGER*4, PARAMETER :: MSG_PRI_NONE      = 32767
+      INTEGER*4, PARAMETER :: MSG_PRI_HIGHEST   = MSG_PRI_NONE
+
+      INTEGER*4, PARAMETER :: MSG_PRI_FATAL     = 32500
+      INTEGER*4, PARAMETER :: MSG_PRI_ERROR     = 27500
+      INTEGER*4, PARAMETER :: MSG_PRI_WARN      = 22500
+      INTEGER*4, PARAMETER :: MSG_PRI_INFO      = 17500
+      INTEGER*4, PARAMETER :: MSG_PRI_TRACE     = 12500
+      INTEGER*4, PARAMETER :: MSG_PRI_DEBUG     = 11000
+
+      INTEGER*4, PARAMETER :: MSG_PRI_ALL       = 10000
+      INTEGER*4, PARAMETER :: MSG_PRI_LOWEST    = MSG_PRI_ALL
+
+
+      ! Set short hand names for predefined logging priorities.
+      
+      INTEGER*4, PARAMETER :: priFTL            = MSG_PRI_FATAL
+      INTEGER*4, PARAMETER :: priERR            = MSG_PRI_ERROR
+      INTEGER*4, PARAMETER :: priWRN            = MSG_PRI_WARN
+      INTEGER*4, PARAMETER :: priINF            = MSG_PRI_INFO
+      INTEGER*4, PARAMETER :: priTRC            = MSG_PRI_TRACE
+      INTEGER*4, PARAMETER :: priDBG            = MSG_PRI_DEBUG
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* NULL_LOG_CONTEXT
+!* ================
+!*
+!*    The appropriate value to use to indicate an invalid or uninitialized
+!*    logging context handle.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    All routines which can accept, check for or return a Log Context, will
+!*    also check for or return this value to indicate that.
+!*
+!*    You should compare return values against this constant.
+!*
+!*/
+
+
+      INTEGER*4, PARAMETER :: NULL_LOG_CONTEXT = 0
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* NULL_LOGGER
+!* ===========
+!*
+!*    The appropriate value to use to indicate an invalid or uninitialized
+!*    logger.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    All routines which can accept, check for or return a Logger, will
+!*    also check for or return this value to indicate that.
+!*
+!*    You should compare return values against this constant.
+!*
+!*/
+
+
+      INTEGER*4, PARAMETER :: NULL_LOGGER = 0
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* Object Name
+!* ===========
+!*
+!* Brief Description of what this object represents or contains
+!*
+!*
+!* Members (Optional Heading)
+!* -------
+!*
+!*    Member1
+!*      member description
+!*
+!*
+!* Remarks  (Optional Heading)
+!* -------
+!*
+!*    Remarks, warnings, special conditions to be aware of, etc.
+!*
+!*/
+
+
+!*=============================================================================
+!*
+!* Function Prototypes:
+!*
+!*/
+
+
+
+      INTERFACE
+!DEC$ FIXEDFORMLINESIZE:132
+
+!*-----------------------------------------------------------------------------
+!*
+!* dynlog_for_version
+!* ==================
+!*
+!*    Returns the version number of the DynLog routines using a FORTRAN
+!*    compatible interface.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    versionNum
+!*       On output, this buffer will hold the DynLog Library version
+!*       as a string.
+!*
+!*    versionLen
+!*       On output, records the actual amount of text stored in the
+!*       'versionNum' buffer (or would have been stored if the buffer were
+!*       longer).
+!*
+!*    bufferLen
+!*       The length of the 'versionNum' buffer.  This length should be at
+!*       a minimum of 8 characters.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    The format of the string is always in the form of:
+!*
+!*           M.ml
+!*
+!*    where M:      the major release number
+!*          m:      the minor release number
+!*          l:      an interim release letter
+!*
+!*
+!*    An example would be: "6.3b"
+!*
+!*/
+
+
+      SUBROUTINE dynlog_for_version( versionNum, versionLen )
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_version
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_version_@12' :: dynlog_for_version
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_version
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_version
+
+      CHARACTER*(*) versionNum
+      INTEGER*4     versionLen
+
+      END SUBROUTINE dynlog_for_version
+
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_CreateContext
+!* dynlog_for_createcontext_
+!* =========================
+!*
+!*    Create a brand new, base configured Logging Context.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    configurationFile
+!*       The name of the file to use for Log Context configuration.
+!*       If not supplied (NULL) or zero length, a minimal, default 
+!*       configuration will be created.
+!*
+!*    envVariables
+!*       Handle to the environment variables to be defined/used by the Dynamic
+!*       Logging library while loading the configuration.
+!*
+!*       May be NULL_ENV_VARS.
+!*
+!*    configFileNameLen
+!*       Identifies the length, in characters, of the string passed in through
+!*       the FORTRAN language.
+!*
+!*
+!* Return Value
+!* ------------
+!*
+!*    A handle to the new Log Context.
+!*    NULL_LOG_CONTEXT if the logging context could not be created.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    It is best to configure the Log Context through the external
+!*    configuration rather than relying on the minimal, default configuration
+!*    that is created in its absence.  The external configuration file allows
+!*    a full state and configuration specification as well as gives hints to
+!*    tuning internal data structures.
+!*
+!*    If using the minimal logging context, the initial state of the log 
+!*    context is disabled.
+!*
+!*    The current state of this global logging switch can be tested with a
+!*    call to 'DynLog_IsContextEnabled'.
+!*
+!*    The current state of this global logging switch can be changed with a
+!*    call to 'DynLog_EnableContext'.
+!*
+!*/
+
+
+      FUNCTION dynlog_for_createcontext( configFileNm, envVariables )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_createcontext
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_createcontext_@12'::dynlog_for_createcontext
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_createcontext
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_createcontext
+
+      INTEGER*4     dynlog_for_createcontext
+      CHARACTER*(*) configFileNm
+      INTEGER*4     envVariables
+
+
+      END FUNCTION dynlog_for_createcontext
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_ConfigComplete
+!* dynlog_for_configcomplete_
+!* ==========================
+!*
+!*    Mark the loaded logging context as configuration complete.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    cntxt
+!*       The logging context to mark as fully configured.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    While the configuration file and the basic configuration provides
+!*    fully configured logging contexts, they do not provide any ability
+!*    for an application to provide custom logging services.
+!*
+!*    Between the time the logging context is created and the start of the
+!*    main application and the logging it would like to do, custom
+!*    custom configuration may need to be done at an API level.
+!*
+!*    Custom configuration is possible between 'DynLog_CreateContext' and
+!*    'DynLog_ConfigComplete'.
+!*
+!*    This routine does any remaining startup steps, notably:
+!*       -  Calling the 'Open Routine' for any appenders.
+!*
+!*/
+
+
+      SUBROUTINE dynlog_for_configcomplete( cntxt )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_configcomplete
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_configcomplete_@4'::dynlog_for_configcomplete
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_configcomplete
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_configcomplete
+
+      INTEGER*4   cntxt
+
+      END SUBROUTINE dynlog_for_configcomplete
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_DestroyContext
+!* dynlog_for_destroycontext_
+!* ==========================
+!*
+!*    Destroy a log context and release all resources held by it.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    logContext
+!*       The log context to be destroyed.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    All loggers, appenders, configuration items and memory held by this
+!*    log context are closed, released and deleted as appropriate.
+!*
+!*/
+
+
+      SUBROUTINE dynlog_for_destroycontext( logContext )
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_destroycontext
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_destroycontext_@4' :: dynlog_for_destroycontext
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_destroycontext
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_destroycontext
+
+      INTEGER*4     logContext
+
+      END SUBROUTINE dynlog_for_destroycontext
+
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_IsContextEnabled
+!* dynlog_for_iscontextenabled_
+!* ============================
+!*
+!*    Determines if the supplied log context is currently globally enabled or 
+!*    disabled.
+!*
+!*
+!* Parameters 
+!* ----------
+!*
+!*    cntxt
+!*       The Log Context to test if it is globally enabled or disabled.
+!*       Must not be NULL_LOG_CONTEXT
+!*
+!*
+!* Return Value
+!* ------------
+!*
+!*    TRUE     The log context is currently active and all subordinate objects
+!*             will operate normally according to their own rules.
+!*
+!*    FALSE    The log context is inactive and no logging or other activies
+!*             are to be performed.  This is the global main breaker.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    The global logging state switch can be manipulated with a call to the
+!*    routine: 'DynLog_EnableContext'.
+!*
+!*/
+
+
+      FUNCTION dynlog_for_iscontextenabled( cntxt )
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_iscontextenabled
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_iscontextenabled_@0' :: dynlog_for_iscontextenabled
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_iscontextenabled
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_iscontextenabled
+
+      INTEGER*4   dynlog_for_iscontextenabled
+      INTEGER*4   cntxt
+
+      END FUNCTION dynlog_for_iscontextenabled
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_EnableContext
+!* dynlog_for_enablecontext_
+!* =========================
+!*
+!*    Enable/Disable the log context.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    cntxt
+!*       The logging context to be enabled or disabled.
+!*       Must not be NULL_LOG_CONTEXT.
+!*
+!*    enable
+!*       TRUE     The logging context is active and all logging occurs
+!*                according to the rules governing individual logging objects
+!*                in the context.
+!*
+!*       FALSE    All logging activities are stopped.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    This routine makes a fast way to turn all logging on and off.
+!*    The current state of this global logging switch can be determined
+!*    with a call to: 'DynLog_IsContextEnabled'.
+!*
+!*/
+
+
+      SUBROUTINE dynlog_for_enablecontext( cntxt, enable )
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_enablecontext
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_enablecontext_@8' :: dynlog_for_enablecontext
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_enablecontext
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_enablecontext
+
+      INTEGER*4     cntxt
+      INTEGER*4     enable
+
+
+      END SUBROUTINE dynlog_for_enablecontext
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* dynlog_for_cmnt_
+!* dynlog_for_str_
+!* dynlog_for_bool2_
+!* dynlog_for_intr2_
+!* dynlog_for_intr4_
+!* dynlog_for_r4_
+!* dynlog_for_r8_
+!* dynlog_for_crnttime_
+!* ====================
+!*
+!*	Helper functions to DynLog_Write for languages that do not easily write
+!*    to variable length argument lists (like FORTRAN).
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    logger
+!*       The logger to which the message is being submitted.
+!*       Must not be NULL_LOGGER.
+!*
+!*    priority
+!*       The message priority to associate with the message.
+!*       Must be between MSG_PRI_LOWEST and MSG_PRI_HIGHEST.  If outside
+!*       that range, the priority will be set to the appropriate limit.
+!*
+!*    lineNum
+!*       The line number where the log request originated.
+!*
+!*    indent
+!*       The number of spaces to indent the diagnostic message (in addition
+!*       to the current indent level).
+!*
+!*    message
+!*       The specific message/comment to be printed out.
+!*
+!*    string
+!*       The arbitrary string argument to be printed.
+!*
+!*    boolVal
+!*       The boolean value to be printed as True/False
+!*
+!*    intVal
+!*       The integer value to be printed.
+!*
+!*    floatVal
+!*       The floating point value to be printed.
+!*
+!*    numDecimals
+!*       The number of decimals to be printed with the value.
+!*
+!*    messageLen
+!*       A FORTRAN supplied parameter indicating exactly how long the
+!*       string is for the 'message' parameter.
+!*
+!*    stringLen
+!*       A FORTRAN supplied parameter indicating exactly how long the
+!*       string is for the 'string' parameter.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    These routines will help languages (such as FORTRAN) that have troubles
+!*    with a variable list of arguments to write to the DynLog library by
+!*    translating known arguments into an appropriate 'DynLog_Msg' call.
+!*
+!*/
+
+
+      SUBROUTINE dynlog_for_cmnt( logger,
+     &                            priority,
+     &                            lineNum,
+     &                            indent,
+     &                            message )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_cmnt
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_cmnt_@24' :: dynlog_for_cmnt
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_cmnt
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_cmnt
+
+      INTEGER*4       logger
+      INTEGER*4       priority
+      INTEGER*4       lineNum
+      INTEGER*4       indent
+      CHARACTER*(*)   message
+
+      END SUBROUTINE dynlog_for_cmnt
+
+
+
+      SUBROUTINE dynlog_for_str( logger,
+     &                           priority,
+     &                           lineNum,
+     &                           indent,
+     &                           message,
+     &                           string )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_str
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_str_@32' :: dynlog_for_str
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_str
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_str
+
+      INTEGER*4       logger
+      INTEGER*4       priority
+      INTEGER*4       lineNum
+      INTEGER*4       indent
+      CHARACTER*(*)   message
+      CHARACTER*(*)   string
+
+      END SUBROUTINE dynlog_for_str
+
+
+
+
+      SUBROUTINE dynlog_for_bool2( logger,
+     &                             priority,
+     &                             lineNum,
+     &                             indent,
+     &                             message,
+     &                             boolVal )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_bool2
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_bool2_@28' :: dynlog_for_bool2
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_bool2
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_bool2
+
+      INTEGER*4       logger
+      INTEGER*4       priority
+      INTEGER*4       lineNum
+      INTEGER*4       indent
+      CHARACTER*(*)   message
+      LOGICAL*4       boolVal
+
+      END SUBROUTINE dynlog_for_bool2
+
+
+
+      SUBROUTINE dynlog_for_int2( logger,
+     &                            priority,
+     &                            lineNum,
+     &                            indent,
+     &                            message,
+     &                            intVal )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_int2
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_int2_@28' :: dynlog_for_int2
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_int2
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_int2
+
+      INTEGER*4       logger
+      INTEGER*4       priority
+      INTEGER*4       lineNum
+      INTEGER*4       indent
+      CHARACTER*(*)   message
+      INTEGER*2       intVal
+
+      END SUBROUTINE dynlog_for_int2
+
+
+
+
+      SUBROUTINE dynlog_for_int4( logger,
+     &                            priority,
+     &                            lineNum,
+     &                            indent,
+     &                            message,
+     &                            intVal )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_int4
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_int4_@28' :: dynlog_for_int4
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_int4
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_int4
+
+      INTEGER*4       logger
+      INTEGER*4       priority
+      INTEGER*4       lineNum
+      INTEGER*4       indent
+      CHARACTER*(*)   message
+      INTEGER*4       intVal
+
+      END SUBROUTINE dynlog_for_int4
+
+
+
+
+      SUBROUTINE dynlog_for_r4( logger,
+     &                          priority,
+     &                          lineNum,
+     &                          indent,
+     &                          message,
+     &                          floatVal,
+     &                          numDecimals )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_r4
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_r4_@32' :: dynlog_for_r4
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_r4
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_r4
+
+      INTEGER*4       logger
+      INTEGER*4       priority
+      INTEGER*4       lineNum
+      INTEGER*4       indent
+      CHARACTER*(*)   message
+      REAL*4          floatVal
+      INTEGER*4       numDecimals
+
+      END SUBROUTINE dynlog_for_r4
+
+
+
+
+      SUBROUTINE dynlog_for_r8( logger,
+     &                          priority,
+     &                          lineNum,
+     &                          indent,
+     &                          message,
+     &                          floatVal,
+     &                          numDecimals )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_r8
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_r8_@32' :: dynlog_for_r8
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_r8
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_r8
+
+      INTEGER*4       logger
+      INTEGER*4       priority
+      INTEGER*4       lineNum
+      INTEGER*4       indent
+      CHARACTER*(*)   message
+      REAL*8          floatVal
+      INTEGER*4       numDecimals
+
+      END SUBROUTINE dynlog_for_r8
+
+
+
+
+
+      SUBROUTINE dynlog_for_crnttime( logger,
+     &                                priority,
+     &                                lineNum,
+     &                                indent,
+     &                                message )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_crnttime
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_crnttime_@24' :: dynlog_for_crnttime
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_crnttime
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_crnttime
+
+      INTEGER*4       logger
+      INTEGER*4       priority
+      INTEGER*4       lineNum
+      INTEGER*4       indent
+      CHARACTER*(*)   message
+
+      END SUBROUTINE dynlog_for_crnttime
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_GetLogger
+!* dynlog_for_getlogger_
+!* =====================
+!*
+!*		Retrieve the requested logger from a logging context.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    context
+!*       The log context from which to get the root logger.
+!*
+!*    fullyQualifiedName
+!*       The already known fully qualified name of the logger to be
+!*       looked up.  The name is case insensitive so special care need be
+!*       taken to verify the name is all lower case or something.
+!*
+!*       If NULL or "", the logger's fully qualified name will be constructed
+!*       from the remaining name components.
+!*
+!*    libEXEName
+!*       The library or executable name to which this logger is created 
+!*       within.
+!*
+!*       If the 'fullyQualifiedName' is supplied, this name component is
+!*       recorded in the logger but is not used in the construction of the
+!*       fully qualified name.
+!*
+!*       May be NULL or ""
+!*
+!*    moduleName
+!*       The name of the module within the library or executable project
+!*       to which this logger is created.
+!*
+!*       If the 'fullyQualifiedName' is supplied, this name component is
+!*       recorded in the logger but is not used in the construction of the
+!*       fully qualified name.
+!*
+!*       May be NULL or ""
+!*
+!*    funcName
+!*       The name of the function/routine within the library/module
+!*       to which this logger is created.
+!*
+!*       If the 'fullyQualifiedName' is supplied, this name component is
+!*       recorded in the logger but is not used in the construction of the
+!*       fully qualified name.
+!*
+!*       May be NULL or ""
+!*
+!*    qualifyingName
+!*       A qualifying name to associate with the logger to be appended
+!*       to the libEXEName/moduleName/functionName to make the logger
+!*       fully qualified name unique (if required).  The qualifying name
+!*       may be composed of additional name separator characters.
+!*
+!*       If the 'fullyQualifiedName' is supplied, this name component is
+!*       recorded in the logger but is not used in the construction of the
+!*       fully qualified name.
+!*
+!*       May be NULL or ""
+!*
+!*
+!* Return Value
+!* ------------
+!*
+!*    The requested logger for the context.
+!*    NULL_LOGGER if the logger could not be found and could
+!*    not be created or the supplied context is invalid.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    If necessary, the logger will be created along with any required
+!*    parent loggers that go with it.
+!*
+!*/
+
+
+      FUNCTION    dynlog_for_getlogger( context,
+     &                                  fullyQualifiedName,
+     &                                  libEXEName,
+     &                                  moduleName,
+     &                                  funcName,
+     &                                  qualifyingName )
+
+
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_getlogger
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_getlogger_@44' :: dynlog_for_getlogger
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_getlogger
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_getlogger
+
+      INTEGER*4       dynlog_for_getlogger
+      INTEGER*4       context
+      CHARACTER*(*)   fullyQualifiedName
+      CHARACTER*(*)   libEXEName
+      CHARACTER*(*)   moduleName
+      CHARACTER*(*)   funcName
+      CHARACTER*(*)   qualifyingName
+
+
+      END FUNCTION dynlog_for_getlogger
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_GetRootLogger
+!* dynlog_for_getrootlogger_
+!* =========================
+!*
+!*    Retrieve the root logger for a logging context.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    context
+!*       The log context from which to get the root logger.
+!*
+!*
+!* Return Value
+!* ------------
+!*
+!*    The root logger for the context.
+!*    NULL_LOGGER if the root logger has not been created (this would be an
+!*    error condition) or the supplied log context is NULL_LOG_CONTEXT.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    Every log context has a root logger which is the default logger to which
+!*    all log requests get to.
+!*
+!*/
+
+
+      FUNCTION    dynlog_for_getrootlogger( context )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_getrootlogger
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_getrootlogger_@4' :: dynlog_for_getrootlogger
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_getrootlogger
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_getrootlogger
+
+      INTEGER*4       dynlog_for_getrootlogger
+      INTEGER*4       context
+
+
+      END FUNCTION dynlog_for_getrootlogger
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_LoggingPri
+!* dynlog_for_loggingpri_
+!* ======================
+!*
+!*    Test if the supplied logger will process messages associated with the
+!*    named priority.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    logr
+!*       The logger to test if it will process messages of the supplied
+!*       priority.
+!*
+!*       Must not be NULL.
+!*
+!*    priority
+!*       The message priority to test.
+!*
+!*       If this priority is outside the range of MSG_PRI_LOWEST to 
+!*       MSG_PRI_HIGHEST, the priority tested will be the appropriate
+!*       limit.
+!*
+!*
+!* Return Value
+!* ------------
+!*
+!*    TRUE     Messages having the supplied priority will be logged by the
+!*             supplied logger.
+!*
+!*    FALSE    Messages having the supplied priority will be suppressed by
+!*             the supplied logger and have no chance at being logged within
+!*             the overall log context.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    Even though this routine will return a 'TRUE' value, there is no 
+!*    guarantee a message will actually be logged through an appender for
+!*    a couple of reasons:
+!*       -  Individual appenders also have message priority filters and it may 
+!*          be that while the logger would like to see the message logged, the
+!*          appenders to which the message is directed will suppress the 
+!*          message.  This routine does not test for this condition.
+!*
+!*       -  The identified logger may not have any appenders associated with it
+!*          and in the course of processing, the message will be passed on to 
+!*          the logger's ancestors.  Any of those ancestor loggers may in turn
+!*          suppress the message because they do not allow messages of the
+!*          identfied priority.  This routine does not test for this condition.
+!*
+!*/
+
+
+      FUNCTION    dynlog_for_loggingpri( logr, pri )
+
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_loggingpri
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_loggingpri_@8' :: dynlog_for_loggingpri
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_loggingpri
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_loggingpri
+
+      INTEGER*4       dynlog_for_loggingpri
+      INTEGER*4       logr
+      INTEGER*4       pri
+
+
+      END FUNCTION    dynlog_for_loggingpri
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_Entry
+!* dynlog_for_entry_
+!* =================
+!*
+!*    Mark entry into a logger block.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    logr
+!*       The logger for which you are entering a block for.
+!*
+!*    lineNum
+!*       The line number of the source file where the entry is occurring.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    All 'DynLog_Entry' calls must be matched with a corresponding   
+!*    'DynLog_Exit' call whether or not entry is actually logged by
+!*    the logger or is output through any appenders.
+!*
+!*    Entry messaging occurs at the MSG_PRI_TRACE priority level.
+!*
+!*/
+
+
+      SUBROUTINE dynlog_for_entry( logr, lineNum )
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_entry
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_entry_@8' :: dynlog_for_entry
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_entry
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_entry
+
+      INTEGER*4       logr
+      INTEGER*4       lineNum
+
+
+      END SUBROUTINE dynlog_for_entry
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_Exit
+!* dynlog_for_exit_
+!* ================
+!*
+!*    Mark exit from a logger block.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    logr
+!*       The logger for which you are entering a block for.
+!*
+!*    lineNum
+!*       The line number of the source file where the entry is occurring.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    All 'DynLog_Entry' calls must be matched with a corresponding
+!*    'DynLog_Exit' call whether or not entry is actually logged by
+!*    the logger or is output through any appenders.
+!*
+!*    Exit messaging occurs at the MSG_PRI_TRACE priority level.
+!*
+!*/
+
+
+      SUBROUTINE dynlog_for_exit( logr, lineNum )
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_exit
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_exit_@8' :: dynlog_for_exit
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_exit
+
+      IMPLICIT NONE
+
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_exit
+
+      INTEGER*4       logr
+      INTEGER*4       lineNum
+
+
+      END SUBROUTINE dynlog_for_exit
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_IncrIndent
+!* dynlog_for_incrindent_
+!* ======================
+!*
+!*    Increment future log messages to the right by one level.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    logr
+!*       The logger through which future messages will indented by one level.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    Setting the indent level is global setting to the Log Context in which
+!*    the supplied Logger is operating.  Once the indent level is changed, all
+!*    other messages supplied by all other loggers will be affected.
+!*
+!*/
+
+
+      SUBROUTINE dynlog_for_incrindent( logr )
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_incrindent
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_incrindent_@4' :: dynlog_for_incrindent
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_incrindent
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_incrindent
+
+      INTEGER*4     logr
+
+
+      END SUBROUTINE  dynlog_for_incrindent
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* DynLog_DecrIndent
+!* dynlog_for_decrindent_
+!* ======================
+!*
+!*    Decrement future log messages to the left by one level.
+!*
+!*
+!* Parameters
+!* ----------
+!*
+!*    logr
+!*       The logger through which future messages will outdented by one level.
+!*
+!*
+!* Remarks
+!* -------
+!*
+!*    Setting the indent level is global setting to the Log Context in which
+!*    the supplied Logger is operating.  Once the indent level is changed, all
+!*    other messages supplied by all other loggers will be affected.
+!*
+!*/
+
+
+
+      SUBROUTINE dynlog_for_decrindent( logr )
+!DEC$ ATTRIBUTES STDCALL :: dynlog_for_decrindent
+!DEC$ ATTRIBUTES ALIAS:'_dynlog_for_decrindent_@4' :: dynlog_for_decrindent
+!DEC$ ATTRIBUTES REFERENCE :: dynlog_for_decrindent
+
+      IMPLICIT NONE
+!GCC$ ATTRIBUTES STDCALL :: dynlog_for_decrindent
+
+      INTEGER*4     logr
+
+
+      END SUBROUTINE  dynlog_for_decrindent
+
+
+
+
+!*-----------------------------------------------------------------------------
+!*
+!* Function Name
+!* =============
+!*
+!*    Brief Description of what this function does
+!*
+!*
+!* Parameters (Optional Heading)
+!* ----------
+!*
+!*    Param1
+!*       parameter description
+!*
+!*
+!* Return Value (Optional Heading)
+!* ------------
+!*
+!*    What the return value is and what it means (if applicable)
+!*
+!*
+!* Remarks (Optional Heading)
+!* -------
+!*
+!*    Remarks, warnings, special conditions to be aware of, etc.
+!*
+!*
+!* Dependencies (Optional Heading)
+!* ------------
+!*
+!*    Object/Function Name           Module Where Located
+!*
+!*
+!* Functional Description (Optional Heading)
+!* ----------------------
+!*
+!*    More detailed information about how the function does what it does.
+!*
+!*/
+
+
+!*=============================================================================
+!*
+!* END
+!*
+!*/
+      END INTERFACE

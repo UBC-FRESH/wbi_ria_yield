@@ -1,0 +1,457 @@
+#
+# Dynamic Logging Library template configuration file.
+#
+# Example, and basic, VDYP7 logging file.
+#
+# This logging configuration file creates a single appender that logs
+# every logged message that is presented to it into a file found
+# in the current directory.
+#
+# For details on how to modify or otherwise extend this sample, refer
+# to the 'DynLogConfigTemplate.txt' for a complete rundown of the
+# technical capabilities available to you.
+#
+# This file is loaded through the VDYP.INI file in the [Logging] section
+# under the 'LoggingConfigurationFile' item.
+#
+# You can modify the INI file to point to a new configuration file
+# or else you can supply the following command line parameter after the
+# INI file has been loaded:
+# 
+#    -dbgCfg <logConfigFileName>
+#
+#
+# The INI file also disables logging by default.  You can override
+# this behaviour by modifying the INI file directly or supplying the
+# following command line parameter after the INI file has been loaded:
+#
+#    -dbg <Yes|No>
+#
+# You can also modify the logging configuration file as well to disable
+# logging by setting the 'context.Enabled' property to 'No' or 'False'.
+#
+
+
+#===============================================================
+#
+# Environment/Substitution variable definitions.
+#
+# Define environment/substitution variables for use throughout
+# the Dynamic Logging library and outside into the application
+# itself.
+#
+# All Environment/Substitution variables have the form:
+#
+#    env.varName = value
+#
+# This would define a substition variable named 'varName' and
+# any occurrence of it would be substituted for its
+# substitution value: 'value'.
+#
+# Any environment variable/substitution variables are scanned
+# in this file prior to loading Appenders, Loggers, Context or
+# other information and therefore may be scattered throughout
+# this file.
+#
+# Process environment variables are inherited and available for
+# reference in this file in the same way as if you had defined
+# them locally.
+#
+# An environment/substitution variable is referred to by 
+# wrapping the variable name as such:  $(varNm)
+#
+# Substitution variable names are not case sensistive and so
+# $(varNm) and $(VARNM) and $(varnm) all refer to the same
+# variable.
+#
+# Substitution variabled may contain a reference to another
+# substitution variable.  Therefore, for the following 
+# definitions:
+#
+#    env.varBase = def
+#    env.varContain = abc$(varBase)ghi
+#    env.overAll    = 12$(varContain)34
+#
+#    The variable $(overAll) would expand out to: 12abcdefghi
+#
+# A Substitution variable may have multiple references to
+# other substitution variables:
+#
+#    env.Multi = -$(varContain)-$(varBase)-
+#
+#    would expand out to: -abcdefghi-def-
+#
+# IMPORTANT:  Recursive definitions will cause the application
+#             to die without grace.  Ensure you do not create a
+#             variable definition that does refers to itself
+#             either directly or indirectly through an embedded
+#             variable's definition.
+#
+#             env.Var1 = very$(Var2)
+#             env.Var2 = something-$(Var1)-bad
+#
+
+# env.sample = sampleEnvVal
+
+
+#===============================================================
+#
+# Context Wide Configuration Points
+#
+# The following properties are essentially 'global variables'
+# within the logging context and apply to all parts of the
+# logging library.
+#
+# The only context wide configuration item you would be likely
+# to change would be the 'Enabled' flag but each is described
+# fully.
+#
+#     Enabled
+#        A master switch to turn all logging on or off.
+#        This switch applies and overrides any other 
+#        'Enabled' setting.  You may enable or disable the
+#        global context as often as you want.
+#
+#        If disabled and then switched to enabled within
+#        the application, all individual 'Enabled' settings
+#        are then considered.
+#
+#        Setting this value to 'No' does not affect the
+#        value of the corresponding setting of any other
+#        property setting.
+#
+#     EstimatedNumAppenderTypes
+#        This controls the estimated total number of appender
+#        types that will ever be defined in the configuration
+#        file.  Typically you should never need to change this
+#        value.  The default is provided.  Making smaller to
+#        match the true value will have a negligible effect
+#        on application performance.  You would want to increase
+#        this value if a number of new Appender Types were to be
+#        declared.
+#
+#        In any run involving Dynamic Logging, there will always
+#        be at least two built-in Appender Types defined: the
+#        'Default' appender type and the 'Null' appender type.
+#
+#        Some power of 2 are good choices for this value.
+#
+#     EstimatedNumAppenders
+#        This controls the estimated total number of appenders
+#        that will ever be defined in the configuration file.
+#        Typically you should never need to change this value.
+#        The default is provided.  Making it smaller to match
+#        the true value will have a negligible effect on application
+#        performance.  You would want to increase this value if
+#        a large number of Appenders were to be declared.
+#
+#        Some power of 2 are good choices for this value.
+#
+#     EstimatedNumLoggers
+#        This controls the estimated number of loggers that will
+#        ever be defined through the application lifetime.
+#        Loggers are created as code is executed and so the total
+#        number of potential loggers might be hard to estimate
+#        depending on total code coverage through execution.
+#
+#        Like the other estimates, it is OK to underestimate the
+#        total number if that is how execution works.
+#
+#        Finding a true value for this estimate requires a fair
+#        bit of inside knowledge of the application to know how many
+#        routines have been instrumented for logging and how likely
+#        any of those loggers are going to be required.
+#
+#        Some power of 2 are good choices for this value.
+#
+#
+
+context.Enabled                    = Yes
+# context.EstmatedNumAppenderTypes = 16
+# context.EstimatedNumAppenders    = 32
+# context.EstimatedNumLoggers      = 512
+
+
+
+#===============================================================
+#
+# Appender Types
+#
+# Define a new appender type that can be dynamically hooked
+# into the Dynamic Logging System at run time so long as
+# sufficient hooks are provided.
+#
+# A new appender type is created with by referring to it with
+# any declaration.
+#
+# Once defined, the appender type is used in an appender
+# definition using the 'AppenderType' declaration.
+#
+# Appender Type Names are case insensitive.
+#
+# 'Default' appender type is created when the logging library
+# is launched.  If you do not supply an appender type for a
+# particular appender, it is assumed to be of the 'Default' 
+# appender type.
+#
+# 'Null' appender type is also created when the logging library
+# is launched and operates as a No-Operation appender.  It works
+# similarly as if an appender were disabled.  The difference here
+# is that enabled or not, the appenders of the Null type immediately
+# return without logging anything (data goes into a black hole).
+#
+# The Null appender type is used when a user supplied Appender 
+# Type is not correctly specified or some part of the initialization
+# of an instance fails for some reason.
+#
+# You can not change the hooks associated with the 'Default' or 
+# 'Null' appender types.
+#
+# You are free to create appenders of the Default and Null types.
+#
+# This section does not create appenders, it defines the basic
+# capabilities of an appender.  These capabilities are identified
+# by naming hooks from a DLL or shared library that can be loaded
+# at runtime.
+#
+# Appenders have the following operations that must be supplied
+# for new appender types.  These operations are provided by references
+# to a routine within a DLL the user identifies in this configuration
+# file.
+#
+# The function prototypes for these functions can be found in the
+# "dynlog.h" header file.
+#
+# How these routines go about performing the individual tasks are
+# immaterial:
+#
+#    InitializeLibrary
+#       Initializes any background resources and/or checks for
+#       basic requirements before any instances of a particular
+#       Appender Type are created.
+#
+#       This hook may be at least once and perhaps numerous times, but
+#       the first call must result in a prepared library for the
+#       Appender Type and any subsequent calls must not interfere
+#       with that initialization (i.e. the first call is the
+#       important one and subsequent calls are unimportant).
+#
+#    CreateInstance
+#       This hook, when called, will create and return a handle
+#       to a new instance of the appender type ready to be used
+#       to log messages in a manner defined by the appender type.
+#
+#    SetProperty
+#       Provides a property name and a value that the hook routine can
+#       use to change characteristics of an appender instance.
+#
+#       A property may be set or reset at any time, before or after
+#       an appender instance has started logging messages.
+#
+#       Some properties for an appender instance will define a destination
+#       for logged messages.
+#
+#       There are certain properties that are common across all appender
+#       types and these properties should not be handled by this 'SetProperty'
+#       hook.  Those properties are:
+#                Enabled
+#                MinMsgPriority
+#                MaxMsgPriority
+#
+#       The above properties are intercepted and handled by the Dynamic 
+#       Logging library.
+#
+#       All other properties are supplied through this hook with their
+#       associated value and it is the responsibility of this hook to deal
+#       with them with respect to the appender instance.
+#
+#    StartOutput
+#       This hook will prepare the output stream to accept new messages
+#       and send them on.  This hook is called once per instance.  If
+#       messages are requested to be sent prior to the output being
+#       'started', they should either be quietly ignored or cause an implied
+#       'StartOutput' call to occur.
+#
+#       Any instructions on how to start the output for a particular instance
+#       are expected to have been provided through properties for that 
+#       instance.
+#
+#    LogMessage
+#       The appender is presented with formatted text to be sent through
+#       the appender's output stream.
+#
+#    StopOutput
+#       This hooks stops further output by closing the output stream.
+#       If any attempts to log messages occurs once the the output is closed,
+#       these attempts should be quietly ignored.
+#
+#    DestroyInstance
+#       This hook will destroy a specific instance of an appender
+#       type.
+#
+#    ShutdownLibrary
+#       Releases all remaining resources held by the library including
+#       any remaining appenders that may still be in existance.
+#
+#
+# The specification of routines providing the hook the activity type is
+# provided by a DLL name, a vertical bar, and the name of the routine
+# within the DLL providing the functionality.
+#
+# The hooks may be scattered across DLLs.
+#
+# The DLL must be on the process PATH, or it must be fully qualified.
+# The DLL path name can be built with environment variables such as
+#     $(EXEDir)\YOUR.DLL|RoutineHook
+#
+#
+
+
+#
+# Create a new Appender Type named 'newApndrType' and identify all
+# all the hooks for that appender.
+#
+# Once specified this way, new instances of that appender type can be 
+# used as any other appender and is transparent to the dynamic logging
+# framework.
+#
+
+# appenderType.InitializeLibrary.newApndrType  = YOUR.DLL|InitializeLibraryHook
+# appenderType.CreateInstance.newApndrType     = YOUR.DLL|CreateInstanceHook
+# appenderType.StartOutput.newApndrType        = YOUR.DLL|StartOutputHook
+# appenderType.LogMessage.newApndrType         = YOUR.DLL|LogMessageHook
+# appenderType.StopOutput.newApndrType         = YOUR.DLL|StopOutput
+# appenderType.DestroyInstance.newApndrType    = YOUR.DLL|DestroyInstanceHook
+# appenderType.ShutdownLibrary.newApndrType    = YOUR.DLL|ShutdownLibraryHook
+
+
+
+
+#===============================================================
+#
+# Environment/Substitution variable definitions.
+#
+# Define environment/substitution variables for use throughout
+# the Dynamic Logging library and outside into the application
+# itself.
+#
+# All Environment/Substitution variables have the form:
+#
+#    env.varName = value
+#
+# This would define a substition variable named 'varName' and
+# any occurrence of it would be substituted for its
+# substitution value: 'value'.
+#
+# Any environment variable/substitution variables are scanned
+# in this file prior to loading Appenders, Loggers, Context or
+# other information and therefore may be scattered throughout
+# this file.
+#
+# Process environment variables are inherited and available for
+# reference in this file in the same way as if you had defined
+# them locally.
+#
+# An environment/substitution variable is referred to by 
+# wrapping the variable name as such:  $(varNm)
+#
+# Substitution variable names are not case sensistive and so
+# $(varNm) and $(VARNM) and $(varnm) all refer to the same
+# variable.
+#
+# Substitution variabled may contain a reference to another
+# substitution variable.  Therefore, for the following 
+# definitions:
+#
+#    env.varBase = def
+#    env.varContain = abc$(varBase)ghi
+#    env.overAll    = 12$(varContain)34
+#
+#    The variable $(overAll) would expand out to: 12abcdefghi
+#
+# A Substitution variable may have multiple references to
+# other substitution variables:
+#
+#    env.Multi = -$(varContain)-$(varBase)-
+#
+#    would expand out to: -abcdefghi-def-
+#
+# IMPORTANT:  Recursive definitions will cause the application
+#             to die without grace.  Ensure you do not create a
+#             variable definition that does refers to itself
+#             either directly or indirectly through an embedded
+#             variable's definition.
+#
+#             env.Var1 = very$(Var2)
+#             env.Var2 = something-$(Var1)-bad
+#
+
+# env.sample = sampleEnvVal
+
+
+
+#===============================================================
+#
+# Appender Configuration:
+#
+# Create a single appender named 'standard' that will be 
+# attached to the 'rootLogger' that will dump all messages 
+# received by the root logger.  No filtering by message priority 
+# will take place.
+#
+# The default output location is a file named 'loggingOutput.txt'
+# but you can supply a different file name here or use the
+# special names 'stdout' or 'stderr' to log to the standard 
+# output or standard error output streams.
+#
+# An appender may be declared to be of a certain type if that
+# 'appenderType' has been declared.  There is a default
+# appender type of 'Default' (case insensitive).  If an
+# appender is not defined to be of a specific appender type,
+# it is assumed to be the 'Default' appender type.
+#
+#
+
+
+appender.AppenderType.standard       = Default
+appender.Enabled.standard            = Yes
+appender.Destination.standard        = loggingOutput.txt
+appender.AppendMode.standard         = No
+appender.MinMsgPriority.standard     = LOWEST
+appender.MaxMsgPriority.standard     = HIGHEST
+appender.TimeStamps.standard         = Yes
+appender.LibEXEName.standard         = No
+appender.ModuleName.standard         = No
+appender.FunctionName.standard       = No
+appender.QualifyingName.standard     = No
+appender.FullyQualifiedName.standard = No
+appender.AbbreviatedName.standard    = No
+appender.LocalName.standard          = Yes
+appender.LineNumbers.standard        = No
+appender.Indent.standard             = Yes
+appender.MsgPriority.standard        = No
+
+
+
+#===============================================================
+#
+# Logger Configuration:
+#
+# All that is required is to set a number of properties of the
+# root logger (named 'rootlogger' or 'root') to display all
+# messages that are created.
+#
+# To this root logger, we will attach the appender named
+# 'standard' so that the messages can be output.
+#
+# With no further configuration, all messages generated in the
+# code will find their way to the root logger.
+#
+#
+
+logger.Enabled.rootLogger        = Yes
+
+logger.MinMsgPriority.rootLogger = LOWEST
+logger.MaxMsgPriority.root       = HIGHEST
+
+logger.Appender.rootLogger       = standard

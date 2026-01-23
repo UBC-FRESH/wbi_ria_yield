@@ -1,0 +1,309 @@
+2021/01/17 21:18:26 root- Dynamic Logging Library Version: 7.9a
+2021/01/17 21:18:26 root- Appender 'standard' Starting at 2021/01/17 21:18:26.
+2021/01/17 21:18:26 sitetool_initialize- >>> Entering (Logger: vdypsi32.sitedll.sitetool_initialize)
+2021/01/17 21:18:26 sitetool_initialize- <<< Exiting (Logger: vdypsi32.sitedll.sitetool_initialize)
+2021/01/17 21:18:26 main- Opening Error File: '.\ConsoleErrors.txt'
+2021/01/17 21:18:26 main- Creating Input Data Handle with Format: 'SCSV'
+2021/01/17 21:18:26 scsvinp_createhandle- >>> Entering (Logger: vdyp7console.csvinput.scsvinp_createhandle)
+2021/01/17 21:18:26 |  scsvinp_createhandle- Entering.  Parameters:
+2021/01/17 21:18:26 |  scsvinp_createhandle-          msgCollectionHandle: 0x08p
+2021/01/17 21:18:26 |  scsvinp_createhandle-                   logContext: 0x08p
+2021/01/17 21:18:26 |  scsvinp_createhandle-  
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Initializing the context...
+2021/01/17 21:18:26 |  csvrcdset_create- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  |  csvrcdset_create- Entering.
+2021/01/17 21:18:26 |  |  csvrcdset_create- Exiting with CSV Rcrd Set Handle: 0x09564668
+2021/01/17 21:18:26 |  csvrcdset_create- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Constructing a CSV Record Set Handle for table 'POLYGON_ID.csv': 0x09564668
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Fields associated with CSV Record Set:
+2021/01/17 21:18:26 |  scsvinp_createhandle-        1  POLYGON_RCRD_ID                 SCSV_Fld_POLYGON_ID__POLYGON_RCRD_ID (0 -  A)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        2  MAINTAINER                      SCSV_Fld_POLYGON_ID__MAINTAINER (1 -  B)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        3  MAP_ID                          SCSV_Fld_POLYGON_ID__MAP_ID (2 -  C)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        4  MAP_QUAD                        SCSV_Fld_POLYGON_ID__MAP_QUAD (3 -  D)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        5  MAP_SUB_QUAD                    SCSV_Fld_POLYGON_ID__MAP_SUB_QUAD (4 -  E)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        6  POLYGON_ID                      SCSV_Fld_POLYGON_ID__POLYGON_ID (5 -  F)
+2021/01/17 21:18:26 |  csvrcdset_create- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  |  csvrcdset_create- Entering.
+2021/01/17 21:18:26 |  |  csvrcdset_create- Exiting with CSV Rcrd Set Handle: 0x0957EC90
+2021/01/17 21:18:26 |  csvrcdset_create- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Constructing a CSV Record Set Handle for table 'POLYGON.csv': 0x0957EC90
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Fields associated with CSV Record Set:
+2021/01/17 21:18:26 |  scsvinp_createhandle-        1  POLYGON_RCRD_ID                 SCSV_Fld_POLYGON__POLYGON_RCRD_ID (6 -  A)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        2  INVENTORY_STANDARD              SCSV_Fld_POLYGON__INVENTORY_STANDARD (7 -  B)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        3  REFERENCE_YEAR                  SCSV_Fld_POLYGON__REFERENCE_YEAR (8 -  C)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        4  FIZ                             SCSV_Fld_POLYGON__FIZ (9 -  D)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        5  BEC_ZONE                        SCSV_Fld_POLYGON__BEC_ZONE (10 -  E)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        6  CFS_ECO_ZONE                    SCSV_Fld_POLYGON__CFS_ECO_ZONE (11 -  F)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        7  PCT_STOCKABLE                   SCSV_Fld_POLYGON__PCT_STOCKABLE (12 -  G)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        8  NON_PROD_DESC                   SCSV_Fld_POLYGON__NON_PROD_DESC (13 -  H)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        9  YIELD_FACTOR                    SCSV_Fld_POLYGON__YIELD_FACTOR (14 -  I)
+2021/01/17 21:18:26 |  csvrcdset_create- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  |  csvrcdset_create- Entering.
+2021/01/17 21:18:26 |  |  csvrcdset_create- Exiting with CSV Rcrd Set Handle: 0x095992B8
+2021/01/17 21:18:26 |  csvrcdset_create- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Constructing a CSV Record Set Handle for table 'HISTORY.csv': 0x095992B8
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Fields associated with CSV Record Set:
+2021/01/17 21:18:26 |  scsvinp_createhandle-        1  HISTORY_RCRD_ID                 SCSV_Fld_HISTORY__HISTORY_RCRD_ID (35 -  A)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        2  LAYER_RCRD_ID                   SCSV_Fld_HISTORY__LAYER_RCRD_ID (36 -  B)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        3  HISTORY_ID                      SCSV_Fld_HISTORY__HISTORY_ID (37 -  C)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        4  SILV_BASE_CD                    SCSV_Fld_HISTORY__SILV_BASE_CD (38 -  D)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        5  START_YEAR                      SCSV_Fld_HISTORY__START_YEAR (39 -  E)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        6  END_YEAR                        SCSV_Fld_HISTORY__END_YEAR (40 -  F)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        7  LAYER_PCT                       SCSV_Fld_HISTORY__LAYER_PCT (41 -  G)
+2021/01/17 21:18:26 |  csvrcdset_create- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  |  csvrcdset_create- Entering.
+2021/01/17 21:18:26 |  |  csvrcdset_create- Exiting with CSV Rcrd Set Handle: 0x095B38E0
+2021/01/17 21:18:26 |  csvrcdset_create- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Constructing a CSV Record Set Handle for table 'OTHER_VEG.csv': 0x095B38E0
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Fields associated with CSV Record Set:
+2021/01/17 21:18:26 |  scsvinp_createhandle-        1  POLYGON_RCRD_ID                 SCSV_Fld_OTHER_VEG__POLYGON_RCRD_ID (19 -  A)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        2  OTHER_VEG_ID                    SCSV_Fld_OTHER_VEG__OTHER_VEG_ID (20 -  B)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        3  LAND_COVER_CD                   SCSV_Fld_OTHER_VEG__LAND_COVER_CD (21 -  C)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        4  LAND_COVER_PCT                  SCSV_Fld_OTHER_VEG__LAND_COVER_PCT (22 -  D)
+2021/01/17 21:18:26 |  csvrcdset_create- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  |  csvrcdset_create- Entering.
+2021/01/17 21:18:26 |  |  csvrcdset_create- Exiting with CSV Rcrd Set Handle: 0x095CDF08
+2021/01/17 21:18:26 |  csvrcdset_create- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Constructing a CSV Record Set Handle for table 'NON_VEG.csv': 0x095CDF08
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Fields associated with CSV Record Set:
+2021/01/17 21:18:26 |  scsvinp_createhandle-        1  POLYGON_RCRD_ID                 SCSV_Fld_NON_VEG__POLYGON_RCRD_ID (15 -  A)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        2  NON_VEG_ID                      SCSV_Fld_NON_VEG__NON_VEG_ID (16 -  B)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        3  NON_VEG_COVER_TYPE              SCSV_Fld_NON_VEG__NON_VEG_COVER_TYPE (17 -  C)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        4  NON_VEG_COVER_PCT               SCSV_Fld_NON_VEG__NON_VEG_COVER_PCT (18 -  D)
+2021/01/17 21:18:26 |  csvrcdset_create- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  |  csvrcdset_create- Entering.
+2021/01/17 21:18:26 |  |  csvrcdset_create- Exiting with CSV Rcrd Set Handle: 0x095E8530
+2021/01/17 21:18:26 |  csvrcdset_create- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Constructing a CSV Record Set Handle for table 'LAYER.csv': 0x095E8530
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Fields associated with CSV Record Set:
+2021/01/17 21:18:26 |  scsvinp_createhandle-        1  LAYER_RCRD_ID                   SCSV_Fld_LAYER__LAYER_RCRD_ID (23 -  A)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        2  POLYGON_RCRD_ID                 SCSV_Fld_LAYER__POLYGON_RCRD_ID (24 -  B)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        3  LAYER_ID                        SCSV_Fld_LAYER__LAYER_ID (25 -  C)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        4  VDYP7_LAYER_ID                  SCSV_Fld_LAYER__VDYP7_LAYER_ID (26 -  D)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        5  RANK_CODE                       SCSV_Fld_LAYER__RANK_CODE (27 -  E)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        6  NON_FOREST_DESC                 SCSV_Fld_LAYER__NON_FOREST_DESC (28 -  F)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        7  MEAS_UTIL_LEVEL                 SCSV_Fld_LAYER__MEAS_UTIL_LEVEL (29 -  G)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        8  CC                              SCSV_Fld_LAYER__CC (30 -  H)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        9  BA                              SCSV_Fld_LAYER__BA (31 -  I)
+2021/01/17 21:18:26 |  scsvinp_createhandle-       10  TPH                             SCSV_Fld_LAYER__TPH (32 -  J)
+2021/01/17 21:18:26 |  scsvinp_createhandle-       11  EST_SI_SPCS                     SCSV_Fld_LAYER__EST_SI_SPCS (33 -  K)
+2021/01/17 21:18:26 |  scsvinp_createhandle-       12  EST_SI                          SCSV_Fld_LAYER__EST_SI (34 -  L)
+2021/01/17 21:18:26 |  csvrcdset_create- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  |  csvrcdset_create- Entering.
+2021/01/17 21:18:26 |  |  csvrcdset_create- Exiting with CSV Rcrd Set Handle: 0x09602B58
+2021/01/17 21:18:26 |  csvrcdset_create- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Constructing a CSV Record Set Handle for table 'SPECIES.csv': 0x09602B58
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Fields associated with CSV Record Set:
+2021/01/17 21:18:26 |  scsvinp_createhandle-        1  SPECIES_RCRD_ID                 SCSV_Fld_SPECIES__SPECIES_RCRD_ID (42 -  A)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        2  LAYER_RCRD_ID                   SCSV_Fld_SPECIES__LAYER_RCRD_ID (43 -  B)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        3  SPECIES_ID                      SCSV_Fld_SPECIES__SPECIES_ID (44 -  C)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        4  SPECIES_CD                      SCSV_Fld_SPECIES__SPECIES_CD (45 -  D)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        5  SPECIES_PCT                     SCSV_Fld_SPECIES__SPECIES_PCT (46 -  E)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        6  AGE                             SCSV_Fld_SPECIES__AGE (47 -  F)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        7  HEIGHT                          SCSV_Fld_SPECIES__HEIGHT (48 -  G)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        8  SI                              SCSV_Fld_SPECIES__SI (49 -  H)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        9  YTBH                            SCSV_Fld_SPECIES__YTBH (50 -  I)
+2021/01/17 21:18:26 |  scsvinp_createhandle-       10  BHAGE                           SCSV_Fld_SPECIES__BHAGE (51 -  J)
+2021/01/17 21:18:26 |  scsvinp_createhandle-       11  SITE_CURVE                      SCSV_Fld_SPECIES__SITE_CURVE (52 -  K)
+2021/01/17 21:18:26 |  csvrcdset_create- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  |  csvrcdset_create- Entering.
+2021/01/17 21:18:26 |  |  csvrcdset_create- Exiting with CSV Rcrd Set Handle: 0x0961D180
+2021/01/17 21:18:26 |  csvrcdset_create- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_create)
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Constructing a CSV Record Set Handle for table 'VRIADJST.csv': 0x0961D180
+2021/01/17 21:18:26 |  scsvinp_createhandle-    Fields associated with CSV Record Set:
+2021/01/17 21:18:26 |  scsvinp_createhandle-        1  VRIADJST_RCRD_ID                SCSV_Fld_ADJUST__ADJUST_RCRD_ID (53 -  A)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        2  POLYGON_RCRD_ID                 SCSV_Fld_ADJUST__POLYGON_RCRD_ID (54 -  B)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        3  LAYER_ID                        SCSV_Fld_ADJUST__LAYER_ID (55 -  C)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        4  LH_075                          SCSV_Fld_ADJUST__LH075 (56 -  D)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        5  BA_125                          SCSV_Fld_ADJUST__BA125 (57 -  E)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        6  WSV_075                         SCSV_Fld_ADJUST__WSV075 (58 -  F)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        7  WSV_125                         SCSV_Fld_ADJUST__WSV125 (59 -  G)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        8  VCU_125                         SCSV_Fld_ADJUST__VCU125 (60 -  H)
+2021/01/17 21:18:26 |  scsvinp_createhandle-        9  VD_125                          SCSV_Fld_ADJUST__VD125 (61 -  I)
+2021/01/17 21:18:26 |  scsvinp_createhandle-       10  VDW_125                         SCSV_Fld_ADJUST__VDW125 (62 -  J)
+2021/01/17 21:18:26 |  scsvinp_createhandle- Exiting with new Context: 0x09560BE0
+2021/01/17 21:18:26 scsvinp_createhandle- <<< Exiting (Logger: vdyp7console.csvinput.scsvinp_createhandle)
+2021/01/17 21:18:26 main- Log/Progress Messages are being routed to 'stdout'.
+2021/01/17 21:18:26 scsvinp_closehandle- >>> Entering (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 |  scsvinp_closehandle- Entering with CSV Input Handle: 0x09560BE0
+2021/01/17 21:18:26 |  scsvinp_closehandle- Removing references to underlying CSV Record Set Fields...
+2021/01/17 21:18:26 |  scsvinp_closehandle- Closing Input Recordsets:
+2021/01/17 21:18:26 |  scsvinp_closehandle-       POLYGON_ID.csv       rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       POLYGON.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       HISTORY.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       OTHER_VEG.csv        rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       NON_VEG.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       LAYER.csv            rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       SPECIES.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       VRIADJST.csv         rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle- Exiting with Return Code: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 scsvinp_closehandle- <<< Exiting (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 scsvinp_openhandle- >>> Entering (Logger: vdyp7console.csvinput.scsvinp_openhandle)
+2021/01/17 21:18:26 |  scsvinp_openhandle- Entering with Parameters:
+2021/01/17 21:18:26 |  scsvinp_openhandle-            Input Handle: 0x09560BE0
+2021/01/17 21:18:26 |  scsvinp_openhandle-       Input Data Source: '.\Console'
+2021/01/17 21:18:26 |  scsvinp_openhandle-  
+2021/01/17 21:18:26 |  scsvinp_openhandle- Ensure Handle is Closed prior to opening...
+2021/01/17 21:18:26 |  scsvinp_closehandle- >>> Entering (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle- Entering with CSV Input Handle: 0x09560BE0
+2021/01/17 21:18:26 |  |  scsvinp_closehandle- Removing references to underlying CSV Record Set Fields...
+2021/01/17 21:18:26 |  |  scsvinp_closehandle- Closing Input Recordsets:
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       POLYGON_ID.csv       rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       POLYGON.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       HISTORY.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       OTHER_VEG.csv        rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       NON_VEG.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       LAYER.csv            rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       SPECIES.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       VRIADJST.csv         rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle- Exiting with Return Code: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle- <<< Exiting (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 |  scsvinp_openhandle- Allocate a buffer for input folder name...
+2021/01/17 21:18:26 |  scsvinp_openhandle- Input Data Source Name after ensuring trailing folder separator:
+2021/01/17 21:18:26 |  scsvinp_openhandle-       '.\Console\'
+2021/01/17 21:18:26 |  scsvinp_openhandle-    Opening CSV Recordset for Table: 'POLYGON_ID.csv'
+2021/01/17 21:18:26 |  csvrcdset_openfilewithschemainfo- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_openfilewithschemainfo)
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo- Parameters:
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo-                   openMode: csvOpenMode_READ (0)
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo-              csvDataFolder: '.\Console\'
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo-               csvTableName: 'POLYGON_ID.csv'
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo-                bSkipHeader: TRUE
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo-                 iNumFields: 6
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo-           fieldInformation: 0x00438348
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo-  
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo- Ensured Recordset is Closed: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  csvrcdset_movenext- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_movenext)
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext- Parameters:
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-              bSkipFirstRow: TRUE
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-                 iNumFields: 6
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-           fieldInformation: 0x00438348
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-                  tableName: 'POLYGON_ID.csv'
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-  
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext- Adding Fields:
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-         1 POLYGON_RCRD_ID                            LONG 10.0
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-         2 MAINTAINER                                 CHAR  3.0
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-         3 MAP_ID                                     CHAR  7.0
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-         4 MAP_QUAD                                   CHAR  1.0
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-         5 MAP_SUB_QUAD                               CHAR  1.0
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext-         6 POLYGON_ID                                 LONG 10.0
+2021/01/17 21:18:26 |  |  |  csvrcdset_movenext- Exiting with Return Code: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  csvrcdset_movenext- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_movenext)
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo- Copied Schema Information: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  csvrcdinp_openfile- >>> Entering (Logger: csvrcrdset.csvrcrdinp.csvrcdinp_openfile)
+2021/01/17 21:18:26 |  |  |  csvrcdinp_openfile- Parameters:
+2021/01/17 21:18:26 |  |  |  csvrcdinp_openfile-                     rcdSet: 0x09564668
+2021/01/17 21:18:26 |  |  |  csvrcdinp_openfile-                   openMode: csvOpenMode_READ (0)
+2021/01/17 21:18:26 |  |  |  csvrcdinp_openfile-              csvDataFolder: '.\Console\'
+2021/01/17 21:18:26 |  |  |  csvrcdinp_openfile-               csvTableName: 'POLYGON_ID.csv'
+2021/01/17 21:18:26 |  |  |  csvrcdinp_openfile-  
+2021/01/17 21:18:26 |  |  |  csvrcdinp_openfile- Exiting with Return Code: rtrnCode_FILE_NOT_FOUND (3)
+2021/01/17 21:18:26 |  |  csvrcdinp_openfile- <<< Exiting (Logger: csvrcrdset.csvrcrdinp.csvrcdinp_openfile)
+2021/01/17 21:18:26 |  |  csvrcdset_openfilewithschemainfo- Exiting with Return Code: rtrnCode_FILE_NOT_FOUND (3)
+2021/01/17 21:18:26 |  csvrcdset_openfilewithschemainfo- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_openfilewithschemainfo)
+2021/01/17 21:18:26 |  scsvinp_openhandle-    Opened CSV Record Set with Return Code: rtrnCode_FILE_NOT_FOUND (3)
+2021/01/17 21:18:26 |  scsvinp_openhandle- <<< Leaving with Return Code: rtrnCode_FILE_NOT_FOUND (3)
+2021/01/17 21:18:26 scsvinp_openhandle- <<< Exiting (Logger: vdyp7console.csvinput.scsvinp_openhandle)
+2021/01/17 21:18:26 main- Opened Input Stream with Result Code: rtrnCode_FILE_NOT_FOUND (3)
+2021/01/17 21:18:26 main- Unable to open the Input Stream: '.\Console': '.\Console'.  Return Code: rtrnCode_FILE_NOT_FOUND (3)
+2021/01/17 21:18:26 main- Printing any collected messages prior to processing input...
+2021/01/17 21:18:26 main- Closing and Destroying Record Sets.
+2021/01/17 21:18:26 scsvinp_closehandle- >>> Entering (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 |  scsvinp_closehandle- Entering with CSV Input Handle: 0x09560BE0
+2021/01/17 21:18:26 |  scsvinp_closehandle- Removing references to underlying CSV Record Set Fields...
+2021/01/17 21:18:26 |  scsvinp_closehandle- Closing Input Recordsets:
+2021/01/17 21:18:26 |  scsvinp_closehandle-       POLYGON_ID.csv       rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       POLYGON.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       HISTORY.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       OTHER_VEG.csv        rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       NON_VEG.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       LAYER.csv            rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       SPECIES.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       VRIADJST.csv         rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle- Freeing up Input Folder Name...
+2021/01/17 21:18:26 |  scsvinp_closehandle- Exiting with Return Code: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 scsvinp_closehandle- <<< Exiting (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 scsvinp_closehandle- >>> Entering (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 |  scsvinp_closehandle- Entering with CSV Input Handle: 0x09560BE0
+2021/01/17 21:18:26 |  scsvinp_closehandle- Removing references to underlying CSV Record Set Fields...
+2021/01/17 21:18:26 |  scsvinp_closehandle- Closing Input Recordsets:
+2021/01/17 21:18:26 |  scsvinp_closehandle-       POLYGON_ID.csv       rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       POLYGON.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       HISTORY.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       OTHER_VEG.csv        rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       NON_VEG.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       LAYER.csv            rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       SPECIES.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle-       VRIADJST.csv         rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle- Exiting with Return Code: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 scsvinp_closehandle- <<< Exiting (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 scsvinp_releasehandle- >>> Entering (Logger: vdyp7console.csvinput.scsvinp_releasehandle)
+2021/01/17 21:18:26 |  scsvinp_releasehandle- Entering with Input Handle: 0x09560BE0
+2021/01/17 21:18:26 |  scsvinp_releasehandle- Ensuring the Log Handle is Closed.
+2021/01/17 21:18:26 |  scsvinp_closehandle- >>> Entering (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle- Entering with CSV Input Handle: 0x09560BE0
+2021/01/17 21:18:26 |  |  scsvinp_closehandle- Removing references to underlying CSV Record Set Fields...
+2021/01/17 21:18:26 |  |  scsvinp_closehandle- Closing Input Recordsets:
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       POLYGON_ID.csv       rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       POLYGON.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       HISTORY.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       OTHER_VEG.csv        rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       NON_VEG.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       LAYER.csv            rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       SPECIES.csv          rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle-       VRIADJST.csv         rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  |  scsvinp_closehandle- Exiting with Return Code: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 |  scsvinp_closehandle- <<< Exiting (Logger: vdyp7console.csvinput.scsvinp_closehandle)
+2021/01/17 21:18:26 |  scsvinp_releasehandle- Clearing all References to CSV Field Recordsets...
+2021/01/17 21:18:26 |  scsvinp_releasehandle- Destroying all CSV Recordset Handles...
+2021/01/17 21:18:26 |  csvrcdset_destroy- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  |  csvrcdset_destroy- Entering - Parameter:
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-       rcdSetHandle: 0x09564668
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-  
+2021/01/17 21:18:26 |  csvrcdset_destroy- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  csvrcdset_destroy- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  |  csvrcdset_destroy- Entering - Parameter:
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-       rcdSetHandle: 0x0957EC90
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-  
+2021/01/17 21:18:26 |  csvrcdset_destroy- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  csvrcdset_destroy- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  |  csvrcdset_destroy- Entering - Parameter:
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-       rcdSetHandle: 0x095992B8
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-  
+2021/01/17 21:18:26 |  csvrcdset_destroy- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  csvrcdset_destroy- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  |  csvrcdset_destroy- Entering - Parameter:
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-       rcdSetHandle: 0x095B38E0
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-  
+2021/01/17 21:18:26 |  csvrcdset_destroy- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  csvrcdset_destroy- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  |  csvrcdset_destroy- Entering - Parameter:
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-       rcdSetHandle: 0x095CDF08
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-  
+2021/01/17 21:18:26 |  csvrcdset_destroy- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  csvrcdset_destroy- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  |  csvrcdset_destroy- Entering - Parameter:
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-       rcdSetHandle: 0x095E8530
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-  
+2021/01/17 21:18:26 |  csvrcdset_destroy- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  csvrcdset_destroy- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  |  csvrcdset_destroy- Entering - Parameter:
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-       rcdSetHandle: 0x09602B58
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-  
+2021/01/17 21:18:26 |  csvrcdset_destroy- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  csvrcdset_destroy- >>> Entering (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  |  csvrcdset_destroy- Entering - Parameter:
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-       rcdSetHandle: 0x0961D180
+2021/01/17 21:18:26 |  |  csvrcdset_destroy-  
+2021/01/17 21:18:26 |  csvrcdset_destroy- <<< Exiting (Logger: csvrcrdset.csvrcrdset.csvrcdset_destroy)
+2021/01/17 21:18:26 |  scsvinp_releasehandle- Clearing other handle attributes.
+2021/01/17 21:18:26 |  scsvinp_releasehandle- Freeing up memory for CSV Input Handle.
+2021/01/17 21:18:26 |  scsvinp_releasehandle- <<< Leaving with new Return Code: rtrnCode_SUCCESS (0)
+2021/01/17 21:18:26 scsvinp_releasehandle- <<< Exiting (Logger: vdyp7console.csvinput.scsvinp_releasehandle)
+2021/01/17 21:18:26 main- Closing Error Log.
+2021/01/17 21:18:26 main- Resetting Console Parameters...
+2021/01/17 21:18:26 main- Deallocating Polygon Record Handle...
+2021/01/17 21:18:26 main- Shutting VDYP7 Modules...
+2021/01/17 21:18:26 main- Closing Yield Table Output Stream...
+2021/01/17 21:18:26 main- Deallocation Message Collection...
+2021/01/17 21:18:26 main- Shutting down the Log Context (if any)...
+2021/01/17 21:18:26 root- Appender 'standard' Shutting Down at: 2021/01/17 21:18:26 - Appender lifetime: 0 seconds

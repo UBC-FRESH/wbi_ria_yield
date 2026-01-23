@@ -1,0 +1,7 @@
+-srcdb    .\OriginalData\PGDB\*.MDB
+-template .\Template\Template.mdb
+-load     .\PGDB2Template.load 
+-destdb   .\Combined.mdb
+-rpt      .\Step01-PGDB2Template.log
+-binary   ..\DTSRun.exe
+-run

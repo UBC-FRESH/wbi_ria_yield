@@ -1,0 +1,5 @@
+-load     .\ResetVRIADJSTStrata.load
+-destdb   .\Combined.mdb
+-rpt      .\Step07a-ResetVRIADJSTStrata.log
+-binary   ..\DTSRun.exe
+-run

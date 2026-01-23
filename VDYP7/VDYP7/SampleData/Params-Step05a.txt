@@ -1,0 +1,5 @@
+-load     .\ResetVRISTARTStrata.load
+-destdb   .\Combined.mdb
+-rpt      .\Step05a-ResetVRISTARTStrata.log
+-binary   ..\DTSRun.exe
+-run

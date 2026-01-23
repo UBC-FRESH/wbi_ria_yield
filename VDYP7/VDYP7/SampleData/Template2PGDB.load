@@ -1,0 +1,2325 @@
+[Administration]
+FileType=DTS Package Specification
+FormatVersion=1.0.0
+PackageName=Load Reference Data
+
+
+
+;================================================================
+;
+; Define each of the data sources
+;
+;
+
+
+[Data Connection - Source Data]
+DatabaseType=MSAccess
+Server=
+Database=$(SourceDatabase)
+UserID=$(SourceUser)
+Password=$(SourcePassword)
+PrimaryInputDataSource=True
+
+AfterOpeningEnvVar_1_Name=DatasetName
+AfterOpeningEnvVar_1_Value=Default
+
+AfterOpeningEnvVar_2_Name=VRISTARTPhaseName
+AfterOpeningEnvVar_2_Value=VRISTART Inputs (At GSYr)
+
+AfterOpeningEnvVar_3_Name=VRIADJSTPhaseName
+AfterOpeningEnvVar_3_Value=VRIADJST Inputs (At GSYr)
+
+AfterOpeningEnvVar_4_Name=BECZoneParam
+AfterOpeningEnvVar_4_Value=BEC Zone
+
+AfterOpeningEnvVar_5_Name=YieldFactorParam
+AfterOpeningEnvVar_5_Value=Yield Factor
+
+AfterOpeningEnvVar_6_Name=PercentStockableParam
+AfterOpeningEnvVar_6_Value=Percent Stockable
+
+AfterOpeningEnvVar_7_Name=ReferenceYearParam
+AfterOpeningEnvVar_7_Value=Reference Year
+
+AfterOpeningEnvVar_8_Name=LayerRankParam
+AfterOpeningEnvVar_8_Value=Rank Code
+
+AfterOpeningEnvVar_9_Name=BasalArea075Param
+AfterOpeningEnvVar_9_Value=Basal Area 7.5cm+
+
+AfterOpeningEnvVar_10_Name=TPHParam
+AfterOpeningEnvVar_10_Value=VRI Live Stems per Ha 7.5cm+
+
+AfterOpeningEnvVar_11_Name=V7LayerParam
+AfterOpeningEnvVar_11_Value=Target VDYP7 Layer
+
+AfterOpeningEnvVar_12_Name=SpeciesPctParam
+AfterOpeningEnvVar_12_Value=Species Percent
+
+AfterOpeningEnvVar_13_Name=TotalAgeParam
+AfterOpeningEnvVar_13_Value=Total Age
+
+AfterOpeningEnvVar_14_Name=DominantHeightParam
+AfterOpeningEnvVar_14_Value=Dominant Height
+
+AfterOpeningEnvVar_15_Name=LoreyHeightParam
+AfterOpeningEnvVar_15_Value=Lorey Height 7.5cm+
+
+AfterOpeningEnvVar_16_Name=BasalArea125Param
+AfterOpeningEnvVar_16_Value=Basal Area 12.5cm+
+
+AfterOpeningEnvVar_17_Name=WSV075Param
+AfterOpeningEnvVar_17_Value=Whole Stem Volume 7.5cm+
+
+AfterOpeningEnvVar_18_Name=WSV125Param
+AfterOpeningEnvVar_18_Value=Whole Stem Volume 12.5cm+
+
+AfterOpeningEnvVar_19_Name=CUV125Param
+AfterOpeningEnvVar_19_Value=Close Utilization Volume 12.5cm+
+
+AfterOpeningEnvVar_20_Name=CDV125Param
+AfterOpeningEnvVar_20_Value=Close Utilization Net Decay Volume 12.5cm+
+
+AfterOpeningEnvVar_21_Name=CDW125Param
+AfterOpeningEnvVar_21_Value=Close Utilization Net Decay/Waste Volume 12.5cm+
+
+AfterOpeningEnvVar_22_Name=ProjToGSYr
+AfterOpeningEnvVar_22_Value=Project to GSYr
+
+AfterOpeningEnvVar_23_Name=ProjToRefYr
+AfterOpeningEnvVar_23_Value=Project to Ref Yr
+
+AfterOpeningEnvVar_24_Name=VDYP7Name
+AfterOpeningEnvVar_24_Value=VDYP7 Extended Core DLL
+
+AfterOpeningEnvVar_25_Name=SINDEXName
+AfterOpeningEnvVar_25_Value=SINDEX
+
+AfterOpeningEnvVar_26_Name=SpeciesPercentName
+AfterOpeningEnvVar_26_Value=Species Percent
+
+AfterOpeningEnvVar_27_Name=SpeciesPercentRoundingDigits
+AfterOpeningEnvVar_27_Value=2
+
+AfterOpeningEnvVar_28_Name=SpeciesPercentEqualsEpsilon
+AfterOpeningEnvVar_28_Value=0.001
+
+
+[Data Connection - Destination Data]
+DatabaseType=MSAccess
+Server=
+Database=$(DestinationDatabase)
+UserID=$(DestinationUser)
+Password=$(DestinationPassword)
+
+
+
+;=================================================================
+;=================================================================
+;
+; Step Definitions:
+;
+; Possible Step Types are:
+;	Do Nothing
+;		Relevant Properties
+;               	NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;
+;		The rest of the step definition is optional
+;		and ignored.
+;
+;	DataLoad
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection
+;			SourceTableName
+;			TargetConnection
+;			TargetTableName
+;			SourceToDestinationColumnMappingSection
+;
+;	Count Records
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			TargetConnection
+;			TargetTableName
+;
+;	Custom SQL
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection or TargetConnection (in that preference order)
+;			SQLStatement or SQLStatement_Line_nnn
+;
+;
+
+;=================================================================
+;=================================================================
+
+;=================================================================
+;
+; Copy Records over from the source data to the destination.
+;
+;
+
+[Step 1]
+StepName=Create Polygon PIT Values
+StepType=Custom SQL
+
+PrerequisiteTarget_1=DDL Completed
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=CREATE TABLE tmpPITPolygonValues
+SQLStatement_Line_002=    ( FOREST_COVER_OBJECT_ID   INTEGER PRIMARY KEY
+SQLStatement_Line_003=    , STOCKABILITY             NUMBER
+SQLStatement_Line_004=    , REFERENCE_YEAR           INTEGER
+SQLStatement_Line_005=    , BEC_ZONE_CODE            TEXT(10)
+SQLStatement_Line_006=    , YIELD_FACTOR             NUMBER
+SQLStatement_Line_007=    , ADJUSTED_IND             TEXT(1)
+SQLStatement_Line_008=    , LAYER_SUMMARIZATION_CODE TEXT(1) )
+
+
+
+
+
+[Step 2]
+StepName=Load Polygon Data Into Temp Tables
+StepType=DataLoad
+
+PrerequisiteTarget_1=Create Polygon PIT Values
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT p.POLYGON_RCRD_ID
+SQLStatement_Line_002=     , flvc.FEATURE_RCRD_ID AS FOREST_COVER_OBJECT_ID
+SQLStatement_Line_003=     , pitBEC.BEC_ZONE_CODE
+SQLStatement_Line_004=     , pitRefYr.REFERENCE_YEAR
+SQLStatement_Line_005=     , pitStock.STOCKABILITY
+SQLStatement_Line_006=     , pitYield.YIELD_FACTOR
+SQLStatement_Line_007=     , IIF ( IsNull( adjInd.POLYGON_RCRD_ID ), 'N', 'Y' ) AS ADJUSTED_IND
+SQLStatement_Line_008=     , layerSumm.LAYER_SUMMARIZATION_MODE                 AS LAYER_SUMMARIZATION_CODE
+SQLStatement_Line_009=FROM
+SQLStatement_Line_010=          ((((((tblPOLYGON p
+SQLStatement_Line_011=     INNER JOIN tblFEATURE_LINK_VEGETATION_COVER flvc
+SQLStatement_Line_012=             ON flvc.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_013=      LEFT JOIN (SELECT p1.POLYGON_RCRD_ID, pit1.PROJECTION_INPUT_PARAMETER_STRING AS BEC_ZONE_CODE
+SQLStatement_Line_014=                 FROM           (((tblPROJECTION_INPUT_STRING    pit1 INNER JOIN tblPOLYGON p1 ON p1.POLYGON_RCRD_ID = pit1.POLYGON_RCRD_ID)
+SQLStatement_Line_015=                        INNER JOIN tblPROJECTION_INPUT_DATASET   pid1
+SQLStatement_Line_016=                                ON pit1.PROJECTION_INPUT_DATASET_RCRD_ID = pid1.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_017=                        INNER JOIN tblPROJECTION_PHASE           pp1
+SQLStatement_Line_018=                                ON pp1.PROJECTION_PHASE_RCRD_ID = pit1.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_019=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER pip1
+SQLStatement_Line_020=                                ON pip1.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit1.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_021=                 WHERE  p1.IGNORE_POLYGON                    = 0
+SQLStatement_Line_022=                   AND  pid1.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_023=                   AND  pp1.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_024=                   AND  pip1.PROJECTION_INPUT_PARAMETER_NAME = '$(BECZoneParam)'
+SQLStatement_Line_025=                ) pitBEC
+SQLStatement_Line_026=             ON pitBEC.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_027=      LEFT JOIN (SELECT p2.POLYGON_RCRD_ID, pit2.PROJECTION_INPUT_PARAMETER_VALUE AS REFERENCE_YEAR
+SQLStatement_Line_028=                 FROM           (((tblPROJECTION_INPUT_VALUE     pit2 INNER JOIN tblPOLYGON p2 ON p2.POLYGON_RCRD_ID = pit2.POLYGON_RCRD_ID)
+SQLStatement_Line_029=                        INNER JOIN tblPROJECTION_INPUT_DATASET   pid2
+SQLStatement_Line_030=                                ON pit2.PROJECTION_INPUT_DATASET_RCRD_ID = pid2.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_031=                        INNER JOIN tblPROJECTION_PHASE           pp2
+SQLStatement_Line_032=                                ON pp2.PROJECTION_PHASE_RCRD_ID = pit2.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_033=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER pip2
+SQLStatement_Line_034=                                ON pip2.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit2.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_035=                 WHERE p2.IGNORE_POLYGON                    = 0
+SQLStatement_Line_036=                   AND pid2.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_037=                   AND pp2.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_038=                   AND pip2.PROJECTION_INPUT_PARAMETER_NAME = '$(ReferenceYearParam)'
+SQLStatement_Line_039=                ) pitRefYr
+SQLStatement_Line_040=             ON pitRefYr.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_041=      LEFT JOIN (SELECT p3.POLYGON_RCRD_ID, pit3.PROJECTION_INPUT_PARAMETER_VALUE AS STOCKABILITY
+SQLStatement_Line_042=                 FROM           (((tblPROJECTION_INPUT_VALUE     pit3 INNER JOIN tblPOLYGON p3 ON p3.POLYGON_RCRD_ID = pit3.POLYGON_RCRD_ID)
+SQLStatement_Line_043=                        INNER JOIN tblPROJECTION_INPUT_DATASET   pid3
+SQLStatement_Line_044=                                ON pit3.PROJECTION_INPUT_DATASET_RCRD_ID = pid3.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_045=                        INNER JOIN tblPROJECTION_PHASE           pp3
+SQLStatement_Line_046=                                ON pp3.PROJECTION_PHASE_RCRD_ID = pit3.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_047=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER pip3
+SQLStatement_Line_048=                                ON pip3.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit3.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_049=                 WHERE p3.IGNORE_POLYGON                    = 0
+SQLStatement_Line_050=                   AND pid3.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_051=                   AND pp3.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_052=                   AND pip3.PROJECTION_INPUT_PARAMETER_NAME = '$(PercentStockableParam)'
+SQLStatement_Line_053=                ) pitStock
+SQLStatement_Line_054=             ON pitStock.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_055=      LEFT JOIN (SELECT p4.POLYGON_RCRD_ID, pit4.PROJECTION_INPUT_PARAMETER_VALUE AS YIELD_FACTOR
+SQLStatement_Line_056=                 FROM           (((tblPROJECTION_INPUT_VALUE     pit4 INNER JOIN tblPOLYGON p4 ON p4.POLYGON_RCRD_ID = pit4.POLYGON_RCRD_ID)
+SQLStatement_Line_057=                        INNER JOIN tblPROJECTION_INPUT_DATASET   pid4
+SQLStatement_Line_058=                                ON pit4.PROJECTION_INPUT_DATASET_RCRD_ID = pid4.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_059=                        INNER JOIN tblPROJECTION_PHASE           pp4
+SQLStatement_Line_060=                                ON pp4.PROJECTION_PHASE_RCRD_ID = pit4.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_061=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER pip4
+SQLStatement_Line_062=                                ON pip4.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit4.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_063=                 WHERE p4.IGNORE_POLYGON                    = 0
+SQLStatement_Line_064=                   AND pid4.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_065=                   AND pp4.PROJECTION_PHASE_NAME            = '$(VRIStartPhaseName)'
+SQLStatement_Line_066=                   AND pip4.PROJECTION_INPUT_PARAMETER_NAME = '$(YieldFactorParam)'
+SQLStatement_Line_067=                ) pitYield
+SQLStatement_Line_068=             ON pitYield.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_069=      LEFT JOIN (SELECT DISTINCT pitP.POLYGON_RCRD_ID
+SQLStatement_Line_070=                 FROM (SELECT pa.POLYGON_RCRD_ID, pia.MODIFIED
+SQLStatement_Line_071=                       FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pia INNER JOIN tblPOLYGON pa ON pa.POLYGON_RCRD_ID = pia.POLYGON_RCRD_ID)
+SQLStatement_Line_072=                              INNER JOIN tblPROJECTION_INPUT_DATASET    pid1 ON pid1.PROJECTION_INPUT_DATASET_RCRD_ID = pia.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_073=                              INNER JOIN tblPROJECTION_PHASE            pp1  ON pp1.PROJECTION_PHASE_RCRD_ID          = pia.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_074=                       WHERE  pid1.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_075=                         AND  pp1.PROJECTION_PHASE_NAME IN ('$(VRIStartPhaseName)', '$(VRIADJSTPhaseName)')
+SQLStatement_Line_076=                       UNION ALL
+SQLStatement_Line_077=                       SELECT ps.POLYGON_RCRD_ID, pis.MODIFIED
+SQLStatement_Line_078=                       FROM            ((tblPROJECTION_INPUT_STRING     pis INNER JOIN tblPOLYGON ps ON ps.POLYGON_RCRD_ID = pis.POLYGON_RCRD_ID)
+SQLStatement_Line_079=                              INNER JOIN tblPROJECTION_INPUT_DATASET    pid2 ON pid2.PROJECTION_INPUT_DATASET_RCRD_ID = pis.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_080=                              INNER JOIN tblPROJECTION_PHASE            pp2  ON pp2.PROJECTION_PHASE_RCRD_ID          = pis.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_081=                       WHERE  pid2.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_082=                         AND  pp2.PROJECTION_PHASE_NAME IN ('$(VRIStartPhaseName)', '$(VRIADJSTPhaseName)')
+SQLStatement_Line_083=                       UNION ALL
+SQLStatement_Line_084=                       SELECT pv.POLYGON_RCRD_ID, piv.MODIFIED
+SQLStatement_Line_085=                       FROM            ((tblPROJECTION_INPUT_VALUE      piv INNER JOIN tblPOLYGON pv ON pv.POLYGON_RCRD_ID = piv.POLYGON_RCRD_ID)
+SQLStatement_Line_086=                              INNER JOIN tblPROJECTION_INPUT_DATASET    pid3 ON pid3.PROJECTION_INPUT_DATASET_RCRD_ID = piv.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_087=                              INNER JOIN tblPROJECTION_PHASE            pp3  ON pp3.PROJECTION_PHASE_RCRD_ID          = piv.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_088=                       WHERE  pid3.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_089=                         AND  pp3.PROJECTION_PHASE_NAME IN ('$(VRIStartPhaseName)', '$(VRIADJSTPhaseName)')
+SQLStatement_Line_090=                      ) mods INNER JOIN tblPOLYGON pitP ON pitP.POLYGON_RCRD_ID = mods.POLYGON_RCRD_ID
+SQLStatement_Line_091=                 WHERE pitP.IGNORE_POLYGON = 0
+SQLStatement_Line_092=                   AND mods.MODIFIED <> 0
+SQLStatement_Line_093=                ) adjInd
+SQLStatement_Line_094=             ON adjInd.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_095=      LEFT JOIN (SELECT DISTINCT proPP.POLYGON_RCRD_ID, proP.LAYER_SUMMARIZATION_MODE
+SQLStatement_Line_096=                 FROM            ((tblPROJECTION_POLYGON      proP INNER JOIN tblPOLYGON proPP ON proPP.POLYGON_RCRD_ID = proP.POLYGON_RCRD_ID)
+SQLStatement_Line_097=                        INNER JOIN tblMETADATA_PROJECTION_RUN mpr   ON mpr.PROJECTION_RUN_RCRD_ID = proP.PROJECTION_RUN_RCRD_ID)
+SQLStatement_Line_098=                        INNER JOIN (SELECT proPMax.POLYGON_RCRD_ID, mprtMax.PROJECTION_RUN_TYPE_RCRD_ID, MAX( mprMax.PROJECTION_START_TIMESTAMP ) AS RUN_START_TIMESTAMP
+SQLStatement_Line_099=                                    FROM             (tblPROJECTION_POLYGON proPMax
+SQLStatement_Line_100=                                           INNER JOIN tblMETADATA_PROJECTION_RUN mprMax       ON mprMax.PROJECTION_RUN_RCRD_ID       = proPMax.PROJECTION_RUN_RCRD_ID)
+SQLStatement_Line_101=                                           INNER JOIN tblMETADATA_PROJECTION_RUN_TYPE mprtMax ON mprtMax.PROJECTION_RUN_TYPE_RCRD_ID = mprMax.PROJECTION_RUN_TYPE_RCRD_ID
+SQLStatement_Line_102=                                    WHERE  mprtMax.PROJECTION_RUN_NAME IN ('$(ProjToRefYr)', '$(ProjToGSYr)')
+SQLStatement_Line_103=                                    GROUP BY proPMax.POLYGON_RCRD_ID, mprtMax.PROJECTION_RUN_TYPE_RCRD_ID) polyRun
+SQLStatement_Line_104=                                ON polyRun.POLYGON_RCRD_ID             = proPP.POLYGON_RCRD_ID
+SQLStatement_Line_105=                               AND polyRun.PROJECTION_RUN_TYPE_RCRD_ID = mpr.PROJECTION_RUN_TYPE_RCRD_ID
+SQLStatement_Line_106=                               AND polyRun.RUN_START_TIMESTAMP         = mpr.PROJECTION_START_TIMESTAMP
+SQLStatement_Line_107=                 WHERE proPP.IGNORE_POLYGON = 0) layerSumm
+SQLStatement_Line_108=             ON layerSumm.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID
+SQLStatement_Line_109=WHERE p.IGNORE_POLYGON = 0
+
+
+TargetConnection=Destination Data
+TargetTableName=tmpPITPolygonValues
+
+SourceToDestinationColumnMappingSection=Polygon PIT Transfer Column Mapping
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=POLYGON_RCRD_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=FOREST_COVER_OBJECT_ID
+
+
+
+[Polygon PIT Transfer Column Mapping]
+
+SourceMappingType_1=Copy
+SourceColumn_1=FOREST_COVER_OBJECT_ID
+TargetColumn_1=FOREST_COVER_OBJECT_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=STOCKABILITY
+TargetColumn_2=STOCKABILITY
+
+SourceMappingType_3=Copy
+SourceColumn_3=REFERENCE_YEAR
+TargetColumn_3=REFERENCE_YEAR
+
+SourceMappingType_4=Copy
+SourceColumn_4=BEC_ZONE_CODE
+TargetColumn_4=BEC_ZONE_CODE
+
+SourceMappingType_5=Copy
+SourceColumn_5=YIELD_FACTOR
+TargetColumn_5=YIELD_FACTOR
+
+SourceMappingType_6=Copy
+SourceColumn_6=ADJUSTED_IND
+TargetColumn_6=ADJUSTED_IND
+
+SourceMappingType_7=Copy
+SourceColumn_7=LAYER_SUMMARIZATION_CODE
+TargetColumn_7=LAYER_SUMMARIZATION_CODE
+
+
+
+[Step 3]
+StepName=Load Updated Polygon Values Into PGDB
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Create Polygon PIT Values
+
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE           (VEGETATION_COVER_POLYGON_ADJ 
+SQLStatement_Line_002=       INNER JOIN FOREST_COVER_OBJECT
+SQLStatement_Line_003=               ON FOREST_COVER_OBJECT.FOREST_COVER_OBJECT_ID = VEGETATION_COVER_POLYGON_ADJ.FOREST_COVER_OBJECT_ID)
+SQLStatement_Line_004=       INNER JOIN tmpPITPolygonValues 
+SQLStatement_Line_005=               ON VEGETATION_COVER_POLYGON_ADJ.FOREST_COVER_OBJECT_ID = tmpPITPolygonValues.FOREST_COVER_OBJECT_ID 
+SQLStatement_Line_006=SET VEGETATION_COVER_POLYGON_ADJ.STOCKABILITY             = tmpPITPolygonValues.STOCKABILITY
+SQLStatement_Line_007=  , VEGETATION_COVER_POLYGON_ADJ.REFERENCE_YEAR           = tmpPITPolygonValues.REFERENCE_YEAR
+SQLStatement_Line_008=  , FOREST_COVER_OBJECT.REFERENCE_YEAR                    = tmpPITPolygonValues.REFERENCE_YEAR
+SQLStatement_Line_009=  , VEGETATION_COVER_POLYGON_ADJ.BEC_ZONE_CODE            = IIF( tmpPITPolygonValues.BEC_ZONE_CODE IS NULL, VEGETATION_COVER_POLYGON_ADJ.BEC_ZONE_CODE, tmpPITPolygonValues.BEC_ZONE_CODE )
+SQLStatement_Line_010=  , VEGETATION_COVER_POLYGON_ADJ.YIELD_FACTOR             = tmpPITPolygonValues.YIELD_FACTOR
+SQLStatement_Line_011=  , VEGETATION_COVER_POLYGON_ADJ.ADJUSTED_IND             = tmpPITPolygonValues.ADJUSTED_IND
+SQLStatement_Line_012=  , VEGETATION_COVER_POLYGON_ADJ.LAYER_SUMMARIZATION_CODE = tmpPITPolygonValues.LAYER_SUMMARIZATION_CODE
+
+
+
+[Step 4]
+StepName=Drop Temporary Polygon Values Table
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Load Updated Polygon Values Into PGDB
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DROP TABLE tmpPITPolygonValues
+
+
+
+[Step 5]
+StepName=Create Layer PIT Values Table
+StepType=Custom SQL
+
+PrerequisiteTarget_1=DDL Completed
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=CREATE TABLE tmpPITLayerValues
+SQLStatement_Line_002=    ( FOREST_COVER_OBJECT_ID   INTEGER
+SQLStatement_Line_003=    , LAYER_LEVEL_CODE         TEXT(10)
+SQLStatement_Line_004=    , FOREST_COVER_RANK_CODE   TEXT(10)
+SQLStatement_Line_005=    , BASAL_AREA               NUMBER
+SQLStatement_Line_006=    , VRI_LIVE_STEMS_PER_HA    NUMBER
+SQLStatement_Line_007=    , PROJECTION_LAYER_CODE    TEXT(10)
+SQLStatement_Line_008=    , MINIMUM_ADJUSTMENT_DBH   NUMBER
+SQLStatement_Line_009=    , TOTAL_SPECIES_PERCENT    NUMBER
+SQLStatement_Line_010=    , NUMBER_LEADING_SPECIES   INTEGER
+SQLStatement_Line_011=    , NUMBER_TRAILING_SPECIES  INTEGER
+SQLStatement_Line_012=    , LEADING_SPECIES_PERCENT  NUMBER
+SQLStatement_Line_013=    , TRAILING_SPECIES_PERCENT NUMBER )
+
+
+
+[Step 6]
+StepName=Create Layer PIT Values Index
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Create Layer PIT Values Table
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=CREATE UNIQUE INDEX LAYER_UNIQUE_INDEX
+SQLStatement_Line_002=    ON tmpPITLayerValues ( FOREST_COVER_OBJECT_ID
+SQLStatement_Line_003=                         , LAYER_LEVEL_CODE );
+
+
+
+[Step 7]
+StepName=Load Layer Data Into Temp Tables
+StepType=DataLoad
+
+PrerequisiteTarget_1=Create Layer PIT Values Index
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT l.LAYER_RCRD_ID
+SQLStatement_Line_002=     , flvc.FEATURE_RCRD_ID           AS FOREST_COVER_OBJECT_ID
+SQLStatement_Line_003=     , l.LAYER_ID                     AS LAYER_LEVEL_CODE
+SQLStatement_Line_004=     , pitRank.FOREST_COVER_RANK_CODE
+SQLStatement_Line_005=     , pitBA.BASAL_AREA
+SQLStatement_Line_006=     , pitTPH.VRI_LIVE_STEMS_PER_HA
+SQLStatement_Line_007=     , pitV7Layer.PROJECTION_LAYER_CODE
+SQLStatement_Line_008=     , minDBH.MINIMUM_ADJUSTMENT_DBH
+SQLStatement_Line_009=     , spcsPct.TOTAL_SPECIES_PERCENT
+SQLStatement_Line_010=     , spcsPct.TRAILING_SPECIES_PERCENT
+SQLStatement_Line_011=     , spcsPct.LEADING_SPECIES_PERCENT
+SQLStatement_Line_012=     , leadSpcsCnt.NUMBER_LEADING_SPECIES
+SQLStatement_Line_013=     , trailSpcsCnt.NUMBER_TRAILING_SPECIES
+SQLStatement_Line_014=FROM
+SQLStatement_Line_015=       (((((((((tblPOLYGON p
+SQLStatement_Line_016=     INNER JOIN tblFEATURE_LINK_VEGETATION_COVER flvc
+SQLStatement_Line_017=             ON flvc.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_018=     INNER JOIN tblLAYER   l
+SQLStatement_Line_019=             ON l.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_020=      LEFT JOIN (SELECT pit1.POLYGON_RCRD_ID, pit1.LAYER_ID, pit1.PROJECTION_INPUT_PARAMETER_STRING AS FOREST_COVER_RANK_CODE
+SQLStatement_Line_021=                 FROM            ((tblPROJECTION_INPUT_STRING    pit1
+SQLStatement_Line_022=                        INNER JOIN tblPROJECTION_INPUT_DATASET   pid1
+SQLStatement_Line_023=                                ON pit1.PROJECTION_INPUT_DATASET_RCRD_ID = pid1.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_024=                        INNER JOIN tblPROJECTION_PHASE           pp1
+SQLStatement_Line_025=                                ON pp1.PROJECTION_PHASE_RCRD_ID = pit1.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_026=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER pip1
+SQLStatement_Line_027=                                ON pip1.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit1.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_028=                 WHERE  pid1.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_029=                   AND  pp1.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_030=                   AND  pip1.PROJECTION_INPUT_PARAMETER_NAME = '$(LayerRankParam)'
+SQLStatement_Line_031=                ) pitRank
+SQLStatement_Line_032=             ON pitRank.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID AND pitRank.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_033=      LEFT JOIN (SELECT pit2.POLYGON_RCRD_ID, pit2.LAYER_ID, ((pit2.A + pit2.C + (pit2.B * pit2.UNADJUSTED_VALUE)) * pit2.K) AS BASAL_AREA
+SQLStatement_Line_034=                 FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit2
+SQLStatement_Line_035=                        INNER JOIN tblPROJECTION_INPUT_DATASET    pid2
+SQLStatement_Line_036=                                ON pit2.PROJECTION_INPUT_DATASET_RCRD_ID = pid2.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_037=                        INNER JOIN tblPROJECTION_PHASE            pp2
+SQLStatement_Line_038=                                ON pp2.PROJECTION_PHASE_RCRD_ID = pit2.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_039=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip2
+SQLStatement_Line_040=                                ON pip2.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit2.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_041=                 WHERE pid2.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_042=                   AND pp2.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_043=                   AND pip2.PROJECTION_INPUT_PARAMETER_NAME = '$(BasalArea075Param)'
+SQLStatement_Line_044=                ) pitBA
+SQLStatement_Line_045=             ON pitBA.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID AND pitBA.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_046=      LEFT JOIN (SELECT pit3.POLYGON_RCRD_ID, pit3.LAYER_ID, ((pit3.A + pit3.C + (pit3.B * pit3.UNADJUSTED_VALUE)) * pit3.K) AS VRI_LIVE_STEMS_PER_HA
+SQLStatement_Line_047=                 FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit3
+SQLStatement_Line_048=                        INNER JOIN tblPROJECTION_INPUT_DATASET    pid3
+SQLStatement_Line_049=                                ON pit3.PROJECTION_INPUT_DATASET_RCRD_ID = pid3.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_050=                        INNER JOIN tblPROJECTION_PHASE            pp3
+SQLStatement_Line_051=                                ON pp3.PROJECTION_PHASE_RCRD_ID = pit3.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_052=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip3
+SQLStatement_Line_053=                                ON pip3.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit3.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_054=                 WHERE pid3.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_055=                   AND pp3.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_056=                   AND pip3.PROJECTION_INPUT_PARAMETER_NAME = '$(TPHParam)'
+SQLStatement_Line_057=                ) pitTPH
+SQLStatement_Line_058=             ON pitTPH.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID AND pitTPH.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_059=      LEFT JOIN (SELECT pit4.POLYGON_RCRD_ID, pit4.LAYER_ID, pit4.PROJECTION_INPUT_PARAMETER_STRING AS PROJECTION_LAYER_CODE
+SQLStatement_Line_060=                 FROM            ((tblPROJECTION_INPUT_STRING    pit4
+SQLStatement_Line_061=                        INNER JOIN tblPROJECTION_INPUT_DATASET   pid4
+SQLStatement_Line_062=                                ON pit4.PROJECTION_INPUT_DATASET_RCRD_ID = pid4.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_063=                        INNER JOIN tblPROJECTION_PHASE           pp4
+SQLStatement_Line_064=                                ON pp4.PROJECTION_PHASE_RCRD_ID = pit4.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_065=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER pip4
+SQLStatement_Line_066=                                ON pip4.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit4.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_067=                 WHERE pid4.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_068=                   AND pp4.PROJECTION_PHASE_NAME            = '$(VRIStartPhaseName)'
+SQLStatement_Line_069=                   AND pip4.PROJECTION_INPUT_PARAMETER_NAME = '$(V7LayerParam)'
+SQLStatement_Line_070=                ) pitV7Layer
+SQLStatement_Line_071=             ON pitV7Layer.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID AND pitV7Layer.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_072=      LEFT JOIN (SELECT DISTINCT pit5.POLYGON_RCRD_ID, pit5.LAYER_ID, 7.5 AS MINIMUM_ADJUSTMENT_DBH
+SQLStatement_Line_073=                 FROM             (tblPROJECTION_INPUT_ADJUSTMENT pit5
+SQLStatement_Line_074=                        INNER JOIN tblPROJECTION_INPUT_DATASET    pid5
+SQLStatement_Line_075=                                ON pit5.PROJECTION_INPUT_DATASET_RCRD_ID = pid5.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_076=                        INNER JOIN tblPROJECTION_PHASE            pp5
+SQLStatement_Line_077=                                ON pp5.PROJECTION_PHASE_RCRD_ID = pit5.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_078=                 WHERE pid5.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_079=                   AND pp5.PROJECTION_PHASE_NAME            = '$(VRIStartPhaseName)'
+SQLStatement_Line_080=                ) minDBH
+SQLStatement_Line_081=             ON minDBH.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID AND minDBH.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_082=      LEFT JOIN (SELECT DISTINCT pit6.POLYGON_RCRD_ID
+SQLStatement_Line_083=                               , pit6.LAYER_ID
+SQLStatement_Line_084=                               , SUM( ROUND( pit6.PROJECTION_INPUT_PARAMETER_VALUE, $(SpeciesPercentRoundingDigits) ) ) AS TOTAL_SPECIES_PERCENT
+SQLStatement_Line_085=                               , MIN( ROUND( pit6.PROJECTION_INPUT_PARAMETER_VALUE, $(SpeciesPercentRoundingDigits) ) ) AS TRAILING_SPECIES_PERCENT
+SQLStatement_Line_086=                               , MAX( ROUND( pit6.PROJECTION_INPUT_PARAMETER_VALUE, $(SpeciesPercentRoundingDigits) ) ) AS LEADING_SPECIES_PERCENT
+SQLStatement_Line_087=                 FROM            ((tblPROJECTION_INPUT_VALUE      pit6
+SQLStatement_Line_088=                        INNER JOIN tblPROJECTION_INPUT_DATASET    pid6
+SQLStatement_Line_089=                                ON pit6.PROJECTION_INPUT_DATASET_RCRD_ID = pid6.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_090=                        INNER JOIN tblPROJECTION_PHASE            pp6
+SQLStatement_Line_091=                                ON pp6.PROJECTION_PHASE_RCRD_ID = pit6.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_092=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip6
+SQLStatement_Line_093=                                ON pip6.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit6.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_094=                 WHERE pid6.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_095=                   AND pp6.PROJECTION_PHASE_NAME            = '$(VRIStartPhaseName)'
+SQLStatement_Line_096=                   AND pip6.PROJECTION_INPUT_PARAMETER_NAME = '$(SpeciesPercentName)'
+SQLStatement_Line_097=                 GROUP BY pit6.POLYGON_RCRD_ID, pit6.LAYER_ID
+SQLStatement_Line_098=                 HAVING SUM( pit6.PROJECTION_INPUT_PARAMETER_VALUE ) >= 90.0
+SQLStatement_Line_099=                ) spcsPct
+SQLStatement_Line_100=             ON spcsPct.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID AND spcsPct.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_101=      LEFT JOIN (SELECT DISTINCT pit7.POLYGON_RCRD_ID
+SQLStatement_Line_102=                               , pit7.LAYER_ID
+SQLStatement_Line_103=                               , COUNT( pit7.PROJECTION_INPUT_PARAMETER_VALUE ) AS NUMBER_TRAILING_SPECIES
+SQLStatement_Line_104=                 FROM           (((tblPROJECTION_INPUT_VALUE      pit7
+SQLStatement_Line_105=                        INNER JOIN tblPROJECTION_INPUT_DATASET    pid7
+SQLStatement_Line_106=                                ON pit7.PROJECTION_INPUT_DATASET_RCRD_ID = pid7.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_107=                        INNER JOIN tblPROJECTION_PHASE            pp7
+SQLStatement_Line_108=                                ON pp7.PROJECTION_PHASE_RCRD_ID = pit7.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_109=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip7
+SQLStatement_Line_110=                                ON pip7.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit7.PROJECTION_INPUT_PARAMETER_RCRD_ID)
+SQLStatement_Line_111=                        INNER JOIN (SELECT pit7a.POLYGON_RCRD_ID
+SQLStatement_Line_112=                                         , pit7a.LAYER_ID
+SQLStatement_Line_113=                                         , MIN( ROUND( pit7a.PROJECTION_INPUT_PARAMETER_VALUE, $(SpeciesPercentRoundingDigits) ) ) AS TARGET_PERCENT
+SQLStatement_Line_114=                                    FROM            ((tblPROJECTION_INPUT_VALUE     pit7a
+SQLStatement_Line_115=                                           INNER JOIN tblPROJECTION_INPUT_DATASET   pid7a
+SQLStatement_Line_116=                                                   ON pit7a.PROJECTION_INPUT_DATASET_RCRD_ID = pid7a.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_117=                                           INNER JOIN tblPROJECTION_PHASE           pp7a
+SQLStatement_Line_118=                                                   ON pp7a.PROJECTION_PHASE_RCRD_ID = pit7a.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_119=                                           INNER JOIN tblPROJECTION_INPUT_PARAMETER pip7a
+SQLStatement_Line_120=                                                   ON pip7a.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit7a.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_121=                                    WHERE pid7a.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_122=                                      AND pp7a.PROJECTION_PHASE_NAME            = '$(VRIStartPhaseName)'
+SQLStatement_Line_123=                                      AND pip7a.PROJECTION_INPUT_PARAMETER_NAME = '$(SpeciesPercentName)'
+SQLStatement_Line_124=                                    GROUP BY pit7a.POLYGON_RCRD_ID, pit7a.LAYER_ID) minPct7
+SQLStatement_Line_125=                                ON pit7.POLYGON_RCRD_ID = minPct7.POLYGON_RCRD_ID
+SQLStatement_Line_126=                               AND pit7.LAYER_ID        = minPct7.LAYER_ID
+SQLStatement_Line_127=                 WHERE pid7.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_128=                   AND pp7.PROJECTION_PHASE_NAME            = '$(VRIStartPhaseName)'
+SQLStatement_Line_129=                   AND pip7.PROJECTION_INPUT_PARAMETER_NAME = '$(SpeciesPercentName)'
+SQLStatement_Line_130=                   AND ABS( ROUND( pit7.PROJECTION_INPUT_PARAMETER_VALUE, $(SpeciesPercentRoundingDigits) ) - minPct7.TARGET_PERCENT ) < $(SpeciesPercentEqualsEpsilon)
+SQLStatement_Line_131=                 GROUP BY pit7.POLYGON_RCRD_ID, pit7.LAYER_ID
+SQLStatement_Line_132=                ) trailSpcsCnt
+SQLStatement_Line_133=             ON trailSpcsCnt.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID AND trailSpcsCnt.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_134=      LEFT JOIN (SELECT DISTINCT pit8.POLYGON_RCRD_ID
+SQLStatement_Line_135=                               , pit8.LAYER_ID
+SQLStatement_Line_136=                               , COUNT( pit8.PROJECTION_INPUT_PARAMETER_VALUE ) AS NUMBER_LEADING_SPECIES
+SQLStatement_Line_137=                 FROM           (((tblPROJECTION_INPUT_VALUE      pit8
+SQLStatement_Line_138=                        INNER JOIN tblPROJECTION_INPUT_DATASET    pid8
+SQLStatement_Line_139=                                ON pit8.PROJECTION_INPUT_DATASET_RCRD_ID = pid8.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_140=                        INNER JOIN tblPROJECTION_PHASE            pp8
+SQLStatement_Line_141=                                ON pp8.PROJECTION_PHASE_RCRD_ID = pit8.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_142=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip8
+SQLStatement_Line_143=                                ON pip8.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit8.PROJECTION_INPUT_PARAMETER_RCRD_ID)
+SQLStatement_Line_144=                        INNER JOIN (SELECT pit8a.POLYGON_RCRD_ID
+SQLStatement_Line_145=                                         , pit8a.LAYER_ID
+SQLStatement_Line_146=                                         , MAX( ROUND( pit8a.PROJECTION_INPUT_PARAMETER_VALUE, $(SpeciesPercentRoundingDigits) ) ) AS TARGET_PERCENT
+SQLStatement_Line_147=                                    FROM            ((tblPROJECTION_INPUT_VALUE     pit8a
+SQLStatement_Line_148=                                           INNER JOIN tblPROJECTION_INPUT_DATASET   pid8a
+SQLStatement_Line_149=                                                   ON pit8a.PROJECTION_INPUT_DATASET_RCRD_ID = pid8a.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_150=                                           INNER JOIN tblPROJECTION_PHASE           pp8a
+SQLStatement_Line_151=                                                   ON pp8a.PROJECTION_PHASE_RCRD_ID = pit8a.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_152=                                           INNER JOIN tblPROJECTION_INPUT_PARAMETER pip8a
+SQLStatement_Line_153=                                                   ON pip8a.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit8a.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_154=                                    WHERE pid8a.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_155=                                      AND pp8a.PROJECTION_PHASE_NAME            = '$(VRIStartPhaseName)'
+SQLStatement_Line_156=                                      AND pip8a.PROJECTION_INPUT_PARAMETER_NAME = '$(SpeciesPercentName)'
+SQLStatement_Line_157=                                    GROUP BY pit8a.POLYGON_RCRD_ID, pit8a.LAYER_ID) maxPct8
+SQLStatement_Line_158=                                ON pit8.POLYGON_RCRD_ID = maxPct8.POLYGON_RCRD_ID
+SQLStatement_Line_159=                               AND pit8.LAYER_ID        = maxPct8.LAYER_ID
+SQLStatement_Line_160=                 WHERE pid8.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_161=                   AND pp8.PROJECTION_PHASE_NAME            = '$(VRIStartPhaseName)'
+SQLStatement_Line_162=                   AND pip8.PROJECTION_INPUT_PARAMETER_NAME = '$(SpeciesPercentName)'
+SQLStatement_Line_163=                   AND ABS( ROUND( pit8.PROJECTION_INPUT_PARAMETER_VALUE, $(SpeciesPercentRoundingDigits) ) -  maxPct8.TARGET_PERCENT ) < $(SpeciesPercentEqualsEpsilon)
+SQLStatement_Line_164=                 GROUP BY pit8.POLYGON_RCRD_ID, pit8.LAYER_ID
+SQLStatement_Line_165=                ) leadSpcsCnt
+SQLStatement_Line_166=             ON leadSpcsCnt.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID AND leadSpcsCnt.LAYER_ID = l.LAYER_ID
+
+SQLStatement_Line_167=WHERE p.IGNORE_POLYGON    = 0
+
+
+
+
+TargetConnection=Destination Data
+TargetTableName=tmpPITLayerValues
+
+SourceToDestinationColumnMappingSection=Layer PIT Transfer Column Mapping
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FOREST_COVER_OBJECT_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=LAYER_LEVEL_CODE
+
+
+
+[Layer PIT Transfer Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=FOREST_COVER_OBJECT_ID
+TargetColumn_1=FOREST_COVER_OBJECT_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=LAYER_LEVEL_CODE
+TargetColumn_2=LAYER_LEVEL_CODE
+
+SourceMappingType_3=Copy
+SourceColumn_3=FOREST_COVER_RANK_CODE
+TargetColumn_3=FOREST_COVER_RANK_CODE
+
+SourceMappingType_4=Copy
+SourceColumn_4=BASAL_AREA
+TargetColumn_4=BASAL_AREA
+
+SourceMappingType_5=Copy
+SourceColumn_5=VRI_LIVE_STEMS_PER_HA
+TargetColumn_5=VRI_LIVE_STEMS_PER_HA
+
+SourceMappingType_6=Copy
+SourceColumn_6=PROJECTION_LAYER_CODE
+TargetColumn_6=PROJECTION_LAYER_CODE
+
+SourceMappingType_7=Copy
+SourceColumn_7=MINIMUM_ADJUSTMENT_DBH
+TargetColumn_7=MINIMUM_ADJUSTMENT_DBH
+
+SourceMappingType_8=Copy
+SourceColumn_8=TOTAL_SPECIES_PERCENT
+TargetColumn_8=TOTAL_SPECIES_PERCENT
+
+SourceMappingType_9=Copy
+SourceColumn_9=TRAILING_SPECIES_PERCENT
+TargetColumn_9=TRAILING_SPECIES_PERCENT
+
+SourceMappingType_10=Copy
+SourceColumn_10=LEADING_SPECIES_PERCENT
+TargetColumn_10=LEADING_SPECIES_PERCENT
+
+SourceMappingType_11=Copy
+SourceColumn_11=NUMBER_LEADING_SPECIES
+TargetColumn_11=NUMBER_LEADING_SPECIES
+
+SourceMappingType_12=Copy
+SourceColumn_12=NUMBER_TRAILING_SPECIES
+TargetColumn_12=NUMBER_TRAILING_SPECIES
+
+
+[Step 8]
+StepName=Load Updated Layer Values Into PGDB
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Load Layer Data Into Temp Tables
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE            TREE_COVER_LAYER_ADJUSTED 
+SQLStatement_Line_002=       INNER JOIN tmpPITLayerValues 
+SQLStatement_Line_003=               ON TREE_COVER_LAYER_ADJUSTED.FOREST_COVER_OBJECT_ID = tmpPITLayerValues.FOREST_COVER_OBJECT_ID 
+SQLStatement_Line_004=              AND TREE_COVER_LAYER_ADJUSTED.LAYER_LEVEL_CODE       = tmpPITLayerValues.LAYER_LEVEL_CODE
+SQLStatement_Line_005=SET TREE_COVER_LAYER_ADJUSTED.FOREST_COVER_RANK_CODE = tmpPITLayerValues.FOREST_COVER_RANK_CODE
+SQLStatement_Line_006=  , TREE_COVER_LAYER_ADJUSTED.BASAL_AREA             = tmpPITLayerValues.BASAL_AREA
+SQLStatement_Line_007=  , TREE_COVER_LAYER_ADJUSTED.VRI_LIVE_STEMS_PER_HA  = tmpPITLayerValues.VRI_LIVE_STEMS_PER_HA
+SQLStatement_Line_008=  , TREE_COVER_LAYER_ADJUSTED.PROJECTION_LAYER_CODE  = tmpPITLayerValues.PROJECTION_LAYER_CODE
+SQLStatement_Line_009=  , TREE_COVER_LAYER_ADJUSTED.MINIMUM_ADJUSTMENT_DBH = tmpPITLayerValues.MINIMUM_ADJUSTMENT_DBH
+
+
+
+[Step 9]
+StepName=Drop Temporary Layer Values Table
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Load Updated Layer Values Into PGDB
+PrerequisiteTarget_2=Adjust Species Percents Down
+PrerequisiteTarget_3=Adjust Species Percents Up
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DROP TABLE tmpPITLayerValues
+
+
+
+[Step 10]
+StepName=Create Species PIT Values Table
+StepType=Custom SQL
+
+PrerequisiteTarget_1=DDL Completed
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=CREATE TABLE tmpPITSpeciesValues
+SQLStatement_Line_002=    ( FOREST_COVER_OBJECT_ID  INTEGER
+SQLStatement_Line_003=    , LAYER_LEVEL_CODE        TEXT(10)
+SQLStatement_Line_004=    , TREE_SPECIES_CODE       TEXT(10)
+SQLStatement_Line_005=    , SPECIES_PCT             NUMBER
+SQLStatement_Line_006=    , AGE                     NUMBER
+SQLStatement_Line_007=    , HEIGHT                  NUMBER )
+
+
+
+[Step 11]
+StepName=Create Species PIT Values Index
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Create Species PIT Values Table
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=CREATE UNIQUE INDEX SPECIES_UNIQUE_INDEX
+SQLStatement_Line_002=    ON tmpPITSpeciesValues ( FOREST_COVER_OBJECT_ID
+SQLStatement_Line_003=                           , LAYER_LEVEL_CODE
+SQLStatement_Line_004=                           , TREE_SPECIES_CODE );
+
+
+
+[Step 12]
+StepName=Load Species Data Into Temp Tables
+StepType=DataLoad
+
+PrerequisiteTarget_1=Create Species PIT Values Index
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT s.SPECIES_RCRD_ID
+SQLStatement_Line_002=     , flvc.FEATURE_RCRD_ID           AS FOREST_COVER_OBJECT_ID
+SQLStatement_Line_003=     , l.LAYER_ID                     AS LAYER_LEVEL_CODE
+SQLStatement_Line_004=     , s.SPECIES_CD                   AS TREE_SPECIES_CODE
+SQLStatement_Line_005=     , pitPct.SPECIES_PCT
+SQLStatement_Line_006=     , pitAge.AGE
+SQLStatement_Line_007=     , pitHt.HEIGHT
+SQLStatement_Line_008=FROM
+SQLStatement_Line_009=           (((((tblPOLYGON p
+SQLStatement_Line_010=     INNER JOIN tblFEATURE_LINK_VEGETATION_COVER flvc
+SQLStatement_Line_011=             ON flvc.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_012=     INNER JOIN tblLAYER   l
+SQLStatement_Line_013=             ON l.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_014=     INNER JOIN tblSPECIES s
+SQLStatement_Line_015=             ON s.LAYER_RCRD_ID = l.LAYER_RCRD_ID)
+SQLStatement_Line_016=      LEFT JOIN (SELECT p1.POLYGON_RCRD_ID, l1.LAYER_ID, s1.SPECIES_ID, s1.SPECIES_RCRD_ID, ROUND( pit1.PROJECTION_INPUT_PARAMETER_VALUE, $(SpeciesPercentRoundingDigits) ) AS SPECIES_PCT
+SQLStatement_Line_017=                 FROM         (((((tblPROJECTION_INPUT_VALUE     pit1
+SQLStatement_Line_018=                        INNER JOIN tblPROJECTION_INPUT_DATASET   pid1
+SQLStatement_Line_019=                                ON pit1.PROJECTION_INPUT_DATASET_RCRD_ID = pid1.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_020=                        INNER JOIN tblPROJECTION_PHASE           pp1
+SQLStatement_Line_021=                                ON pp1.PROJECTION_PHASE_RCRD_ID = pit1.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_022=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER pip1
+SQLStatement_Line_023=                                ON pip1.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit1.PROJECTION_INPUT_PARAMETER_RCRD_ID)
+SQLStatement_Line_024=                        INNER JOIN tblPOLYGON                    p1
+SQLStatement_Line_025=                                ON p1.POLYGON_RCRD_ID = pit1.POLYGON_RCRD_ID)
+SQLStatement_Line_026=                        INNER JOIN tblLAYER                      l1
+SQLStatement_Line_027=                                ON l1.POLYGON_RCRD_ID = p1.POLYGON_RCRD_ID AND l1.LAYER_ID = pit1.LAYER_ID)
+SQLStatement_Line_028=                        INNER JOIN tblSPECIES                    s1
+SQLStatement_Line_029=                                ON s1.LAYER_RCRD_ID = l1.LAYER_RCRD_ID AND s1.SPECIES_ID = pit1.SPECIES_ID
+SQLStatement_Line_030=                 WHERE  pid1.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_031=                   AND  pp1.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_032=                   AND  pip1.PROJECTION_INPUT_PARAMETER_NAME = '$(SpeciesPctParam)'
+SQLStatement_Line_033=                ) pitPct
+SQLStatement_Line_034=             ON pitPct.SPECIES_RCRD_ID = s.SPECIES_RCRD_ID)
+
+SQLStatement_Line_035=      LEFT JOIN (SELECT p2.POLYGON_RCRD_ID, l2.LAYER_ID, s2.SPECIES_ID, s2.SPECIES_RCRD_ID, ((pit2.A + pit2.C + (pit2.B * pit2.UNADJUSTED_VALUE)) * pit2.K) AS AGE
+SQLStatement_Line_036=                 FROM         (((((tblPROJECTION_INPUT_ADJUSTMENT pit2
+SQLStatement_Line_037=                        INNER JOIN tblPROJECTION_INPUT_DATASET    pid2
+SQLStatement_Line_038=                                ON pit2.PROJECTION_INPUT_DATASET_RCRD_ID = pid2.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_039=                        INNER JOIN tblPROJECTION_PHASE            pp2
+SQLStatement_Line_040=                                ON pp2.PROJECTION_PHASE_RCRD_ID = pit2.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_041=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip2
+SQLStatement_Line_042=                                ON pip2.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit2.PROJECTION_INPUT_PARAMETER_RCRD_ID)
+SQLStatement_Line_043=                        INNER JOIN tblPOLYGON                     p2
+SQLStatement_Line_044=                                ON p2.POLYGON_RCRD_ID = pit2.POLYGON_RCRD_ID)
+SQLStatement_Line_045=                        INNER JOIN tblLAYER                       l2
+SQLStatement_Line_046=                                ON l2.POLYGON_RCRD_ID = p2.POLYGON_RCRD_ID AND l2.LAYER_ID = pit2.LAYER_ID)
+SQLStatement_Line_047=                        INNER JOIN tblSPECIES                     s2
+SQLStatement_Line_048=                                ON s2.LAYER_RCRD_ID = l2.LAYER_RCRD_ID AND s2.SPECIES_ID = pit2.SPECIES_ID
+SQLStatement_Line_049=                 WHERE pid2.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_050=                   AND pp2.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_051=                   AND pip2.PROJECTION_INPUT_PARAMETER_NAME = '$(TotalAgeParam)'
+SQLStatement_Line_052=                ) pitAge
+SQLStatement_Line_053=             ON pitAge.SPECIES_RCRD_ID = s.SPECIES_RCRD_ID)
+
+SQLStatement_Line_054=      LEFT JOIN (SELECT p3.POLYGON_RCRD_ID, l3.LAYER_ID, s3.SPECIES_ID, s3.SPECIES_RCRD_ID, ((pit3.A + pit3.C + (pit3.B * pit3.UNADJUSTED_VALUE)) * pit3.K) AS HEIGHT
+SQLStatement_Line_055=                 FROM         (((((tblPROJECTION_INPUT_ADJUSTMENT pit3
+SQLStatement_Line_056=                        INNER JOIN tblPROJECTION_INPUT_DATASET    pid3
+SQLStatement_Line_057=                                ON pit3.PROJECTION_INPUT_DATASET_RCRD_ID = pid3.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_058=                        INNER JOIN tblPROJECTION_PHASE            pp3
+SQLStatement_Line_059=                                ON pp3.PROJECTION_PHASE_RCRD_ID = pit3.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_060=                        INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip3
+SQLStatement_Line_061=                                ON pip3.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit3.PROJECTION_INPUT_PARAMETER_RCRD_ID)
+SQLStatement_Line_062=                        INNER JOIN tblPOLYGON                     p3
+SQLStatement_Line_063=                                ON p3.POLYGON_RCRD_ID = pit3.POLYGON_RCRD_ID)
+SQLStatement_Line_064=                        INNER JOIN tblLAYER                       l3
+SQLStatement_Line_065=                                ON l3.POLYGON_RCRD_ID = p3.POLYGON_RCRD_ID AND l3.LAYER_ID = pit3.LAYER_ID)
+SQLStatement_Line_066=                        INNER JOIN tblSPECIES                     s3
+SQLStatement_Line_067=                                ON s3.LAYER_RCRD_ID = l3.LAYER_RCRD_ID AND s3.SPECIES_ID = pit3.SPECIES_ID
+SQLStatement_Line_068=                 WHERE pid3.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_069=                   AND pp3.PROJECTION_PHASE_NAME            = '$(VRISTARTPhaseName)'
+SQLStatement_Line_070=                   AND pip3.PROJECTION_INPUT_PARAMETER_NAME = '$(DominantHeightParam)'
+SQLStatement_Line_071=                ) pitHt
+SQLStatement_Line_072=             ON pitHt.SPECIES_RCRD_ID = s.SPECIES_RCRD_ID
+
+SQLStatement_Line_073=WHERE p.IGNORE_POLYGON  = 0
+
+
+
+TargetConnection=Destination Data
+TargetTableName=tmpPITSpeciesValues
+
+SourceToDestinationColumnMappingSection=Species PIT Transfer Column Mapping
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FOREST_COVER_OBJECT_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=LAYER_LEVEL_CODE
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=TREE_SPECIES_CODE
+
+
+
+[Species PIT Transfer Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=FOREST_COVER_OBJECT_ID
+TargetColumn_1=FOREST_COVER_OBJECT_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=LAYER_LEVEL_CODE
+TargetColumn_2=LAYER_LEVEL_CODE
+
+SourceMappingType_3=Copy
+SourceColumn_3=TREE_SPECIES_CODE
+TargetColumn_3=TREE_SPECIES_CODE
+
+SourceMappingType_4=Copy
+SourceColumn_4=SPECIES_PCT
+TargetColumn_4=SPECIES_PCT
+
+SourceMappingType_5=Copy
+SourceColumn_5=AGE
+TargetColumn_5=AGE
+
+SourceMappingType_6=Copy
+SourceColumn_6=HEIGHT
+TargetColumn_6=HEIGHT
+
+
+
+[Step 13]
+StepName=Load Updated Species Values Into PGDB
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Load Species Data Into Temp Tables
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE           (TREE_SPECIES_ADJUSTED
+SQLStatement_Line_002=       INNER JOIN TREE_COVER_LAYER_ADJUSTED
+SQLStatement_Line_003=               ON TREE_SPECIES_ADJUSTED.TREE_COVER_LAYER_ADJUSTED_ID = TREE_COVER_LAYER_ADJUSTED.TREE_COVER_LAYER_ADJUSTED_ID)
+SQLStatement_Line_004=       INNER JOIN tmpPITSpeciesValues 
+SQLStatement_Line_005=               ON TREE_COVER_LAYER_ADJUSTED.FOREST_COVER_OBJECT_ID = tmpPITSpeciesValues.FOREST_COVER_OBJECT_ID 
+SQLStatement_Line_006=              AND TREE_COVER_LAYER_ADJUSTED.LAYER_LEVEL_CODE       = tmpPITSpeciesValues.LAYER_LEVEL_CODE
+SQLStatement_Line_007=              AND TREE_SPECIES_ADJUSTED.TREE_SPECIES_CODE          = tmpPITSpeciesValues.TREE_SPECIES_CODE
+SQLStatement_Line_008=SET TREE_SPECIES_ADJUSTED.SPECIES_PCT = IIF( IsNull( tmpPITSpeciesValues.SPECIES_PCT ), TREE_SPECIES_ADJUSTED.SPECIES_PCT, tmpPITSpeciesValues.SPECIES_PCT )
+SQLStatement_Line_009=  , TREE_SPECIES_ADJUSTED.AGE         = IIF( IsNull( tmpPITSpeciesValues.AGE ),         TREE_SPECIES_ADJUSTED.AGE,         tmpPITSpeciesValues.AGE )
+SQLStatement_Line_010=  , TREE_SPECIES_ADJUSTED.HEIGHT      = IIF( IsNull( tmpPITSpeciesValues.HEIGHT),       TREE_SPECIES_ADJUSTED.HEIGHT,      tmpPITSpeciesValues.HEIGHT )
+
+
+
+[Step 14]
+StepName=Drop Temporary Species Values Table
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Load Updated Species Values Into PGDB
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DROP TABLE tmpPITSpeciesValues
+
+
+
+[Step 15]
+StepName=Load Adjustment Seeds Into PGDB
+StepType=DataLoad
+
+PrerequisiteTarget_1=Load Updated Layer Values Into PGDB
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT l.LAYER_RCRD_ID           AS ADJUSTMENT_INPUT_ADJUSTED_ID
+SQLStatement_Line_002=     , lht.ADJUSTED_VALUE        AS LOREY_HEIGHT
+SQLStatement_Line_003=     , ba125.ADJUSTED_VALUE      AS BASAL_AREA_12_5CM
+SQLStatement_Line_004=     , wsv075.ADJUSTED_VALUE     AS WHOLE_STEM_VOLUME_7_5CM
+SQLStatement_Line_005=     , wsv125.ADJUSTED_VALUE     AS WHOLE_STEM_VOLUME_12_5CM
+SQLStatement_Line_006=     , cuv125.ADJUSTED_VALUE     AS CLOSE_UTIL_VOLUME_12_5CM
+SQLStatement_Line_007=     , cdv125.ADJUSTED_VALUE     AS CLOSE_UTIL_NET_DECAY_VOLUME
+SQLStatement_Line_008=     , cdw125.ADJUSTED_VALUE     AS CLOSE_UTIL_NET_WASTE_VOLUME
+SQLStatement_Line_009=     , NULL                      AS INPUT_MODE
+SQLStatement_Line_010=     , l.LAYER_ID 
+SQLStatement_Line_011=     , flvc.FEATURE_RCRD_ID      AS FOREST_COVER_OBJECT_ID
+SQLStatement_Line_012=     , Now()                     AS ENTRY_TIMESTAMP
+SQLStatement_Line_013=     , NULL                      AS ENTRY_USERID
+SQLStatement_Line_014=     , NULL                      AS UPDATE_TIMESTAMP
+SQLStatement_Line_015=     , NULL                      AS UPDATE_USERID
+SQLStatement_Line_016=FROM
+SQLStatement_Line_017=         (((((((((tblVERSION                       v
+SQLStatement_Line_018=       INNER JOIN tblPOLYGON                       p    ON p.VERSION_RCRD_ID    = v.VERSION_RCRD_ID)
+SQLStatement_Line_019=       INNER JOIN tblFEATURE_LINK_VEGETATION_COVER flvc ON flvc.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_020=       INNER JOIN tblLAYER                         l    ON l.POLYGON_RCRD_ID    = p.POLYGON_RCRD_ID)
+SQLStatement_Line_021=       LEFT JOIN (SELECT pit1.POLYGON_RCRD_ID
+SQLStatement_Line_022=                       , pit1.LAYER_ID
+SQLStatement_Line_023=                       , ((pit1.A + pit1.C + (pit1.B * pit1.UNADJUSTED_VALUE)) * pit1.K) AS ADJUSTED_VALUE
+SQLStatement_Line_024=                  FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit1
+SQLStatement_Line_025=                         INNER JOIN tblPROJECTION_INPUT_DATASET    pid1
+SQLStatement_Line_026=                                 ON pid1.PROJECTION_INPUT_DATASET_RCRD_ID = pit1.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_027=                         INNER JOIN tblPROJECTION_PHASE            pp1
+SQLStatement_Line_028=                                 ON pp1.PROJECTION_PHASE_RCRD_ID = pit1.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_029=                         INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip1
+SQLStatement_Line_030=                                 ON pip1.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit1.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_031=                  WHERE 
+SQLStatement_Line_032=                         pid1.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_033=                    AND  pp1.PROJECTION_PHASE_NAME            = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_034=                    AND  pip1.PROJECTION_INPUT_PARAMETER_NAME = '$(LoreyHeightParam)') lht
+SQLStatement_Line_035=              ON lht.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID 
+SQLStatement_Line_036=             AND lht.LAYER_ID        = l.LAYER_ID)
+SQLStatement_Line_037=       LEFT JOIN (SELECT pit2.POLYGON_RCRD_ID
+SQLStatement_Line_038=                       , pit2.LAYER_ID
+SQLStatement_Line_039=                       , ((pit2.A + pit2.C + (pit2.B * pit2.UNADJUSTED_VALUE)) * pit2.K) AS ADJUSTED_VALUE
+SQLStatement_Line_040=                  FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit2
+SQLStatement_Line_041=                         INNER JOIN tblPROJECTION_INPUT_DATASET    pid2
+SQLStatement_Line_042=                                 ON pid2.PROJECTION_INPUT_DATASET_RCRD_ID = pit2.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_043=                         INNER JOIN tblPROJECTION_PHASE            pp2
+SQLStatement_Line_044=                                 ON pp2.PROJECTION_PHASE_RCRD_ID = pit2.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_045=                         INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip2
+SQLStatement_Line_046=                                 ON pip2.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit2.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_047=                  WHERE 
+SQLStatement_Line_048=                               pid2.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_049=                       AND pp2.PROJECTION_PHASE_NAME              = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_050=                       AND pip2.PROJECTION_INPUT_PARAMETER_NAME   = '$(BasalArea125Param)') ba125
+SQLStatement_Line_051=              ON ba125.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID 
+SQLStatement_Line_052=             AND ba125.LAYER_ID        = l.LAYER_ID)
+SQLStatement_Line_053=       LEFT JOIN (SELECT pit3.POLYGON_RCRD_ID
+SQLStatement_Line_054=                       , pit3.LAYER_ID
+SQLStatement_Line_055=                       , ((pit3.A + pit3.C + (pit3.B * pit3.UNADJUSTED_VALUE)) * pit3.K) AS ADJUSTED_VALUE
+SQLStatement_Line_056=                  FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit3
+SQLStatement_Line_057=                         INNER JOIN tblPROJECTION_INPUT_DATASET    pid3
+SQLStatement_Line_058=                                 ON pid3.PROJECTION_INPUT_DATASET_RCRD_ID = pit3.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_059=                         INNER JOIN tblPROJECTION_PHASE            pp3
+SQLStatement_Line_060=                                 ON pp3.PROJECTION_PHASE_RCRD_ID = pit3.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_061=                         INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip3
+SQLStatement_Line_062=                                 ON pip3.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit3.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_063=                  WHERE 
+SQLStatement_Line_064=                               pid3.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_065=                       AND pp3.PROJECTION_PHASE_NAME              = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_066=                       AND pip3.PROJECTION_INPUT_PARAMETER_NAME   = '$(WSV075Param)') wsv075
+SQLStatement_Line_067=              ON wsv075.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID 
+SQLStatement_Line_068=             AND wsv075.LAYER_ID        = l.LAYER_ID)
+SQLStatement_Line_069=       LEFT JOIN (SELECT pit4.POLYGON_RCRD_ID
+SQLStatement_Line_070=                       , pit4.LAYER_ID
+SQLStatement_Line_071=                       , ((pit4.A + pit4.C + (pit4.B * pit4.UNADJUSTED_VALUE)) * pit4.K) AS ADJUSTED_VALUE
+SQLStatement_Line_072=                  FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit4
+SQLStatement_Line_073=                         INNER JOIN tblPROJECTION_INPUT_DATASET    pid4
+SQLStatement_Line_074=                                 ON pid4.PROJECTION_INPUT_DATASET_RCRD_ID = pit4.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_075=                         INNER JOIN tblPROJECTION_PHASE            pp4
+SQLStatement_Line_076=                                 ON pp4.PROJECTION_PHASE_RCRD_ID = pit4.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_077=                         INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip4
+SQLStatement_Line_078=                                 ON pip4.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit4.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_079=                  WHERE 
+SQLStatement_Line_080=                               pid4.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_081=                       AND pp4.PROJECTION_PHASE_NAME              = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_082=                       AND pip4.PROJECTION_INPUT_PARAMETER_NAME   = '$(WSV125Param)') wsv125
+SQLStatement_Line_083=              ON wsv125.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID 
+SQLStatement_Line_084=             AND wsv125.LAYER_ID        = l.LAYER_ID)
+SQLStatement_Line_085=       LEFT JOIN (SELECT pit5.POLYGON_RCRD_ID
+SQLStatement_Line_086=                       , pit5.LAYER_ID
+SQLStatement_Line_087=                       , ((pit5.A + pit5.C + (pit5.B * pit5.UNADJUSTED_VALUE)) * pit5.K) AS ADJUSTED_VALUE
+SQLStatement_Line_088=                  FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit5
+SQLStatement_Line_089=                         INNER JOIN tblPROJECTION_INPUT_DATASET    pid5
+SQLStatement_Line_090=                                 ON pid5.PROJECTION_INPUT_DATASET_RCRD_ID = pit5.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_091=                         INNER JOIN tblPROJECTION_PHASE            pp5
+SQLStatement_Line_092=                                 ON pp5.PROJECTION_PHASE_RCRD_ID = pit5.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_093=                         INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip5
+SQLStatement_Line_094=                                 ON pip5.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit5.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_095=                  WHERE 
+SQLStatement_Line_096=                               pid5.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_097=                       AND pp5.PROJECTION_PHASE_NAME              = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_098=                       AND pip5.PROJECTION_INPUT_PARAMETER_NAME   = '$(CUV125Param)') cuv125
+SQLStatement_Line_099=              ON cuv125.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID 
+SQLStatement_Line_100=             AND cuv125.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_101=       LEFT JOIN (SELECT pit6.POLYGON_RCRD_ID
+SQLStatement_Line_102=                       , pit6.LAYER_ID
+SQLStatement_Line_103=                       , ((pit6.A + pit6.C + (pit6.B * pit6.UNADJUSTED_VALUE)) * pit6.K) AS ADJUSTED_VALUE
+SQLStatement_Line_104=                  FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit6
+SQLStatement_Line_105=                         INNER JOIN tblPROJECTION_INPUT_DATASET    pid6
+SQLStatement_Line_106=                                 ON pid6.PROJECTION_INPUT_DATASET_RCRD_ID = pit6.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_107=                         INNER JOIN tblPROJECTION_PHASE            pp6
+SQLStatement_Line_108=                                 ON pp6.PROJECTION_PHASE_RCRD_ID = pit6.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_109=                         INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip6
+SQLStatement_Line_110=                                 ON pip6.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit6.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_111=                  WHERE 
+SQLStatement_Line_112=                               pid6.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_113=                       AND pp6.PROJECTION_PHASE_NAME              = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_114=                       AND pip6.PROJECTION_INPUT_PARAMETER_NAME   = '$(CDV125Param)') cdv125
+SQLStatement_Line_115=              ON cdv125.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID 
+SQLStatement_Line_116=             AND cdv125.LAYER_ID = l.LAYER_ID)
+SQLStatement_Line_117=       LEFT JOIN (SELECT pit7.POLYGON_RCRD_ID
+SQLStatement_Line_118=                       , pit7.LAYER_ID
+SQLStatement_Line_119=                       , ((pit7.A + pit7.C + (pit7.B * pit7.UNADJUSTED_VALUE)) * pit7.K) AS ADJUSTED_VALUE
+SQLStatement_Line_120=                  FROM            ((tblPROJECTION_INPUT_ADJUSTMENT pit7
+SQLStatement_Line_121=                         INNER JOIN tblPROJECTION_INPUT_DATASET    pid7
+SQLStatement_Line_122=                                 ON pid7.PROJECTION_INPUT_DATASET_RCRD_ID = pit7.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_123=                         INNER JOIN tblPROJECTION_PHASE            pp7
+SQLStatement_Line_124=                                 ON pp7.PROJECTION_PHASE_RCRD_ID = pit7.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_125=                         INNER JOIN tblPROJECTION_INPUT_PARAMETER  pip7
+SQLStatement_Line_126=                                 ON pip7.PROJECTION_INPUT_PARAMETER_RCRD_ID = pit7.PROJECTION_INPUT_PARAMETER_RCRD_ID
+SQLStatement_Line_127=                  WHERE 
+SQLStatement_Line_128=                               pid7.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_129=                       AND pp7.PROJECTION_PHASE_NAME              = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_130=                       AND pip7.PROJECTION_INPUT_PARAMETER_NAME   = '$(CDW125Param)') cdw125
+SQLStatement_Line_131=              ON cdw125.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID 
+SQLStatement_Line_132=             AND cdw125.LAYER_ID        = l.LAYER_ID
+SQLStatement_Line_133=WHERE
+SQLStatement_Line_134=       p.IGNORE_POLYGON = 0
+SQLStatement_Line_135=  AND  p.POLYGON_RCRD_ID IN (SELECT DISTINCT modP.POLYGON_RCRD_ID
+SQLStatement_Line_136=                             FROM            ((tblPOLYGON modP
+SQLStatement_Line_137=                                    INNER JOIN tblPROJECTION_INPUT_ADJUSTMENT modpia
+SQLStatement_Line_138=                                            ON modpia.POLYGON_RCRD_ID = modP.POLYGON_RCRD_ID)
+SQLStatement_Line_139=                                    INNER JOIN tblPROJECTION_INPUT_DATASET modpid
+SQLStatement_Line_140=                                            ON modpid.PROJECTION_INPUT_DATASET_RCRD_ID = modpia.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_141=                                    INNER JOIN tblPROJECTION_PHASE         modpp
+SQLStatement_Line_142=                                            ON modpp.PROJECTION_PHASE_RCRD_ID          = modpia.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_143=                             WHERE  modpid.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_144=                               AND  modpp.PROJECTION_PHASE_NAME          = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_145=                               AND  modpia.MODIFIED <> 0)
+SQLStatement_Line_146=  AND  ba125.ADJUSTED_VALUE IS NOT NULL
+
+TargetConnection=Destination Data
+TargetTableName=ADJUSTMENT_INPUT_ADJUSTED
+
+SourceToDestinationColumnMappingSection=VRIADJST Parameters Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FOREST_COVER_OBJECT_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=LAYER_ID
+
+
+
+[VRIADJST Parameters Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=ADJUSTMENT_INPUT_ADJUSTED_ID
+TargetColumn_1=ADJUSTMENT_INPUT_ADJUSTED_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=LOREY_HEIGHT
+TargetColumn_2=LOREY_HEIGHT
+
+SourceMappingType_3=Copy
+SourceColumn_3=BASAL_AREA_12_5CM
+TargetColumn_3=BASAL_AREA_12_5CM
+
+SourceMappingType_4=Copy
+SourceColumn_4=WHOLE_STEM_VOLUME_7_5CM
+TargetColumn_4=WHOLE_STEM_VOLUME_7_5CM
+
+SourceMappingType_5=Copy
+SourceColumn_5=WHOLE_STEM_VOLUME_12_5CM
+TargetColumn_5=WHOLE_STEM_VOLUME_12_5CM
+
+SourceMappingType_6=Copy
+SourceColumn_6=CLOSE_UTIL_VOLUME_12_5CM
+TargetColumn_6=CLOSE_UTIL_VOLUME_12_5CM
+
+SourceMappingType_7=Copy
+SourceColumn_7=CLOSE_UTIL_NET_DECAY_VOLUME
+TargetColumn_7=CLOSE_UTIL_NET_DECAY_VOLUME
+
+SourceMappingType_8=Copy
+SourceColumn_8=CLOSE_UTIL_NET_WASTE_VOLUME
+TargetColumn_8=CLOSE_UTIL_NET_WASTE_VOLUME
+
+SourceMappingType_9=Copy
+SourceColumn_9=INPUT_MODE
+TargetColumn_9=INPUT_MODE
+
+SourceMappingType_10=Lookup
+SourceColumn_10_P1=FOREST_COVER_OBJECT_ID
+SourceColumn_10_P2=LAYER_ID
+SourceMappingSQLConnection_10=Destination Data
+SourceMappingOption_10_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_10_Line_001=SELECT TREE_COVER_LAYER_ADJUSTED_ID
+SourceMappingSQLStatement_10_Line_002=FROM   TREE_COVER_LAYER_ADJUSTED
+SourceMappingSQLStatement_10_Line_003=WHERE  FOREST_COVER_OBJECT_ID = [P1]
+SourceMappingSQLStatement_10_Line_004=  AND  LAYER_LEVEL_CODE       = [P2]
+TargetColumn_10=VRI_ADJST_LAYER_ID
+
+SourceMappingType_11=Copy
+SourceColumn_11=FOREST_COVER_OBJECT_ID
+TargetColumn_11=FOREST_COVER_OBJECT_ID
+
+SourceMappingType_12=Copy
+SourceColumn_12=ENTRY_TIMESTAMP
+TargetColumn_12=ENTRY_TIMESTAMP
+
+SourceMappingType_13=Copy
+SourceColumn_13=ENTRY_USERID
+TargetColumn_13=ENTRY_USERID
+
+SourceMappingType_14=Copy
+SourceColumn_14=UPDATE_TIMESTAMP
+TargetColumn_14=UPDATE_TIMESTAMP
+
+SourceMappingType_15=Copy
+SourceColumn_15=UPDATE_USERID
+TargetColumn_15=UPDATE_USERID
+
+
+
+[Step 16]
+StepName=Create Temp Adjustment Factor Table
+StepType=Custom SQL
+
+PrerequisiteTarget_1=DDL Completed
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=CREATE TABLE tmpAdjustmentFactors
+SQLStatement_Line_002=    ( ADJUSTMENT_FACTOR_ADJUSTED_ID    COUNTER  PRIMARY KEY
+SQLStatement_Line_003=    , FOREST_COVER_OBJECT_ID           INTEGER  NOT NULL
+SQLStatement_Line_004=    , TREE_COVER_LAYER_ADJUSTED_ID     INTEGER
+SQLStatement_Line_005=    , TREE_SPECIES_ADJUSTED_ID         INTEGER
+SQLStatement_Line_006=    , ADJUSTMENT_ATTRIBUTE_CODE        TEXT(10) NOT NULL
+SQLStatement_Line_007=    , FACTOR_A                         NUMBER   NOT NULL
+SQLStatement_Line_008=    , FACTOR_B                         NUMBER   NOT NULL
+SQLStatement_Line_009=    , FACTOR_C                         NUMBER   NOT NULL
+SQLStatement_Line_010=    , FACTOR_K                         NUMBER   NOT NULL )
+
+
+
+[Step 17]
+StepName=Move Adjustment Factors to PGDB 1
+StepType=DataLoad
+
+PrerequisiteTarget_1=Create Temp Adjustment Factor Table
+
+SourceConnection=Source Data
+
+SQLStatement_Line_001=SELECT flvc.FEATURE_RCRD_ID                AS FOREST_COVER_OBJECT_ID
+SQLStatement_Line_002=     , pia.LAYER_ID                        AS LAYER_LEVEL_CODE
+SQLStatement_Line_003=     , s.SPECIES_CD                        AS TREE_SPECIES_CODE
+SQLStatement_Line_004=     , pip.PROJECTION_INPUT_PARAMETER_ABRV AS ADJUSTMENT_ATTRIBUTE_CODE
+SQLStatement_Line_005=     , pia.A                               AS FACTOR_A
+SQLStatement_Line_006=     , pia.B                               AS FACTOR_B
+SQLStatement_Line_007=     , pia.C                               AS FACTOR_C
+SQLStatement_Line_008=     , pia.K                               AS FACTOR_K
+SQLStatement_Line_009=FROM       (((((tblPROJECTION_INPUT_ADJUSTMENT   pia
+SQLStatement_Line_010=     INNER JOIN tblPROJECTION_INPUT_DATASET      pid  ON pid.PROJECTION_INPUT_DATASET_RCRD_ID   = pia.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_011=     INNER JOIN tblPROJECTION_PHASE              pp   ON pp.PROJECTION_PHASE_RCRD_ID            = pia.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_012=     INNER JOIN tblFEATURE_LINK_VEGETATION_COVER flvc ON flvc.POLYGON_RCRD_ID                   = pia.POLYGON_RCRD_ID)
+SQLStatement_Line_013=     INNER JOIN tblPOLYGON                       p    ON p.POLYGON_RCRD_ID                      = pia.POLYGON_RCRD_ID)
+SQLStatement_Line_014=     INNER JOIN tblPROJECTION_INPUT_PARAMETER    pip  ON pip.PROJECTION_INPUT_PARAMETER_RCRD_ID = pia.PROJECTION_INPUT_PARAMETER_RCRD_ID)
+SQLStatement_Line_015=     LEFT  JOIN  (SELECT pl.POLYGON_RCRD_ID, ll.LAYER_ID, sl.SPECIES_ID, sl.SPECIES_CD
+SQLStatement_Line_016=                  FROM             (tblPOLYGON pl
+SQLStatement_Line_017=                         INNER JOIN tblLAYER   ll ON ll.POLYGON_RCRD_ID = pl.POLYGON_RCRD_ID)
+SQLStatement_Line_018=                         INNER JOIN tblSPECIES sl ON sl.LAYER_RCRD_ID   = ll.LAYER_RCRD_ID
+SQLStatement_Line_019=                  WHERE pl.IGNORE_POLYGON = 0) s
+SQLStatement_Line_020=             ON s.POLYGON_RCRD_ID = pia.POLYGON_RCRD_ID
+SQLStatement_Line_021=            AND s.LAYER_ID        = pia.LAYER_ID
+SQLStatement_Line_022=            AND s.SPECIES_ID      = pia.SPECIES_ID
+SQLStatement_Line_023=WHERE p.IGNORE_POLYGON                     = 0
+SQLStatement_Line_024=     AND pid.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_025=     AND pp.PROJECTION_PHASE_NAME          = '$(VRISTARTPhaseName)'
+SQLStatement_Line_026=     AND p.POLYGON_RCRD_ID IN (SELECT DISTINCT pM.POLYGON_RCRD_ID
+SQLStatement_Line_027=                               FROM            ((  (SELECT piaMa.PROJECTION_INPUT_DATASET_RCRD_ID
+SQLStatement_Line_028=                                                         , piaMa.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_029=                                                         , piaMa.POLYGON_RCRD_ID
+SQLStatement_Line_030=                                                         , piaMa.MODIFIED
+SQLStatement_Line_031=                                                    FROM   tblPROJECTION_INPUT_ADJUSTMENT piaMa
+SQLStatement_Line_032=                                                    WHERE  piaMa.MODIFIED <> 0
+SQLStatement_Line_033=                                                    UNION
+SQLStatement_Line_034=                                                    SELECT piaMs.PROJECTION_INPUT_DATASET_RCRD_ID
+SQLStatement_Line_035=                                                         , piaMs.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_036=                                                         , piaMs.POLYGON_RCRD_ID
+SQLStatement_Line_037=                                                         , piaMs.MODIFIED
+SQLStatement_Line_038=                                                    FROM   tblPROJECTION_INPUT_STRING piaMs
+SQLStatement_Line_039=                                                    WHERE  piaMs.MODIFIED <> 0
+SQLStatement_Line_040=                                                    UNION
+SQLStatement_Line_041=                                                    SELECT piaMv.PROJECTION_INPUT_DATASET_RCRD_ID
+SQLStatement_Line_042=                                                         , piaMv.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_043=                                                         , piaMv.POLYGON_RCRD_ID
+SQLStatement_Line_044=                                                         , piaMv.MODIFIED
+SQLStatement_Line_045=                                                    FROM   tblPROJECTION_INPUT_VALUE piaMv
+SQLStatement_Line_046=                                                    WHERE  piaMv.MODIFIED <> 0) piaM
+SQLStatement_Line_047=                                      INNER JOIN tblPROJECTION_INPUT_DATASET  pidM ON pidM.PROJECTION_INPUT_DATASET_RCRD_ID = piaM.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_048=                                      INNER JOIN tblPROJECTION_PHASE ppM  ON ppM.PROJECTION_PHASE_RCRD_ID = piaM.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_049=                                      INNER JOIN tblPOLYGON pM ON pM.POLYGON_RCRD_ID = piaM.POLYGON_RCRD_ID
+SQLStatement_Line_050=                               WHERE  pM.IGNORE_POLYGON                  = 0
+SQLStatement_Line_051=                                 AND  pidM.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_052=                                 AND  ppM.PROJECTION_PHASE_NAME          = '$(VRISTARTPhaseName)'
+SQLStatement_Line_053=                                 AND  piaM.MODIFIED                     <> 0)
+SQLStatement_Line_054=     AND p.POLYGON_RCRD_ID NOT IN (SELECT DISTINCT pN.POLYGON_RCRD_ID
+SQLStatement_Line_055=                                   FROM            ((tblPROJECTION_INPUT_ADJUSTMENT piaN
+SQLStatement_Line_056=                                          INNER JOIN tblPROJECTION_INPUT_DATASET  pidN ON pidN.PROJECTION_INPUT_DATASET_RCRD_ID = piaN.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_057=                                          INNER JOIN tblPROJECTION_PHASE ppN  ON ppN.PROJECTION_PHASE_RCRD_ID = piaN.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_058=                                          INNER JOIN tblPOLYGON pN ON pN.POLYGON_RCRD_ID = piaN.POLYGON_RCRD_ID
+SQLStatement_Line_059=                                   WHERE  pN.IGNORE_POLYGON = 0
+SQLStatement_Line_060=                                     AND  pidN.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_061=                                     AND  ppN.PROJECTION_PHASE_NAME          = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_062=                                     AND  piaN.MODIFIED                     <> 0)
+
+
+TargetConnection=Destination Data
+TargetTableName=tmpAdjustmentFactors
+
+SourceToDestinationColumnMappingSection=Adjustment Factors Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FOREST_COVER_OBJECT_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=LAYER_LEVEL_CODE
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=TREE_SPECIES_CODE
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=ADJUSTMENT_ATTRIBUTE_CODE
+
+
+
+[Adjustment Factors Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=FOREST_COVER_OBJECT_ID
+TargetColumn_1=FOREST_COVER_OBJECT_ID
+
+SourceMappingType_2=Lookup
+SourceColumn_2_P1=FOREST_COVER_OBJECT_ID
+SourceColumn_2_P2=LAYER_LEVEL_CODE
+SourceMappingSQLConnection_2=Destination Data
+SourceMappingOption_2_NULLLookups=Allow
+SourceMappingSQLStatement_2_Line_001=SELECT TREE_COVER_LAYER_ADJUSTED_ID
+SourceMappingSQLStatement_2_Line_002=FROM   TREE_COVER_LAYER_ADJUSTED
+SourceMappingSQLStatement_2_Line_003=WHERE  FOREST_COVER_OBJECT_ID = [P1]
+SourceMappingSQLStatement_2_Line_004=  AND  LAYER_LEVEL_CODE       = [P2]
+TargetColumn_2=TREE_COVER_LAYER_ADJUSTED_ID
+
+SourceMappingType_3=Lookup
+SourceColumn_3_P1=FOREST_COVER_OBJECT_ID
+SourceColumn_3_P2=LAYER_LEVEL_CODE
+SourceColumn_3_P3=TREE_SPECIES_CODE
+SourceMappingSQLConnection_3=Destination Data
+SourceMappingOption_3_NULLLookups=Allow
+SourceMappingSQLStatement_3_Line_001=SELECT TREE_SPECIES_ADJUSTED_ID
+SourceMappingSQLStatement_3_Line_002=FROM             (VEGETATION_COVER_POLYGON_ADJ vcpa
+SourceMappingSQLStatement_3_Line_003=       INNER JOIN TREE_COVER_LAYER_ADJUSTED    tcla ON tcla.FOREST_COVER_OBJECT_ID      = vcpa.FOREST_COVER_OBJECT_ID)
+SourceMappingSQLStatement_3_Line_004=       INNER JOIN TREE_SPECIES_ADJUSTED        tsa  ON tsa.TREE_COVER_LAYER_ADJUSTED_ID = tcla.TREE_COVER_LAYER_ADJUSTED_ID
+SourceMappingSQLStatement_3_Line_005=WHERE  vcpa.FOREST_COVER_OBJECT_ID = [P1]
+SourceMappingSQLStatement_3_Line_006=  AND  tcla.LAYER_LEVEL_CODE       = [P2]
+SourceMappingSQLStatement_3_Line_007=  AND  tsa.TREE_SPECIES_CODE       = [P3]
+TargetColumn_3=TREE_SPECIES_ADJUSTED_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=ADJUSTMENT_ATTRIBUTE_CODE
+TargetColumn_4=ADJUSTMENT_ATTRIBUTE_CODE
+
+SourceMappingType_5=Copy
+SourceColumn_5=FACTOR_A
+TargetColumn_5=FACTOR_A
+
+SourceMappingType_6=Copy
+SourceColumn_6=FACTOR_B
+TargetColumn_6=FACTOR_B
+
+SourceMappingType_7=Copy
+SourceColumn_7=FACTOR_C
+TargetColumn_7=FACTOR_C
+
+SourceMappingType_8=Copy
+SourceColumn_8=FACTOR_K
+TargetColumn_8=FACTOR_K
+
+
+
+
+[Step 18]
+StepName=Move Adjustment Factors to PGDB 2
+StepType=DataLoad
+
+PrerequisiteTarget_1=Create Temp Adjustment Factor Table
+
+SourceConnection=Source Data
+
+SQLStatement_Line_001=SELECT flvc.FEATURE_RCRD_ID                AS FOREST_COVER_OBJECT_ID
+SQLStatement_Line_002=     , pia.LAYER_ID                        AS LAYER_LEVEL_CODE
+SQLStatement_Line_003=     , s.SPECIES_CD                        AS TREE_SPECIES_CODE
+SQLStatement_Line_004=     , pip.PROJECTION_INPUT_PARAMETER_ABRV AS ADJUSTMENT_ATTRIBUTE_CODE
+SQLStatement_Line_005=     , pia.A                               AS FACTOR_A
+SQLStatement_Line_006=     , pia.B                               AS FACTOR_B
+SQLStatement_Line_007=     , pia.C                               AS FACTOR_C
+SQLStatement_Line_008=     , pia.K                               AS FACTOR_K
+SQLStatement_Line_009=FROM       (((((tblPROJECTION_INPUT_ADJUSTMENT   pia
+SQLStatement_Line_010=     INNER JOIN tblPROJECTION_INPUT_DATASET      pid  ON pid.PROJECTION_INPUT_DATASET_RCRD_ID   = pia.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_011=     INNER JOIN tblPROJECTION_PHASE              pp   ON pp.PROJECTION_PHASE_RCRD_ID            = pia.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_012=     INNER JOIN tblFEATURE_LINK_VEGETATION_COVER flvc ON flvc.POLYGON_RCRD_ID                   = pia.POLYGON_RCRD_ID)
+SQLStatement_Line_013=     INNER JOIN tblPOLYGON                       p    ON p.POLYGON_RCRD_ID                      = pia.POLYGON_RCRD_ID)
+SQLStatement_Line_014=     INNER JOIN tblPROJECTION_INPUT_PARAMETER    pip  ON pip.PROJECTION_INPUT_PARAMETER_RCRD_ID = pia.PROJECTION_INPUT_PARAMETER_RCRD_ID)
+SQLStatement_Line_015=     LEFT  JOIN  (SELECT pl.POLYGON_RCRD_ID, ll.LAYER_ID, sl.SPECIES_ID, sl.SPECIES_CD
+SQLStatement_Line_016=                  FROM             (tblPOLYGON pl
+SQLStatement_Line_017=                         INNER JOIN tblLAYER   ll ON ll.POLYGON_RCRD_ID = pl.POLYGON_RCRD_ID)
+SQLStatement_Line_018=                         INNER JOIN tblSPECIES sl ON sl.LAYER_RCRD_ID   = ll.LAYER_RCRD_ID
+SQLStatement_Line_019=                  WHERE pl.IGNORE_POLYGON = 0) s
+SQLStatement_Line_020=             ON s.POLYGON_RCRD_ID = pia.POLYGON_RCRD_ID
+SQLStatement_Line_021=            AND s.LAYER_ID        = pia.LAYER_ID
+SQLStatement_Line_022=            AND s.SPECIES_ID      = pia.SPECIES_ID
+SQLStatement_Line_023=WHERE p.IGNORE_POLYGON                     = 0
+SQLStatement_Line_024=     AND pid.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_025=     AND pp.PROJECTION_PHASE_NAME          IN ('$(VRISTARTPhaseName)', '$(VRIADJSTPhaseName)')
+SQLStatement_Line_026=     AND p.POLYGON_RCRD_ID IN (SELECT DISTINCT pM.POLYGON_RCRD_ID
+SQLStatement_Line_027=                               FROM            ((tblPROJECTION_INPUT_ADJUSTMENT piaM
+SQLStatement_Line_028=                                      INNER JOIN tblPROJECTION_INPUT_DATASET  pidM ON pidM.PROJECTION_INPUT_DATASET_RCRD_ID = piaM.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_029=                                      INNER JOIN tblPROJECTION_PHASE ppM  ON ppM.PROJECTION_PHASE_RCRD_ID = piaM.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_030=                                      INNER JOIN tblPOLYGON pM ON pM.POLYGON_RCRD_ID = piaM.POLYGON_RCRD_ID
+SQLStatement_Line_031=                               WHERE  pM.IGNORE_POLYGON                  = 0
+SQLStatement_Line_032=                                 AND  pidM.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_033=                                 AND  ppM.PROJECTION_PHASE_NAME          = '$(VRIADJSTPhaseName)'
+SQLStatement_Line_034=                                 AND  piaM.MODIFIED                     <> 0)
+
+
+TargetConnection=Destination Data
+TargetTableName=tmpAdjustmentFactors
+
+SourceToDestinationColumnMappingSection=Adjustment Factors Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FOREST_COVER_OBJECT_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=LAYER_LEVEL_CODE
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=TREE_SPECIES_CODE
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=ADJUSTMENT_ATTRIBUTE_CODE
+
+
+
+[Step 19]
+StepName=Populate PGDB Adjustment Factors
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Move Adjustment Factors to PGDB 1
+PrerequisiteTarget_2=Move Adjustment Factors to PGDB 2
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO ADJUSTMENT_FACTOR_ADJUSTED
+SQLStatement_Line_002=               ( ADJUSTMENT_FACTOR_ADJUSTED_ID
+SQLStatement_Line_003=               , FACTOR_A
+SQLStatement_Line_004=               , FACTOR_B
+SQLStatement_Line_005=               , FACTOR_C
+SQLStatement_Line_006=               , FACTOR_K
+SQLStatement_Line_007=               , TREE_SPECIES_ADJUSTED_ID
+SQLStatement_Line_008=               , TREE_COVER_LAYER_ADJUSTED_ID
+SQLStatement_Line_009=               , FOREST_COVER_OBJECT_ID
+SQLStatement_Line_010=               , ENTRY_TIMESTAMP )
+SQLStatement_Line_011=SELECT af.ADJUSTMENT_FACTOR_ADJUSTED_ID
+SQLStatement_Line_012=     , af.FACTOR_A
+SQLStatement_Line_013=     , af.FACTOR_B
+SQLStatement_Line_014=     , af.FACTOR_C
+SQLStatement_Line_015=     , af.FACTOR_K
+SQLStatement_Line_016=     , af.TREE_SPECIES_ADJUSTED_ID
+SQLStatement_Line_017=     , af.TREE_COVER_LAYER_ADJUSTED_ID
+SQLStatement_Line_018=     , af.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_019=     , Now() AS ENTRY_TIMESTAMP
+SQLStatement_Line_020=FROM tmpAdjustmentFactors af
+
+
+
+[Step 20]
+StepName=Populate PGDB Adjustment Attributes
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Populate PGDB Adjustment Factors
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO ADJUSTMENT_ATTRIBUTE_SET_ADJ
+SQLStatement_Line_002=               ( ADJUSTMENT_ATTRIB_SET_ADJ_ID
+SQLStatement_Line_003=               , ADJUSTMENT_ATTRIBUTE_CODE
+SQLStatement_Line_004=               , ADJUSTMENT_FACTOR_ADJUSTED_ID
+SQLStatement_Line_005=               , ENTRY_TIMESTAMP )
+SQLStatement_Line_006=SELECT af.ADJUSTMENT_FACTOR_ADJUSTED_ID AS ADJUSTMENT_ATTRIB_SET_ADJ_ID
+SQLStatement_Line_007=     , af.ADJUSTMENT_ATTRIBUTE_CODE
+SQLStatement_Line_008=     , af.ADJUSTMENT_FACTOR_ADJUSTED_ID
+SQLStatement_Line_009=     , Now() AS ENTRY_TIMESTAMP
+SQLStatement_Line_010=FROm tmpAdjustmentFactors af
+
+
+
+[Step 21]
+StepName=Drop Temp Adjustment Factor Table
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Populate PGDB Adjustment Attributes
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DROP TABLE tmpAdjustmentFactors
+
+
+
+
+[Step 22]
+StepName=Populate Adjustment Project Adjusted
+StepType=DataLoad
+
+PrerequisiteTarget_1=DDL Completed
+
+SourceConnection=Source Data
+
+SQLStatement_Line_001=SELECT pid.ADJUSTMENT_PROJECT_NAME  AS PROJECT_NAME
+SQLStatement_Line_002=     , pid.ADJUSTMENT_AGENCY        AS AGENCY_CODE
+SQLStatement_Line_003=     , Versions.VDYP_VERSION
+SQLStatement_Line_004=     , Versions.SINDEX_VERSION
+SQLStatement_Line_005=     , Now()                        AS ENTRY_TIMESTAMP
+SQLStatement_Line_006=     , NULL                         AS ENTRY_USERID
+SQLStatement_Line_007=     , NULL                         AS UPDATE_TIMESTAMP
+SQLStatement_Line_008=     , NULL                         AS UPDATE_USERID
+SQLStatement_Line_009=FROM
+SQLStatement_Line_010=      tblPROJECTION_INPUT_DATASET pid
+SQLStatement_Line_011=   , (SELECT BatchVersion.VDYP_VERSION, SINDEXVersion.SINDEX_VERSION
+SQLStatement_Line_012=      FROM
+SQLStatement_Line_013=      ((SELECT mprMax.PROJECTION_RUN_RCRD_ID, mprMax.PROJECTION_RUN_TYPE_RCRD_ID
+SQLStatement_Line_014=                  FROM   tblMETADATA_PROJECTION_RUN mprMax
+SQLStatement_Line_015=                  WHERE  mprMax.PROJECTION_RUN_RCRD_ID IN
+SQLStatement_Line_016=                        (SELECT MAX( PROJECTION_RUN_RCRD_ID ) FROM tblMETADATA_PROJECTION_RUN)) mpr
+SQLStatement_Line_017=       LEFT JOIN (SELECT v7ver.PROJECTION_RUN_RCRD_ID, 'B' + RIGHT( '0000' + MID( v7ver.VERSION_NUMBER, InStr( Len( v7ver.VERSION_NUMBER ) - 5, v7ver.VERSION_NUMBER, "." ) + 1 ), 4 ) AS VDYP_VERSION
+SQLStatement_Line_018=                  FROM   tblMETADATA_PROJECTION_VERSION v7ver
+SQLStatement_Line_019=                  WHERE  VERSION_DESC = '$(VDYP7Name)') BatchVersion
+SQLStatement_Line_020=              ON BatchVersion.PROJECTION_RUN_RCRD_ID = mpr.PROJECTION_RUN_RCRD_ID)
+SQLStatement_Line_021=       LEFT JOIN (SELECT sinver.PROJECTION_RUN_RCRD_ID, sinver.VERSION_NUMBER AS SINDEX_VERSION
+SQLStatement_Line_022=                  FROM   tblMETADATA_PROJECTION_VERSION sinver
+SQLStatement_Line_023=                  WHERE  VERSION_DESC = '$(SINDEXName)') SINDEXVersion
+SQLStatement_Line_024=              ON SINDEXVersion.PROJECTION_RUN_RCRD_ID = mpr.PROJECTION_RUN_RCRD_ID
+SQLStatement_Line_025=     ) Versions
+SQLStatement_Line_026=WHERE pid.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+
+
+TargetConnection=Destination Data
+TargetTableName=ADJUSTMENT_PROJECT_ADJUSTED
+
+SourceToDestinationColumnMappingSection=ADJUSTMENT_PROJECT_ADJUSTED Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=PROJECT_NAME
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=AGENCY_CODE
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=VDYP_VERSION
+
+
+
+[ADJUSTMENT_PROJECT_ADJUSTED Column Mapping]
+SourceMappingType_1=Lookup
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingSQLStatement_1_Line_001=SELECT IIF( IsNull( MAX( OBJECTID ) ), 0, MAX( OBJECTID ) )
+SourceMappingSQLStatement_1_Line_002=FROM   ADJUSTMENT_PROJECT_ADJUSTED
+TargetColumn_1=ADJUSTMENT_PROJECT_ADJUSTED_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=PROJECT_NAME
+TargetColumn_2=PROJECT_NAME
+
+SourceMappingType_3=Copy
+SourceColumn_3=AGENCY_CODE
+TargetColumn_3=AGENCY_CODE
+
+SourceMappingType_4=Copy
+SourceColumn_4=VDYP_VERSION
+TargetColumn_4=VDYP_VERSION
+
+SourceMappingType_5=Copy
+SourceColumn_5=SINDEX_VERSION
+TargetColumn_5=SINDEX_VERSION
+
+SourceMappingType_6=Copy
+SourceColumn_6=ENTRY_TIMESTAMP
+TargetColumn_6=ENTRY_TIMESTAMP
+
+SourceMappingType_7=Copy
+SourceColumn_7=ENTRY_USERID
+TargetColumn_7=ENTRY_USERID
+
+SourceMappingType_8=Copy
+SourceColumn_8=UPDATE_TIMESTAMP
+TargetColumn_8=UPDATE_TIMESTAMP
+
+SourceMappingType_9=Copy
+SourceColumn_9=UPDATE_USERID
+TargetColumn_9=UPDATE_USERID
+
+
+
+
+[Step 23]
+StepName=Populate Samples Used Adjusted
+StepType=DataLoad
+
+PrerequisiteTarget_1=Populate Strata Adjusted
+
+SourceConnection=Source Data
+
+SQLStatement_Line_001=SELECT mvs.VRI_SAMPLE_ID                    AS NAME
+SQLStatement_Line_002=     , mvs.VRI_SAMPLE_WEIGHT                AS WEIGHT
+SQLStatement_Line_003=     , IIF( IsNull( mvs.VRI_SAMPLE_USED ), 'N', IIF( mvs.VRI_SAMPLE_USED, 'Y', 'N' ) ) AS USED_IN_ADJUSTMENT_IND
+SQLStatement_Line_004=     , ps.PROJECTION_STRATA_NAME            AS PROJECTION_STRATA_NAME
+SQLStatement_Line_005=     , flvc.FEATURE_RCRD_ID                 AS FOREST_COVER_OBJECT_ID
+SQLStatement_Line_006=     , Now()                                AS ENTRY_TIMESTAMP
+SQLStatement_Line_007=     , NULL                                 AS ENTRY_USERID
+SQLStatement_Line_008=     , NULL                                 AS UPDATE_TIMESTAMP
+SQLStatement_Line_009=     , NULL                                 AS UPDATE_USERID
+SQLStatement_Line_010=FROM        (((((tblMETADATA_VRI_SAMPLE           mvs
+SQLStatement_Line_011=      INNER JOIN tblPOLYGON                       p    ON p.POLYGON_RCRD_ID    = mvs.POLYGON_RCRD_ID)
+SQLStatement_Line_012=      INNER JOIN tblFEATURE_LINK_VEGETATION_COVER flvc ON flvc.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID)
+SQLStatement_Line_013=      INNER JOIN tblPROJECTION_POLYGON_STRATA     pps  ON pps.POLYGON_RCRD_ID  = p.POLYGON_RCRD_ID)
+SQLStatement_Line_014=      INNER JOIN tblPROJECTION_INPUT_DATASET      pid  ON pid.PROJECTION_INPUT_DATASET_RCRD_ID = pps.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_015=      INNER JOIN tblPROJECTION_PHASE              pp   ON pp.PROJECTION_PHASE_RCRD_ID = pps.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_016=      INNER JOIN tblPROJECTION_STRATA             ps   ON ps.PROJECTION_STRATA_RCRD_ID = pps.PROJECTION_STRATA_RCRD_ID
+SQLStatement_Line_017=WHERE p.IGNORE_POLYGON = 0
+SQLStatement_Line_018=  AND pid.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_019=  AND pp.PROJECTION_PHASE_NAME          = '$(VRISTARTPhaseName)'
+
+
+TargetConnection=Destination Data
+TargetTableName=SAMPLES_USED_ADJUSTED
+
+SourceToDestinationColumnMappingSection=SAMPLES_USED_ADJUSTED Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=NAME
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=FOREST_COVER_OBJECT_ID
+
+
+
+[SAMPLES_USED_ADJUSTED Column Mapping]
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=FOREST_COVER_OBJECT_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingSQLStatement_1_Line_001=SELECT IIF( IsNull( MAX( OBJECTID ) ), 0, MAX( OBJECTID ) )
+SourceMappingSQLStatement_1_Line_002=FROM   SAMPLES_USED_ADJUSTED
+TargetColumn_1=SAMPLES_USED_ADJUSTED_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=NAME
+TargetColumn_2=NAME
+
+SourceMappingType_3=Copy
+SourceColumn_3=WEIGHT
+TargetColumn_3=WEIGHT
+
+SourceMappingType_4=Copy
+SourceColumn_4=USED_IN_ADJUSTMENT_IND
+TargetColumn_4=USED_IN_ADJUSTMENT_IND
+
+SourceMappingType_5=Lookup
+SourceColumn_5_P1=PROJECTION_STRATA_NAME
+SourceMappingSQLConnection_5=Destination Data
+SourceMappingSQLStatement_5_Line_001=SELECT STRATA_ADJUSTED_ID
+SourceMappingSQLStatement_5_Line_002=FROM   STRATA_ADJUSTED
+SourceMappingSQLStatement_5_Line_003=WHERE  NAME = [P1]
+TargetColumn_5=STRATA_ADJUSTED_ID
+
+SourceMappingType_6=Copy
+SourceColumn_6=FOREST_COVER_OBJECT_ID
+TargetColumn_6=FOREST_COVER_OBJECT_ID
+
+SourceMappingType_7=Copy
+SourceColumn_7=ENTRY_TIMESTAMP
+TargetColumn_7=ENTRY_TIMESTAMP
+
+SourceMappingType_8=Copy
+SourceColumn_8=ENTRY_USERID
+TargetColumn_8=ENTRY_USERID
+
+SourceMappingType_9=Copy
+SourceColumn_9=UPDATE_TIMESTAMP
+TargetColumn_9=UPDATE_TIMESTAMP
+
+SourceMappingType_10=Copy
+SourceColumn_10=UPDATE_USERID
+TargetColumn_10=UPDATE_USERID
+
+
+
+
+[Step 24]
+StepName=Populate Strata Adjusted
+StepType=DataLoad
+
+PrerequisiteTarget_1=Populate Adjustment Project Adjusted
+
+SourceConnection=Source Data
+
+SQLStatement_Line_001=SELECT ps.PROJECTION_STRATA_NAME AS NAME
+SQLStatement_Line_002=     , Now()                     AS ENTRY_TIMESTAMP
+SQLStatement_Line_003=     , NULL                      AS ENTRY_USERID
+SQLStatement_Line_004=     , NULL                      AS UPDATE_TIMESTAMP
+SQLStatement_Line_005=     , NULL                      AS UPDATE_USERID
+SQLStatement_Line_006=FROM            tblPROJECTION_STRATA ps
+SQLStatement_Line_007=     INNER JOIN tblPROJECTION_PHASE  pp
+SQLStatement_Line_008=             ON pp.PROJECTION_PHASE_RCRD_ID = ps.PROJECTION_PHASE_RCRD_ID
+SQLStatement_Line_009=WHERE pp.PROJECTION_PHASE_NAME = '$(VRISTARTPhaseName)'
+
+TargetConnection=Destination Data
+TargetTableName=STRATA_ADJUSTED
+
+SourceToDestinationColumnMappingSection=STRATA_ADJUSTED Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=NAME
+
+
+
+[STRATA_ADJUSTED Column Mapping]
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=NAME
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingSQLStatement_1_Line_001=SELECT IIF( IsNull( MAX( OBJECTID ) ), 0, MAX( OBJECTID ) )
+SourceMappingSQLStatement_1_Line_002=FROM   STRATA_ADJUSTED
+TargetColumn_1=STRATA_ADJUSTED_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=NAME
+TargetColumn_2=NAME
+
+SourceMappingType_3=Lookup
+SourceMappingSQLConnection_3=Destination Data
+SourceMappingSQLStatement_3_Line_001=SELECT MIN( ADJUSTMENT_PROJECT_ADJUSTED_ID )
+SourceMappingSQLStatement_3_Line_002=FROM   ADJUSTMENT_PROJECT_ADJUSTED
+TargetColumn_3=ADJUSTMENT_PROJECT_ADJUSTED_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=ENTRY_TIMESTAMP
+TargetColumn_4=ENTRY_TIMESTAMP
+
+SourceMappingType_5=Copy
+SourceColumn_5=ENTRY_USERID
+TargetColumn_5=ENTRY_USERID
+
+SourceMappingType_6=Copy
+SourceColumn_6=UPDATE_TIMESTAMP
+TargetColumn_6=UPDATE_TIMESTAMP
+
+SourceMappingType_7=Copy
+SourceColumn_7=UPDATE_USERID
+TargetColumn_7=UPDATE_USERID
+
+
+
+
+[Step 25]
+StepName=Populate Strata Polygon Adjusted
+StepType=DataLoad
+
+PrerequisiteTarget_1=Populate Strata Adjusted
+
+SourceConnection=Source Data
+
+SQLStatement_Line_001=SELECT flvc.FEATURE_RCRD_ID      AS FOREST_COVER_OBJECT_ID
+SQLStatement_Line_002=     , ps.PROJECTION_STRATA_NAME AS NAME
+SQLStatement_Line_003=     , Now()                     AS ENTRY_TIMESTAMP
+SQLStatement_Line_004=     , NULL                      AS ENTRY_USERID
+SQLStatement_Line_005=     , NULL                      AS UPDATE_TIMESTAMP
+SQLStatement_Line_006=     , NULL                      AS UPDATE_USERID
+SQLStatement_Line_007=FROM         ((((tblPROJECTION_POLYGON_STRATA     pps
+SQLStatement_Line_008=       INNER JOIN tblPROJECTION_INPUT_DATASET      pid  ON pid.PROJECTION_INPUT_DATASET_RCRD_ID = pps.PROJECTION_INPUT_DATASET_RCRD_ID) 
+SQLStatement_Line_009=       INNER JOIN tblPROJECTION_PHASE              pp   ON pp.PROJECTION_PHASE_RCRD_ID          = pps.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_010=       INNER JOIN tblPOLYGON                       p    ON p.POLYGON_RCRD_ID                    = pps.POLYGON_RCRD_ID)
+SQLStatement_Line_011=       INNER JOIN tblFEATURE_LINK_VEGETATION_COVER flvc ON flvc.POLYGON_RCRD_ID                 = p.POLYGON_RCRD_ID)
+SQLStatement_Line_012=       INNER JOIN tblPROJECTION_STRATA             ps   ON ps.PROJECTION_STRATA_RCRD_ID         = pps.PROJECTION_STRATA_RCRD_ID
+SQLStatement_Line_013=WHERE  p.IGNORE_POLYGON = 0
+SQLStatement_Line_014=  AND  pid.PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+SQLStatement_Line_015=  AND  pp.PROJECTION_PHASE_NAME          = '$(VRISTARTPhaseName)'
+SQLStatement_Line_016=  AND  p.POLYGON_RCRD_ID IN
+SQLStatement_Line_017=          (SELECT DISTINCT pitP.POLYGON_RCRD_ID
+SQLStatement_Line_018=           FROM          (((SELECT PROJECTION_INPUT_DATASET_RCRD_ID, PROJECTION_PHASE_RCRD_ID, POLYGON_RCRD_ID, MODIFIED
+SQLStatement_Line_019=                            FROM   tblPROJECTION_INPUT_ADJUSTMENT
+SQLStatement_Line_020=                            UNION
+SQLStatement_Line_021=                            SELECT PROJECTION_INPUT_DATASET_RCRD_ID, PROJECTION_PHASE_RCRD_ID, POLYGON_RCRD_ID, MODIFIED
+SQLStatement_Line_022=                            FROM   tblPROJECTION_INPUT_STRING
+SQLStatement_Line_023=                            UNION
+SQLStatement_Line_024=                            SELECT PROJECTION_INPUT_DATASET_RCRD_ID, PROJECTION_PHASE_RCRD_ID, POLYGON_RCRD_ID, MODIFIED
+SQLStatement_Line_025=                            FROM   tblPROJECTION_INPUT_VALUE)  pit
+SQLStatement_Line_026=                INNER JOIN tblPROJECTION_INPUT_DATASET pid 
+SQLStatement_Line_027=                        ON pid.PROJECTION_INPUT_DATASET_RCRD_ID = pit.PROJECTION_INPUT_DATASET_RCRD_ID)
+SQLStatement_Line_028=                INNER JOIN tblPROJECTION_PHASE pp
+SQLStatement_Line_029=                        ON pp.PROJECTION_PHASE_RCRD_ID = pit.PROJECTION_PHASE_RCRD_ID)
+SQLStatement_Line_030=                INNER JOIN tblPOLYGON pitP
+SQLStatement_Line_031=                        ON pitP.POLYGON_RCRD_ID = pit.POLYGON_RCRD_ID
+SQLStatement_Line_032=           WHERE pid.PROJECTION_INPUT_DATASET_NAME  = '$(DatasetName)'
+SQLStatement_Line_033=             AND pp.PROJECTION_PHASE_NAME          IN ('$(VRISTARTPhaseName)', '$(VRIADJSTPhaseName)')
+SQLStatement_Line_034=             AND pitP.IGNORE_POLYGON                = 0
+SQLStatement_Line_035=             AND pit.MODIFIED                      <> 0)
+
+TargetConnection=Destination Data
+TargetTableName=STRATA_POLYGON_ADJUSTED
+
+SourceToDestinationColumnMappingSection=STRATA_POLYGON_ADJUSTED Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FOREST_COVER_OBJECT_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=NAME
+
+
+
+[STRATA_POLYGON_ADJUSTED Column Mapping]
+SourceMappingType_1=Lookup
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingSQLStatement_1_Line_001=SELECT IIF( IsNull( MAX( OBJECTID ) ), 0, MAX( OBJECTID ) )
+SourceMappingSQLStatement_1_Line_002=FROM   STRATA_POLYGON_ADJUSTED
+TargetColumn_1=STRATA_ADJUSTED_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=FOREST_COVER_OBJECT_ID
+TargetColumn_2=FOREST_COVER_OBJECT_ID
+
+SourceMappingType_3=Lookup
+SourceColumn_3_P1=NAME
+SourceMappingSQLConnection_3=Destination Data
+SourceMappingSQLStatement_3_Line_001=SELECT STRATA_ADJUSTED_ID
+SourceMappingSQLStatement_3_Line_002=FROM   STRATA_ADJUSTED
+SourceMappingSQLStatement_3_Line_003=WHERE  NAME = [P1]
+TargetColumn_3=STRATA_ADJUSTED_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=ENTRY_TIMESTAMP
+TargetColumn_4=ENTRY_TIMESTAMP
+
+SourceMappingType_5=Copy
+SourceColumn_5=ENTRY_USERID
+TargetColumn_5=ENTRY_USERID
+
+SourceMappingType_6=Copy
+SourceColumn_6=UPDATE_TIMESTAMP
+TargetColumn_6=UPDATE_TIMESTAMP
+
+SourceMappingType_7=Copy
+SourceColumn_7=UPDATE_USERID
+TargetColumn_7=UPDATE_USERID
+
+
+
+
+[Step 26]
+StepName=Alter ADJUSTMENT_ATTRIBUTE_SET_ADJ
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE ADJUSTMENT_ATTRIBUTE_SET_ADJ
+SQLStatement_Line_002=ADD CONSTRAINT PK_AASA PRIMARY KEY ( ADJUSTMENT_ATTRIB_SET_ADJ_ID )
+
+
+[Step 27]
+StepName=Alter ADJUSTMENT_FACTOR_ADJUSTED
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE ADJUSTMENT_FACTOR_ADJUSTED 
+SQLStatement_Line_002=ADD CONSTRAINT PK_AFA PRIMARY KEY ( ADJUSTMENT_FACTOR_ADJUSTED_ID )
+
+
+[Step 28]
+StepName=Alter ADJUSTMENT_INPUT_ADJUSTED
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE ADJUSTMENT_INPUT_ADJUSTED 
+SQLStatement_Line_002=ADD CONSTRAINT PK_AIA PRIMARY KEY ( ADJUSTMENT_INPUT_ADJUSTED_ID )
+
+
+[Step 29]
+StepName=Alter ADJUSTMENT_PROJECT_ADJUSTED
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE ADJUSTMENT_PROJECT_ADJUSTED 
+SQLStatement_Line_002=ADD CONSTRAINT PK_APA PRIMARY KEY ( ADJUSTMENT_PROJECT_ADJUSTED_ID )
+
+
+[Step 30]
+StepName=Alter FOREST_COVER_OBJECT
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE FOREST_COVER_OBJECT 
+SQLStatement_Line_002=ADD CONSTRAINT PK_FCO PRIMARY KEY ( FOREST_COVER_OBJECT_ID )
+
+
+[Step 31]
+StepName=Alter LAND_COVER_COMPONENT_ADJ
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE LAND_COVER_COMPONENT_ADJ 
+SQLStatement_Line_002=ADD CONSTRAINT PK_LCCA          PRIMARY KEY ( LAND_COVER_COMPONENT_ADJ_ID ),
+SQLStatement_Line_003=    CONSTRAINT AK_LCCA_FCO_LCLC UNIQUE      ( FOREST_COVER_OBJECT_ID, LAND_COVER_LEVEL_CODE )
+
+
+[Step 32]
+StepName=Alter NON_VEGETATIVE_COVER_ADJ
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE NON_VEGETATIVE_COVER_ADJ 
+SQLStatement_Line_002=ADD CONSTRAINT PK_NVCA         PRIMARY KEY ( NON_VEGETATIVE_COVER_ADJ_ID ),
+SQLStatement_Line_003=    CONSTRAINT AK_NVCA_FCO_LLC UNIQUE      ( FOREST_COVER_OBJECT_ID, LAYER_LEVEL_CODE )
+
+
+[Step 33]
+StepName=Alter SAMPLES_USED_ADJUSTED
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE SAMPLES_USED_ADJUSTED 
+SQLStatement_Line_002=ADD CONSTRAINT PK_SUA PRIMARY KEY ( SAMPLES_USED_ADJUSTED_ID )
+
+
+[Step 34]
+StepName=Alter STRATA_ADJUSTED
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE STRATA_ADJUSTED 
+SQLStatement_Line_002=ADD CONSTRAINT PK_SA PRIMARY KEY ( STRATA_ADJUSTED_ID )
+
+
+[Step 35]
+StepName=Alter STRATA_POLYGON_ADJUSTED
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE STRATA_POLYGON_ADJUSTED 
+SQLStatement_Line_002=ADD CONSTRAINT PK_SA PRIMARY KEY ( STRATA_ADJUSTED_ID )
+
+
+[Step 36]
+StepName=Alter TREE_COVER_LAYER_ADJUSTED
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE TREE_COVER_LAYER_ADJUSTED 
+SQLStatement_Line_002=ADD CONSTRAINT PK_TCLA         PRIMARY KEY ( TREE_COVER_LAYER_ADJUSTED_ID ),
+SQLStatement_Line_003=    CONSTRAINT AK_TCLA_FCO_LLC UNIQUE      ( FOREST_COVER_OBJECT_ID, LAYER_LEVEL_CODE )
+
+
+
+[Step 37]
+StepName=Alter TREE_SPECIES_ADJUSTED
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE TREE_SPECIES_ADJUSTED 
+SQLStatement_Line_002=ADD CONSTRAINT PK_TSA          PRIMARY KEY ( TREE_SPECIES_ADJUSTED_ID ),
+SQLStatement_Line_003=    CONSTRAINT AK_TSA_TCLA_TSC UNIQUE      ( TREE_COVER_LAYER_ADJUSTED_ID, TREE_SPECIES_CODE )
+
+
+[Step 38]
+StepName=Alter VEGETATION_COVER_POLYGON_ADJ
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE VEGETATION_COVER_POLYGON_ADJ 
+SQLStatement_Line_002=ADD CONSTRAINT PK_VCPA PRIMARY KEY ( FOREST_COVER_OBJECT_ID )
+
+
+[Step 39]
+StepName=Alter VEGETATION_METADATA_ADJUSTED
+StepType=Do Nothing
+
+
+[Step 40]
+StepName=Primary Keys Created
+StepType=Do Nothing
+
+PrerequisiteTarget_1=Alter ADJUSTMENT_ATTRIBUTE_SET_ADJ
+PrerequisiteTarget_2=Alter ADJUSTMENT_FACTOR_ADJUSTED
+PrerequisiteTarget_3=Alter ADJUSTMENT_INPUT_ADJUSTED
+PrerequisiteTarget_4=Alter ADJUSTMENT_PROJECT_ADJUSTED
+PrerequisiteTarget_5=Alter FOREST_COVER_OBJECT
+PrerequisiteTarget_6=Alter LAND_COVER_COMPONENT_ADJ
+PrerequisiteTarget_7=Alter NON_VEGETATIVE_COVER_ADJ
+PrerequisiteTarget_8=Alter SAMPLES_USED_ADJUSTED
+PrerequisiteTarget_9=Alter STRATA_ADJUSTED
+PrerequisiteTarget_10=Alter STRATA_POLYGON_ADJUSTED
+PrerequisiteTarget_11=Alter TREE_COVER_LAYER_ADJUSTED
+PrerequisiteTarget_12=Alter TREE_SPECIES_ADJUSTED
+PrerequisiteTarget_13=Alter VEGETATION_COVER_POLYGON_ADJ
+PrerequisiteTarget_14=Alter VEGETATION_METADATA_ADJUSTED
+
+
+[Step 41]
+StepName=DDL Completed
+StepType=Do Nothing
+
+PrerequisiteTarget_1=Primary Keys Created
+PrerequisiteTarget_2=Indexes Created
+
+
+[Step 42]
+StepName=Indexes Created
+StepType=Do Nothing
+
+PrerequisiteTarget_1=Create ADJUSTMENT_ATTRIBUTE_SET_ADJ 1
+PrerequisiteTarget_2=Create ADJUSTMENT_FACTOR_ADJUSTED 1
+PrerequisiteTarget_3=Create ADJUSTMENT_INPUT_ADJUSTED 1
+PrerequisiteTarget_4=Create LAND_COVER_COMPONENT_ADJ 1
+PrerequisiteTarget_5=Create NON_VEGETATIVE_COVER_ADJ 1
+PrerequisiteTarget_6=Create SAMPLES_USED_ADJUSTED 1
+PrerequisiteTarget_7=Create STRATA_POLYGON_ADJUSTED 1
+PrerequisiteTarget_8=Create TREE_COVER_LAYER_ADJUSTED 1
+PrerequisiteTarget_9=Create TREE_SPECIES_ADJUSTED 1
+
+
+
+[Step 43]
+StepName=Create ADJUSTMENT_ATTRIBUTE_SET_ADJ 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE ADJUSTMENT_ATTRIBUTE_SET_ADJ
+SQLStatement_Line_002=ADD CONSTRAINT FK_AASA_AFA FOREIGN KEY ( ADJUSTMENT_FACTOR_ADJUSTED_ID ) REFERENCES ADJUSTMENT_FACTOR_ADJUSTED ( ADJUSTMENT_FACTOR_ADJUSTED_ID )
+
+
+[Step 44]
+StepName=Create ADJUSTMENT_FACTOR_ADJUSTED 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE ADJUSTMENT_FACTOR_ADJUSTED
+SQLStatement_Line_002=ADD CONSTRAINT FK_AFA_TSA  FOREIGN KEY ( TREE_SPECIES_ADJUSTED_ID     ) REFERENCES TREE_SPECIES_ADJUSTED ( TREE_SPECIES_ADJUSTED_ID ),
+SQLStatement_Line_003=    CONSTRAINT FK_AFA_TCLA FOREIGN KEY ( TREE_COVER_LAYER_ADJUSTED_ID ) REFERENCES TREE_COVER_LAYER_ADJUSTED ( TREE_COVER_LAYER_ADJUSTED_ID ),
+SQLStatement_Line_004=    CONSTRAINT FK_AFA_FCO  FOREIGN KEY ( FOREST_COVER_OBJECT_ID       ) REFERENCES FOREST_COVER_OBJECT ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_005=    CONSTRAINT FK_AFA_VCPA FOREIGN KEY ( FOREST_COVER_OBJECT_ID       ) REFERENCES VEGETATION_COVER_POLYGON_ADJ ( FOREST_COVER_OBJECT_ID )
+
+
+[Step 45]
+StepName=Create ADJUSTMENT_INPUT_ADJUSTED 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE ADJUSTMENT_INPUT_ADJUSTED
+SQLStatement_Line_002=ADD CONSTRAINT FK_AIA_TCLA FOREIGN KEY ( VRI_ADJST_LAYER_ID     ) REFERENCES TREE_COVER_LAYER_ADJUSTED ( TREE_COVER_LAYER_ADJUSTED_ID ),
+SQLStatement_Line_003=    CONSTRAINT FK_AIA_FCO  FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES FOREST_COVER_OBJECT ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_004=    CONSTRAINT FK_AIA_VCPA FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES VEGETATION_COVER_POLYGON_ADJ ( FOREST_COVER_OBJECT_ID )
+
+
+[Step 46]
+StepName=Create LAND_COVER_COMPONENT_ADJ 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE LAND_COVER_COMPONENT_ADJ
+SQLStatement_Line_002=ADD CONSTRAINT FK_LCCA_FCO  FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES FOREST_COVER_OBJECT ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_003=    CONSTRAINT FK_LCCA_VCPA FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES VEGETATION_COVER_POLYGON_ADJ ( FOREST_COVER_OBJECT_ID )
+
+
+[Step 47]
+StepName=Create NON_VEGETATIVE_COVER_ADJ 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE NON_VEGETATIVE_COVER_ADJ
+SQLStatement_Line_002=ADD CONSTRAINT FK_NVCA_FCO  FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES FOREST_COVER_OBJECT ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_003=    CONSTRAINT FK_NVCA_VCPA FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES VEGETATION_COVER_POLYGON_ADJ ( FOREST_COVER_OBJECT_ID )
+
+
+[Step 48]
+StepName=Create SAMPLES_USED_ADJUSTED 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE SAMPLES_USED_ADJUSTED
+SQLStatement_Line_002=ADD CONSTRAINT FK_SUA_FCO  FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES FOREST_COVER_OBJECT ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_003=    CONSTRAINT FK_SUA_VCPA FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES VEGETATION_COVER_POLYGON_ADJ ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_004=    CONSTRAINT FK_SUA_SA   FOREIGN KEY ( STRATA_ADJUSTED_ID     ) REFERENCES STRATA_ADJUSTED( STRATA_ADJUSTED_ID )
+
+
+[Step 49]
+StepName=Create STRATA_POLYGON_ADJUSTED 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE STRATA_POLYGON_ADJUSTED
+SQLStatement_Line_002=ADD CONSTRAINT FK_SPA_FCO  FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES FOREST_COVER_OBJECT ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_003=    CONSTRAINT FK_SPA_VCPA FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES VEGETATION_COVER_POLYGON_ADJ ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_004=    CONSTRAINT FK_SPA_SA   FOREIGN KEY ( STRATA_ADJUSTED_ID     ) REFERENCES STRATA_ADJUSTED( STRATA_ADJUSTED_ID )
+
+
+[Step 50]
+StepName=Create TREE_COVER_LAYER_ADJUSTED 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE TREE_COVER_LAYER_ADJUSTED
+SQLStatement_Line_002=ADD CONSTRAINT FK_TCLA_FCO  FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES FOREST_COVER_OBJECT ( FOREST_COVER_OBJECT_ID ),
+SQLStatement_Line_003=    CONSTRAINT FK_TCLA_VCPA FOREIGN KEY ( FOREST_COVER_OBJECT_ID ) REFERENCES VEGETATION_COVER_POLYGON_ADJ ( FOREST_COVER_OBJECT_ID )
+
+
+[Step 51]
+StepName=Create TREE_SPECIES_ADJUSTED 1
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Primary Keys Created
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=ALTER TABLE TREE_SPECIES_ADJUSTED
+SQLStatement_Line_002=ADD CONSTRAINT FK_TSA_TCLA FOREIGN KEY ( TREE_COVER_LAYER_ADJUSTED_ID ) REFERENCES TREE_COVER_LAYER_ADJUSTED ( TREE_COVER_LAYER_ADJUSTED_ID )
+
+
+[Step 52]
+StepName=Purge Unadjusted Polygons 01
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Purge Unadjusted Polygons 04
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM TREE_SPECIES_ADJUSTED
+SQLStatement_Line_002=WHERE  TREE_COVER_LAYER_ADJUSTED_ID IN
+SQLStatement_Line_003=       (SELECT TREE_COVER_LAYER_ADJUSTED_ID
+SQLStatement_Line_004=        FROM              VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_005=               INNER JOIN TREE_COVER_LAYER_ADJUSTED    tcla
+SQLStatement_Line_006=                       ON tcla.FOREST_COVER_OBJECT_ID = vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_007=        WHERE (vcpa.ADJUSTED_IND = 'N' OR vcpa.ADJUSTED_IND IS NULL))
+
+
+[Step 53]
+StepName=Purge Unadjusted Polygons 02
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Purge Unadjusted Polygons 01
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM TREE_COVER_LAYER_ADJUSTED
+SQLStatement_Line_002=WHERE  FOREST_COVER_OBJECT_ID IN
+SQLStatement_Line_003=       (SELECT vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_004=        FROM VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_005=        WHERE (vcpa.ADJUSTED_IND = 'N' OR vcpa.ADJUSTED_IND IS NULL))
+
+
+[Step 54]
+StepName=Purge Unadjusted Polygons 03
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Populate Strata Polygon Adjusted
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM LAND_COVER_COMPONENT_ADJ
+SQLStatement_Line_002=WHERE  FOREST_COVER_OBJECT_ID IN
+SQLStatement_Line_003=       (SELECT vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_004=        FROM VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_005=        WHERE (vcpa.ADJUSTED_IND = 'N' OR vcpa.ADJUSTED_IND IS NULL))
+
+
+[Step 55]
+StepName=Purge Unadjusted Polygons 04
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Populate Strata Polygon Adjusted
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM ADJUSTMENT_FACTOR_ADJUSTED
+SQLStatement_Line_002=WHERE  FOREST_COVER_OBJECT_ID IN
+SQLStatement_Line_003=       (SELECT vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_004=        FROM VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_005=        WHERE (vcpa.ADJUSTED_IND = 'N' OR vcpa.ADJUSTED_IND IS NULL))
+
+
+[Step 56]
+StepName=Purge Unadjusted Polygons 05
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Populate Strata Polygon Adjusted
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM ADJUSTMENT_INPUT_ADJUSTED
+SQLStatement_Line_002=WHERE  FOREST_COVER_OBJECT_ID IN
+SQLStatement_Line_003=       (SELECT vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_004=        FROM VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_005=        WHERE (vcpa.ADJUSTED_IND = 'N' OR vcpa.ADJUSTED_IND IS NULL))
+
+
+[Step 57]
+StepName=Purge Unadjusted Polygons 06
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Populate Strata Polygon Adjusted
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM NON_VEGETATIVE_COVER_ADJ
+SQLStatement_Line_002=WHERE  FOREST_COVER_OBJECT_ID IN
+SQLStatement_Line_003=       (SELECT vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_004=        FROM VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_005=        WHERE (vcpa.ADJUSTED_IND = 'N' OR vcpa.ADJUSTED_IND IS NULL))
+
+
+[Step 58]
+StepName=Purge Unadjusted Polygons 07
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Populate Strata Polygon Adjusted
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM SAMPLES_USED_ADJUSTED
+SQLStatement_Line_002=WHERE  FOREST_COVER_OBJECT_ID IN
+SQLStatement_Line_003=       (SELECT vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_004=        FROM VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_005=        WHERE (vcpa.ADJUSTED_IND = 'N' OR vcpa.ADJUSTED_IND IS NULL))
+
+
+[Step 59]
+StepName=Purge Unadjusted Polygons 08
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Populate Strata Polygon Adjusted
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM STRATA_POLYGON_ADJUSTED
+SQLStatement_Line_002=WHERE  FOREST_COVER_OBJECT_ID IN
+SQLStatement_Line_003=       (SELECT vcpa.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_004=        FROM VEGETATION_COVER_POLYGON_ADJ vcpa
+SQLStatement_Line_005=        WHERE (vcpa.ADJUSTED_IND = 'N' OR vcpa.ADJUSTED_IND IS NULL))
+
+
+[Step 60]
+StepName=Purge Unadjusted Polygons 09
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Purge Unadjusted Polygons 01
+PrerequisiteTarget_2=Purge Unadjusted Polygons 02
+PrerequisiteTarget_3=Purge Unadjusted Polygons 03
+PrerequisiteTarget_4=Purge Unadjusted Polygons 04
+PrerequisiteTarget_5=Purge Unadjusted Polygons 05
+PrerequisiteTarget_6=Purge Unadjusted Polygons 06
+PrerequisiteTarget_7=Purge Unadjusted Polygons 07
+PrerequisiteTarget_8=Purge Unadjusted Polygons 08
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM VEGETATION_COVER_POLYGON_ADJ
+SQLStatement_Line_002=WHERE ((ADJUSTED_IND IS NULL)
+SQLStatement_Line_003=   OR  (ADJUSTED_IND <> 'Y'))
+
+
+[Step 61]
+StepName=Purge Unadjusted Polygons 10
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Purge Unadjusted Polygons 09
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM FOREST_COVER_OBJECT
+SQLStatement_Line_002=WHERE  FOREST_COVER_OBJECT_ID NOT IN
+SQLStatement_Line_003=       (SELECT FOREST_COVER_OBJECT_ID
+SQLStatement_Line_004=        FROM VEGETATION_COVER_POLYGON_ADJ)
+
+
+[Step 62]
+StepName=Populate VEGETATION_METADATA_ADJUSTED
+StepType=DataLoad
+
+PrerequisiteTarget_1=DDL Completed
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT 'B' + RIGHT( '0000' + MID( mpvECM.VERSION_NUMBER, InStr( Len( mpvECM.VERSION_NUMBER ) - 5, mpvECM.VERSION_NUMBER, "." ) + 1 ), 4 ) AS VDYP_VERSION
+SQLStatement_Line_002=     , mpvSIN.VERSION_NUMBER AS SINDEX_VERSION
+SQLStatement_Line_003=FROM 
+SQLStatement_Line_004=               (((tblMETADATA_PROJECTION_RUN mpr
+SQLStatement_Line_005=       INNER JOIN tblMETADATA_PROJECTION_RUN_TYPE mprt ON mpr.PROJECTION_RUN_TYPE_RCRD_ID = mprt.PROJECTION_RUN_TYPE_RCRD_ID)
+SQLStatement_Line_006=       INNER JOIN (SELECT MAX( PROJECTION_RUN_RCRD_ID ) AS MOST_RECENT_RUN_RCRD_ID
+SQLStatement_Line_007=                   FROM tblMETADATA_PROJECTION_RUN) mprLatest  ON mpr.PROJECTION_RUN_RCRD_ID = mprLatest.MOST_RECENT_RUN_RCRD_ID)
+SQLStatement_Line_008=       INNER JOIN tblMETADATA_PROJECTION_VERSION mpvECM ON mpvECM.PROJECTION_RUN_RCRD_ID = mpr.PROJECTION_RUN_RCRD_ID)
+SQLStatement_Line_009=       INNER JOIN tblMETADATA_PROJECTION_VERSION mpvSIN ON mpvSIN.PROJECTION_RUN_RCRD_ID = mpr.PROJECTION_RUN_RCRD_ID
+SQLStatement_Line_010=WHERE  mpvECM.VERSION_DESC = '$(VDYP7Name)'
+SQLStatement_Line_011=  AND  mpvSIN.VERSION_DESC = '$(SINDEXName)'
+
+
+TargetConnection=Destination Data
+TargetTableName=VEGETATION_METADATA_ADJUSTED
+
+SourceToDestinationColumnMappingSection=VEGETATION_METADATA_ADJUSTED Column Mapping
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=VDYP_VERSION
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=SINDEX_VERSION
+
+
+
+[VEGETATION_METADATA_ADJUSTED Column Mapping]
+SourceMappingType_1=Copy
+SourceColumn_1=VDYP_VERSION
+TargetColumn_1=VDYP_VERSION
+
+SourceMappingType_2=Copy
+SourceColumn_2=SINDEX_VERSION
+TargetColumn_2=SINDEX_VERSION
+
+
+
+[Step 63]
+StepName=Adjust Species Percents Down
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Load Layer Data Into Temp Tables
+PrerequisiteTarget_2=Load Updated Species Values Into PGDB
+
+SQLStatement_Line_001=UPDATE (          (TREE_SPECIES_ADJUSTED tsa
+SQLStatement_Line_002=        INNER JOIN TREE_COVER_LAYER_ADJUSTED tcla
+SQLStatement_Line_003=                ON tcla.TREE_COVER_LAYER_ADJUSTED_ID = tsa.TREE_COVER_LAYER_ADJUSTED_ID)
+SQLStatement_Line_004=        INNER JOIN tmpPITLayerValues     l
+SQLStatement_Line_005=                ON tcla.FOREST_COVER_OBJECT_ID = l.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_006=               AND tcla.LAYER_LEVEL_CODE       = l.LAYER_LEVEL_CODE)
+SQLStatement_Line_007=SET   tsa.SPECIES_PCT = tsa.SPECIES_PCT - ((l.TOTAL_SPECIES_PERCENT - 100.0) / l.NUMBER_TRAILING_SPECIES)
+SQLStatement_Line_008=WHERE (l.TOTAL_SPECIES_PERCENT - 100.0) >= $(SpeciesPercentEqualsEpsilon)
+SQLStatement_Line_009=  AND ABS( tsa.SPECIES_PCT - l.TRAILING_SPECIES_PERCENT ) < $(SpeciesPercentEqualsEpsilon)
+
+
+TargetConnection=Destination Data
+
+
+[Step 64]
+StepName=Adjust Species Percents Up
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Load Layer Data Into Temp Tables
+PrerequisiteTarget_2=Load Updated Species Values Into PGDB
+
+SQLStatement_Line_001=UPDATE (          (TREE_SPECIES_ADJUSTED tsa
+SQLStatement_Line_002=        INNER JOIN TREE_COVER_LAYER_ADJUSTED tcla
+SQLStatement_Line_003=                ON tcla.TREE_COVER_LAYER_ADJUSTED_ID = tsa.TREE_COVER_LAYER_ADJUSTED_ID)
+SQLStatement_Line_004=        INNER JOIN tmpPITLayerValues     l
+SQLStatement_Line_005=                ON tcla.FOREST_COVER_OBJECT_ID = l.FOREST_COVER_OBJECT_ID
+SQLStatement_Line_006=               AND tcla.LAYER_LEVEL_CODE       = l.LAYER_LEVEL_CODE)
+SQLStatement_Line_007=SET   tsa.SPECIES_PCT = tsa.SPECIES_PCT + ((100.0 - l.TOTAL_SPECIES_PERCENT) / l.NUMBER_LEADING_SPECIES)
+SQLStatement_Line_008=WHERE l.TOTAL_SPECIES_PERCENT >= 90.0
+SQLStatement_Line_009=  AND (100.0 - l.TOTAL_SPECIES_PERCENT) >= $(SpeciesPercentEqualsEpsilon)
+SQLStatement_Line_010=  AND ABS( tsa.SPECIES_PCT - l.LEADING_SPECIES_PERCENT ) < $(SpeciesPercentEqualsEpsilon)
+
+
+TargetConnection=Destination Data

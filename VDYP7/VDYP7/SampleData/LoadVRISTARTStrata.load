@@ -1,0 +1,389 @@
+[Administration]
+FileType=DTS Package Specification
+FormatVersion=1.0.0
+PackageName=Load Reference Data
+
+
+
+;================================================================
+;
+; Define each of the data sources
+;
+;
+
+
+[Data Connection - Source Data]
+DatabaseType=MSAccess
+Database=$(SourceDatabase)
+
+
+
+[Data Connection - Destination Data]
+DatabaseType=MSAccess
+Database=$(DestinationDatabase)
+
+AfterOpeningEnvVar_1_Name=DatasetName
+AfterOpeningEnvVar_1_Value=Default
+
+AfterOpeningEnvvar_2_Name=VRIADJSTPhaseName
+AfterOpeningEnvVar_2_Value=VRIADJST Inputs (At GSYr)
+
+AfterOpeningEnvVar_3_Name=GroundSampleYearPhaseName
+AfterOpeningEnvVar_3_Value=VRISTART Inputs (At GSYr)
+
+AfterOpeningEnvVar_4_Name=ReferenceYearParamName
+AfterOpeningEnvVar_4_Value=Reference Year
+
+
+;=================================================================
+;=================================================================
+;
+; Step Definitions:
+;
+; Possible Step Types are:
+;	Do Nothing
+;		Relevant Properties
+;               	NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;
+;		The rest of the step definition is optional
+;		and ignored.
+;
+;	DataLoad
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection
+;			SourceTableName
+;			TargetConnection
+;			TargetTableName
+;			SourceToDestinationColumnMappingSection
+;
+;	Count Records
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			TargetConnection
+;			TargetTableName
+;
+;	Custom SQL
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection or TargetConnection (in that preference order)
+;			SQLStatement or SQLStatement_Line_nnn
+;
+;
+
+;=================================================================
+;=================================================================
+
+;=================================================================
+;
+; Copy Records over from the source data to the destination.
+;
+;
+
+
+[Step 1]
+StepName=Load VRISTART Strata Definitions
+StepType=DataLoad
+
+SourceConnection=Source Data
+SourceTableName=$(StrataNames)
+
+TargetConnection=Destination Data
+TargetTableName=tblPROJECTION_STRATA
+
+SourceToDestinationColumnMappingSection=Projection Strata Column Mapping
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=STRATA_ID
+
+
+
+[Step 2]
+StepName=Load VRISTART Adjustment Factors
+StepType=DataLoad
+
+PrerequisiteTarget_1=Load VRISTART Strata Definitions
+
+SourceConnection=Source Data
+SourceTableName=$(StrataAdjustments)
+
+TargetConnection=Destination Data
+TargetTableName=tblPROJECTION_STRATA_PARAMETER
+
+
+SourceToDestinationColumnMappingSection=Strata Adjustment Factor Column Mapping
+
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(GroundSampleYearPhaseName)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=STRATA_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=LAYER_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=SPECIES_ID
+
+RecordIDMappingType_5=Copy
+RecordIDColumn_5=PARAMETER
+
+
+
+[Step 3]
+StepName=Load VRISTART Polygon Strata Assignments
+StepType=DataLoad
+
+PrerequisiteTarget_1=Load VRISTART Strata Definitions
+
+SourceConnection=Source Data
+SourceTableName=$(StrataAssignments)
+
+TargetConnection=Destination Data
+TargetTableName=tblPROJECTION_POLYGON_STRATA
+
+SourceToDestinationColumnMappingSection=VRISTART Polygon Strata Assignment Column Mapping
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(GroundSampleYearPhaseName)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=DISTRICT
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=MAPSHEET
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=POLYGON_ID
+
+RecordIDMappingType_5=Copy
+RecordIDColumn_5=VRISTART_STRATA_ID
+
+
+[Step 4]
+StepName=Load VRISTART Polygon Strata Parameter Offsets
+StepType=DataLoad
+
+PrerequisiteTarget_1=Load VRISTART Polygon Strata Assignments
+
+SourceConnection=Source Data
+SourceTableName=$(StrataOffsets)
+
+TargetConnection=Destination Data
+TargetTableName=tblPROJECTION_PARAMETER_OFFSET
+
+SourceToDestinationColumnMappingSection=VRISTART Polygon Strata Parameter Offset Column Mapping
+
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(GroundSampleYearPhaseName)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=DISTRICT
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=MAPSHEET
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=POLYGON_ID
+
+RecordIDMappingType_5=Copy
+RecordIDColumn_5=PARAMETER
+
+
+
+;===========================================================================
+;
+; Column Mappings...
+;
+; Valid Mapping Types are:
+;	Copy     - Straight copy from source data to destination data
+;	Lookup   - Lookup actual data for destination table through a lookup
+;                  table located in some defined data connection.
+;       Constant - Destination data is set to some constant value
+;
+;
+
+
+[Projection Strata Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingSQLStatement_1_Line_001=SELECT PROJECTION_PHASE_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblPROJECTION_PHASE
+SourceMappingSQLStatement_1_Line_003=WHERE  PROJECTION_PHASE_NAME = '$(GroundSampleYearPhaseName)'
+TargetColumn_1=PROJECTION_PHASE_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=STRATA_ID
+TargetColumn_2=PROJECTION_STRATA_NAME
+
+SourceMappingType_3=Copy
+SourceColumn_3=STRATA_NAME
+TargetColumn_3=PROJECTION_STRATA_DESC
+
+
+
+
+[Strata Adjustment Factor Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingSQLStatement_1_Line_001=SELECT PROJECTION_INPUT_DATASET_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblPROJECTION_INPUT_DATASET
+SourceMappingSQLStatement_1_Line_003=WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+TargetColumn_1=PROJECTION_INPUT_DATASET_RCRD_ID
+
+SourceMappingType_2=Lookup
+SourceMappingSQLConnection_2=Destination Data
+SourceMappingSQLStatement_2_Line_001=SELECT PROJECTION_PHASE_RCRD_ID
+SourceMappingSQLStatement_2_Line_002=FROM   tblPROJECTION_PHASE
+SourceMappingSQLStatement_2_Line_003=WHERE  PROJECTION_PHASE_NAME = '$(GroundSampleYearPhaseName)'
+TargetColumn_2=PROJECTION_PHASE_RCRD_ID
+
+SourceMappingType_3=Lookup
+SourceColumn_3_P1=STRATA_ID
+SourceMappingSQLConnection_3=Destination Data
+SourceMappingType_3=Lookup
+SourceColumn_3_P1=STRATA_ID
+SourceMappingSQLConnection_3=Destination Data
+SourceMappingSQLStatement_3_Line_001=SELECT ps.PROJECTION_STRATA_RCRD_ID
+SourceMappingSQLStatement_3_Line_002=FROM   tblPROJECTION_STRATA ps
+SourceMappingSQLStatement_3_Line_003=     , tblPROJECTION_PHASE  pp
+SourceMappingSQLStatement_3_Line_004=WHERE  ps.PROJECTION_PHASE_RCRD_ID = pp.PROJECTION_PHASE_RCRD_ID
+SourceMappingSQLStatement_3_Line_005=  AND  pp.PROJECTION_PHASE_NAME    = '$(GroundSampleYearPhaseName)'
+SourceMappingSQLStatement_3_Line_006=  AND  ps.PROJECTION_STRATA_NAME   = [P1]
+TargetColumn_3=PROJECTION_STRATA_RCRD_ID
+
+TargetColumn_3=PROJECTION_STRATA_RCRD_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=LAYER_ID
+TargetColumn_4=LAYER_ID
+
+SourceMappingType_5=Copy
+SourceColumn_5=SPECIES_ID
+TargetColumn_5=SPECIES_ID
+
+SourceMappingType_6=Lookup
+SourceColumn_6_P1=PARAMETER
+TargetColumn_6=PROJECTION_INPUT_PARAMETER_RCRD_ID
+SourceMappingSQLConnection_6=Destination Data
+SourceMappingSQLStatement_6_Line_001=SELECT PROJECTION_INPUT_PARAMETER_RCRD_ID
+SourceMappingSQLStatement_6_Line_002=FROM   tblPROJECTION_INPUT_PARAMETER
+SourceMappingSQLStatement_6_Line_003=WHERE  PROJECTION_INPUT_PARAMETER_NAME = [P1]
+
+SourceMappingType_7=Copy
+SourceColumn_7=A
+TargetColumn_7=A
+
+SourceMappingType_8=Copy
+SourceColumn_8=B
+TargetColumn_8=B
+
+SourceMappingType_9=Copy
+SourceColumn_9=K
+TargetColumn_9=K
+
+
+
+
+[VRISTART Polygon Strata Assignment Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingSQLStatement_1_Line_001=SELECT PROJECTION_INPUT_DATASET_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblPROJECTION_INPUT_DATASET
+SourceMappingSQLStatement_1_Line_003=WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'
+TargetColumn_1=PROJECTION_INPUT_DATASET_RCRD_ID
+
+SourceMappingType_2=Lookup
+SourceMappingSQLConnection_2=Destination Data
+SourceMappingSQLStatement_2_Line_001=SELECT PROJECTION_PHASE_RCRD_ID
+SourceMappingSQLStatement_2_Line_002=FROM   tblPROJECTION_PHASE
+SourceMappingSQLStatement_2_Line_003=WHERE  PROJECTION_PHASE_NAME = '$(GroundSampleYearPhaseName)'
+TargetColumn_2=PROJECTION_PHASE_RCRD_ID
+
+SourceMappingType_3=Lookup
+SourceColumn_3_P1=DISTRICT
+SourceColumn_3_P2=MAPSHEET
+SourceColumn_3_P3=POLYGON_ID
+SourceMappingSQLConnection_3=Destination Data
+SourceMappingSQLStatement_3_Line_001=SELECT p.POLYGON_RCRD_ID
+SourceMappingSQLStatement_3_Line_002=FROM   tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID
+SourceMappingSQLStatement_3_Line_003=WHERE  v.MAINTAINER     = [P1]
+SourceMappingSQLStatement_3_Line_004=  AND  v.MAP_ID         = [P2]
+SourceMappingSQLStatement_3_Line_005=  AND  p.POLYGON_ID     = [P3]
+SourceMappingSQLStatement_3_Line_006=  AND  p.IGNORE_POLYGON = 0
+SourceMappingOption_3_NULLLookups=Skip Record
+TargetColumn_3=POLYGON_RCRD_ID
+
+SourceMappingType_4=Lookup
+SourceColumn_4_P1=VRISTART_STRATA_ID
+SourceMappingSQLConnection_4=Destination Data
+SourceMappingSQLStatement_4_Line_001=SELECT ps.PROJECTION_STRATA_RCRD_ID
+SourceMappingSQLStatement_4_Line_002=FROM   tblPROJECTION_STRATA ps
+SourceMappingSQLStatement_4_Line_003=     , tblPROJECTION_PHASE  pp
+SourceMappingSQLStatement_4_Line_004=WHERE  ps.PROJECTION_PHASE_RCRD_ID = pp.PROJECTION_PHASE_RCRD_ID
+SourceMappingSQLStatement_4_Line_005=  AND  pp.PROJECTION_PHASE_NAME    = '$(GroundSampleYearPhaseName)'
+SourceMappingSQLStatement_4_Line_006=  AND  ps.PROJECTION_STRATA_NAME   = [P1]
+TargetColumn_4=PROJECTION_STRATA_RCRD_ID
+
+
+
+
+[VRISTART Polygon Strata Parameter Offset Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=DISTRICT
+SourceColumn_1_P2=MAPSHEET
+SourceColumn_1_P3=POLYGON_ID
+SourceColumn_1_P4=STRATA_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingSQLStatement_1_Line_001=SELECT pps.PROJECTION_POLYGON_STRATA_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblPROJECTION_POLYGON_STRATA pps
+SourceMappingSQLStatement_1_Line_003=     , tblPROJECTION_INPUT_DATASET pid
+SourceMappingSQLStatement_1_Line_004=     , tblPROJECTION_PHASE pp
+SourceMappingSQLStatement_1_Line_005=     , tblVERSION v 
+SourceMappingSQLStatement_1_Line_006=     , tblPOLYGON p
+SourceMappingSQLStatement_1_Line_007=     , tblPROJECTION_STRATA ps
+SourceMappingSQLStatement_1_Line_008=WHERE  pps.PROJECTION_INPUT_DATASET_RCRD_ID = pid.PROJECTION_INPUT_DATASET_RCRD_ID
+SourceMappingSQLStatement_1_Line_009=  AND  pps.PROJECTION_PHASE_RCRD_ID         = pp.PROJECTION_PHASE_RCRD_ID
+SourceMappingSQLStatement_1_Line_010=  AND  pps.POLYGON_RCRD_ID                  = p.POLYGON_RCRD_ID
+SourceMappingSQLStatement_1_Line_011=  AND  pps.PROJECTION_STRATA_RCRD_ID        = ps.PROJECTION_STRATA_RCRD_ID
+SourceMappingSQLStatement_1_Line_012=  AND  ps.PROJECTION_PHASE_RCRD_ID          = pp.PROJECTION_PHASE_RCRD_ID
+SourcemappingSQLStatement_1_Line_013=  AND  v.VERSION_RCRD_ID                    = p.VERSION_RCRD_ID
+SourceMappingSQLStatement_1_Line_014=  AND  pid.PROJECTION_INPUT_DATASET_NAME    = '$(DatasetName)'
+SourceMappingSQLStatement_1_Line_015=  AND  pp.PROJECTION_PHASE_NAME             = '$(GroundSampleYearPhaseName)'
+SourceMappingSQLStatement_1_Line_016=  AND  v.MAINTAINER                         = [P1]
+SourceMappingSQLStatement_1_Line_017=  AND  v.MAP_ID                             = [P2]
+SourceMappingSQLStatement_1_Line_018=  AND  p.POLYGON_ID                         = [P3]
+SourceMappingSQLStatement_1_Line_019=  AND  ps.PROJECTION_STRATA_NAME            = [P4]
+SourceMappingOption_1_NULLLookups=Skip Record
+TargetColumn_1=PROJECTION_POLYGON_STRATA_RCRD_ID
+
+SourceMappingType_2=Lookup
+SourceColumn_2_P1=PARAMETER
+SourceMappingSQLConnection_2=Destination Data
+SourceMappingSQLStatement_2_Line_001=SELECT PROJECTION_INPUT_PARAMETER_RCRD_ID
+SourceMappingSQLStatement_2_Line_002=FROM   tblPROJECTION_INPUT_PARAMETER
+SourceMappingSQLStatement_2_Line_003=WHERE  PROJECTION_INPUT_PARAMETER_NAME = [P1]
+SourceMappingOption_2_NULLLookups=Skip Record
+TargetColumn_2=PROJECTION_INPUT_PARAMETER_RCRD_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=LAYER_ID
+TargetColumn_3=LAYER_ID
+
+SourceMappingType_4=Copy
+SourceColumn_4=SPECIES_ID
+TargetColumn_4=SPECIES_ID
+
+SourceMappingType_5=Copy
+SourceColumn_5=C_COEFF
+TargetColumn_5=C

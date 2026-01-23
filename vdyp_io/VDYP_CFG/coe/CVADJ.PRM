@@ -1,0 +1,32 @@
+ 01    0.98   Small utl class, BA   CVADJ.prm  Comp Var adjustment & related parms
+ 02    0.98                    DQ
+ 03    0.98                    HL
+ 04    0.98                    VOL
+ 05    0.98                    BA Adj, Utl Class 1 (7.5-12.5 cm)
+ 06    0.98                            Utl Class 2
+ 07    0.98                            Utl Class 3
+ 08    0.98                            Utl Class 4 (22.5+ cm)
+ 15    0.98                    DQ Adj, Utl Class 1
+ 16    0.98                            Utl Class 2
+ 17    0.98                            Utl Class 3
+ 18    0.98                            Utl Class 4
+ 11    0.98   Util Class 1 ( 7.5-12.5), Whole-stem vol 
+ 12    0.98                             Close Util Vol
+ 13    0.98                             Close U, less decay
+ 14    0.98                             Close U, less waste and decay
+ 21    0.98   Util Class 2 (12.5-17.5), Whole-stem volume 
+ 22    0.98                             
+ 23    0.98                             
+ 24    0.98                             
+ 31    0.98   Util Class 3 (17.5-22.5), Whole-stem volume 
+ 32    0.98                             
+ 33    0.98                             
+ 34    0.98                             
+ 41    0.98   Util Class 4 (22.5+    ), Whole-stem volume 
+ 42    0.98                             Close Util vol
+ 43    0.98                             Close U vol, less decay
+ 44    0.98                             Close U vol, less decay and waste
+ 51    0.98  Lorey height, primary species
+ 52    0.98  Lorey height, other species
+999                 End of usuable info
+

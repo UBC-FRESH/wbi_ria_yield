@@ -1,0 +1,115 @@
+;
+;  VDYP7Interface   .DLL Module Definition File
+;
+;
+
+LIBRARY        VDYP7Interface
+DESCRIPTION    'VDYP7 External Core Modules Interface'
+
+
+
+;
+;  EXPORTED FUNCTIONS
+;
+;
+
+
+EXPORTS
+   V7Ext_Version
+   V7Ext_Initialize
+   V7Ext_Shutdown
+   V7Ext_ReturnCodeToString
+   V7Ext_GrowthModelToString
+   V7Ext_ProcessingModeToString
+   V7Ext_AllocatePolygonDescriptor
+   V7Ext_FreePolygonDescriptor
+   V7Ext_SetInterfaceOptionInt
+   V7Ext_GetInterfaceOptionInt
+   V7Ext_SetInterfaceOptionString
+   V7Ext_GetInterfaceOptionString
+   V7Ext_LogPolygonDescriptor
+   V7Ext_SetReportingUtilLevel
+   V7Ext_SetSpcsReportingUtilLevel
+   V7Ext_GetSpcsReportingUtilLevel
+   V7Ext_GetSpcsMoFBiomassUtilLevel
+   V7Ext_GetSpcsCFSBiomassUtilLevel
+   V7Ext_StartNewPolygon
+   V7Ext_AddNonVegetationInfo
+   V7Ext_AddOtherVegetationInfo
+   V7Ext_AddLayer
+   V7Ext_AddLayerHistory
+   V7Ext_AddSpeciesComponent
+   V7Ext_PolygonReferenceYear
+   V7Ext_GetPolygonInfo
+   V7Ext_GetLayerInfo
+   V7Ext_CompletedPolygonDefinition
+   V7Ext_WasLayerProcessed
+   V7Ext_PolygonIsCoastal
+   V7Ext_InitialProcessingModeToBeUsed
+   V7Ext_GetPolygonInitialProcessingInfo
+   V7Ext_DetermineVDYP7ProcessingLayer
+   V7Ext_PerformInitialProcessing
+   V7Ext_GetFirstYearYieldsValid
+   V7Ext_DetermineStandAgeAtYear
+   V7Ext_DetermineLayerAgeAtYear
+   V7Ext_DetermineLayerYearOfDeath
+   V7Ext_DetermineLayerStockability
+   V7Ext_GetStandAdjustmentSeeds
+   V7Ext_SetStandAdjustments
+   V7Ext_ProjectStandToYear
+   V7Ext_ProjectStandByAge
+   V7Ext_ReloadProjectedData
+
+   V7Ext_GetProjectedPolygonGrowthInfo
+   V7Ext_GetProjectedPolygonVolumes
+   V7Ext_GetProjectedPolygonMoFBiomass
+   V7Ext_GetProjectedPolygonCFSBiomass
+   V7Ext_GetProjectedLayerCFSBiomass
+
+   V7Ext_GetProjectedDomSpcsAgeAtYear
+   V7Ext_GetProjectedLayerStandGrowthInfo
+   V7Ext_GetProjectedLayerGroupGrowthInfo
+   V7Ext_GetProjectedLayerSpeciesGrowthInfo
+   V7Ext_GetProjectedLayerStandVolumes
+   V7Ext_GetProjectedLayerGroupVolumes
+   V7Ext_GetProjectedLayerSpeciesVolumes
+   V7Ext_GetProjectedLayerStandMoFBiomass
+   V7Ext_GetProjectedLayerGroupMoFBiomass
+   V7Ext_GetProjectedLayerSpeciesMoFBiomass
+
+   V7Ext_GetProjectedSpeciesPercent
+   V7Ext_GetProjectedSpeciesGroupPercent
+
+   V7Ext_GetNumSpecies
+   V7Ext_GetNumSpeciesGroups
+   V7Ext_GetNumSiteSpecies
+   V7Ext_GetNumSiteSpeciesGroups
+   V7Ext_GetSpeciesName
+   V7Ext_GetSpeciesGroupName
+   V7Ext_GetSpeciesComponent
+   V7Ext_GetSpeciesGroupComponent
+   V7Ext_GetSiteSpeciesComponent
+   V7Ext_GetSiteSpeciesGroupComponent
+   V7Ext_NumProcessingMessages
+   V7Ext_GetProcessingMessage
+
+   V7Ext_InitialProcessingReturnCode
+   V7Ext_AdjustmentProcessingReturnCode
+   V7Ext_PolygonProjectionReturnCode
+
+   V7Ext_VB_Version
+   V7Ext_VB_AllocatePolygonDescriptor
+   V7Ext_VB_FreePolygonDescriptor
+   V7Ext_VB_ReturnCodeToString
+   V7Ext_VB_GrowthModelToString
+   V7Ext_VB_ProcessingModeToString
+   V7Ext_VB_GetSpeciesName
+   V7Ext_VB_GetSpeciesGroupName
+   V7Ext_VB_GetProcessingMessage
+   V7Ext_VB_DetermineVDYP7ProcessingLayer
+
+   v7ext_for_version_
+   v7ext_for_allocatepolygondescriptor_
+   v7ext_for_freepolygondescriptor_
+
+

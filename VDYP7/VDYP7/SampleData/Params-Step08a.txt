@@ -1,0 +1,6 @@
+-destdb .\Combined.mdb
+-rpt    .\Step08a-FinalProjection.out
+-err    .\Step08a-FinalProjection.err
+-year   2020
+-binary ..\VDYP7Batch.exe
+-run

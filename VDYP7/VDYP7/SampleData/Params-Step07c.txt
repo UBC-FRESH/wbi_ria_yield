@@ -1,0 +1,5 @@
+-load     .\ExpandVRIADJSTStrataIntoPIT.load
+-destdb   .\Combined.mdb
+-rpt      .\Step07c-ExpandVRIADJSTStrataIntoPIT.log
+-binary   ..\DTSRun.exe
+-run

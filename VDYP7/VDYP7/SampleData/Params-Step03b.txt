@@ -1,0 +1,5 @@
+-destdb .\Combined.mdb
+-rpt    .\Step03b-ProjectToReferenceYear.out
+-err    .\Step03b-ProjectToReferenceYear.err
+-binary ..\VDYP7Batch.exe
+-run

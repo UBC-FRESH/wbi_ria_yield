@@ -1,0 +1,5 @@
+-destdb .\Combined.mdb
+-rpt    .\GenerateVRIADJSTSeeds.out 
+-err    .\GenerateVRIADJSTSeeds.err 
+-binary ..\VDYP7Batch.exe
+-run 

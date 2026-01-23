@@ -1,0 +1,122 @@
+  0    VDYP.CTR      input file for VDYP7.for        (Revision date 2009.03.18)
+  0    General Format is col 1-3   0 OR a parameter number
+  0                                (note: zero or blank implies COMMENT)
+  0                      col 5-54  Parameters or file names
+
+
+001 00999999                                          Max # of Polygons to process (I8)
+009 coe\becdef.dat                                    BEC Zone Definitions
+010 coe\sp0def.dat                                    Standard SP0 Codes        RD_SP0
+
+011 vp_fip2.dat                                       VDYP7 Polygon input
+012 vs_fip2.dat                                       VDYP7 Layer by Species, input
+013 vu_fip2.dat                                       VDYP7 Layer by SP0 by Util, input 
+014 growto.dat                                        Grow-to years
+
+015 vp_grow2.dat                                      VDYP7 Polygon  out
+016 vs_grow2.dat                                      VDYP7 Layer by SP0  out
+018 vu_grow2.dat                                      VDYP7 Layer by SP0 by Util out
+019 vc_grow2.dat                                      Compatibility variables (output file, if any)
+                                                        (note: Linkage between this and SEQ101)
+                                                                            
+020 coe\vgrpdef1.dat                                  Defines Volume Eqn groups RD_VGRP      IPSJF117
+021 coe\dgrp.dat                                      Defines Decay Groups      RD_DGRP      IPSJF123  
+022 coe\bgrp.dat                                      Defines Breakage Groups   RD_BGRP      IPSJF157
+
+025 coe\sieqn.prm                                     Site Curve Numbers assigned
+025                                                   Nullifies above siteCurve #
+026 coe\siagemax.prm                                  Maximum ages for ht incr, by site curve number (SIAGEMAX.prm=140)
+028 coe\cvadj.prm                                     CV adjustment and relalted parameters
+
+030 coe\grpba1.dat                                    Default Eq # BA=f(CC)     RD_GRBA1
+031 coe\gmodba1.dat                                   Eqn modifiers for above   RD_GMBA1 
+
+043 coe\upperb02.coe                                  Upper BA, DQ by C/I SP0_P  RD_E043 IPSJF128
+
+050 coe\regyhlp.coe                                   HL, Primary SP, Eqn P1     RD_YHL1 
+051 coe\regyhlpa.coe                                  HL, Primary SP, Eqn P2     RD_YHL2
+052 coe\regyhlpb.dat                                  HL, Primary SP, Eqn P3     RD_YHL3
+053 coe\reghl.coe                                     HL, Non-primary Species    RD_YHL4
+
+060 coe\REGDQI04.coe                                  By-species DQ              RD_E060    IPFJF125
+061 coe\COMPLIM.coe                                    Species component size limits RD_E061 IPSJF158
+
+070 coe\regbac.dat                                    Util. Comp, BA             RD_UBA1
+071 coe\regdqc.dat                                    Util. Comp, DQ             RD_UDQ1
+
+080 coe\regpr1c.dat                                   Small Comp., Probability   RD_SBA1
+081 coe\regba2c.dat                                   Small Comp., BA            RD_SBA2
+082 coe\regdq4c.dat                                   Small Comp., DQ            RD_SDQ1
+085 coe\reghl1c.dat                                   Small Comp., HL            RD_SHL1
+086 coe\regv1c.dat                                    Small Comp., WS Volume     RD_SVT1
+
+090 coe\VTOTREG4.coe                                  Total stand WholeStem Vol  RD_YVT1  IPSJF117
+091 coe\regvu.coe                                     Util Comp, WS volume       RD_YVT2  IPSJF121              
+092 coe\regvcu.coe                                    Close Utilization Vol      RD_YVC1  IPSJF122
+093 coe\regvdu.coe                                    Vol net of Decay           RD_YVD1  IPSJF123
+094 coe\regvwu.coe                                    Vol net of (Decay+Waste)   RD_YVW1  IPSJF123
+095 coe\regbreak.coe                                  Breakage                   RD_EMP95 IPSJF157
+
+096 coe\vetvol1.dat                                   Vet-layer volume adjust    RD_YVET                         
+097 coe\vetdq2.dat                                    DQ for Vet layer           RD_YDQV
+
+101   -1   1   2   2   1   1                          Contol variables (10I4)
+                                                        1st 4 col: IYR_CNTR =i   i=0 for NO GROWTH 
+                                                              -1 to use SEQ014 (specifies end yr, each poly)
+                                                            i =1 to 400  grow i yrs                               
+                                                            i = 1920-2400  grow to yr i (A.D.)
+                                                        2nd: Compatibility Variable output                                                       
+                                                            0  None
+                                                            1  First yr only
+                                                            2  All yrs 
+                                                            Note: Output can occur ONLY in yrs also selected
+                                                                  by 4th option 
+                                                        3rd: CV application
+                                                            0 Do not apply
+                                                            1 All variables except Vol
+                                                            2 All variables  (STANDARD USAGE)
+                                                        4th: OUTPUT Files
+                                                            0 None
+                                                            1 First yr
+                                                            2 First and last year
+                                                            3 All years
+                                                            4 First, 1st+10, 1st+20 .. last
+                                                        5th: ALLOW COMPATIBILITY (CV) Compuations
+                                                            0:  Always
+                                                            1:  Only when basis exceeds limits (.1 for vol, .01 BA for DQ)
+                                                        6th: Update Site sp, ITG during growth
+                                                          0:NO  1:YES (normal)
+106 coe\YLDBA407.coe                                  BA Yield (Primary layer)   RD_E106 ipsjf160
+107 coe\YLDDQ45.coe                                   DQ Yield (Primary layer)   RD_E107 ipsjf161
+108 coe\PCT_407.coe                                    Upper bounds (BA, DQ)  RD_E108  ipsjf160 (emp106, emp107)
+111 coe\emp111A1.PRM                                  Growth in BA (Prim layer) Fiat Model (EMP111A) IPSJF162 
+117 coe\emp117A1.prm                                  DQ growth (Pri. L) IPSJF178, fiat & mixed model.
+121 coe\growba27.coe                                  Growth in BA (Prim layer) Emp. Model (EMP121) IPSJF162 
+122 coe\GD23.coe                                      DQ growth EMP122  IPSJF178, empirical model
+123 coe\REGDQL2.coe                                   Limits on DQ growth  EMP123  IPSJF178
+148 coe\basp05.coe                                    BA growth Primary SP IPSJF148
+149 coe\basp06.coe                                    BA growth NONPrimary SP IPSJF149
+150 coe\dqsp05.coe                                    DQ growth Primary SP IPSJF150
+151 coe\dqsp06.coe                                    DQ growth NONPrimary Sp. IPSJF151
+
+198 coe\MOD19813.prm                                  Modifier file (IPSJF155, XII) RD_E198
+
+199  2 3 2 2 0 2 0 1 1 0 415 5 713 3                  Debug switches (25) 0=default See IPSJF155, App. IX
+                                                      (1) = 1 to DIASABLE species dynamics
+                                                      (2) = n, maximum BH age in BA and DQ eqns = 100*n.
+                                                      (3) = 0 Fiat BA growth model (approach to yield curves)
+                                                          = 1 to invoke empirical BA growth model (see IPSJF176)
+                                                          = 2 invoke empirical growth model PLUS mixing with fiat model.                                                      
+                                                      (4) = (1,2) to use limits (SEQ108-GRPBA1, SEQ043-(CI,Pri))  
+                                                          = 0,  defaults to option 2 at present.
+                                                      (5) MATH77 Error message control. Should be zero.
+                                                          or 1 will show some errors, 2 shows all errors.
+                                                      (6) = 0 for fiat DQ growth model (see IPSJF176, and SEQ 117)
+                                                          =1  for empirical, 2 for mixed .   Recommend: 0 or 2.                                                                        
+                                                      (7) Not used
+                                                      (8) = 1 to force growth in non-primary HL to zero when del HD=0
+                                                           -2 same as 1, but also applies to primary species.
+                                                      (9) =1 for limited BA incr if DQ upper limit hit, else 0  (2009.03.18)
+                                                      (10) Not used.
+                                                      (11-20) Controls Ht/Age/SI fillin. See IPSJF174.doc
+                                                      Above values f. Cam bartram 14MAR2002

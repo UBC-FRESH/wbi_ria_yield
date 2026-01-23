@@ -1,0 +1,755 @@
+[Administration]
+FileType=DTS Package Specification
+FormatVersion=1.0.0
+PackageName=Load Reference Data
+
+
+
+;================================================================
+;
+; Define each of the data sources
+;
+;
+
+
+[Data Connection - Destination Data]
+DatabaseType=MSAccess
+Database=$(DestinationDatabase)
+
+AfterOpeningEnvVar_1_Name=DatasetName
+AfterOpeningEnvVar_1_Value=Default
+
+AfterOpeningEnvVar_2_Name=PhaseName
+AfterOpeningEnvVar_2_Value=FIP/VRISTART Inputs (Unprojected)
+
+AfterOpeningEnvVar_3_Name=AgeParam
+AfterOpeningEnvVar_3_Value=Total Age
+
+AfterOpeningEnvVar_4_Name=HeightParam
+AfterOpeningEnvVar_4_Value=Dominant Height
+
+AfterOpeningEnvVar_5_Name=EstimatedSIParam
+AfterOpeningEnvVar_5_Value=Estimated Site Index
+
+AfterOpeningEnvVar_6_Name=BA075Param
+AfterOpeningEnvVar_6_Value=Basal Area 7.5cm+
+
+AfterOpeningEnvVar_7_Name=TPH075Param
+AfterOpeningEnvVar_7_Value=VRI Live Stems per Ha 7.5cm+
+
+AfterOpeningEnvVar_8_Name=RefYearParam
+AfterOpeningEnvVar_8_Value=Reference Year
+
+AfterOpeningEnvVar_9_Name=SP64CodeParam
+AfterOpeningEnvVar_9_Value=Species Code
+
+AfterOpeningEnvVar_10_Name=SP64PcntParam
+AfterOpeningEnvVar_10_Value=Species Percent
+
+AfterOpeningEnvVar_11_Name=BECZoneParam
+AfterOpeningEnvVar_11_Value=BEC Zone
+
+AfterOpeningEnvVar_12_Name=EstimatedSISpcsParam
+AfterOpeningEnvVar_12_Value=Estimated Site Index Species
+
+AfterOpeningEnvVar_13_Name=RankCodeParam
+AfterOpeningEnvVar_13_Value=Rank Code
+
+
+;=================================================================
+;=================================================================
+;
+; Step Definitions:
+;
+; Possible Step Types are:
+;	Do Nothing
+;		Relevant Properties
+;               	NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;
+;		The rest of the step definition is optional
+;		and ignored.
+;
+;	DataLoad
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection
+;			SourceTableName
+;			TargetConnection
+;			TargetTableName
+;			SourceToDestinationColumnMappingSection
+;
+;	Count Records
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			TargetConnection
+;			TargetTableName
+;
+;	Custom SQL
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection or TargetConnection (in that preference order)
+;			SQLStatement or SQLStatement_Line_nnn
+;
+;
+
+;=================================================================
+;=================================================================
+
+;=================================================================
+;
+; Copy Records over from the source data to the destination.
+;
+;
+
+[Step 1]
+StepName=Reset Projected LAYER Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE tblLAYER INNER JOIN tblPOLYGON 
+SQLStatement_Line_002=                ON         tblLAYER.POLYGON_RCRD_ID = tblPOLYGON.POLYGON_RCRD_ID 
+SQLStatement_Line_003=SET    tblLAYER.MEAN_QUADRATIC_DIAM         = NULL
+SQLStatement_Line_004=     , tblLAYER.PROJECTED_BASAL_AREA        = NULL
+SQLStatement_Line_005=     , tblLAYER.GROSS_WHOLE_STEM_VOL_PER_HA = NULL
+SQLStatement_Line_006=     , tblLAYER.NET_DWB_VOL_PER_HA          = NULL
+SQLStatement_Line_007=     , tblLAYER.PROJECTED_STEMS_HA          = NULL
+SQLStatement_Line_008=     , tblLAYER.SUPPLIED_SITE_INDEX         = NULL
+
+
+
+[Step 2]
+StepName=Reset Projected SPECIES Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE (tblPOLYGON INNER JOIN tblLAYER   ON tblPOLYGON.POLYGON_RCRD_ID = tblLAYER.POLYGON_RCRD_ID) 
+SQLStatement_Line_002=                   INNER JOIN tblSPECIES ON tblLAYER.LAYER_RCRD_ID = tblSPECIES.LAYER_RCRD_ID 
+SQLStatement_Line_003=SET    tblSPECIES.GROSS_WHOLE_STEM_VOL_PER_HA = NULL
+SQLStatement_Line_004=     , tblSPECIES.NET_DWB_VOL_PER_HA          = NULL
+SQLStatement_Line_005=     , tblSPECIES.MEAN_QUADRATIC_DIAM         = NULL
+SQLStatement_Line_006=     , tblSPECIES.PROJECTED_STEMS_HA          = NULL
+SQLStatement_Line_007=     , tblSPECIES.UTIL_LEVEL                  = NULL
+
+
+
+[Step 3]
+StepName=Reset Projected SPECIES_ATTRIBUTES Values
+StepType=Custom SQL
+ 
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE ((tblPOLYGON INNER JOIN tblLAYER              ON tblPOLYGON.POLYGON_RCRD_ID = tblLAYER.POLYGON_RCRD_ID) 
+SQLStatement_Line_002=                    INNER JOIN tblSPECIES            ON tblLAYER.LAYER_RCRD_ID     = tblSPECIES.LAYER_RCRD_ID) 
+SQLStatement_Line_003=                    INNER JOIN tblSPECIES_ATTRIBUTES ON tblSPECIES.SPECIES_RCRD_ID = tblSPECIES_ATTRIBUTES.SPECIES_RCRD_ID 
+SQLStatement_Line_004=SET    tblSPECIES_ATTRIBUTES.PROJECTED_AGE    = NULL
+SQLStatement_Line_005=     , tblSPECIES_ATTRIBUTES.PROJECTED_HEIGHT = NULL
+SQLStatement_Line_006=     , tblSPECIES_ATTRIBUTES.SITE_INDEX       = NULL
+
+
+
+[Step 4]
+StepName=Reset Polygon Strata Assignments
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Reset Polygon Strata Adjustments
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_POLYGON_STRATA
+SQLStatement_Line_002=WHERE tblPROJECTION_POLYGON_STRATA.PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID 
+SQLStatement_Line_004=          FROM   tblPROJECTION_INPUT_DATASET 
+SQLStatement_Line_005=          WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)')
+
+
+
+[Step 5]
+StepName=Reset Strata Attributes
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_STRATA_PARAMETER
+SQLStatement_Line_002=WHERE  tblPROJECTION_STRATA_PARAMETER.PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID 
+SQLStatement_Line_004=          FROM   tblPROJECTION_INPUT_DATASET 
+SQLStatement_Line_005=          WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)')
+
+
+
+[Step 6]
+StepName=Reset Strata Definitions
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Reset Polygon Strata Assignments
+PrerequisiteTarget_2=Reset Strata Attributes
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_STRATA
+
+
+[Step 7]
+StepName=Clear PIT of All Adjustable Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_INPUT_ADJUSTMENT
+SQLStatement_Line_002=WHERE tblPROJECTION_INPUT_ADJUSTMENT.PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID 
+SQLStatement_Line_004=          FROM   tblPROJECTION_INPUT_DATASET 
+SQLStatement_Line_005=          WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)')
+
+
+[Step 8]
+StepName=Clear PIT of All Non-Adjustable Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_INPUT_VALUE
+SQLStatement_Line_002=WHERE tblPROJECTION_INPUT_VALUE.PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID 
+SQLStatement_Line_004=          FROM   tblPROJECTION_INPUT_DATASET 
+SQLStatement_Line_005=          WHERE PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)')
+
+
+
+[Step 9]
+StepName=Clear PIT of All String Values
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_INPUT_STRING
+SQLStatement_Line_002=WHERE tblPROJECTION_INPUT_STRING.PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_003=         (SELECT PROJECTION_INPUT_DATASET_RCRD_ID 
+SQLStatement_Line_004=          FROM  tblPROJECTION_INPUT_DATASET 
+SQLStatement_Line_005=          WHERE PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)')
+
+
+
+[Step 10]
+StepName=Add Initial Species Total Age
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All Adjustable Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_ADJUSTMENT
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                UNADJUSTED_VALUE )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       s.SPECIES_ID,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       sa.AGE
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       (((tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID))
+SQLStatement_Line_020=                       INNER JOIN tblSPECIES s ON ((s.LAYER_RCRD_ID  = l.LAYER_RCRD_ID) AND
+SQLStatement_Line_021=                                                   (s.SPECIES_ID    <= 2)))
+SQLStatement_Line_022=                       INNER JOIN tblSPECIES_ATTRIBUTES sa ON ((sa.SPECIES_RCRD_ID = s.SPECIES_RCRD_ID) AND
+SQLStatement_Line_023=                                                               (sa.AGE IS NOT NULL)))
+SQLStatement_Line_024=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_025=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_026=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(AgeParam)'
+
+
+
+
+[Step 11]
+StepName=Add Initial Species Dominant Height
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All Adjustable Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_ADJUSTMENT
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                UNADJUSTED_VALUE )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       s.SPECIES_ID,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       sa.HEIGHT
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       (((tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID = p.POLYGON_RCRD_ID))
+SQLStatement_Line_020=                       INNER JOIN tblSPECIES s ON (s.LAYER_RCRD_ID = l.LAYER_RCRD_ID AND
+SQLStatement_Line_021=                                                   s.SPECIES_ID    <= 2))
+SQLStatement_Line_022=                       INNER JOIN tblSPECIES_ATTRIBUTES sa ON (sa.SPECIES_RCRD_ID = s.SPECIES_RCRD_ID AND
+SQLStatement_Line_023=                                                               sa.HEIGHT IS NOT NULL))
+SQLStatement_Line_024=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_025=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_026=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(HeightParam)'
+
+
+
+
+[Step 12]
+StepName=Add Initial Estimated Site Index
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All Non-Adjustable Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_VALUE
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                PROJECTION_INPUT_PARAMETER_VALUE )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       NULL,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       l.ESTIMATED_SITE_INDEX
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       (tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID   = p.POLYGON_RCRD_ID AND
+SQLStatement_Line_020=                                               l.ESTIMATED_SITE_INDEX IS NOT NULL))
+SQLStatement_Line_021=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_022=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_023=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(EstimatedSIParam)'
+
+
+
+
+[Step 13]
+StepName=Add Initial Basal Area 7.5cm+
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All Adjustable Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_ADJUSTMENT
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                UNADJUSTED_VALUE )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       NULL,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       l.BASAL_AREA
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       (tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID   = p.POLYGON_RCRD_ID AND
+SQLStatement_Line_020=                                               l.BASAL_AREA IS NOT NULL))
+SQLStatement_Line_021=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_022=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_023=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(BA075Param)'
+
+
+
+
+[Step 14]
+StepName=Add Initial Live Stems per Ha 7.5cm+
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All Adjustable Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_ADJUSTMENT
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                UNADJUSTED_VALUE )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       NULL,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       l.VRI_LIVE_STEMS_PER_HA
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID   = p.POLYGON_RCRD_ID AND
+SQLStatement_Line_020=                                              l.VRI_LIVE_STEMS_PER_HA IS NOT NULL)
+SQLStatement_Line_021=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_022=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_023=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(TPH075Param)'
+
+
+
+
+[Step 15]
+StepName=Add Initial Reference Year
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All Non-Adjustable Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_VALUE
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                PROJECTION_INPUT_PARAMETER_VALUE )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       NULL,
+SQLStatement_Line_013=       NULL,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       Year(p.REFERENCE_YEAR)
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       tblPOLYGON p
+SQLStatement_Line_020=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_021=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_022=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(RefYearParam)'
+SQLStatement_Line_023=  AND  p.REFERENCE_YEAR IS NOT NULL
+
+
+
+
+[Step 16]
+StepName=Add Initial Stand Species Codes
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All String Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_STRING
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                PROJECTION_INPUT_PARAMETER_STRING )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       s.SPECIES_ID,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       s.SPECIES_CD
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       ((tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID   = p.POLYGON_RCRD_ID))
+SQLStatement_Line_020=                      INNER JOIN tblSPECIES s ON (s.LAYER_RCRD_ID  = l.LAYER_RCRD_ID))
+SQLStatement_Line_021=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_022=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_023=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(SP64CodeParam)'
+
+
+
+
+[Step 17]
+StepName=Add Initial Stand Species Percents
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All Non-Adjustable Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_VALUE
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                PROJECTION_INPUT_PARAMETER_VALUE )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       s.SPECIES_ID,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       s.SPECIES_PERCENT
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       ((tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID   = p.POLYGON_RCRD_ID))
+SQLStatement_Line_020=                      INNER JOIN tblSPECIES s ON (s.LAYER_RCRD_ID  = l.LAYER_RCRD_ID))
+SQLStatement_Line_021=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_022=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_023=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(SP64PcntParam)'
+
+
+
+[Step 18]
+StepName=Add Initial BEC Zones
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All String Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_STRING
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                PROJECTION_INPUT_PARAMETER_STRING )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       parmval.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       NULL,
+SQLStatement_Line_013=       NULL,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       parmval.BGC_ZONE
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       (SELECT r4.POLYGON_RCRD_ID
+SQLStatement_Line_020=             , r4.BGC_ZONE
+SQLStatement_Line_021=        FROM   tblRESULTANT r4
+SQLStatement_Line_022=             , (SELECT   r3.POLYGON_RCRD_ID
+SQLStatement_Line_023=                       , MIN( r3.RESULTANT_RCRD_ID ) AS TARGET_RESULTANT_RCRD_ID
+SQLStatement_Line_024=                FROM     tblRESULTANT r3
+SQLStatement_Line_025=                       , (SELECT pm.POLYGON_RCRD_ID
+SQLStatement_Line_026=                               , becarea.BGC_ZONE
+SQLStatement_Line_027=                               , maxbecarea.MAX_BGC_AREA
+SQLStatement_Line_028=                          FROM   tblPOLYGON pm
+SQLStatement_Line_029=                               , (SELECT   p1.POLYGON_RCRD_ID
+SQLStatement_Line_030=                                         , r1.BGC_ZONE
+SQLStatement_Line_031=                                         , SUM( r1.RESULT_AREA ) AS BGC_AREA
+SQLStatement_Line_032=                                  FROM     tblRESULTANT r1 INNER JOIN tblPOLYGON p1 ON r1.POLYGON_RCRD_ID = p1.POLYGON_RCRD_ID
+SQLStatement_Line_033=                                  WHERE    r1.BGC_ZONE IS NOT NULL
+SQLStatement_Line_034=                                  GROUP BY p1.POLYGON_RCRD_ID, r1.BGC_ZONE) becarea
+SQLStatement_Line_035=                               , (SELECT   becarea2.POLYGON_RCRD_ID AS POLYGON_RCRD_ID
+SQLStatement_Line_036=                                         , MAX( becarea2.BGC_AREA ) AS MAX_BGC_AREA
+SQLStatement_Line_037=                                  FROM     (SELECT   p2.POLYGON_RCRD_ID
+SQLStatement_Line_038=                                                   , r2.BGC_ZONE
+SQLStatement_Line_039=                                                   , SUM( r2.RESULT_AREA ) AS BGC_AREA
+SQLStatement_Line_040=                                            FROM     tblRESULTANT r2 INNER JOIN tblPOLYGON p2 ON r2.POLYGON_RCRD_ID = p2.POLYGON_RCRD_ID
+SQLStatement_Line_041=                                            WHERE    r2.BGC_ZONE IS NOT NULL
+SQLStatement_Line_042=                                            GROUP BY p2.POLYGON_RCRD_ID, r2.BGC_ZONE) AS becarea2
+SQLStatement_Line_043=                                  GROUP BY becarea2.POLYGON_RCRD_ID) maxbecarea
+SQLStatement_Line_044=                          WHERE  becarea.POLYGON_RCRD_ID    = pm.POLYGON_RCRD_ID
+SQLStatement_Line_045=                            AND  maxbecarea.POLYGON_RCRD_ID = pm.POLYGON_RCRD_ID
+SQLStatement_Line_046=                            AND  maxbecarea.MAX_BGC_AREA    = becarea.BGC_AREA) maxbecareas
+SQLStatement_Line_047=                WHERE    r3.POLYGON_RCRD_ID = maxbecareas.POLYGON_RCRD_ID
+SQLStatement_Line_048=                  AND    r3.BGC_ZONE = maxbecareas.BGC_ZONE
+SQLStatement_Line_049=                GROUP BY r3.POLYGON_RCRD_ID) TargetResultant
+SQLStatement_Line_050=        WHERE  r4.RESULTANT_RCRD_ID = TargetResultant.TARGET_RESULTANT_RCRD_ID) parmval
+SQLStatement_Line_051=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_052=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_053=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(BECZoneParam)'
+
+
+
+
+[Step 19]
+StepName=Add Initial Estimated Site Index Species
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All String Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_STRING
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                PROJECTION_INPUT_PARAMETER_STRING )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       NULL,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       l.ESTIMATED_SITE_INDEX_SPECIES
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       (tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID   = p.POLYGON_RCRD_ID     AND
+SQLStatement_Line_020=                                               l.ESTIMATED_SITE_INDEX_SPECIES IS NOT NULL  AND
+SQLStatement_Line_021=                                               l.ESTIMATED_SITE_INDEX_SPECIES <> ''))
+SQLStatement_Line_022=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_023=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_024=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(EstimatedSISpcsParam)'
+
+
+
+
+[Step 20]
+StepName=Add Initial Rank Codes
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Clear PIT of All String Values
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=INSERT INTO tblPROJECTION_INPUT_STRING
+SQLStatement_Line_002=              ( PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_003=                PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_004=                POLYGON_RCRD_ID,
+SQLStatement_Line_005=                LAYER_ID,
+SQLStatement_Line_006=                SPECIES_ID,
+SQLStatement_Line_007=                PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_008=                PROJECTION_INPUT_PARAMETER_STRING )
+SQLStatement_Line_009=SELECT pid.PROJECTION_INPUT_DATASET_RCRD_ID,
+SQLStatement_Line_010=       pp.PROJECTION_PHASE_RCRD_ID,
+SQLStatement_Line_011=       p.POLYGON_RCRD_ID,
+SQLStatement_Line_012=       l.LAYER_ID,
+SQLStatement_Line_013=       NULL,
+SQLStatement_Line_014=       pip.PROJECTION_INPUT_PARAMETER_RCRD_ID,
+SQLStatement_Line_015=       l.FOR_COVER_RANK_CD
+SQLStatement_Line_016=FROM   tblPROJECTION_INPUT_DATASET pid,
+SQLStatement_Line_017=       tblPROJECTION_PHASE pp,
+SQLStatement_Line_018=       tblPROJECTION_INPUT_PARAMETER pip,
+SQLStatement_Line_019=       (tblPOLYGON p INNER JOIN tblLAYER l ON (l.POLYGON_RCRD_ID   = p.POLYGON_RCRD_ID     AND
+SQLStatement_Line_020=                                               l.FOR_COVER_RANK_CD IS NOT NULL             AND
+SQLStatement_Line_021=                                               l.FOR_COVER_RANK_CD <> ''))
+SQLStatement_Line_022=WHERE  pid.PROJECTION_INPUT_DATASET_NAME   = '$(DatasetName)'
+SQLStatement_Line_023=  AND  pp.PROJECTION_PHASE_NAME            = '$(PhaseName)'
+SQLStatement_Line_024=  AND  pip.PROJECTION_INPUT_PARAMETER_NAME = '$(RankCodeParam)'
+
+
+
+
+[Step 21]
+StepName=Reset Projection Run Polygons
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Reset Projection Polygon Messages
+PrerequisiteTarget_2=Reset Projection Run Layers
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_POLYGON
+
+
+
+
+[Step 22]
+StepName=Reset Projection Run Version Info
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblMETADATA_PROJECTION_VERSION
+
+
+
+
+[Step 23]
+StepName=Reset Projection Run Info
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Reset Projection Run Polygons
+PrerequisiteTarget_1=Reset Projection Run Version Info
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblMETADATA_PROJECTION_RUN
+
+
+
+
+[Step 24]
+StepName=Reset Projection Polygon Messages
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_MESSAGE
+
+
+
+
+
+[Step 25]
+StepName=Reset Polygon Strata Adjustments
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_PARAMETER_OFFSET
+SQLStatement_Line_002=WHERE PROJECTION_POLYGON_STRATA_RCRD_ID IN
+SQLStatement_Line_003=      (SELECT PROJECTION_POLYGON_STRATA_RCRD_ID
+SQLStatement_Line_004=       FROM   tblPROJECTION_POLYGON_STRATA
+SQLStatement_Line_005=       WHERE  PROJECTION_INPUT_DATASET_RCRD_ID IN
+SQLStatement_Line_006=              (SELECT PROJECTION_INPUT_DATASET_RCRD_ID 
+SQLStatement_Line_007=               FROM   tblPROJECTION_INPUT_DATASET
+SQLStatement_Line_008=               WHERE  PROJECTION_INPUT_DATASET_NAME = '$(DatasetName)'))
+
+
+
+
+[Step 26]
+StepName=Reset Projection Run Layers
+StepType=Custom SQL
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=DELETE FROM tblPROJECTION_LAYER
+
+
+
+
+
+
+
+;===========================================================================
+;
+; Column Mappings...
+;
+; Valid Mapping Types are:
+;	Copy     - Straight copy from source data to destination data
+;	Lookup   - Lookup actual data for destination table through a lookup
+;                  table located in some defined data connection.
+;       Constant - Destination data is set to some constant value
+;
+;
+

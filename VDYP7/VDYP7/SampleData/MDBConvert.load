@@ -1,0 +1,1874 @@
+[Administration]
+FileType=DTS Package Specification
+FormatVersion=1.0.0
+PackageName=Load Reference Data
+
+
+
+;================================================================
+;
+; Define each of the data sources
+;
+;
+
+
+[Data Connection - Source Data]
+DatabaseType=MSAccess
+Server=
+Database=$(SourceDatabase)
+UserID=$(SourceUser)
+Password=$(SourcePassword)
+PrimaryInputDataSource=True
+
+;
+; Set the 'Maintainer' environment variable to the value of the
+; last three characters of the input file name.  This assumes
+; a file name of the form:
+;
+;	082G065_VEG_DCB.MDB
+;
+; In this case, the maintainer would be the district 'DCB'
+;
+; In order to make this work, we take advantage of the fact that
+; the application creates an environment variable named by combining
+; the connection name and the string 'CurrentDatabase' and
+; associating it with the name of the current data source.  In the
+; case of MSAccess, this would correspond to the full path name.
+;
+;
+
+AfterOpeningEnvVar_1_Name=Maintainer
+AfterOpeningEnvVar_1_Value=$(Source Data-CurrentDatabase:sub,-7,3)
+
+
+[Data Connection - Destination Data]
+DatabaseType=MSAccess
+Server=
+Database=$(DestinationDatabase)
+UserID=$(DestinationUser)
+Password=$(DestinationPassword)
+
+
+
+;=================================================================
+;=================================================================
+;
+; Step Definitions:
+;
+; Possible Step Types are:
+;	Do Nothing
+;		Relevant Properties
+;               	NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;
+;		The rest of the step definition is optional
+;		and ignored.
+;
+;	DataLoad
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection
+;			SourceTableName
+;			TargetConnection
+;			TargetTableName
+;			SourceToDestinationColumnMappingSection
+;
+;	Count Records
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			TargetConnection
+;			TargetTableName
+;
+;	Custom SQL
+;		Relevant Properties
+;			NumberOfPrerequisites
+;			PrerequisiteTarget_nn
+;			SourceConnection or TargetConnection (in that preference order)
+;			SQLStatement or SQLStatement_Line_nnn
+;
+;
+
+;=================================================================
+;=================================================================
+
+;=================================================================
+;
+; Copy Records over from the source data to the destination.
+;
+;
+
+[Step 1]
+StepName=Copy Version Records
+StepType=DataLoad
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     VERSION
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD
+
+
+TargetConnection=Destination Data
+TargetTableName=tblVERSION
+
+SourceToDestinationColumnMappingSection=VERSION Column Mapping
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+
+
+[Step 2]
+StepName=Copy Polygon Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Version Records
+PrerequisiteTarget_2=Copy Feature Link Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     POLYGON
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblPOLYGON
+
+SourceToDestinationColumnMappingSection=POLYGON Column Mapping
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+
+[Step 3]
+StepName=Copy Layer Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Polygon Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     LAYER
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID, LAYER_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblLAYER
+
+SourceToDestinationColumnMappingSection=LAYER Column Mapping
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=LAYER_ID
+
+
+[Step 4]
+StepName=Copy History Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Layer Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     HISTORY
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID, LAYER_ID, HISTORY_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblHISTORY
+
+SourceToDestinationColumnMappingSection=HISTORY Column Mapping
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=LAYER_ID
+
+RecordIDMappingType_5=Copy
+RecordIDColumn_5=HISTORY_ID
+
+
+[Step 5]
+StepName=Copy Resultant Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Polygon Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     RESULTANT
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID, RESULTANT_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblRESULTANT
+
+SourceToDestinationColumnMappingSection=RESULTANT Column Mapping
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=RESULTANT_ID
+
+
+[Step 6]
+StepName=Copy Species Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Layer Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     SPECIES
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID, LAYER_ID, SPECIES_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblSPECIES
+
+SourceToDestinationColumnMappingSection=SPECIES Column Mapping
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=LAYER_ID
+
+RecordIDMappingType_5=Copy
+RecordIDColumn_5=SPECIES_ID
+
+
+[Step 7]
+StepName=Copy Leading Species Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Species Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     LEADING_SPECIES
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID, LAYER_ID, SPECIES_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblSPECIES_ATTRIBUTES
+
+SourceToDestinationColumnMappingSection=LEADING_SPECIES Column Mapping
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=LAYER_ID
+
+RecordIDMappingType_5=Copy
+RecordIDColumn_5=SPECIES_ID
+
+
+[Step 8]
+StepName=Copy Secondary Species Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Species Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     SECONDARY_SPECIES
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID, LAYER_ID, SPECIES_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblSPECIES_ATTRIBUTES
+
+
+SourceToDestinationColumnMappingSection=SECONDARY_SPECIES Column Mapping
+
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=LAYER_ID
+
+RecordIDMappingType_5=Copy
+RecordIDColumn_5=SPECIES_ID
+
+
+[Step 9]
+StepName=Copy Feature Link Records
+StepType=DataLoad
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     Feature_Link
+SQLStatement_Line_003=ORDER BY FEATURE_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblFEATURE_LINK
+
+
+SourceToDestinationColumnMappingSection=Feature_Link Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=feature_id
+
+
+[Step 10]
+StepName=Copy Feature Link Photo Centre Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Feature Link Records
+PrerequisiteTarget_2=Copy Polygon Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     [FEATURE_LINK_PHOTO CENTRE]
+SQLStatement_Line_003=ORDER BY MAP_ID, POLYGON_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblFEATURE_LINK_PHOTO_CENTRE
+
+
+SourceToDestinationColumnMappingSection=FEATURE_LINK To POLYGON Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FEATURE_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+
+
+[Step 11]
+StepName=Copy Feature Link Vegetation Cover Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Feature Link Records
+PrerequisiteTarget_2=Copy Polygon Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     [FEATURE_LINK_VEGETATION COVER]
+SQLStatement_Line_003=ORDER BY MAP_ID, POLYGON_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblFEATURE_LINK_VEGETATION_COVER
+
+
+SourceToDestinationColumnMappingSection=FEATURE_LINK To POLYGON Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FEATURE_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+
+
+[Step 12]
+StepName=Copy Feature Link Wing Point Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Feature Link Records
+PrerequisiteTarget_2=Copy Polygon Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     feature_link_wing_point
+SQLStatement_Line_003=ORDER BY MAP_ID, POLYGON_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblFEATURE_LINK_WING_POINT
+
+
+SourceToDestinationColumnMappingSection=FEATURE_LINK To POLYGON Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=FEATURE_ID
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+
+
+[Step 13]
+StepName=Copy FLT Union Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Feature Link Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     flt_union
+SQLStatement_Line_003=ORDER BY FEATURE_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblFLT_UNION
+
+
+SourceToDestinationColumnMappingSection=FLT_UNION Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=table_source
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=feature_id
+
+
+
+[Step 14]
+StepName=Copy IODM Control Records
+StepType=DataLoad
+
+SourceConnection=Source Data
+SourceTableName=IODM_CONTROL
+
+TargetConnection=Destination Data
+TargetTableName=tblIODM_CONTROL
+
+
+SourceToDestinationColumnMappingSection=IODM_CONTROL Column Mapping
+
+
+RecordIDMappingType_1=Copy
+RecordIDColumn_1=version_number
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=revision_number
+
+
+
+[Step 15]
+StepName=Copy Land Cover Components Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Polygon Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     LAND_COVER_COMPONENTS
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblLAND_COVER_COMPONENTS
+
+
+SourceToDestinationColumnMappingSection=LAND_COVER_COMPONENTS Column Mapping
+
+
+RecordIDMappingType_1=Constant
+RecordIDValue_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+
+
+[Step 16]
+StepName=Copy Non-Tree Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Polygon Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     NON_TREE
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID, NON_TREE_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblNON_TREE
+
+
+SourceToDestinationColumnMappingSection=NON_TREE Column Mapping
+
+
+RecordIDMappingType_1=Constant
+RecordIDColumn_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=NON_TREE_ID
+
+
+
+[Step 17]
+StepName=Copy Non-Vegetation Records
+StepType=DataLoad
+
+PrerequisiteTarget_1=Copy Polygon Records
+
+SourceConnection=Source Data
+SQLStatement_Line_001=SELECT   *
+SQLStatement_Line_002=FROM     NON_VEG
+SQLStatement_Line_003=ORDER BY MAP_ID, MAP_QUAD, MAP_SUB_QUAD, POLYGON_ID, NON_VEG_ID
+
+TargetConnection=Destination Data
+TargetTableName=tblNON_VEG
+
+
+SourceToDestinationColumnMappingSection=NON_VEG Column Mapping
+
+
+RecordIDMappingType_1=Constant
+RecordIDColumn_1=$(Maintainer)
+
+RecordIDMappingType_2=Copy
+RecordIDColumn_2=MAP_ID
+
+RecordIDMappingType_3=Copy
+RecordIDColumn_3=POLYGON_ID
+
+RecordIDMappingType_4=Copy
+RecordIDColumn_4=NON_VEG_ID
+
+
+
+[Step 18]
+StepName=Determine Reference Year (Part 1)
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Copy Layer Records
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE            tblPOLYGON 
+SQLStatement_Line_002=       INNER JOIN tblLAYER 
+SQLStatement_Line_003=               ON tblPOLYGON.POLYGON_RCRD_ID = tblLAYER.POLYGON_RCRD_ID
+SQLStatement_Line_004=SET   tblPOLYGON.REFERENCE_YEAR = tblLAYER.REFERENCE_YEAR
+SQLStatement_Line_005=WHERE tblPOLYGON.REFERENCE_YEAR IS NULL
+SQLStatement_Line_006=  AND tblLAYER.FOR_COVER_RANK_CD = '1'
+
+
+
+[Step 19]
+StepName=Determine Reference Year (Part 2)
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Determine Reference Year (Part 1)
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE            tblPOLYGON 
+SQLStatement_Line_002=       INNER JOIN tblLAYER 
+SQLStatement_Line_003=               ON tblPOLYGON.POLYGON_RCRD_ID = tblLAYER.POLYGON_RCRD_ID
+SQLStatement_Line_004=SET   tblPOLYGON.REFERENCE_YEAR = tblLAYER.REFERENCE_YEAR
+SQLStatement_Line_005=WHERE tblPOLYGON.REFERENCE_YEAR IS NULL
+SQLStatement_Line_006=  AND tblLAYER.LAYER_ID = '1'
+
+
+
+[Step 20]
+StepName=Determine Reference Year (Part 3)
+StepType=Custom SQL
+
+PrerequisiteTarget_1=Determine Reference Year (Part 2)
+
+TargetConnection=Destination Data
+
+SQLStatement_Line_001=UPDATE            tblPOLYGON 
+SQLStatement_Line_002=       INNER JOIN tblLAYER 
+SQLStatement_Line_003=               ON tblPOLYGON.POLYGON_RCRD_ID = tblLAYER.POLYGON_RCRD_ID
+SQLStatement_Line_004=SET   tblPOLYGON.REFERENCE_YEAR = tblLAYER.REFERENCE_YEAR
+SQLStatement_Line_005=WHERE tblPOLYGON.REFERENCE_YEAR IS NULL
+SQLStatement_Line_006=  AND tblLAYER.LAYER_ID = '2'
+
+
+
+
+
+;===========================================================================
+;
+; Column Mappings...
+;
+; Valid Mapping Types are:
+;	Copy     - Straight copy from source data to destination data
+;	Lookup   - Lookup actual data for destination table through a lookup
+;                  table located in some defined data connection.
+;       Constant - Destination data is set to some constant value
+;
+;
+
+[VERSION Column Mapping]
+
+SourceMappingType_1=Constant
+SourceValue_1=$(Maintainer)
+TargetColumn_1=MAINTAINER
+
+SourceMappingType_2=Copy
+SourceColumn_2=MAP_ID
+TargetColumn_2=MAP_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=MAP_QUAD
+TargetColumn_3=MAP_QUAD
+
+SourceMappingType_4=Copy
+SourceColumn_4=MAP_SUB_QUAD
+TargetColumn_4=MAP_SUB_QUAD
+
+SourceMappingType_5=Copy
+SourceColumn_5=GRAPHICS_VERSION
+TargetColumn_5=GRAPHICS_VERSION
+
+SourceMappingType_6=Copy
+SourceColumn_6=GRAPHICS_DATE
+TargetColumn_6=GRAPHICS_DATE
+
+SourceMappingType_7=Copy
+SourceColumn_7=LAST_EDIT_DATE
+TargetColumn_7=LAST_EDIT_DATE
+
+SourceMappingType_8=Copy
+SourceColumn_8=LAST_FIPUPDATE_DATE
+TargetColumn_8=LAST_FIPUPDATE_DATE
+
+SourceMappingType_9=Copy
+SourceColumn_9=LAST_FIPUPDATE_VERSION
+TargetColumn_9=LAST_FIPUPDATE_VERSION
+
+SourceMappingType_10=Copy
+SourceColumn_10=LAST_ERROR_CHECK_DATE
+TargetColumn_10=LAST_ERROR_CHECK_DATE
+
+SourceMappingType_11=Copy
+SourceColumn_11=LAST_ERROR_CHECK_VERSION
+TargetColumn_11=LAST_ERROR_CHECK_VERSION
+
+SourceMappingType_12=Copy
+SourceColumn_12=VIF_GENERATION_DATE
+TargetColumn_12=VIF_GENERATION_DATE
+
+
+
+
+[POLYGON Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT v.VERSION_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblVERSION v
+SourceMappingSQLStatement_1_Line_003=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_004=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_005=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_SUB_QUAD = [P3]
+TargetColumn_1=VERSION_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=POLYGON_ID
+TargetColumn_2=POLYGON_ID
+
+SourceMappingType_3=Constant
+SourceValue_3=0
+TargetColumn_3=IGNORE_POLYGON
+
+SourceMappingType_4=Copy
+SourceColumn_4=INVENTORY_STANDARD
+TargetColumn_4=INVENTORY_STANDARD
+
+SourceMappingType_5=Lookup
+SourceColumn_5_P1=FEATURE_ID
+;SourceMappingOption_5_NULLLookups=Generate Error
+;SourceMappingOption_5_NULLLookups=Skip Record
+;SourceMappingOption_5_NULLLookups=Skip Record And Log
+;SourceMappingOption_5_NULLLookups=Allow And Log
+SourceMappingOption_5_NULLLookups=Allow
+SourceMappingSQLConnection_5=Destination Data
+SourceMappingSQLStatement_5_Line_001=SELECT f.FEATURE_RCRD_ID 
+SourceMappingSQLStatement_5_Line_002=FROM   tblFEATURE_LINK f
+SourceMappingSQLStatement_5_Line_003=WHERE  f.FEATURE_ID = [P1]
+TargetColumn_5=FEATURE_RCRD_ID
+
+SourceMappingType_6=Copy
+SourceColumn_6=NON_TREE_CNT
+TargetColumn_6=NON_TREE_CNT
+
+SourceMappingType_7=Copy
+SourceColumn_7=LAYER_CNT
+TargetColumn_7=LAYER_CNT
+
+SourceMappingType_8=Copy
+SourceColumn_8=RESULTANT_CNT
+TargetColumn_8=RESULTANT_CNT
+
+SourceMappingType_9=Copy
+SourceColumn_9=CHANGE_KEY
+TargetColumn_9=CHANGE_KEY
+
+SourceMappingType_10=Copy
+SourceColumn_10=POLYGON_AREA
+TargetColumn_10=POLYGON_AREA
+
+SourceMappingType_11=Copy
+SourceColumn_11=NON_PRODUCTIVE_DESCRIPTOR
+TargetColumn_11=NON_PRODUCTIVE_DESCRIPTOR
+
+SourceMappingType_12=Copy
+SourceColumn_12=NON_PRODUCTIVE_CD
+TargetColumn_12=NON_PRODUCTIVE_CD
+
+SourceMappingType_13=Copy
+SourceColumn_13=INPUT_DATE
+TargetColumn_13=INPUT_DATE
+
+SourceMappingType_14=Copy
+SourceColumn_14=SURFACE_EXPRESSION
+TargetColumn_14=SURFACE_EXPRESSION
+
+SourceMappingType_15=Copy
+SourceColumn_15=MODIFYING_PROCESS
+TargetColumn_15=MODIFYING_PROCESS
+
+SourceMappingType_16=Copy
+SourceColumn_16=SITE_POSITION_MESO
+TargetColumn_16=SITE_POSITION_MESO
+
+SourceMappingType_17=Copy
+SourceColumn_17=ALPINE_DESIGNATION
+TargetColumn_17=ALPINE_DESIGNATION
+
+SourceMappingType_18=Copy
+SourceColumn_18=SOIL_NUTRIENT_REGIME
+TargetColumn_18=SOIL_NUTRIENT_REGIME
+
+SourceMappingType_19=Copy
+SourceColumn_19=DATA_SOURCE_ECOLOGY
+TargetColumn_19=DATA_SOURCE_ECOLOGY
+
+SourceMappingType_20=Copy
+SourceColumn_20=BCLCS_LEVEL_1
+TargetColumn_20=BCLCS_LEVEL_1
+
+SourceMappingType_21=Copy
+SourceColumn_21=BCLCS_LEVEL_2
+TargetColumn_21=BCLCS_LEVEL_2
+
+SourceMappingType_22=Copy
+SourceColumn_22=BCLCS_LEVEL_3
+TargetColumn_22=BCLCS_LEVEL_3
+
+SourceMappingType_23=Copy
+SourceColumn_23=BCLCS_LEVEL_4
+TargetColumn_23=BCLCS_LEVEL_4
+
+SourceMappingType_24=Copy
+SourceColumn_24=BCLCS_LEVEL_5
+TargetColumn_24=BCLCS_LEVEL_5
+
+SourceMappingType_25=Copy
+SourceColumn_25=BCLCS_LEVEL_4_INDICATOR
+TargetColumn_25=BCLCS_LEVEL_4_INDICATOR
+
+SourceMappingType_26=Copy
+SourceColumn_26=BCLCS_LEVEL_5_INDICATOR
+TargetColumn_26=BCLCS_LEVEL_5_INDICATOR
+
+SourceMappingType_27=Copy
+SourceColumn_27=INTERPRETER
+TargetColumn_27=INTERPRETER
+
+SourceMappingType_28=Copy
+SourceColumn_28=INTERPRETATION_DATE
+TargetColumn_28=INTERPRETATION_DATE
+
+SourceMappingType_29=Copy
+SourceColumn_29=PROJECT
+TargetColumn_29=PROJECT
+
+SourceMappingType_30=Copy
+SourceColumn_30=DATE_OF_PHOTOGRAPHY
+TargetColumn_30=DATE_OF_PHOTOGRAPHY
+
+
+
+
+[LAYER Column Mapping]
+;
+; Mapping status may be one of:
+;      Disabled   -   The mapping is ignored.  This treats the destination column as non-assigned
+;                     leaving its default value.
+;
+;      Enabled    -   If not specified, each column mapping defaults to this value.
+;                     The column mapping occurs as expected.
+;
+;
+
+MappingStatus_1=Enabled
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT p.POLYGON_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID
+SourceMappingSQLStatement_1_Line_003=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_004=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_005=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_007=  AND  p.POLYGON_ID   = [P4]
+TargetColumn_1=POLYGON_RCRD_ID
+
+MappingStatus_2=Enabled
+SourceMappingType_2=Copy
+SourceColumn_2=ORG_UNIT_NO
+TargetColumn_2=ORG_UNIT_NO
+
+MappingStatus_3=Enabled
+SourceMappingType_3=Copy
+SourceColumn_3=LAYER_ID
+TargetColumn_3=LAYER_ID
+
+MappingStatus_4=Enabled
+SourceMappingType_4=Copy
+SourceColumn_4=SPECIES_CNT
+TargetColumn_4=SPECIES_CNT
+
+MappingStatus_5=Enabled
+SourceMappingType_5=Copy
+SourceColumn_5=FOR_COVER_RANK_CD
+TargetColumn_5=FOR_COVER_RANK_CD
+
+MappingStatus_6=Enabled
+SourceMappingType_6=Copy
+SourceColumn_6=NON_FOREST_DESCRIPTOR
+TargetColumn_6=NON_FOREST_DESCRIPTOR
+
+MappingStatus_7=Enabled
+SourceMappingType_7=Copy
+SourceColumn_7=INTERPRETED_DATA_SOURCE_CODE
+TargetColumn_7=INTERPRETED_DATA_SOURCE_CODE
+
+MappingStatus_8=Disabled
+SourceMappingType_8=Copy
+SourceColumn_8=MEAN_QUADRATIC_DIAM_PRI_UTIL
+TargetColumn_8=MEAN_QUADRATIC_DIAM
+
+MappingStatus_9=Enabled
+SourceMappingType_9=Copy
+SourceColumn_9=ESTIMATED_SITE_INDEX_SPECIES
+TargetColumn_9=ESTIMATED_SITE_INDEX_SPECIES
+
+MappingStatus_10=Enabled
+SourceMappingType_10=Copy
+SourceColumn_10=ESTIMATED_SITE_INDEX
+TargetColumn_10=ESTIMATED_SITE_INDEX
+
+MappingStatus_11=Enabled
+SourceMappingType_11=Copy
+SourceColumn_11=SUPPLIED_SITE_INDEX_SOURCE
+TargetColumn_11=SUPPLIED_SITE_INDEX_SOURCE
+
+MappingStatus_12=Disabled
+SourceMappingType_12=Copy
+SourceColumn_12=TYPE_IDENTITY_REFERENCE
+TargetColumn_12=TYPE_IDENTITY_REFERENCE
+
+MappingStatus_13=Disabled
+SourceMappingType_13=Copy
+SourceColumn_13=PROJECTED_TYPE_ID
+TargetColumn_13=PROJECTED_TYPE_ID
+
+MappingStatus_14=Enabled
+SourceMappingType_14=Copy
+SourceColumn_14=INVENTORY_TYPE_GROUP_SOURCE
+TargetColumn_14=INVENTORY_TYPE_GROUP_SOURCE
+
+MappingStatus_15=Enabled
+SourceMappingType_15=Copy
+SourceColumn_15=INVENTORY_TYPE_GROUP_NUMBER
+TargetColumn_15=INVENTORY_TYPE_GROUP_NUMBER
+
+MappingStatus_16=Enabled
+SourceMappingType_16=Copy
+SourceColumn_16=VOLUME_ADJUSTMENT_FACTOR
+TargetColumn_16=VOLUME_ADJUSTMENT_FACTOR
+
+MappingStatus_17=Enabled
+SourceMappingType_17=Copy
+SourceColumn_17=HIST_CLASS_S
+TargetColumn_17=HIST_CLASS_S
+
+MappingStatus_18=Enabled
+SourceMappingType_18=Copy
+SourceColumn_18=HIST_CLASS_SS
+TargetColumn_18=HIST_CLASS_SS
+
+MappingStatus_19=Enabled
+SourceMappingType_19=Copy
+SourceColumn_19=CROWN_CLOSURE
+TargetColumn_19=CROWN_CLOSURE
+
+MappingStatus_20=Enabled
+SourceMappingType_20=Copy
+SourceColumn_20=SILV_STEMS_PER_HECTARE
+TargetColumn_20=SILV_STEMS_PER_HECTARE
+
+MappingStatus_21=Enabled
+SourceMappingType_21=Copy
+SourceColumn_21=SILV_WELL_SPACED_STEMS
+TargetColumn_21=SILV_WELL_SPACED_STEMS
+
+MappingStatus_22=Disabled
+SourceMappingType_22=Copy
+SourceColumn_22=STOCKING_CLASS_CD
+TargetColumn_22=STOCKING_CLASS_CD
+
+MappingStatus_23=Disabled
+SourceMappingType_23=Copy
+SourceColumn_23=STOCKING_CLASS_SOURCE_CD
+TargetColumn_23=STOCKING_CLASS_SOURCE_CD
+
+MappingStatus_24=Enabled
+SourceMappingType_24=Copy
+SourceColumn_24=REFERENCE_YEAR
+TargetColumn_24=REFERENCE_YEAR
+
+MappingStatus_25=Disabled
+SourceMappingType_25=Copy
+SourceColumn_25=PROJECTED_STOCKING_CLASS
+TargetColumn_25=PROJECTED_STOCKING_CLASS
+
+MappingStatus_26=Disabled
+SourceMappingType_26=Copy
+SourceColumn_26=SITE_INDEX
+TargetColumn_26=SUPPLIED_SITE_INDEX
+
+MappingStatus_27=Disabled
+SourceMappingType_27=Copy
+SourceColumn_27=YEAR_OF_ESTABLISHMENT
+TargetColumn_27=YEAR_OF_ESTABLISHMENT
+
+MappingStatus_28=Enabled
+SourceMappingType_28=Copy
+SourceColumn_28=DBH_LIMIT
+TargetColumn_28=DBH_LIMIT
+
+MappingStatus_29=Enabled
+SourceMappingType_29=Copy
+SourceColumn_29=BASAL_AREA
+TargetColumn_29=BASAL_AREA
+
+MappingStatus_30=Enabled
+SourceMappingType_30=Copy
+SourceColumn_30=DATA_SOURCE_BASAL_AREA
+TargetColumn_30=DATA_SOURCE_BASAL_AREA
+
+MappingStatus_31=Enabled
+SourceMappingType_31=Copy
+SourceColumn_31=CONF_INDEX_BASAL_AREA
+TargetColumn_31=CONF_INDEX_BASAL_AREA
+
+MappingStatus_32=Disabled
+SourceMappingType_32=Copy
+SourceColumn_32=PROJECTED_BASAL_AREA
+TargetColumn_32=PROJECTED_BASAL_AREA
+
+MappingStatus_33=Enabled
+SourceMappingType_33=Copy
+SourceColumn_33=VRI_LIVE_STEMS_PER_HA
+TargetColumn_33=VRI_LIVE_STEMS_PER_HA
+
+MappingStatus_34=Enabled
+SourceMappingType_34=Copy
+SourceColumn_34=DATA_SOURCE_VRI_LIVE_STEMS_PER_H
+TargetColumn_34=DATA_SOURCE_VRI_LIVE_STEMS_PER_H
+
+MappingStatus_35=Enabled
+SourceMappingType_35=Copy
+SourceColumn_35=VRI_DEAD_STEMS_PER_HA
+TargetColumn_35=VRI_DEAD_STEMS_PER_HA
+
+MappingStatus_36=Enabled
+SourceMappingType_36=Copy
+SourceColumn_36=TREE_COVER_PATTERN
+TargetColumn_36=TREE_COVER_PATTERN
+
+MappingStatus_37=Enabled
+SourceMappingType_37=Copy
+SourceColumn_37=VERTICAL_COMPLEXITY
+TargetColumn_37=VERTICAL_COMPLEXITY
+
+MappingStatus_38=Disabled
+SourceMappingType_38=Copy
+SourceColumn_38=GROSS_VOL_PER_HA_WHOLE_STEM_GT_4CM
+TargetColumn_38=GROSS_WHOLE_STEM_VOL_PER_HA
+
+MappingStatus_39=Enabled
+SourceMappingType_39=Copy
+SourceColumn_39=LOSS_TYPE_CD
+TargetColumn_39=LOSS_TYPE_CD
+
+MappingStatus_40=Disabled
+SourceMappingType_40=Copy
+SourceColumn_40=NET_VOL_PER_HA_PRI_UTIL
+TargetColumn_40=NET_DWB_VOL_PER_HA
+
+
+
+
+
+[HISTORY Column Mapping]
+;
+; Mapping Conversion Error Actions can be one of the following:
+;     Error                        Generate an error (the default)
+;     Null                         Assign NULL to the target field.
+;     Null and Log                 Assign NULL to the target field and informs the user with a warning.
+;     Skip Record                  Skips the current record
+;     Skip Record and Log          Skips the current record and informs the user with a warning. 
+;     Use Previous Value           Uses the most recent valid value processed for the particular column
+;     Use Previous Value and Log   Uses the most recent valid value processed for the column and
+;                                  produces and message.
+;
+;
+
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceColumn_1_P5=ORG_UNIT_NO
+SourceColumn_1_P6=LAYER_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT l.LAYER_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   (tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID)
+SourceMappingSQLStatement_1_Line_003=                     INNER JOIN tblLAYER   l ON p.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID
+SourceMappingSQLStatement_1_Line_004=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_005=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_007=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_008=  AND  p.POLYGON_ID   = [P4]
+SourceMappingSQLStatement_1_Line_009=  AND  l.ORG_UNIT_NO  = [P5]
+SourceMappingSQLStatement_1_Line_010=  AND  l.LAYER_ID     = [P6]
+TargetColumn_1=LAYER_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=HISTORY_ID
+TargetColumn_2=HISTORY_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=OPENING_NUMBER
+TargetColumn_3=OPENING_NUMBER
+
+SourceMappingType_4=Copy
+SourceColumn_4=SILV_BASE
+TargetColumn_4=SILV_BASE
+
+SourceMappingType_5=Copy
+SourceColumn_5=SILV_TECHNIQUE
+TargetColumn_5=SILV_TECHNIQUE
+
+SourceMappingType_6=Copy
+SourceColumn_6=SILV_METHOD
+TargetColumn_6=SILV_METHOD
+
+SourceMappingType_7=Copy
+SourceColumn_7=ACTIVITY_START_DATE
+TargetColumn_7=ACTIVITY_START_DATE
+MappingOption_7_ConversionError=Null And Log
+
+SourceMappingType_8=Copy
+SourceColumn_8=ACTIVITY_END_DATE
+TargetColumn_8=ACTIVITY_END_DATE
+MappingOption_8_ConversionError=Null And Log
+
+SourceMappingType_9=Copy
+SourceColumn_9=DAMAGE_AGENT_CODE
+TargetColumn_9=DAMAGE_AGENT_CODE
+
+SourceMappingType_10=Copy
+SourceColumn_10=PEST_SEVERITY_CD
+TargetColumn_10=PEST_SEVERITY_CD
+
+SourceMappingType_11=Copy
+SourceColumn_11=DISTURBANCE_PERCENT
+TargetColumn_11=DISTURBANCE_PERCENT
+
+SourceMappingType_12=Copy
+SourceColumn_12=PLANTATION_SPECIES1
+TargetColumn_12=PLANTATION_SPECIES1
+
+SourceMappingType_13=Copy
+SourceColumn_13=PLANTATION_SPECIES2
+TargetColumn_13=PLANTATION_SPECIES2
+
+SourceMappingType_14=Copy
+SourceColumn_14=ADJOINING_NTS_MAP_NUMBER
+TargetColumn_14=ADJOINING_NTS_MAP_NUMBER
+
+
+
+[RESULTANT Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT p.POLYGON_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID
+SourceMappingSQLStatement_1_Line_003=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_004=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_005=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_007=  AND  p.POLYGON_ID   = [P4]
+TargetColumn_1=POLYGON_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=RESULTANT_ID
+TargetColumn_2=RESULTANT_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=TSA_NUMBER
+TargetColumn_3=TSA_NUMBER
+
+SourceMappingType_4=Copy
+SourceColumn_4=TSB_NUMBER
+TargetColumn_4=TSB_NUMBER
+
+SourceMappingType_5=Copy
+SourceColumn_5=SPECIAL_CRUISE_NUMBER
+TargetColumn_5=SPECIAL_CRUISE_NUMBER
+
+SourceMappingType_6=Copy
+SourceColumn_6=SPECIAL_CRUISE_NUMBER_CODE
+TargetColumn_6=SPECIAL_CRUISE_NUMBER_CODE
+
+SourceMappingType_7=Copy
+SourceColumn_7=GRID_NO
+TargetColumn_7=GRID_NO
+
+SourceMappingType_8=Copy
+SourceColumn_8=GRID_AREA
+TargetColumn_8=GRID_AREA
+
+SourceMappingType_9=Copy
+SourceColumn_9=DATE_UPDATE
+TargetColumn_9=DATE_UPDATE
+
+SourceMappingType_10=Copy
+SourceColumn_10=FIZ_CODE
+TargetColumn_10=FIZ_CODE
+
+SourceMappingType_11=Copy
+SourceColumn_11=INVENTORY_REGION
+TargetColumn_11=INVENTORY_REGION
+
+SourceMappingType_12=Copy
+SourceColumn_12=COMPARTMENT
+TargetColumn_12=COMPARTMENT
+
+SourceMappingType_13=Copy
+SourceColumn_13=COMPARTMENT_LETTER
+TargetColumn_13=COMPARTMENT_LETTER
+
+SourceMappingType_14=Copy
+SourceColumn_14=OWNERSHIP_CD
+TargetColumn_14=OWNERSHIP_CD
+
+SourceMappingType_15=Copy
+SourceColumn_15=OWNERSHIP_CHARACTER_CD
+TargetColumn_15=OWNERSHIP_CHARACTER_CD
+
+SourceMappingType_16=Copy
+SourceColumn_16=RESULT_AREA
+TargetColumn_16=RESULT_AREA
+
+SourceMappingType_17=Copy
+SourceColumn_17=ROAD_AREA
+TargetColumn_17=ROAD_AREA
+
+SourceMappingType_18=Copy
+SourceColumn_18=FISH_AREA
+TargetColumn_18=FISH_AREA
+
+SourceMappingType_19=Copy
+SourceColumn_19=FOREST_DISTRICT
+TargetColumn_19=FOREST_DISTRICT
+
+SourceMappingType_20=Copy
+SourceColumn_20=AGRICULTURAL_LAND_RESERVE
+TargetColumn_20=AGRICULTURAL_LAND_RESERVE
+
+SourceMappingType_21=Copy
+SourceColumn_21=PROVINCIAL_FOREST
+TargetColumn_21=PROVINCIAL_FOREST
+
+SourceMappingType_22=Copy
+SourceColumn_22=PROVINCIAL_FOREST_SUB_CD
+TargetColumn_22=PROVINCIAL_FOREST_SUB_CD
+
+SourceMappingType_23=Copy
+SourceColumn_23=STOCK_RANGE
+TargetColumn_23=STOCK_RANGE
+
+SourceMappingType_24=Copy
+SourceColumn_24=RANGE_UNIT
+TargetColumn_24=RANGE_UNIT
+
+SourceMappingType_25=Copy
+SourceColumn_25=PLANNING_CELL
+TargetColumn_25=PLANNING_CELL
+
+SourceMappingType_26=Copy
+SourceColumn_26=OPERABILITY_CD
+TargetColumn_26=OPERABILITY_CD
+
+SourceMappingType_27=Copy
+SourceColumn_27=FOREST_REGION
+TargetColumn_27=FOREST_REGION
+
+SourceMappingType_28=Copy
+SourceColumn_28=REC_MGMNT_CD
+TargetColumn_28=REC_MGMNT_CD
+
+SourceMappingType_29=Copy
+SourceColumn_29=REC_FEATURE_CD
+TargetColumn_29=REC_FEATURE_CD
+
+SourceMappingType_30=Copy
+SourceColumn_30=REC_ACTIVITY_CD
+TargetColumn_30=REC_ACTIVITY_CD
+
+SourceMappingType_31=Copy
+SourceColumn_31=REC_FEATURE_SIG
+TargetColumn_31=REC_FEATURE_SIG
+
+SourceMappingType_32=Copy
+SourceColumn_32=REC_MGMNT_CLASS_CD
+TargetColumn_32=REC_MGMNT_CLASS_CD
+
+SourceMappingType_33=Copy
+SourceColumn_33=REC_ROS
+TargetColumn_33=REC_ROS
+
+SourceMappingType_34=Copy
+SourceColumn_34=ELEVATION
+TargetColumn_34=ELEVATION
+
+SourceMappingType_35=Copy
+SourceColumn_35=SLOPE
+TargetColumn_35=SLOPE
+
+SourceMappingType_36=Copy
+SourceColumn_36=ASPECT_CD
+TargetColumn_36=ASPECT_CD
+
+SourceMappingType_37=Copy
+SourceColumn_37=HAY_CUTTING_NO
+TargetColumn_37=HAY_CUTTING_NO
+
+SourceMappingType_38=Copy
+SourceColumn_38=WILDLIFE
+TargetColumn_38=WILDLIFE
+
+SourceMappingType_39=Copy
+SourceColumn_39=SOIL_UNIT
+TargetColumn_39=SOIL_UNIT
+
+SourceMappingType_40=Copy
+SourceColumn_40=RANGE_PASTURE
+TargetColumn_40=RANGE_PASTURE
+
+SourceMappingType_41=Copy
+SourceColumn_41=BGC_ZONE
+TargetColumn_41=BGC_ZONE
+
+SourceMappingType_42=Copy
+SourceColumn_42=BGC_SUBZONE
+TargetColumn_42=BGC_SUBZONE
+
+SourceMappingType_43=Copy
+SourceColumn_43=BGC_VARIANT
+TargetColumn_43=BGC_VARIANT
+
+SourceMappingType_44=Copy
+SourceColumn_44=BGC_PHASE
+TargetColumn_44=BGC_PHASE
+
+SourceMappingType_45=Copy
+SourceColumn_45=WOODCOST
+TargetColumn_45=WOODCOST
+
+SourceMappingType_46=Copy
+SourceColumn_46=DEVELOPMENT_PLAN
+TargetColumn_46=DEVELOPMENT_PLAN
+
+SourceMappingType_47=Copy
+SourceColumn_47=RANGE_TYPE_NO
+TargetColumn_47=RANGE_TYPE_NO
+
+SourceMappingType_48=Copy
+SourceColumn_48=RANGE_COMMUNITY_TYPE_NO
+TargetColumn_48=RANGE_COMMUNITY_TYPE_NO
+
+SourceMappingType_49=Copy
+SourceColumn_49=MANAGEMENT_ZONE
+TargetColumn_49=MANAGEMENT_ZONE
+
+SourceMappingType_50=Copy
+SourceColumn_50=ATTACK_LEVEL
+TargetColumn_50=ATTACK_LEVEL
+
+SourceMappingType_51=Copy
+SourceColumn_51=DISTURBANCE_CD
+TargetColumn_51=DISTURBANCE_CD
+
+SourceMappingType_52=Copy
+SourceColumn_52=RECREATION_POLYGON_NO
+TargetColumn_52=RECREATION_POLYGON_NO
+
+SourceMappingType_53=Copy
+SourceColumn_53=ENVIRONMENT_SENSITIVE_AREA_1
+TargetColumn_53=ENVIRONMENT_SENSITIVE_AREA_1
+
+SourceMappingType_54=Copy
+SourceColumn_54=ENVIRONMENT_SENSITIVE_AREA_2
+TargetColumn_54=ENVIRONMENT_SENSITIVE_AREA_2
+
+SourceMappingType_55=Copy
+SourceColumn_55=ENVIRONMENT_SENSITIVE_WILDLIFE
+TargetColumn_55=ENVIRONMENT_SENSITIVE_WILDLIFE
+
+
+
+
+[SPECIES Column Mapping]
+
+MappingStatus_1=Enabled
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceColumn_1_P5=ORG_UNIT_NO
+SourceColumn_1_P6=LAYER_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT l.LAYER_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   (tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID)
+SourceMappingSQLStatement_1_Line_003=                     INNER JOIN tblLAYER   l ON p.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID
+SourceMappingSQLStatement_1_Line_004=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_005=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_007=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_008=  AND  p.POLYGON_ID   = [P4]
+SourceMappingSQLStatement_1_Line_009=  AND  l.ORG_UNIT_NO  = [P5]
+SourceMappingSQLStatement_1_Line_010=  AND  l.LAYER_ID     = [P6]
+TargetColumn_1=LAYER_RCRD_ID
+
+MappingStatus_2=Enabled
+SourceMappingType_2=Copy
+SourceColumn_2=SPECIES_ID
+TargetColumn_2=SPECIES_ID
+
+MappingStatus_3=Enabled
+SourceMappingType_3=Copy
+SourceColumn_3=SPECIES_CD
+TargetColumn_3=SPECIES_CD
+
+MappingStatus_4=Enabled
+SourceMappingType_4=Copy
+SourceColumn_4=SPECIES_PERCENT
+TargetColumn_4=SPECIES_PERCENT
+
+MappingStatus_5=Enabled
+SourceMappingType_5=Copy
+SourceColumn_5=LOSS_TYPE_CD
+TargetColumn_5=LOSS_TYPE_CD
+
+
+
+[LEADING_SPECIES Column Mapping]
+
+MappingStatus_1=Enabled
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceColumn_1_P5=ORG_UNIT_NO
+SourceColumn_1_P6=LAYER_ID
+SourceColumn_1_P7=SPECIES_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT s.SPECIES_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   ((tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID)
+SourceMappingSQLStatement_1_Line_003=                      INNER JOIN tblLAYER   l ON p.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID)
+SourceMappingSQLStatement_1_Line_004=                      INNER JOIN tblSPECIES s ON l.LAYER_RCRD_ID   = s.LAYER_RCRD_ID
+SourceMappingSQLStatement_1_Line_005=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_007=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_008=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_009=  AND  p.POLYGON_ID   = [P4]
+SourceMappingSQLStatement_1_Line_010=  AND  l.ORG_UNIT_NO  = [P5]
+SourceMappingSQLStatement_1_Line_011=  AND  l.LAYER_ID     = [P6]
+SourceMappingSQLStatement_1_Line_012=  AND  s.SPECIES_ID   = [P7]
+TargetColumn_1=SPECIES_RCRD_ID
+
+MappingStatus_2=Enabled
+SourceMappingType_2=Copy
+SourceColumn_2=AGE
+TargetColumn_2=AGE
+
+MappingStatus_3=Enabled
+SourceMappingType_3=Copy
+SourceColumn_3=DATA_SOURCE_AGE
+TargetColumn_3=DATA_SOURCE_AGE
+
+MappingStatus_4=Enabled
+SourceMappingType_4=Copy
+SourceColumn_4=UPDATE_AGE_DATE
+TargetColumn_4=UPDATE_AGE_DATE
+
+MappingStatus_5=Enabled
+SourceMappingType_5=Copy
+SourceColumn_5=HEIGHT
+TargetColumn_5=HEIGHT
+
+MappingStatus_6=Enabled
+SourceMappingType_6=Copy
+SourceColumn_6=DATA_SOURCE_HEIGHT
+TargetColumn_6=DATA_SOURCE_HEIGHT
+
+MappingStatus_7=Enabled
+SourceMappingType_7=Copy
+SourceColumn_7=UPDATE_HEIGHT_DATE
+TargetColumn_7=UPDATE_HEIGHT_DATE
+
+MappingStatus_8=Disabled
+SourceMappingType_8=Copy
+SourceColumn_8=PROJECTED_AGE
+TargetColumn_8=PROJECTED_AGE
+
+MappingStatus_9=Disabled
+SourceMappingType_9=Copy
+SourceColumn_9=PROJECTED_HEIGHT
+TargetColumn_9=PROJECTED_HEIGHT
+
+MappingStatus_10=Enabled
+SourceMappingType_10=Copy
+SourceColumn_10=CONF_INDEX_AGE
+TargetColumn_10=CONF_INDEX_AGE
+
+MappingStatus_11=Enabled
+SourceMappingType_11=Copy
+SourceColumn_11=CONF_INDEX_HT
+TargetColumn_11=CONF_INDEX_HT
+
+
+
+
+[SECONDARY_SPECIES Column Mapping]
+
+MappingStatus_1=Enabled
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceColumn_1_P5=ORG_UNIT_NO
+SourceColumn_1_P6=LAYER_ID
+SourceColumn_1_P7=SPECIES_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT s.SPECIES_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   ((tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID)
+SourceMappingSQLStatement_1_Line_003=                      INNER JOIN tblLAYER   l ON p.POLYGON_RCRD_ID = l.POLYGON_RCRD_ID)
+SourceMappingSQLStatement_1_Line_004=                      INNER JOIN tblSPECIES s ON l.LAYER_RCRD_ID   = s.LAYER_RCRD_ID
+SourceMappingSQLStatement_1_Line_005=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_007=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_008=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_009=  AND  p.POLYGON_ID   = [P4]
+SourceMappingSQLStatement_1_Line_010=  AND  l.ORG_UNIT_NO  = [P5]
+SourceMappingSQLStatement_1_Line_011=  AND  l.LAYER_ID     = [P6]
+SourceMappingSQLStatement_1_Line_012=  AND  s.SPECIES_ID   = [P7]
+TargetColumn_1=SPECIES_RCRD_ID
+
+MappingStatus_2=Enabled
+SourceMappingType_2=Copy
+SourceColumn_2=AGE
+TargetColumn_2=AGE
+
+MappingStatus_3=Enabled
+SourceMappingType_3=Copy
+SourceColumn_3=HEIGHT
+TargetColumn_3=HEIGHT
+
+MappingStatus_4=Disabled
+SourceMappingType_4=Copy
+SourceColumn_4=PROJECTED_AGE
+TargetColumn_4=PROJECTED_AGE
+
+MappingStatus_5=Disabled
+SourceMappingType_5=Copy
+SourceColumn_5=PROJECTED_HEIGHT
+TargetColumn_5=PROJECTED_HEIGHT
+
+
+
+[Feature_Link Column Mapping]
+
+MappingStatus_1=Enabled
+SourceMappingType_1=Copy
+SourceColumn_1=feature_id
+TargetColumn_1=feature_id
+
+SourceMappingType_2=Copy
+SourceColumn_2=data_source_cd
+TargetColumn_2=data_source_cd
+
+SourceMappingType_3=Copy
+SourceColumn_3=capture_method_cd
+TargetColumn_3=capture_method_cd
+
+SourceMappingType_4=Copy
+SourceColumn_4=accuracy_cd
+TargetColumn_4=accuracy_cd
+
+SourceMappingType_5=Copy
+SourceColumn_5=observation_date
+TargetColumn_5=observation_date
+
+SourceMappingType_6=Copy
+SourceColumn_6=retirement_date
+TargetColumn_6=retirement_date
+
+SourceMappingType_7=Copy
+SourceColumn_7=metadata_comment
+TargetColumn_7=metadata_comment
+
+SourceMappingType_8=Copy
+SourceColumn_8=entry_userid
+TargetColumn_8=entry_userid
+
+SourceMappingType_9=Copy
+SourceColumn_9=entry_timestamp
+TargetColumn_9=entry_timestamp
+
+SourceMappingType_10=Copy
+SourceColumn_10=update_userid
+TargetColumn_10=update_userid
+
+SourceMappingType_11=Copy
+SourceColumn_11=update_timestamp
+TargetColumn_11=update_timestamp
+
+SourceMappingType_12=Lookup
+SourceMappingSQLConnection_12=Destination Data
+SourceMappingSQLStatement_12_Line_001=SELECT IIF (IsNull( MAX( ROW_NUMBER ) ), 0, MAX( ROW_NUMBER ) ) AS ROWNUM FROM tblFEATURE_LINK
+TargetColumn_12=FEATURE_RCRD_ID
+
+
+
+
+[FEATURE_LINK To POLYGON Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=FEATURE_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT f.FEATURE_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblFEATURE_LINK f
+SourceMappingSQLStatement_1_Line_003=WHERE  f.FEATURE_ID   = [P1]
+TargetColumn_1=FEATURE_RCRD_ID
+
+SourceMappingType_2=Lookup
+SourceColumn_2_P1=MAP_ID
+SourceColumn_2_P2=POLYGON_ID
+SourceMappingSQLConnection_2=Destination Data
+SourceMappingOption_2_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_2_Line_001=SELECT p.POLYGON_RCRD_ID
+SourceMappingSQLStatement_2_Line_002=FROM   tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID
+SourceMappingSQLStatement_2_Line_003=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_2_Line_004=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_2_Line_005=  AND  p.POLYGON_ID   = [P2]
+TargetColumn_2=POLYGON_RCRD_ID
+
+
+
+
+[FLT_UNION Column Mapping]
+
+SourceMappingType_1=Copy
+SourceColumn_1=table_source
+TargetColumn_1=TABLE_SOURCE
+
+SourceMappingType_2=Lookup
+SourceColumn_2_P1=FEATURE_ID
+SourceMappingSQLConnection_2=Destination Data
+SourceMappingOption_2_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_2_Line_001=SELECT f.FEATURE_RCRD_ID
+SourceMappingSQLStatement_2_Line_002=FROM   tblFEATURE_LINK f
+SourceMappingSQLStatement_2_Line_003=WHERE  f.FEATURE_ID   = [P1]
+TargetColumn_2=FEATURE_RCRD_ID
+
+
+
+
+[IODM_CONTROL Column Mapping]
+
+SourceMappingType_1=Copy
+SourceColumn_1=version_number
+TargetColumn_1=VERSION_NUMBER
+
+SourceMappingType_2=Copy
+SourceColumn_2=revision_number
+TargetColumn_2=REVISION_NUMBER
+
+
+
+[LAND_COVER_COMPONENTS Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT p.POLYGON_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID
+SourceMappingSQLStatement_1_Line_003=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_004=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_005=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_007=  AND  p.POLYGON_ID   = [P4]
+TargetColumn_1=POLYGON_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=COMP1
+TargetColumn_2=COMP1
+
+SourceMappingType_3=Copy
+SourceColumn_3=PERCENT1
+TargetColumn_3=PERCENT1
+
+SourceMappingType_4=Copy
+SourceColumn_4=SOIL_MOIST1
+TargetColumn_4=SOIL_MOIST1
+
+SourceMappingType_5=Copy
+SourceColumn_5=COMP2
+TargetColumn_5=COMP2
+
+SourceMappingType_6=Copy
+SourceColumn_6=PERCENT2
+TargetColumn_6=PERCENT2
+
+SourceMappingType_7=Copy
+SourceColumn_7=SOIL_MOIST2
+TargetColumn_7=SOIL_MOIST2
+
+SourceMappingType_8=Copy
+SourceColumn_8=COMP3
+TargetColumn_8=COMP3
+
+SourceMappingType_9=Copy
+SourceColumn_9=PERCENT3
+TargetColumn_9=PERCENT3
+
+SourceMappingType_10=Copy
+SourceColumn_10=SOIL_MOIST3
+TargetColumn_10=SOIL_MOIST3
+
+SourceMappingType_11=Copy
+SourceColumn_11=OTHER_PERCENT
+TargetColumn_11=OTHER_PERCENT
+
+SourceMappingType_12=Copy
+SourceColumn_12=Adjusted_COMP1
+TargetColumn_12=Adjusted_COMP1
+
+SourceMappingType_13=Copy
+SourceColumn_13=Adjusted_PERCENT1
+TargetColumn_13=Adjusted_PERCENT1
+
+SourceMappingType_14=Copy
+SourceColumn_14=Adjusted_SOIL_MOIST1
+TargetColumn_14=Adjusted_SOIL_MOIST1
+
+SourceMappingType_15=Copy
+SourceColumn_15=Adjusted_COMP2
+TargetColumn_15=Adjusted_COMP2
+
+SourceMappingType_16=Copy
+SourceColumn_16=Adjusted_PERCENT2
+TargetColumn_16=Adjusted_PERCENT2
+
+SourceMappingType_17=Copy
+SourceColumn_17=Adjusted_SOIL_MOIST2
+TargetColumn_17=Adjusted_SOIL_MOIST2
+
+SourceMappingType_18=Copy
+SourceColumn_18=Adjusted_COMP3
+TargetColumn_18=Adjusted_COMP3
+
+SourceMappingType_19=Copy
+SourceColumn_19=Adjusted_PERCENT3
+TargetColumn_19=Adjusted_PERCENT3
+
+SourceMappingType_20=Copy
+SourceColumn_20=Adjusted_SOIL_MOIST3
+TargetColumn_20=Adjusted_SOIL_MOIST3
+
+
+
+[NON_TREE Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT p.POLYGON_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID
+SourceMappingSQLStatement_1_Line_003=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_004=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_005=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_007=  AND  p.POLYGON_ID   = [P4]
+TargetColumn_1=POLYGON_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=NON_TREE_ID
+TargetColumn_2=NON_TREE_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=SHRUB_HEIGHT
+TargetColumn_3=SHRUB_HEIGHT
+
+SourceMappingType_4=Copy
+SourceColumn_4=SHRUB_CROWN_CLOSURE
+TargetColumn_4=SHRUB_CROWN_CLOSURE
+
+SourceMappingType_5=Copy
+SourceColumn_5=SHRUB_COVER_PATTERN
+TargetColumn_5=SHRUB_COVER_PATTERN
+
+SourceMappingType_6=Copy
+SourceColumn_6=HERB_COVER_TYPE
+TargetColumn_6=HERB_COVER_TYPE
+
+SourceMappingType_7=Copy
+SourceColumn_7=HERB_COVER_PERCENT
+TargetColumn_7=HERB_COVER_PERCENT
+
+SourceMappingType_8=Copy
+SourceColumn_8=HERB_COVER_PATTERN
+TargetColumn_8=HERB_COVER_PATTERN
+
+SourceMappingType_9=Copy
+SourceColumn_9=BRYOID_COVER_PERCENT
+TargetColumn_9=BRYOID_COVER_PERCENT
+
+
+
+[NON_VEG Column Mapping]
+
+SourceMappingType_1=Lookup
+SourceColumn_1_P1=MAP_ID
+SourceColumn_1_P2=MAP_QUAD
+SourceColumn_1_P3=MAP_SUB_QUAD
+SourceColumn_1_P4=POLYGON_ID
+SourceMappingSQLConnection_1=Destination Data
+SourceMappingOption_1_NULLLookups=Skip Record And Log
+SourceMappingSQLStatement_1_Line_001=SELECT p.POLYGON_RCRD_ID
+SourceMappingSQLStatement_1_Line_002=FROM   tblVERSION v INNER JOIN tblPOLYGON p ON v.VERSION_RCRD_ID = p.VERSION_RCRD_ID
+SourceMappingSQLStatement_1_Line_003=WHERE  v.MAINTAINER   = "$(Maintainer)"
+SourceMappingSQLStatement_1_Line_004=  AND  v.MAP_ID       = [P1]
+SourceMappingSQLStatement_1_Line_005=  AND  v.MAP_QUAD     = [P2]
+SourceMappingSQLStatement_1_Line_006=  AND  v.MAP_SUB_QUAD = [P3]
+SourceMappingSQLStatement_1_Line_007=  AND  p.POLYGON_ID   = [P4]
+TargetColumn_1=POLYGON_RCRD_ID
+
+SourceMappingType_2=Copy
+SourceColumn_2=NON_VEG_ID
+TargetColumn_2=NON_VEG_ID
+
+SourceMappingType_3=Copy
+SourceColumn_3=NON_VEG_COVER_TYPE
+TargetColumn_3=NON_VEG_COVER_TYPE
+
+SourceMappingType_4=Copy
+SourceColumn_4=NON_VEG_COVER_PERCENT
+TargetColumn_4=NON_VEG_COVER_PERCENT
+
+SourceMappingType_5=Copy
+SourceColumn_5=NON_VEG_COVER_PATTERN
+TargetColumn_5=NON_VEG_COVER_PATTERN
