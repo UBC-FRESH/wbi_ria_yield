@@ -1,27 +1,27 @@
 # Refactor Roadmap
 
 ## Phase 1: Stabilize Runtime + Inputs
-- [ ] P1.1 Stand up Typer CLI entrypoint (FHOPS-style, nemora-compatible)
-- [ ] P1.1a Expose the `femic` console script (Forest Estate Model Input Compiler)
-- [ ] P1.1b Create `src/femic/cli/main.py` with `Typer(add_completion=False, no_args_is_help=True)`
-- [ ] P1.1c Organize subcommands (prep, vdyp, tsa, run) via `app.add_typer(...)`
-- [ ] P1.1d Use module-level constants for defaults + typed `Path` args (avoid B008)
-- [ ] P1.2 Define a single entrypoint script with explicit CLI args
-- [ ] P1.2a Add a `--tsa` filter and `--resume` flag
-- [ ] P1.2b Centralize environment checks (VDYP, wine, data paths)
-- [ ] P1.3 Normalize I/O paths and required files
-- [ ] P1.3a Document expected data layout under `data/` and `vdyp_io/`
-- [ ] P1.3b Add validation for missing files before processing
-- [ ] P1.4 Improve logging and error visibility
-- [ ] P1.4a Add structured logging with per-TSA context
-- [ ] P1.4b Capture external tool stderr/stdout to files
-- [ ] P1.5 VDYP diagnostics + metadata hardening
-- [ ] P1.5a Add VDYP Wine wrapper health checks (config, inputs, tmp outputs,
+- [x] P1.1 Stand up Typer CLI entrypoint (FHOPS-style, nemora-compatible)
+- [x] P1.1a Expose the `femic` console script (Forest Estate Model Input Compiler)
+- [x] P1.1b Create `src/femic/cli/main.py` with `Typer(add_completion=False, no_args_is_help=True)`
+- [x] P1.1c Organize subcommands (prep, vdyp, tsa, run) via `app.add_typer(...)`
+- [x] P1.1d Use module-level constants for defaults + typed `Path` args (avoid B008)
+- [x] P1.2 Define a single entrypoint script with explicit CLI args
+- [x] P1.2a Add a `--tsa` filter and `--resume` flag
+- [x] P1.2b Centralize environment checks (VDYP, wine, data paths)
+- [x] P1.3 Normalize I/O paths and required files
+- [x] P1.3a Document expected data layout under `data/` and `vdyp_io/`
+- [x] P1.3b Add validation for missing files before processing
+- [x] P1.4 Improve logging and error visibility
+- [x] P1.4a Add structured logging with per-TSA context
+- [x] P1.4b Capture external tool stderr/stdout to files
+- [x] P1.5 VDYP diagnostics + metadata hardening
+- [x] P1.5a Add VDYP Wine wrapper health checks (config, inputs, tmp outputs,
   exit codes)
-- [ ] P1.5b Record VDYP run metadata + failure reasons per TSA and AU
-- [ ] P1.5c Add curve-build diagnostics (binning stats, NLLS convergence,
+- [x] P1.5b Record VDYP run metadata + failure reasons per TSA and AU
+- [x] P1.5c Add curve-build diagnostics (binning stats, NLLS convergence,
   residuals)
-- [ ] P1.5d Add ramp-splice diagnostics and iterative left-point trimming with warnings
+- [x] P1.5d Add ramp-splice diagnostics and iterative left-point trimming with warnings
 
 ## Phase 2: Modularize Pipeline Steps
 - [ ] P2.1 Extract reusable modules from `00_data-prep.py`
@@ -167,3 +167,5 @@
 - Expanded run manifest payloads with runtime/package versions, resolved key paths, and per-TSA
   artifact existence inventory for `vdyp_runs`, `vdyp_curve_events`, `vdyp_stdout`, and
   `vdyp_stderr`.
+- Phase 1 checklist reconciled with implemented NF1-NF8 deliverables; remaining work now starts at
+  Phase 2 modularization tasks (P2.1+).

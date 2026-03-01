@@ -99,3 +99,5 @@
   `vdyp_stdout-tsa{tsa}-{run_id}.log` and `vdyp_stderr-tsa{tsa}-{run_id}.log`.
 - Expanded run manifest payloads with runtime/package versions, resolved key paths, and
   per-TSA artifact existence inventory for run/curve JSONL and stdout/stderr artifacts.
+- Reconciled Phase 1 roadmap checkboxes with completed NF deliverables so roadmap state now shows
+  Phase 1 complete and Phase 2 as the active next implementation frontier.
