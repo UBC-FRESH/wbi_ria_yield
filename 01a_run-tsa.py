@@ -16,6 +16,7 @@ def run_tsa():
     from femic.pipeline.vdyp_sampling import nsamples_from_curves
     from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
     from femic.pipeline.vdyp_curves import process_vdyp_out
+    from femic.pipeline.tipsy import compute_vdyp_oaf1, compute_vdyp_site_index
 
     if "vdyp_out_cache" not in globals():
         vdyp_out_cache = None
@@ -1268,18 +1269,7 @@ def run_tsa():
         si = round(au_data["ss"].SITE_INDEX.median(), 1)
         # cc = au_data['ss'].CROWN_CLOSURE.median() * 0.01
         bec = au_data["ss"].BEC_ZONE_CODE.iloc[0]
-        #####################################################
-        # compile OAF1 from mean stockability from VDYP output
-        # (messy!... something about the stupid '%' symbol in the fieldname
-        #  breaks compiling tmp in a list comprehension)
-        tmp = []
-        for k, v in vdyp_out.items():
-            try:
-                tmp.append(v["% Stk"].iloc[0])
-            except:
-                pass
-        oaf1 = round(np.mean(tmp) * 0.01, 2)
-        #####################################################
+        oaf1 = compute_vdyp_oaf1(vdyp_out)
         # tp['e']['AU'] = tp['f']['AU'] = au_id
         tp["e"]["AU"] = tp["e"]["TBLno"] = 10000 + au_id
         tp["f"]["AU"] = tp["f"]["TBLno"] = 20000 + au_id
@@ -1421,24 +1411,12 @@ def run_tsa():
         tp["e"]["AU"] = tp["e"]["TBLno"] = 10000 + au_id
         tp["f"]["AU"] = tp["f"]["TBLno"] = 20000 + au_id
         # si = au_data['ss'].SITE_INDEX.median()
-        si = np.mean([df["SI"].mean() for df in vdyp_out.values()])
+        si = compute_vdyp_site_index(vdyp_out)
         # si /= (au_data['ss'].SITE_INDEX / au_data['ss'].siteprod).median()
         # si = au_data['ss'].siteprod.median()
         tp["e"]["SI"] = tp["f"]["SI"] = round(si, 1)
         tp["e"]["BEC"] = tp["f"]["BEC"] = au_data["ss"].BEC_ZONE_CODE.iloc[0]
-        #####################################################
-        # compile OAF1 from mean stockability from VDYP output
-        # messy!...
-        # something about the stupid '%' symbol in the fieldname breaks compiling tmp in a comprehension
-        # also the hasty VDYP fixed-width text file import to DataFrame sometimes imports '% Stk' as two fieldnames (skip over broken tables with try/except)
-        tmp = []
-        for k, v in vdyp_out.items():
-            try:
-                tmp.append(v["% Stk"].iloc[0])
-            except:
-                pass
-        oaf1 = round(np.mean(tmp) * 0.01, 2)
-        #####################################################
+        oaf1 = compute_vdyp_oaf1(vdyp_out)
         tp["e"]["OAF1"] = tp["f"]["OAF1"] = oaf1
         tp["e"]["OAF2"] = tp["f"]["OAF2"] = 0.95
         tp["e"]["FIZ"] = tp["f"]["FIZ"] = "I"
@@ -1450,25 +1428,13 @@ def run_tsa():
     def tipsy_params_tsa24(au_id, au_data, vdyp_out):
         tp = {"e": {}, "f": {}}
         spp_1 = list(au_data["species"].keys())[0]
-        si = round(np.mean([df["SI"].mean() for df in vdyp_out.values()]), 1)
+        si = compute_vdyp_site_index(vdyp_out)
         bec = au_data["ss"].BEC_ZONE_CODE.iloc[0]
         tp["e"]["SI"] = tp["f"]["SI"] = si
         tp["e"]["BEC"] = tp["f"]["BEC"] = bec
         tp["e"]["AU"] = tp["e"]["TBLno"] = 10000 + au_id
         tp["f"]["AU"] = tp["f"]["TBLno"] = 20000 + au_id
-        #####################################################
-        # compile OAF1 from mean stockability from VDYP output
-        # messy!...
-        # something about the stupid '%' symbol in the fieldname breaks compiling tmp in a comprehension
-        # also the hasty VDYP fixed-width text file import to DataFrame sometimes imports '% Stk' as two fieldnames (skip over broken tables with try/except)
-        tmp = []
-        for k, v in vdyp_out.items():
-            try:
-                tmp.append(v["% Stk"].iloc[0])
-            except:
-                pass
-        oaf1 = round(np.mean(tmp) * 0.01, 2)
-        #####################################################
+        oaf1 = compute_vdyp_oaf1(vdyp_out)
         tp["e"]["OAF1"] = tp["f"]["OAF1"] = oaf1
         tp["e"]["OAF2"] = tp["f"]["OAF2"] = 0.95
         tp["e"]["FIZ"] = tp["f"]["FIZ"] = "I"
@@ -1667,25 +1633,13 @@ def run_tsa():
     def tipsy_params_tsa40(au_id, au_data, vdyp_out):
         tp = {"e": {}, "f": {}}
         spp_1 = list(au_data["species"].keys())[0]
-        si = round(np.mean([df["SI"].mean() for df in vdyp_out.values()]), 1)
+        si = compute_vdyp_site_index(vdyp_out)
         bec = au_data["ss"].BEC_ZONE_CODE.iloc[0]
         tp["e"]["SI"] = tp["f"]["SI"] = si
         tp["e"]["BEC"] = tp["f"]["BEC"] = bec
         tp["e"]["AU"] = tp["e"]["TBLno"] = 10000 + au_id
         tp["f"]["AU"] = tp["f"]["TBLno"] = 20000 + au_id
-        #####################################################
-        # compile OAF1 from mean stockability from VDYP output
-        # messy!...
-        # something about the stupid '%' symbol in the fieldname breaks compiling tmp in a comprehension
-        # also the hasty VDYP fixed-width text file import to DataFrame sometimes imports '% Stk' as two fieldnames (skip over broken tables with try/except)
-        tmp = []
-        for k, v in vdyp_out.items():
-            try:
-                tmp.append(v["% Stk"].iloc[0])
-            except:
-                pass
-        oaf1 = round(np.mean(tmp) * 0.01, 2)
-        #####################################################
+        oaf1 = compute_vdyp_oaf1(vdyp_out)
         tp["e"]["OAF1"] = tp["f"]["OAF1"] = oaf1
         tp["e"]["OAF2"] = tp["f"]["OAF2"] = 0.95
         tp["e"]["FIZ"] = tp["f"]["FIZ"] = "I"
@@ -1757,26 +1711,14 @@ def run_tsa():
 
     def tipsy_params_tsa41(au_id, au_data, vdyp_out):
         tp = {"e": {}, "f": {}}
-        si = round(np.mean([df["SI"].mean() for df in vdyp_out.values()]), 1)
+        si = compute_vdyp_site_index(vdyp_out)
         bec = au_data["ss"].BEC_ZONE_CODE.iloc[0]
         forest_type = au_data["ss"]["forest_type"].mode().iloc[0]
         tp["e"]["SI"] = tp["f"]["SI"] = si
         tp["e"]["BEC"] = tp["f"]["BEC"] = bec
         tp["e"]["AU"] = tp["e"]["TBLno"] = 10000 + au_id
         tp["f"]["AU"] = tp["f"]["TBLno"] = 20000 + au_id
-        #####################################################
-        # compile OAF1 from mean stockability from VDYP output
-        # messy!...
-        # something about the stupid '%' symbol in the fieldname breaks compiling tmp in a comprehension
-        # also the hasty VDYP fixed-width text file import to DataFrame sometimes imports '% Stk' as two fieldnames (skip over broken tables with try/except)
-        tmp = []
-        for k, v in vdyp_out.items():
-            try:
-                tmp.append(v["% Stk"].iloc[0])
-            except:
-                pass
-        oaf1 = round(np.mean(tmp) * 0.01, 2)
-        #####################################################
+        oaf1 = compute_vdyp_oaf1(vdyp_out)
         tp["e"]["OAF1"] = tp["f"]["OAF1"] = oaf1
         tp["e"]["OAF2"] = tp["f"]["OAF2"] = 0.95
         tp["e"]["FIZ"] = tp["f"]["FIZ"] = "I"

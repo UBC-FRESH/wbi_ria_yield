@@ -180,3 +180,6 @@
 - Extracted VDYP curve-building helpers into `femic.pipeline.vdyp_curves` and refactored
   `01a_run-tsa.py` to call shared `process_vdyp_out(...)` logic (including toe-fit retry/fallback
   and quasi-origin anchor behavior) through a reusable module seam.
+- Extracted shared VDYP-to-TIPSY scalar derivations into `femic.pipeline.tipsy`
+  (`compute_vdyp_site_index`, `compute_vdyp_oaf1`) and refactored all TSA-specific TIPSY parameter
+  builders in `01a_run-tsa.py` to consume these helpers instead of duplicating inline parsing logic.

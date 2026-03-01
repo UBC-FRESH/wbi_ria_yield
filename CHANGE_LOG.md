@@ -132,3 +132,6 @@
 - Added `femic.pipeline.vdyp_curves` with reusable quasi-origin anchoring, toe-fill, and
   `process_vdyp_out` helpers; refactored `01a_run-tsa.py` to consume this module and added focused
   unit tests for empty-input and toe-fit-fallback behavior.
+- Added `femic.pipeline.tipsy` with shared VDYP-derived scalar helpers
+  (`compute_vdyp_site_index`, `compute_vdyp_oaf1`) and refactored TSA-specific TIPSY parameter
+  builders in `01a_run-tsa.py` to use these helpers; added dedicated unit tests.

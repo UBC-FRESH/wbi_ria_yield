@@ -37,6 +37,7 @@ from femic.pipeline.vdyp_curves import (
 from femic.pipeline.stages import StageResult, run_legacy_subprocess
 from femic.pipeline.vdyp_sampling import nsamples_from_curves
 from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
+from femic.pipeline.tipsy import compute_vdyp_oaf1, compute_vdyp_site_index
 from femic.pipeline.vdyp import build_vdyp_log_paths
 
 __all__ = [
@@ -63,6 +64,8 @@ __all__ = [
     "import_vdyp_tables",
     "write_vdyp_infiles_plylyr",
     "nsamples_from_curves",
+    "compute_vdyp_oaf1",
+    "compute_vdyp_site_index",
     "write_manifest",
     "build_vdyp_log_paths",
     "build_pipeline_run_config",
