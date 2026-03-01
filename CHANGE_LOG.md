@@ -91,3 +91,7 @@
   options, env flags, TSA list, checkpoint presence, and expected run-scoped log paths.
 - Switched VDYP diagnostic outputs to run-scoped TSA files:
   `vdyp_runs-tsa{tsa}-{run_id}.jsonl` and `vdyp_curve_events-tsa{tsa}-{run_id}.jsonl`.
+- Added deterministic TSA08 VDYP regression fixtures and tests for stable summary counts.
+- Added warning-budget guardrails in `femic vdyp report` with threshold flags
+  (`--max-curve-warnings`, `--max-first-point-mismatches`, parse-error maxima, and minimum event
+  counts) and non-zero exit on budget violations.

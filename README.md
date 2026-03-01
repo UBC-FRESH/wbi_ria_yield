@@ -47,6 +47,12 @@ Summarize these logs with:
 femic vdyp report
 ```
 
+For regression checks in CI, apply warning-budget thresholds (command exits non-zero on breach):
+
+```bash
+femic vdyp report --max-curve-warnings 2 --max-first-point-mismatches 0 --min-curve-events 5 --min-run-events 6
+```
+
 Yield curves are anchored to a quasi-origin point `(1, 1e-6)` so downstream positive-value
 filters can remain unchanged while avoiding zero-age intercept issues.
 

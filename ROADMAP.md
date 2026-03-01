@@ -75,9 +75,9 @@
 - [x] NF7a Persist per-run manifest JSON (env flags, debug_rows, checkpoints used)
 - [x] NF7b Split `vdyp_*` JSONL logs by TSA/run-id and retain rolling history
 - [x] NF7c Add `femic run --log-dir` and `femic run --run-id` overrides
-- [ ] NF8 Add deterministic regression harness for TSA08 debug profile
-- [ ] NF8a Add smoke assertion over `femic vdyp report` summary counts
-- [ ] NF8b Add guardrails for warning-budget thresholds (fail on unexpected growth)
+- [x] NF8 Add deterministic regression harness for TSA08 debug profile
+- [x] NF8a Add smoke assertion over `femic vdyp report` summary counts
+- [x] NF8b Add guardrails for warning-budget thresholds (fail on unexpected growth)
 
 ## Detailed Next Steps Notes
 - `PYTHONPATH=src python -m femic --help` now works in the venv.
@@ -158,3 +158,7 @@
   TSA list, checkpoint presence, and resolved run-scoped log paths.
 - VDYP logs are now emitted per TSA + run id
   (`vdyp_runs-tsa{tsa}-{run_id}.jsonl`, `vdyp_curve_events-tsa{tsa}-{run_id}.jsonl`).
+- Added deterministic TSA08 regression fixtures under `tests/fixtures/vdyp/tsa08_debug/` and
+  tests that assert stable `summarize_vdyp_logs` counts.
+- Added warning-budget evaluation (`evaluate_warning_budget`) and CLI threshold flags on
+  `femic vdyp report` so CI can fail when warnings/parse-errors grow beyond expected bounds.
