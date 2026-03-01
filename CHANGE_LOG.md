@@ -118,3 +118,7 @@
   workflow wrapper into reusable helpers; updated workflow/tests to consume the new module.
 - Added `femic.pipeline.pre_vdyp` to centralize pre-VDYP checkpoint serialization/load/save and
   refactored `01a_run-tsa.py` to use these helpers; added dedicated unit tests.
+- Removed the redundant roadmap `Next Focus` section after folding completed items into phase
+  status/checklist tracking.
+- Added `femic.pipeline.vdyp_io` for shared VDYP infile writer and output table parser helpers,
+  refactored `01a_run-tsa.py` to consume them, and added unit tests.

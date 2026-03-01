@@ -23,6 +23,7 @@ from femic.pipeline.pre_vdyp import (
     serialize_vdyp_prep_payload,
 )
 from femic.pipeline.stages import StageResult, run_legacy_subprocess
+from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
 from femic.pipeline.vdyp import build_vdyp_log_paths
 
 __all__ = [
@@ -38,6 +39,8 @@ __all__ = [
     "load_vdyp_prep_checkpoint",
     "save_vdyp_prep_checkpoint",
     "serialize_vdyp_prep_payload",
+    "import_vdyp_tables",
+    "write_vdyp_infiles_plylyr",
     "write_manifest",
     "build_vdyp_log_paths",
     "build_pipeline_run_config",

@@ -7,6 +7,7 @@ def run_tsa():
         load_vdyp_prep_checkpoint,
         save_vdyp_prep_checkpoint,
     )
+    from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
     if "vdyp_out_cache" not in globals():
         vdyp_out_cache = None
     _curve_fit_local = globals().get("_curve_fit")
@@ -462,49 +463,7 @@ def run_tsa():
             % (saved_count, vdyp_prep_checkpoint_path)
         )
 
-    # --- cell 30 ---
-    def write_vdyp_infiles_plylyr(
-        feature_ids,
-        vdyp_ply,
-        vdyp_lyr,
-        vdyp_io_dirname="vdyp_io",
-        vdyp_ply_csv="vdyp_ply.csv",
-        vdyp_lyr_csv="vdyp_lyr.csv",
-    ):
-        vdyp_ply_ = vdyp_ply[vdyp_ply.FEATURE_ID.isin(feature_ids)]
-        vdyp_ply_.sort_values(by="FEATURE_ID", inplace=True)
-        vdyp_ply_.to_csv(
-            "%s/%s" % (vdyp_io_dirname, vdyp_ply_csv),
-            columns=list(vdyp_ply.columns)[:-5],
-            index=False,
-            quoting=csv.QUOTE_NONNUMERIC,
-        )
-        vdyp_lyr_ = vdyp_lyr[vdyp_lyr.FEATURE_ID.isin(vdyp_ply_.FEATURE_ID)]
-        vdyp_lyr_.sort_values(by="FEATURE_ID", inplace=True)
-        vdyp_lyr_.to_csv(
-            "%s/%s" % (vdyp_io_dirname, vdyp_lyr_csv),
-            columns=list(vdyp_lyr.columns)[:-5],
-            index=False,
-            quoting=csv.QUOTE_NONNUMERIC,
-        )
-
-    # --- cell 32 ---
-    def import_vdyp_tables(filename):
-        import re, io
-
-        chunks = re.findall(
-            r"(?<=vvvvvvvvvv.).*?(?=\^)", open(filename).read(), re.DOTALL
-        )
-        result = {}
-        for chunk in chunks:
-            lines = chunk.split("\n")
-            polygon_id = int(re.search(r"(?<=Polygon:.)\d+", lines[0]).group())
-            result_ = pd.read_fwf(
-                io.StringIO(chunk), skiprows=[0, 2], index_col="Age", infer_nrows=200
-            )
-            if type(result_) == pd.core.frame.DataFrame:
-                result[polygon_id] = result_
-        return result
+    # --- cell 30/32 ---
 
     # --- cell 34 ---
     def nsamples_from_curves(

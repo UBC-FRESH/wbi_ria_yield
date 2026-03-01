@@ -52,33 +52,6 @@
 - [ ] P3.5a Update README with new workflow
 - [ ] P3.5b Add a quickstart for running end-to-end
 
-## Next Focus
-- [x] NF1 Make the `femic` CLI runnable in the current venv
-- [x] NF1a Ensure `typer` and `rich` are installed (`pip install -r requirements.txt`)
-- [x] NF1b Add a console script entrypoint in packaging (so `femic --help` works)
-- [x] NF2 Wire `femic run` to the existing pipeline
-- [x] NF2a Execute `00_data-prep.py` through a controlled wrapper subprocess
-- [x] NF2b Plumb `--tsa` and `--resume` into the current control flow
-- [x] NF3 Add preflight checks for external dependencies
-- [x] NF3a Verify `wine` availability and `VDYP7/VDYP7/VDYP7Console.exe` path
-- [x] NF3b Verify `vdyp_io/VDYP_CFG` and required input files under `data/`
-- [x] NF4 Add minimal run metadata + logging
-- [x] NF4a Emit per-TSA log files and capture full VDYP stdout/stderr artifacts
-- [x] NF4b Write a run manifest (timestamp, TSA list, paths, versions)
-- [x] NF5 Quick README update for femic usage
-- [x] NF5a Add a 5-minute “run the pipeline” quickstart
-- [x] NF6 VDYP debug + metadata dive to reduce late-stage failures
-- [x] NF6a Add VDYP wrapper sanity checks and per-run diagnostics
-- [x] NF6b Add curve-binning and NLLS convergence metadata outputs
-- [x] NF6c Add ramp-splice auto-trimming and warning thresholds
-- [x] NF7 Promote debug metadata into operator-facing run artifacts
-- [x] NF7a Persist per-run manifest JSON (env flags, debug_rows, checkpoints used)
-- [x] NF7b Split `vdyp_*` JSONL logs by TSA/run-id and retain rolling history
-- [x] NF7c Add `femic run --log-dir` and `femic run --run-id` overrides
-- [x] NF8 Add deterministic regression harness for TSA08 debug profile
-- [x] NF8a Add smoke assertion over `femic vdyp report` summary counts
-- [x] NF8b Add guardrails for warning-budget thresholds (fail on unexpected growth)
-
 ## Detailed Next Steps Notes
 - `PYTHONPATH=src python -m femic --help` now works in the venv.
 - `pyproject.toml` defines the `femic` console script; install with `pip install -e .` when ready.
@@ -149,9 +122,8 @@
 - Reworked `run_data_prep` to execute `00_data-prep.py` in a subprocess and stream filtered
   output; this removes persistent non-fatal legacy shutdown noise
   (`Error in sys.excepthook` / `Original exception was`) from `femic run` logs.
-- Roadmap review checkpoint (2026-03-01): next implementation sequence should prioritize
-  NF7 (operator-facing run artifacts) before NF8 (regression harness), then return to
-  Phase 1 items NF4a/NF4b that are still open.
+- Roadmap review checkpoint (2026-03-01): completed the runtime hardening/diagnostics tranche that
+  started this refactor; roadmap focus is now Phase 2 extraction and global-state reduction.
 - `femic run` now accepts `--run-id` and `--log-dir`; these are passed to the legacy runner and
   exported as `FEMIC_RUN_ID` / `FEMIC_LOG_DIR`.
 - Added per-run manifest output (`run_manifest-<run_id>.json`) with command/options, env flags,
@@ -167,7 +139,7 @@
 - Expanded run manifest payloads with runtime/package versions, resolved key paths, and per-TSA
   artifact existence inventory for `vdyp_runs`, `vdyp_curve_events`, `vdyp_stdout`, and
   `vdyp_stderr`.
-- Phase 1 checklist reconciled with implemented NF1-NF8 deliverables; remaining work now starts at
+- Phase 1 checklist reconciled with completed runtime hardening deliverables; remaining work now starts at
   Phase 2 modularization tasks (P2.1+).
 - Started Phase 2 module extraction with new reusable helpers under `src/femic/pipeline/`:
   `io.py`, `vdyp.py`, `tsa.py`, and `plots.py`.
@@ -193,3 +165,8 @@
 - Extracted pre-VDYP checkpoint serialization/load/save into `femic.pipeline.pre_vdyp` and wired
   `01a_run-tsa.py` to use these helpers (`load_vdyp_prep_checkpoint`,
   `save_vdyp_prep_checkpoint`), creating the first notebook-derived data-stage seam for `P2.2a`.
+- Removed the old `Next Focus` section after merging non-redundant items into phase checklists to
+  keep a single source of planning truth.
+- Extracted VDYP input/output table I/O helpers into `femic.pipeline.vdyp_io` and refactored
+  `01a_run-tsa.py` to call these shared functions (`write_vdyp_infiles_plylyr`,
+  `import_vdyp_tables`), extending `P2.2a` modularization with explicit helper seams.
