@@ -1,0 +1,5 @@
+{"event":"vdyp_curve","status":"ok","stage":"toe_fit","first_age":1.0,"first_volume":1e-6,"context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_curve","status":"ok","stage":"toe_fit","first_age":1.0,"first_volume":1e-6,"context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_curve_fit","status":"warning","stage":"curve_input","reason":"missing_vdyp_output","context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_curve_fit","status":"warning","stage":"tipsy_input","reason":"no_species_candidates","context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_curve","status":"ok","stage":"body_input","first_age":1.0,"first_volume":1e-6,"context":{"tsa":"08","run_id":"fixture"}}

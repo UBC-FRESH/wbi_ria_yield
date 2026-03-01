@@ -1,0 +1,8 @@
+{
+  "max_curve_warnings": 2,
+  "max_first_point_mismatches": 0,
+  "max_curve_parse_errors": 0,
+  "max_run_parse_errors": 0,
+  "min_curve_events": 5,
+  "min_run_events": 6
+}

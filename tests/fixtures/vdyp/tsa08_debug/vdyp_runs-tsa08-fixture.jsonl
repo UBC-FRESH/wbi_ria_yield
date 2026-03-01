@@ -1,0 +1,6 @@
+{"event":"vdyp_run","status":"dispatch","phase":"bootstrap","context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_run","status":"start","phase":"bootstrap","context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_run","status":"ok","phase":"bootstrap","context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_run","status":"dispatch","phase":"bootstrap","context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_run","status":"start","phase":"bootstrap","context":{"tsa":"08","run_id":"fixture"}}
+{"event":"vdyp_run","status":"empty_output","phase":"bootstrap","context":{"tsa":"08","run_id":"fixture"}}

@@ -9,7 +9,11 @@ import typer
 from rich.console import Console
 
 from femic import __version__
-from femic.vdyp.reporting import summarize_vdyp_logs
+from femic.vdyp.reporting import (
+    VdypWarningBudget,
+    evaluate_warning_budget,
+    summarize_vdyp_logs,
+)
 from femic.workflows.legacy import run_data_prep
 
 app = typer.Typer(
@@ -121,6 +125,42 @@ VDYP_MISMATCH_LIMIT_OPTION = typer.Option(
     10,
     "--mismatch-limit",
     help="Maximum number of first-point mismatches to print.",
+)
+VDYP_MAX_CURVE_WARNINGS_OPTION = typer.Option(
+    None,
+    "--max-curve-warnings",
+    help="Fail if curve warning events exceed this threshold.",
+    show_default=False,
+)
+VDYP_MAX_FIRST_POINT_MISMATCHES_OPTION = typer.Option(
+    None,
+    "--max-first-point-mismatches",
+    help="Fail if first-point mismatches exceed this threshold.",
+    show_default=False,
+)
+VDYP_MAX_CURVE_PARSE_ERRORS_OPTION = typer.Option(
+    None,
+    "--max-curve-parse-errors",
+    help="Fail if curve-log parse errors exceed this threshold.",
+    show_default=False,
+)
+VDYP_MAX_RUN_PARSE_ERRORS_OPTION = typer.Option(
+    None,
+    "--max-run-parse-errors",
+    help="Fail if run-log parse errors exceed this threshold.",
+    show_default=False,
+)
+VDYP_MIN_CURVE_EVENTS_OPTION = typer.Option(
+    None,
+    "--min-curve-events",
+    help="Fail if curve events are below this threshold.",
+    show_default=False,
+)
+VDYP_MIN_RUN_EVENTS_OPTION = typer.Option(
+    None,
+    "--min-run-events",
+    help="Fail if run events are below this threshold.",
+    show_default=False,
 )
 
 
@@ -283,6 +323,12 @@ def vdyp_report(
     expected_first_volume: float = VDYP_EXPECTED_FIRST_VOLUME_OPTION,
     tolerance: float = VDYP_TOLERANCE_OPTION,
     mismatch_limit: int = VDYP_MISMATCH_LIMIT_OPTION,
+    max_curve_warnings: int | None = VDYP_MAX_CURVE_WARNINGS_OPTION,
+    max_first_point_mismatches: int | None = VDYP_MAX_FIRST_POINT_MISMATCHES_OPTION,
+    max_curve_parse_errors: int | None = VDYP_MAX_CURVE_PARSE_ERRORS_OPTION,
+    max_run_parse_errors: int | None = VDYP_MAX_RUN_PARSE_ERRORS_OPTION,
+    min_curve_events: int | None = VDYP_MIN_CURVE_EVENTS_OPTION,
+    min_run_events: int | None = VDYP_MIN_RUN_EVENTS_OPTION,
 ) -> None:
     summary = summarize_vdyp_logs(
         curve_log_path=curve_log,
@@ -322,6 +368,21 @@ def vdyp_report(
     console.print(f"Run status counts: {summary.run_status_counts}")
     console.print(f"Run phase counts: {summary.run_phase_counts}")
     console.print(f"Run TSA counts: {summary.run_tsa_counts}")
+
+    budget = VdypWarningBudget(
+        max_curve_warnings=max_curve_warnings,
+        max_first_point_mismatches=max_first_point_mismatches,
+        max_curve_parse_errors=max_curve_parse_errors,
+        max_run_parse_errors=max_run_parse_errors,
+        min_curve_events=min_curve_events,
+        min_run_events=min_run_events,
+    )
+    violations = evaluate_warning_budget(summary, budget)
+    if violations:
+        console.print("[red]VDYP warning-budget violations:[/red]")
+        for violation in violations:
+            console.print(f"- {violation}")
+        raise typer.Exit(code=1)
 
 
 @tsa_app.command("run")
