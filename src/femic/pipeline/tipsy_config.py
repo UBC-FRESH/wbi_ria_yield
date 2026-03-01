@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 import yaml
@@ -108,6 +109,7 @@ def _resolve_assignment_value(
     leading_species: str,
     bec: str,
     forest_type: int | None,
+    species_ranked: list[tuple[str, float]],
 ) -> Any:
     if not isinstance(value, str):
         return value
@@ -119,6 +121,18 @@ def _resolve_assignment_value(
         return bec
     if value == "$forest_type":
         return forest_type
+    match_spp = re.fullmatch(r"\$species_rank_(\d+)_tipsy", value)
+    if match_spp:
+        idx = int(match_spp.group(1)) - 1
+        if 0 <= idx < len(species_ranked):
+            return _normalize_species_for_tipsy(species_ranked[idx][0])
+        return None
+    match_pct = re.fullmatch(r"\$species_pct_(\d+)", value)
+    if match_pct:
+        idx = int(match_pct.group(1)) - 1
+        if 0 <= idx < len(species_ranked):
+            return species_ranked[idx][1]
+        return None
     return value
 
 
@@ -128,6 +142,7 @@ def _resolve_assignment_block(
     leading_species: str,
     bec: str,
     forest_type: int | None,
+    species_ranked: list[tuple[str, float]],
 ) -> dict[str, Any]:
     return {
         key: _resolve_assignment_value(
@@ -135,6 +150,7 @@ def _resolve_assignment_block(
             leading_species=leading_species,
             bec=bec,
             forest_type=forest_type,
+            species_ranked=species_ranked,
         )
         for key, value in block.items()
     }
@@ -152,6 +168,11 @@ def build_tipsy_params_from_config(
     ss = au_data["ss"]
     species = au_data["species"]
     leading_species = list(species.keys())[0]
+    species_ranked = [
+        (str(spp), float(species[spp]["pct"]))
+        for spp in species
+        if isinstance(species[spp], Mapping) and "pct" in species[spp]
+    ]
     bec = ss.BEC_ZONE_CODE.iloc[0]
     forest_type: int | None = None
     if "forest_type" in ss:
@@ -169,6 +190,7 @@ def build_tipsy_params_from_config(
                     leading_species=leading_species,
                     bec=bec,
                     forest_type=forest_type,
+                    species_ranked=species_ranked,
                 )
             )
     for rule in config["rules"]:
@@ -185,6 +207,7 @@ def build_tipsy_params_from_config(
                         leading_species=leading_species,
                         bec=bec,
                         forest_type=forest_type,
+                        species_ranked=species_ranked,
                     )
                 )
             break

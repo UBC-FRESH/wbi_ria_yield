@@ -167,3 +167,45 @@ def test_repo_tsa24_config_loads_and_matches_essf_spruce_rule() -> None:
     assert out["e"]["Density"] == 1500
     assert out["e"]["SPP_1"] == "SE"
     assert out["f"]["GW_1"] == 18
+
+
+def test_repo_tsa40_config_uses_ranked_species_tokens() -> None:
+    cfg = load_tipsy_tsa_config(tsa_code="40", config_dir="config/tipsy")
+    assert cfg is not None
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [17.0], "BEC_ZONE_CODE": ["BWBS"]}),
+        "species": {"SX": {"pct": 60.0}, "AT": {"pct": 30.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [17.0], "% Stk": [89.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=6001,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["SPP_1"] == "SW"
+    assert out["e"]["PCT_1"] == 60.0
+    assert out["e"]["SPP_2"] == "AT"
+    assert out["e"]["PCT_2"] == 30.0
+    assert out["f"]["Density"] == 1167
+
+
+def test_repo_tsa41_config_matches_forest_type_rule() -> None:
+    cfg = load_tipsy_tsa_config(tsa_code="41", config_dir="config/tipsy")
+    assert cfg is not None
+    au_data = {
+        "ss": pd.DataFrame(
+            {"SITE_INDEX": [16.0], "BEC_ZONE_CODE": ["BWBS"], "forest_type": [1]}
+        ),
+        "species": {"PL": {"pct": 65.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [16.0], "% Stk": [93.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=6002,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["SPP_1"] == "PL"
+    assert out["f"]["PCT_2"] == 27
+    assert out["e"]["Density"] == 1219

@@ -152,3 +152,6 @@
   and rule selection.
 - Added `config/tipsy/tsa24.yaml` with BEC-dependent branching (`SBS`/`ESSF`) translated from legacy
   rules, and expanded tests to validate repo-backed TSA24 rule selection for both branches.
+- Added `config/tipsy/tsa40.yaml` and `config/tipsy/tsa41.yaml`, completing migration coverage for
+  the original five TSA rule examples, and extended config token resolution with
+  `$species_rank_<n>_tipsy` / `$species_pct_<n>` for dynamic species composition assignments.

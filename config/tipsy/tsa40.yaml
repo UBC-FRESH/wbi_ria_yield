@@ -1,0 +1,117 @@
+schema_version: 1
+tsa_code: "40"
+
+metadata:
+  source_tsr:
+    - title: "TSA 40 TSR data package"
+      year: null
+      url: ""
+      notes: "Translated from legacy tipsy_params_tsa40 implementation."
+  author: ""
+  created_utc: ""
+  notes: ""
+
+defaults:
+  e:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    SPP_1: "$species_rank_1_tipsy"
+    SPP_2: "$species_rank_2_tipsy"
+    SPP_3: "$species_rank_3_tipsy"
+    SPP_4: "$species_rank_4_tipsy"
+    SPP_5: "$species_rank_5_tipsy"
+    PCT_1: "$species_pct_1"
+    PCT_2: "$species_pct_2"
+    PCT_3: "$species_pct_3"
+    PCT_4: "$species_pct_4"
+    PCT_5: "$species_pct_5"
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+    Util_DBH_cm: 17.5
+  f:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    SPP_1: "$species_rank_1_tipsy"
+    SPP_2: "$species_rank_2_tipsy"
+    SPP_3: "$species_rank_3_tipsy"
+    SPP_4: "$species_rank_4_tipsy"
+    SPP_5: "$species_rank_5_tipsy"
+    PCT_1: "$species_pct_1"
+    PCT_2: "$species_pct_2"
+    PCT_3: "$species_pct_3"
+    PCT_4: "$species_pct_4"
+    PCT_5: "$species_pct_5"
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+    Util_DBH_cm: 17.5
+
+rules:
+  - id: "bwbs_aspen"
+    when:
+      bec_in: ["BWBS"]
+      leading_species_in: ["AC", "ACB", "ACT", "AD", "AT", "AX"]
+    assign:
+      e: {Regen_Delay: 2, Density: 4444, Regen_Method: "N"}
+      f: {Regen_Delay: 2, Density: 4444, Regen_Method: "N"}
+  - id: "bwbs_pine"
+    when:
+      bec_in: ["BWBS"]
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e: {Regen_Delay: 2, Density: 1348, Util_DBH_cm: 12.5}
+      f: {Regen_Delay: 2, Density: 1348, Util_DBH_cm: 12.5}
+  - id: "bwbs_spruce"
+    when:
+      bec_in: ["BWBS"]
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
+    assign:
+      e: {Regen_Delay: 1, Density: 1167}
+      f: {Regen_Delay: 1, Density: 1167}
+  - id: "essf_pine"
+    when:
+      bec_in: ["ESSF"]
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e: {Regen_Delay: 2, Density: 1186, Util_DBH_cm: 12.5}
+      f: {Regen_Delay: 2, Density: 1186, Util_DBH_cm: 12.5}
+  - id: "essf_spruce"
+    when:
+      bec_in: ["ESSF"]
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
+    assign:
+      e: {Regen_Delay: 1, Density: 1070}
+      f: {Regen_Delay: 1, Density: 1070}
+  - id: "swb_pine"
+    when:
+      bec_in: ["SWB"]
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e: {Regen_Delay: 2, Density: 1338, Util_DBH_cm: 12.5}
+      f: {Regen_Delay: 2, Density: 1338, Util_DBH_cm: 12.5}
+  - id: "swb_spruce"
+    when:
+      bec_in: ["SWB"]
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
+    assign:
+      e: {Regen_Delay: 2, Density: 1338}
+      f: {Regen_Delay: 2, Density: 1338}

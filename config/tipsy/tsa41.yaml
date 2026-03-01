@@ -1,0 +1,162 @@
+schema_version: 1
+tsa_code: "41"
+
+metadata:
+  source_tsr:
+    - title: "TSA 41 TSR data package"
+      year: null
+      url: ""
+      notes: "Translated from legacy tipsy_params_tsa41 implementation."
+  author: ""
+  created_utc: ""
+  notes: ""
+
+defaults:
+  e:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Delay: 1
+    Regen_Method: "P"
+    Proportion: 1
+    SPP_5: null
+    PCT_5: null
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+  f:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Delay: 1
+    Regen_Method: "P"
+    Proportion: 1
+    SPP_5: null
+    PCT_5: null
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+
+rules:
+  - id: "spruce_forest_type_1"
+    when:
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
+      forest_type_in: [1]
+    assign:
+      e:
+        SPP_1: "SW"
+        SPP_2: "PL"
+        SPP_3: "BL"
+        SPP_4: "AT"
+        PCT_1: 63
+        PCT_2: 21
+        PCT_3: 17
+        PCT_4: 1
+        Density: 1335
+        Util_DBH_cm: 17.5
+      f:
+        SPP_1: "SW"
+        SPP_2: "PL"
+        SPP_3: "BL"
+        SPP_4: "AT"
+        PCT_1: 63
+        PCT_2: 21
+        PCT_3: 17
+        PCT_4: 1
+        Density: 1335
+        Util_DBH_cm: 17.5
+  - id: "fir_forest_type_1"
+    when:
+      leading_species_in: ["B", "BA", "BB", "BG", "BL", "BM", "BP"]
+      forest_type_in: [1]
+    assign:
+      e:
+        SPP_1: "SW"
+        SPP_2: "BL"
+        SPP_3: "PL"
+        SPP_4: "AT"
+        PCT_1: 64
+        PCT_2: 29
+        PCT_3: 6
+        PCT_4: 1
+        Density: 1064
+        Util_DBH_cm: 17.5
+      f:
+        SPP_1: "SW"
+        SPP_2: "BL"
+        SPP_3: "PL"
+        SPP_4: "AT"
+        PCT_1: 64
+        PCT_2: 29
+        PCT_3: 6
+        PCT_4: 1
+        Density: 1064
+        Util_DBH_cm: 17.5
+  - id: "pine_forest_type_1"
+    when:
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+      forest_type_in: [1]
+    assign:
+      e:
+        SPP_1: "PL"
+        SPP_2: "SW"
+        SPP_3: "BL"
+        SPP_4: "AT"
+        PCT_1: 63
+        PCT_2: 27
+        PCT_3: 8
+        PCT_4: 2
+        Density: 1219
+        Util_DBH_cm: 12.5
+      f:
+        SPP_1: "PL"
+        SPP_2: "SW"
+        SPP_3: "BL"
+        SPP_4: "AT"
+        PCT_1: 63
+        PCT_2: 27
+        PCT_3: 8
+        PCT_4: 2
+        Density: 1219
+        Util_DBH_cm: 12.5
+  - id: "aspen_forest_type_4"
+    when:
+      leading_species_in: ["AC", "ACB", "ACT", "AD", "AT", "AX"]
+      forest_type_in: [4]
+    assign:
+      e:
+        SPP_1: "AT"
+        SPP_2: null
+        SPP_3: null
+        SPP_4: null
+        PCT_1: 100
+        PCT_2: null
+        PCT_3: null
+        PCT_4: null
+        Density: 3134
+        Regen_Method: "N"
+        Util_DBH_cm: 12.5
+      f:
+        SPP_1: "AT"
+        SPP_2: null
+        SPP_3: null
+        SPP_4: null
+        PCT_1: 100
+        PCT_2: null
+        PCT_3: null
+        PCT_4: null
+        Density: 3134
+        Regen_Method: "N"
+        Util_DBH_cm: 12.5

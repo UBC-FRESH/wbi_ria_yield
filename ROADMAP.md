@@ -202,3 +202,7 @@
 - Added third migrated TSA config `config/tipsy/tsa24.yaml` capturing BEC-dependent branching
   (`SBS` vs `ESSF`) and species-group-specific assignment blocks; expanded config tests to verify
   both SBS and ESSF rule-path selection from repo-backed YAML.
+- Added `config/tipsy/tsa40.yaml` and `config/tipsy/tsa41.yaml`, completing migration of all five
+  legacy TSA rule dict examples into YAML. Extended token support for ranked species placeholders
+  (`$species_rank_<n>_tipsy`, `$species_pct_<n>`) and added tests covering dynamic species token
+  expansion and forest-type-conditioned rule selection.
