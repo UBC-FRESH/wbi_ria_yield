@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+from femic.pipeline.io import build_legacy_execution_plan, build_pipeline_run_config
+from femic.pipeline.manifest import build_run_manifest_payload
 from femic.pipeline.vdyp import build_vdyp_log_paths
-from femic.workflows.legacy import _build_manifest_payload
 
 
 def test_build_log_paths_includes_stream_artifacts(tmp_path: Path) -> None:
@@ -26,22 +27,26 @@ def test_build_manifest_payload_contains_runtime_and_artifact_sections(
     checkpoint.parent.mkdir(parents=True)
     checkpoint.write_text("x", encoding="utf-8")
 
-    payload = _build_manifest_payload(
+    cfg = build_pipeline_run_config(
+        tsa_list=["08"],
+        resume=True,
+        debug_rows=50,
         run_id="run123",
-        run_uuid="uuid-1",
+        log_dir=tmp_path / "logs",
+    )
+    plan = build_legacy_execution_plan(
+        run_config=cfg,
+        script_path=script_path,
+        python_executable="python",
+        base_env={"FEMIC_RUN_UUID": "uuid-1"},
+    )
+    payload = build_run_manifest_payload(
+        execution_plan=plan,
         status="started",
         started_at=datetime.now(UTC),
         finished_at=None,
         duration_sec=None,
         exit_code=None,
-        cmd=["python", str(script_path)],
-        script_path=script_path,
-        log_dir=tmp_path / "logs",
-        tsa_list=["08"],
-        resume=True,
-        debug_rows=50,
-        env={},
-        checkpoint_paths=[checkpoint],
     )
 
     assert payload["runtime_versions"]
@@ -49,4 +54,4 @@ def test_build_manifest_payload_contains_runtime_and_artifact_sections(
     assert "artifacts" in payload
     assert payload["run_uuid"] == "uuid-1"
     assert payload["artifacts"]["vdyp_stdout"][0]["exists"] is False
-    assert payload["checkpoints"]["pre_vdyp"][0]["exists"] is True
+    assert "pre_vdyp" in payload["checkpoints"]

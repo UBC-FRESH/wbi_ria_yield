@@ -12,6 +12,11 @@ from femic.pipeline.io import (
     load_default_tsa_list,
     normalize_tsa_list,
 )
+from femic.pipeline.manifest import (
+    build_run_manifest_payload,
+    collect_runtime_versions,
+    write_manifest,
+)
 from femic.pipeline.stages import StageResult, run_legacy_subprocess
 from femic.pipeline.vdyp import build_vdyp_log_paths
 
@@ -23,6 +28,9 @@ __all__ = [
     "StageResult",
     "build_legacy_execution_plan",
     "run_legacy_subprocess",
+    "build_run_manifest_payload",
+    "collect_runtime_versions",
+    "write_manifest",
     "build_vdyp_log_paths",
     "build_pipeline_run_config",
     "load_default_tsa_list",

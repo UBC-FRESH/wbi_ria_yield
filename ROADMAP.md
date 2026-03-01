@@ -187,3 +187,6 @@
   and `01a_run-tsa.py`.
 - Extracted subprocess execution into `femic.pipeline.stages.run_legacy_subprocess(...)`, giving a
   reusable stage executor and reducing orchestration logic inside the legacy workflow wrapper.
+- Extracted run-manifest assembly into `femic.pipeline.manifest` (`build_run_manifest_payload`,
+  `collect_runtime_versions`, `write_manifest`) so workflow wrapper orchestration now calls reusable
+  stage + manifest builders instead of maintaining these internals inline.

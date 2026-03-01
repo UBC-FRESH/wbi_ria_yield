@@ -114,3 +114,5 @@
   path/checkpoint resolution is centralized in pipeline helpers instead of inline workflow code.
 - Added `femic.pipeline.stages.run_legacy_subprocess` plus tests, and refactored legacy workflow
   to call this stage executor for filtered subprocess streaming.
+- Added `femic.pipeline.manifest` and moved run-manifest payload/version/file-write logic out of
+  workflow wrapper into reusable helpers; updated workflow/tests to consume the new module.
