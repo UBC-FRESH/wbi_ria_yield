@@ -101,3 +101,8 @@
   per-TSA artifact existence inventory for run/curve JSONL and stdout/stderr artifacts.
 - Reconciled Phase 1 roadmap checkboxes with completed NF deliverables so roadmap state now shows
   Phase 1 complete and Phase 2 as the active next implementation frontier.
+- Started Phase 2 extraction by adding `src/femic/pipeline/{io,vdyp,tsa,plots}.py` helper modules.
+- Updated legacy workflow to consume shared pipeline helpers for TSA normalization, run-path
+  resolution, and VDYP artifact log path construction.
+- Added unit tests for new pipeline helper modules and updated manifest tests to import shared
+  VDYP path builders.

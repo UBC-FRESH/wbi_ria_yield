@@ -25,7 +25,7 @@
 
 ## Phase 2: Modularize Pipeline Steps
 - [ ] P2.1 Extract reusable modules from `00_data-prep.py`
-- [ ] P2.1a Split into `io.py`, `vdyp.py`, `tsa.py`, `plots.py`
+- [x] P2.1a Split into `io.py`, `vdyp.py`, `tsa.py`, `plots.py`
 - [ ] P2.1b Remove global state and pass explicit parameters
 - [ ] P2.2 Convert notebook logic into functions
 - [ ] P2.2a Wrap major steps with clear inputs/outputs
@@ -169,3 +169,7 @@
   `vdyp_stderr`.
 - Phase 1 checklist reconciled with implemented NF1-NF8 deliverables; remaining work now starts at
   Phase 2 modularization tasks (P2.1+).
+- Started Phase 2 module extraction with new reusable helpers under `src/femic/pipeline/`:
+  `io.py`, `vdyp.py`, `tsa.py`, and `plots.py`.
+- Legacy workflow manifest/log path logic now consumes `femic.pipeline` helpers, reducing
+  duplicated logic and defining a stable seam for future migration out of notebook-generated code.

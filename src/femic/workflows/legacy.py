@@ -14,14 +14,11 @@ from importlib import metadata
 from pathlib import Path
 from typing import Iterable
 
+from femic.pipeline.io import normalize_tsa_list, resolve_run_paths
+from femic.pipeline.vdyp import build_vdyp_log_paths
+
 
 _LEGACY_NOISE_LINES = {"Error in sys.excepthook:", "Original exception was:"}
-
-
-def _normalize_tsa_list(tsa_list: Iterable[str] | None) -> list[str]:
-    if not tsa_list:
-        return ["08", "16", "24", "40", "41"]
-    return [str(tsa).zfill(2) for tsa in tsa_list]
 
 
 def _write_manifest(path: Path, payload: dict[str, object]) -> None:
@@ -56,31 +53,6 @@ def _collect_runtime_versions() -> dict[str, object]:
     }
 
 
-def _build_log_paths(
-    resolved_log_dir: Path, resolved_tsas: list[str], resolved_run_id: str
-) -> dict[str, list[str]]:
-    return {
-        "vdyp_runs": [
-            str(resolved_log_dir / f"vdyp_runs-tsa{tsa}-{resolved_run_id}.jsonl")
-            for tsa in resolved_tsas
-        ],
-        "vdyp_curve_events": [
-            str(
-                resolved_log_dir / f"vdyp_curve_events-tsa{tsa}-{resolved_run_id}.jsonl"
-            )
-            for tsa in resolved_tsas
-        ],
-        "vdyp_stdout": [
-            str(resolved_log_dir / f"vdyp_stdout-tsa{tsa}-{resolved_run_id}.log")
-            for tsa in resolved_tsas
-        ],
-        "vdyp_stderr": [
-            str(resolved_log_dir / f"vdyp_stderr-tsa{tsa}-{resolved_run_id}.log")
-            for tsa in resolved_tsas
-        ],
-    }
-
-
 def _build_manifest_payload(
     *,
     run_id: str,
@@ -99,7 +71,7 @@ def _build_manifest_payload(
     env: dict[str, str],
     checkpoint_paths: list[Path],
 ) -> dict[str, object]:
-    log_paths = _build_log_paths(log_dir, tsa_list, run_id)
+    log_paths = build_vdyp_log_paths(log_dir, tsa_list, run_id)
     return {
         "run_id": run_id,
         "run_uuid": run_uuid,
@@ -159,9 +131,10 @@ def run_data_prep(
     if not script_path.exists():
         raise FileNotFoundError(f"Expected legacy script at {script_path}")
 
-    resolved_tsas = _normalize_tsa_list(tsa_list)
+    run_paths = resolve_run_paths(script_path=script_path, log_dir=log_dir)
+    resolved_tsas = normalize_tsa_list(tsa_list)
     resolved_run_id = run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    resolved_log_dir = (log_dir or Path("vdyp_io/logs")).resolve()
+    resolved_log_dir = run_paths.log_dir
     manifest_path = resolved_log_dir / f"run_manifest-{resolved_run_id}.json"
     started_at = datetime.now(timezone.utc)
     monotonic_started = time.monotonic()

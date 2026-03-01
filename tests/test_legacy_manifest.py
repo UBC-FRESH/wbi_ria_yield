@@ -3,11 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
-from femic.workflows.legacy import _build_log_paths, _build_manifest_payload
+from femic.pipeline.vdyp import build_vdyp_log_paths
+from femic.workflows.legacy import _build_manifest_payload
 
 
 def test_build_log_paths_includes_stream_artifacts(tmp_path: Path) -> None:
-    log_paths = _build_log_paths(tmp_path, ["08", "16"], "run123")
+    log_paths = build_vdyp_log_paths(tmp_path, ["08", "16"], "run123")
 
     assert len(log_paths["vdyp_runs"]) == 2
     assert len(log_paths["vdyp_curve_events"]) == 2
