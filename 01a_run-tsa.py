@@ -1826,8 +1826,9 @@ def run_tsa():
         "41": tipsy_params_tsa41,
     }
     tipsy_config_dir = os.environ.get("FEMIC_TIPSY_CONFIG_DIR", "config/tipsy")
+    tipsy_use_legacy = os.environ.get("FEMIC_TIPSY_USE_LEGACY", "0") == "1"
     tipsy_cfg = load_tipsy_tsa_config(tsa_code=tsa, config_dir=tipsy_config_dir)
-    if tipsy_cfg is not None:
+    if tipsy_cfg is not None and not tipsy_use_legacy:
         tipsy_cfg_path = tipsy_config_path_for_tsa(tsa, tipsy_config_dir)
         print("using config-driven TIPSY rules from", tipsy_cfg_path)
 
@@ -1840,6 +1841,13 @@ def run_tsa():
             )
 
         tipsy_params_dispatch[tsa] = _tipsy_params_from_config
+    elif tipsy_use_legacy:
+        print("using legacy in-code TIPSY rules (FEMIC_TIPSY_USE_LEGACY=1)")
+    else:
+        raise RuntimeError(
+            f"Missing TIPSY config for TSA {tsa} in {tipsy_config_dir}. "
+            "Provide config/tipsy/tsaXX.yaml or set FEMIC_TIPSY_USE_LEGACY=1."
+        )
 
     # --- cell 55 ---
     min_operable_years = 50

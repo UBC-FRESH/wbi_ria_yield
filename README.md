@@ -87,3 +87,5 @@ Draft config scaffolding for this handoff now lives in `config/tipsy/`:
 If a TSA config file exists at `config/tipsy/tsaXX.yaml` (or `.yml`), the legacy
 run path now prefers that config for TIPSY parameter generation for that TSA.
 Override the config directory with `FEMIC_TIPSY_CONFIG_DIR`.
+If no config exists for a requested TSA, the run now fails fast unless
+`FEMIC_TIPSY_USE_LEGACY=1` is set.

@@ -206,3 +206,6 @@
   legacy TSA rule dict examples into YAML. Extended token support for ranked species placeholders
   (`$species_rank_<n>_tipsy`, `$species_pct_<n>`) and added tests covering dynamic species token
   expansion and forest-type-conditioned rule selection.
+- Switched legacy runner default to require config-driven TIPSY rules for TSA processing; missing
+  config now fails fast with explicit guidance, while `FEMIC_TIPSY_USE_LEGACY=1` preserves an
+  opt-in escape hatch to legacy in-code rule dispatch during transition.

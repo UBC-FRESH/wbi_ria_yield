@@ -209,3 +209,9 @@ def test_repo_tsa41_config_matches_forest_type_rule() -> None:
     assert out["e"]["SPP_1"] == "PL"
     assert out["f"]["PCT_2"] == 27
     assert out["e"]["Density"] == 1219
+
+
+def test_repo_all_legacy_tsa_configs_present() -> None:
+    for tsa in ("08", "16", "24", "40", "41"):
+        payload = load_tipsy_tsa_config(tsa_code=tsa, config_dir="config/tipsy")
+        assert payload is not None

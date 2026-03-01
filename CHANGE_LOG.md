@@ -155,3 +155,6 @@
 - Added `config/tipsy/tsa40.yaml` and `config/tipsy/tsa41.yaml`, completing migration coverage for
   the original five TSA rule examples, and extended config token resolution with
   `$species_rank_<n>_tipsy` / `$species_pct_<n>` for dynamic species composition assignments.
+- Updated legacy run behavior to require TSA YAML TIPSY config by default (fail-fast when missing),
+  with explicit opt-in fallback to legacy in-code dispatch via `FEMIC_TIPSY_USE_LEGACY=1`; added a
+  test asserting all five migrated TSA config files are present/loadable.
