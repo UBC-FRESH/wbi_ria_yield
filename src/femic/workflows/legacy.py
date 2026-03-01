@@ -1,0 +1,176 @@
+"""Legacy workflow wrappers for FEMIC."""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import time
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Iterable
+
+
+_LEGACY_NOISE_LINES = {"Error in sys.excepthook:", "Original exception was:"}
+
+
+def _normalize_tsa_list(tsa_list: Iterable[str] | None) -> list[str]:
+    if not tsa_list:
+        return ["08", "16", "24", "40", "41"]
+    return [str(tsa).zfill(2) for tsa in tsa_list]
+
+
+def _write_manifest(path: Path, payload: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+
+def run_data_prep(
+    tsa_list: Iterable[str] | None,
+    *,
+    resume: bool,
+    debug_rows: int | None = None,
+    run_id: str | None = None,
+    log_dir: Path | None = None,
+) -> Path:
+    """Run the legacy 00_data-prep.py workflow in a subprocess with overrides."""
+
+    script_path = Path(__file__).resolve().parents[3] / "00_data-prep.py"
+    if not script_path.exists():
+        raise FileNotFoundError(f"Expected legacy script at {script_path}")
+
+    resolved_tsas = _normalize_tsa_list(tsa_list)
+    resolved_run_id = run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    resolved_log_dir = (log_dir or Path("vdyp_io/logs")).resolve()
+    manifest_path = resolved_log_dir / f"run_manifest-{resolved_run_id}.json"
+    started_at = datetime.now(timezone.utc)
+    monotonic_started = time.monotonic()
+    checkpoint_paths = [Path(f"data/vdyp_prep-tsa{tsa}.pkl") for tsa in resolved_tsas]
+
+    env = dict(os.environ)
+    env["FEMIC_TSA_LIST"] = ",".join(resolved_tsas)
+    env["FEMIC_RESUME"] = "1" if resume else "0"
+    if debug_rows:
+        env["FEMIC_DEBUG_ROWS"] = str(debug_rows)
+    else:
+        env.pop("FEMIC_DEBUG_ROWS", None)
+    env["FEMIC_RUN_ID"] = resolved_run_id
+    env["FEMIC_LOG_DIR"] = str(resolved_log_dir)
+    env.setdefault("FEMIC_RUN_UUID", str(uuid.uuid4()))
+
+    _write_manifest(
+        manifest_path,
+        {
+            "run_id": resolved_run_id,
+            "status": "started",
+            "started_at_utc": started_at.isoformat(),
+            "finished_at_utc": None,
+            "duration_sec": None,
+            "exit_code": None,
+            "command": [sys.executable, str(script_path)],
+            "script_path": str(script_path),
+            "cwd": str(script_path.parent),
+            "log_dir": str(resolved_log_dir),
+            "tsa_list": resolved_tsas,
+            "options": {"resume": resume, "debug_rows": debug_rows},
+            "env_flags": {
+                "FEMIC_DISABLE_IPP": env.get("FEMIC_DISABLE_IPP"),
+                "FEMIC_USE_SWIFTER": env.get("FEMIC_USE_SWIFTER"),
+                "FEMIC_SKIP_STANDS_SHP": env.get("FEMIC_SKIP_STANDS_SHP"),
+                "FEMIC_EXTERNAL_DATA_ROOT": env.get("FEMIC_EXTERNAL_DATA_ROOT"),
+            },
+            "log_paths": {
+                "vdyp_runs": [
+                    str(
+                        resolved_log_dir / f"vdyp_runs-tsa{tsa}-{resolved_run_id}.jsonl"
+                    )
+                    for tsa in resolved_tsas
+                ],
+                "vdyp_curve_events": [
+                    str(
+                        resolved_log_dir
+                        / f"vdyp_curve_events-tsa{tsa}-{resolved_run_id}.jsonl"
+                    )
+                    for tsa in resolved_tsas
+                ],
+            },
+            "checkpoints": {
+                "pre_vdyp": [
+                    {"path": str(path), "exists": path.exists()}
+                    for path in checkpoint_paths
+                ]
+            },
+        },
+    )
+
+    cmd = [sys.executable, str(script_path)]
+    process = subprocess.Popen(
+        cmd,
+        cwd=str(script_path.parent),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    assert process.stdout is not None
+    for line in process.stdout:
+        if line.strip() in _LEGACY_NOISE_LINES:
+            continue
+        sys.stdout.write(line)
+    return_code = process.wait()
+    finished_at = datetime.now(timezone.utc)
+    duration_sec = round(time.monotonic() - monotonic_started, 3)
+    _write_manifest(
+        manifest_path,
+        {
+            "run_id": resolved_run_id,
+            "status": "ok" if return_code == 0 else "failed",
+            "started_at_utc": started_at.isoformat(),
+            "finished_at_utc": finished_at.isoformat(),
+            "duration_sec": duration_sec,
+            "exit_code": return_code,
+            "command": [sys.executable, str(script_path)],
+            "script_path": str(script_path),
+            "cwd": str(script_path.parent),
+            "log_dir": str(resolved_log_dir),
+            "tsa_list": resolved_tsas,
+            "options": {"resume": resume, "debug_rows": debug_rows},
+            "env_flags": {
+                "FEMIC_DISABLE_IPP": env.get("FEMIC_DISABLE_IPP"),
+                "FEMIC_USE_SWIFTER": env.get("FEMIC_USE_SWIFTER"),
+                "FEMIC_SKIP_STANDS_SHP": env.get("FEMIC_SKIP_STANDS_SHP"),
+                "FEMIC_EXTERNAL_DATA_ROOT": env.get("FEMIC_EXTERNAL_DATA_ROOT"),
+            },
+            "log_paths": {
+                "vdyp_runs": [
+                    str(
+                        resolved_log_dir / f"vdyp_runs-tsa{tsa}-{resolved_run_id}.jsonl"
+                    )
+                    for tsa in resolved_tsas
+                ],
+                "vdyp_curve_events": [
+                    str(
+                        resolved_log_dir
+                        / f"vdyp_curve_events-tsa{tsa}-{resolved_run_id}.jsonl"
+                    )
+                    for tsa in resolved_tsas
+                ],
+            },
+            "checkpoints": {
+                "pre_vdyp": [
+                    {"path": str(path), "exists": path.exists()}
+                    for path in checkpoint_paths
+                ]
+            },
+        },
+    )
+    if return_code != 0:
+        raise RuntimeError(
+            f"Legacy workflow failed with exit code {return_code}: {' '.join(cmd)}"
+        )
+    return manifest_path
