@@ -182,3 +182,8 @@
 - Added `LegacyExecutionPlan` builder in pipeline I/O helpers; legacy runner now consumes a fully
   resolved execution plan (command, env, run IDs, paths, checkpoints) instead of constructing this
   state inline.
+- `P2.1b` is now partially complete at the CLI/workflow boundary (typed run config + execution
+  plan); remaining `P2.1b` work is to eliminate notebook-script globals inside `00_data-prep.py`
+  and `01a_run-tsa.py`.
+- Extracted subprocess execution into `femic.pipeline.stages.run_legacy_subprocess(...)`, giving a
+  reusable stage executor and reducing orchestration logic inside the legacy workflow wrapper.

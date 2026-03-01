@@ -12,6 +12,7 @@ from femic.pipeline.io import (
     load_default_tsa_list,
     normalize_tsa_list,
 )
+from femic.pipeline.stages import StageResult, run_legacy_subprocess
 from femic.pipeline.vdyp import build_vdyp_log_paths
 
 __all__ = [
@@ -19,7 +20,9 @@ __all__ = [
     "FALLBACK_DEFAULT_TSA_LIST",
     "LegacyExecutionPlan",
     "PipelineRunConfig",
+    "StageResult",
     "build_legacy_execution_plan",
+    "run_legacy_subprocess",
     "build_vdyp_log_paths",
     "build_pipeline_run_config",
     "load_default_tsa_list",

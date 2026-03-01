@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import platform
 import os
-import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -13,6 +12,7 @@ from importlib import metadata
 from pathlib import Path
 
 from femic.pipeline.io import PipelineRunConfig, build_legacy_execution_plan
+from femic.pipeline.stages import run_legacy_subprocess
 from femic.pipeline.vdyp import build_vdyp_log_paths
 
 
@@ -162,21 +162,11 @@ def run_data_prep(
         ),
     )
 
-    process = subprocess.Popen(
-        cmd,
-        cwd=str(script_path.parent),
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
+    stage_result = run_legacy_subprocess(
+        execution_plan=execution_plan,
+        drop_lines=_LEGACY_NOISE_LINES,
     )
-    assert process.stdout is not None
-    for line in process.stdout:
-        if line.strip() in _LEGACY_NOISE_LINES:
-            continue
-        sys.stdout.write(line)
-    return_code = process.wait()
+    return_code = stage_result.exit_code
     finished_at = datetime.now(timezone.utc)
     duration_sec = round(time.monotonic() - monotonic_started, 3)
     _write_manifest(

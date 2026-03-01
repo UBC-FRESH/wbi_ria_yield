@@ -112,3 +112,5 @@
   typed run settings from CLI to legacy workflow wrapper (first `P2.1b` seam).
 - Added `LegacyExecutionPlan` and `build_legacy_execution_plan` so legacy subprocess command/env/
   path/checkpoint resolution is centralized in pipeline helpers instead of inline workflow code.
+- Added `femic.pipeline.stages.run_legacy_subprocess` plus tests, and refactored legacy workflow
+  to call this stage executor for filtered subprocess streaming.
