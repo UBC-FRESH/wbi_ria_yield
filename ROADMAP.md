@@ -177,3 +177,6 @@
   `append_jsonl`, `append_text`) and refactored `01a_run-tsa.py` to consume them.
 - Rewired manifest-facing VDYP artifact path builder (`femic.pipeline.vdyp.build_vdyp_log_paths`)
   to reuse `build_tsa_vdyp_log_paths`, removing duplicated filename logic between modules.
+- Extracted VDYP curve-building helpers into `femic.pipeline.vdyp_curves` and refactored
+  `01a_run-tsa.py` to call shared `process_vdyp_out(...)` logic (including toe-fit retry/fallback
+  and quasi-origin anchor behavior) through a reusable module seam.

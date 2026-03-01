@@ -15,6 +15,7 @@ def run_tsa():
     )
     from femic.pipeline.vdyp_sampling import nsamples_from_curves
     from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
+    from femic.pipeline.vdyp_curves import process_vdyp_out
 
     if "vdyp_out_cache" not in globals():
         vdyp_out_cache = None
@@ -483,17 +484,6 @@ def run_tsa():
             run_id=femic_run_id,
             vdyp_io_dirname=vdyp_io_dirname,
         )[kind]
-
-    def _prepend_quasi_origin_point(x, y, age=1, epsilon=1e-6):
-        x = np.asarray(x)
-        y = np.asarray(y)
-        if x.size == 0:
-            return np.array([age]), np.array([epsilon])
-        if x[0] == age:
-            y = y.copy()
-            y[0] = epsilon
-            return x, y
-        return np.insert(x, 0, age), np.insert(y, 0, epsilon)
 
     # --- cell 36 ---
     def run_vdyp(
@@ -1069,248 +1059,6 @@ def run_tsa():
     def fit_func2_bounds_func(x):
         return (0, 0), (10, 10)
 
-    def fill_curve_left(
-        x,
-        y,
-        toe_fit_func=toe_fit_func,
-        toe_fit_func_bounds_func=toe_fit_func_bounds_func,
-        maxfev=10000,
-        transpose_df=True,
-        force_origin=True,
-        skip=10,
-        dx=0,
-        di=20,
-        cy=0.1,
-    ):
-        x_, y_ = x, y
-        i1 = np.argmax(y_ > 0.0)
-        x__ = np.concatenate(([1 + dx, 2 + dx, 3 + dx], x_[i1 + skip : i1 + skip + di]))
-        y__ = np.concatenate(([1 * cy, 2 * cy, 3 * cy], y_[i1 + skip : i1 + skip + di]))
-        bounds = toe_fit_func_bounds_func(x__)
-        popt, _ = curve_fit(toe_fit_func, x__, y__, maxfev=maxfev, bounds=bounds)
-        y_[: i1 + skip] = toe_fit_func(x_[: i1 + skip], *popt)
-        return x_, y_, (i1 + skip, popt)
-
-    def plot_smoothed_toe(x, y, verbose=False, force_origin=True, skijump_skip=15):
-        x_, y_, i1, popt = fill_curve_left(
-            testf1, x, y, force_origin=force_origin, skijump_skip=skijump_skip
-        )
-        # return x_, y_, popt
-        fig, ax = plt.subplots(figsize=(10, 6))
-        plt.plot(x_, y_, linestyle="--", color="b")
-        plt.plot(x_[i1:], y_[i1:], linewidth=2, color="r")
-        plt.xlim([0, 300])
-        plt.ylim([0, 600])
-        if verbose:
-            print(popt)
-        return fig, ax
-
-    def process_vdyp_out(
-        vdyp_out,
-        volume_flavour="Vdwb",
-        min_age=30,
-        max_age=300,
-        sigma_c1=10,
-        sigma_c2=0.4,
-        dx_c1=0.5,
-        dx_c2=10,
-        window=10,
-        skip1=0,
-        skip2=30,
-        maxfev=100000,
-        body_fit_func=body_fit_func,
-        body_fit_func_bounds_func=body_fit_func_bounds_func,
-        toe_fit_func=toe_fit_func,
-        toe_fit_func_bounds_func=toe_fit_func_bounds_func,
-        curve_context=None,
-        curve_log_path=None,
-        max_skip_increase=30,
-        skip_step=1,
-    ):
-        if curve_log_path is None:
-            curve_log_path = _tsa_log_path("curve", "vdyp_io")
-        base_event = {
-            "event": "vdyp_curve",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "context": dict(curve_context) if curve_context else {},
-        }
-
-        def _fallback_curve(stage, reason, x_raw=None, y_raw=None, exc=None):
-            if x_raw is None or y_raw is None:
-                x_arr = np.array([], dtype=float)
-                y_arr = np.array([], dtype=float)
-            else:
-                x_arr = np.asarray(x_raw, dtype=float)
-                y_arr = np.asarray(y_raw, dtype=float)
-                mask = np.isfinite(x_arr) & np.isfinite(y_arr) & (y_arr > 0)
-                x_arr, y_arr = x_arr[mask], y_arr[mask]
-                if x_arr.size:
-                    order = np.argsort(x_arr)
-                    x_arr, y_arr = x_arr[order], y_arr[order]
-                    x_arr, unique_idx = np.unique(x_arr, return_index=True)
-                    y_arr = y_arr[unique_idx]
-            x_arr, y_arr = _prepend_quasi_origin_point(x_arr, y_arr)
-            payload = {
-                **base_event,
-                "status": "warning",
-                "stage": stage,
-                "reason": reason,
-                "first_age": float(x_arr[0]),
-                "first_volume": float(y_arr[0]),
-            }
-            if exc is not None:
-                payload["error"] = str(exc)
-                payload["error_type"] = type(exc).__name__
-                payload["traceback"] = traceback.format_exc()
-            append_jsonl(curve_log_path, payload)
-            return x_arr, y_arr
-
-        vdyp_tables = [
-            v for v in vdyp_out.values() if type(v) == pd.core.frame.DataFrame
-        ]
-        if not vdyp_tables:
-            return _fallback_curve(
-                "preflight",
-                "empty_vdyp_out",
-            )
-        vdyp_out_concat = pd.concat(vdyp_tables)
-        c_all = vdyp_out_concat.groupby(level="Age")[volume_flavour].median()
-        c_all = c_all[c_all > 0]
-        c = c_all[c_all.index >= min_age]
-        if c.empty:
-            return _fallback_curve(
-                "body_input",
-                "no_points_after_min_age_filter",
-                c_all.index.values,
-                c_all.values,
-            )
-        x = c.index.values
-        y = c.rolling(window=window, center=True).median().values
-        x, y = x[y > 0], y[y > 0]
-        x, y = x[skip1:], y[skip1:]
-        if len(x) < 4 or len(y) < 4:
-            return _fallback_curve(
-                "body_input",
-                "insufficient_points_after_smoothing",
-                c.index.values,
-                c.values,
-            )
-        y_mai = pd.Series(y / x, x)
-        if y_mai.empty:
-            return _fallback_curve(
-                "body_input",
-                "empty_mai_series",
-                c.index.values,
-                c.values,
-            )
-        y_mai_max_age = y_mai.idxmax()
-        sigma = (np.abs(x - y_mai_max_age) + sigma_c1) ** sigma_c2
-        try:
-            popt, pcov = curve_fit(
-                body_fit_func,
-                x,
-                y,
-                bounds=body_fit_func_bounds_func(x),
-                maxfev=maxfev,
-                sigma=sigma,
-            )
-        except Exception as exc:
-            append_jsonl(
-                curve_log_path,
-                {
-                    **base_event,
-                    "status": "error",
-                    "stage": "body_fit",
-                    "error": str(exc),
-                    "traceback": traceback.format_exc(),
-                    "vdyp_tables": int(len(vdyp_tables)),
-                    "x_points": int(len(x)),
-                    "skip1": int(skip1),
-                    "skip2": int(skip2),
-                },
-            )
-            return _fallback_curve(
-                "body_fit_fallback",
-                "body_fit_exception",
-                x,
-                y,
-                exc=exc,
-            )
-        x = np.array(range(1, max_age))
-        y = fit_func1(x, *popt)
-        dx = max(0, dx_c1 * popt[2] - dx_c2)
-        print(dx)
-        used_skip = None
-        last_exc = None
-        for extra in range(0, max_skip_increase + 1, skip_step):
-            try:
-                x_, y_, (i1, popt_toe) = fill_curve_left(
-                    x.copy(),
-                    y.copy(),
-                    skip=skip2 + extra,
-                    dx=dx,
-                    maxfev=maxfev,
-                    toe_fit_func=toe_fit_func,
-                    toe_fit_func_bounds_func=toe_fit_func_bounds_func,
-                )
-                used_skip = skip2 + extra
-                if used_skip != skip2:
-                    print(f"vdyp toe fit: increased skip to {used_skip}")
-                print(popt_toe)
-                x_, y_ = _prepend_quasi_origin_point(x_, y_)
-                append_jsonl(
-                    curve_log_path,
-                    {
-                        **base_event,
-                        "status": "ok",
-                        "stage": "toe_fit",
-                        "vdyp_tables": int(len(vdyp_tables)),
-                        "x_points": int(len(x)),
-                        "skip1": int(skip1),
-                        "skip2": int(skip2),
-                        "skip_used": int(used_skip),
-                        "dx": float(dx),
-                        "first_age": float(x_[0]),
-                        "first_volume": float(y_[0]),
-                    },
-                )
-                return x_, y_
-            except Exception as exc:
-                last_exc = exc
-                continue
-        append_jsonl(
-            curve_log_path,
-            {
-                **base_event,
-                "status": "warning",
-                "stage": "toe_fit",
-                "vdyp_tables": int(len(vdyp_tables)),
-                "x_points": int(len(x)),
-                "skip1": int(skip1),
-                "skip2": int(skip2),
-                "skip_max": int(skip2 + max_skip_increase),
-                "dx": float(dx),
-                "error": str(last_exc),
-            },
-        )
-        print(
-            "vdyp toe fit failed; returning body fit curve with quasi-origin "
-            "(1, epsilon) anchor"
-        )
-        x, y = _prepend_quasi_origin_point(x, y)
-        append_jsonl(
-            curve_log_path,
-            {
-                **base_event,
-                "event": "vdyp_curve_anchor",
-                "status": "warning",
-                "stage": "quasi_origin_anchor",
-                "first_age": float(x[0]),
-                "first_volume": float(y[0]),
-            },
-        )
-        return x, y
-
     # --- cell 45 ---
     vdyp_curves_smooth_tsa_feather_path = "%s%s.feather" % (
         vdyp_curves_smooth_tsa_feather_path_prefix,
@@ -1357,7 +1105,18 @@ def run_tsa():
                         },
                     )
                     continue
-                x, y = process_vdyp_out(vdyp_out, curve_context=curve_context, **kwargs)
+                x, y = process_vdyp_out(
+                    vdyp_out,
+                    curve_fit_fn=curve_fit,
+                    body_fit_func=body_fit_func,
+                    body_fit_func_bounds_func=body_fit_func_bounds_func,
+                    toe_fit_func=toe_fit_func,
+                    toe_fit_func_bounds_func=toe_fit_func_bounds_func,
+                    log_event=lambda payload: append_jsonl(vdyp_curve_events_path, payload),
+                    message=print,
+                    curve_context=curve_context,
+                    **kwargs,
+                )
                 df = pd.DataFrame(zip(x, y), columns=["age", "volume"])
                 df = df[df.volume > 0]
                 df["stratum_code"] = sc

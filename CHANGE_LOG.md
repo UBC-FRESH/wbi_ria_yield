@@ -129,3 +129,6 @@
 - Updated `femic.pipeline.vdyp.build_vdyp_log_paths` to reuse
   `femic.pipeline.vdyp_logging.build_tsa_vdyp_log_paths`, removing duplicate VDYP artifact filename
   construction logic.
+- Added `femic.pipeline.vdyp_curves` with reusable quasi-origin anchoring, toe-fill, and
+  `process_vdyp_out` helpers; refactored `01a_run-tsa.py` to consume this module and added focused
+  unit tests for empty-input and toe-fit-fallback behavior.

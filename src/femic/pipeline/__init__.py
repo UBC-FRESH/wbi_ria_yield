@@ -29,6 +29,11 @@ from femic.pipeline.vdyp_logging import (
     resolve_run_id,
     vdyp_log_base,
 )
+from femic.pipeline.vdyp_curves import (
+    fill_curve_left,
+    prepend_quasi_origin_point,
+    process_vdyp_out,
+)
 from femic.pipeline.stages import StageResult, run_legacy_subprocess
 from femic.pipeline.vdyp_sampling import nsamples_from_curves
 from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
@@ -52,6 +57,9 @@ __all__ = [
     "build_tsa_vdyp_log_paths",
     "resolve_run_id",
     "vdyp_log_base",
+    "fill_curve_left",
+    "prepend_quasi_origin_point",
+    "process_vdyp_out",
     "import_vdyp_tables",
     "write_vdyp_infiles_plylyr",
     "nsamples_from_curves",
