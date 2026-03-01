@@ -122,3 +122,5 @@
   status/checklist tracking.
 - Added `femic.pipeline.vdyp_io` for shared VDYP infile writer and output table parser helpers,
   refactored `01a_run-tsa.py` to consume them, and added unit tests.
+- Added `femic.pipeline.vdyp_sampling.nsamples_from_curves` and refactored legacy auto-sampling
+  loop to call this helper; added focused unit tests for empty and finite-result cases.

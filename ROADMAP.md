@@ -170,3 +170,5 @@
 - Extracted VDYP input/output table I/O helpers into `femic.pipeline.vdyp_io` and refactored
   `01a_run-tsa.py` to call these shared functions (`write_vdyp_infiles_plylyr`,
   `import_vdyp_tables`), extending `P2.2a` modularization with explicit helper seams.
+- Extracted VDYP sample-size estimator into `femic.pipeline.vdyp_sampling.nsamples_from_curves`
+  and refactored the auto-sampling loop in `01a_run-tsa.py` to consume this helper.

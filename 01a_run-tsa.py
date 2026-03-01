@@ -7,6 +7,7 @@ def run_tsa():
         load_vdyp_prep_checkpoint,
         save_vdyp_prep_checkpoint,
     )
+    from femic.pipeline.vdyp_sampling import nsamples_from_curves
     from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
     if "vdyp_out_cache" not in globals():
         vdyp_out_cache = None
@@ -465,57 +466,6 @@ def run_tsa():
 
     # --- cell 30/32 ---
 
-    # --- cell 34 ---
-    def nsamples_from_curves(
-        vdyp_out,
-        col="Vdwb",
-        fit_func=body_fit_func,
-        fit_func_bounds_func=body_fit_func_bounds_func,
-        maxfev=10000,
-        confidence=95,
-        half_rel_ci=0.01,
-        window=30,
-        min_samples=10,
-        max_samples=1000,
-    ):
-        if len(vdyp_out) < min_samples:
-            return np.inf, None
-        global xxx
-
-        z = {95: 1.96}[confidence]
-        frames = [
-            v
-            for v in vdyp_out.values()
-            if isinstance(v, pd.core.frame.DataFrame) and not v.empty
-        ]
-        if not frames:
-            print("warning: VDYP bootstrap returned no valid curve tables; retrying sample")
-            return np.inf, None
-        vdyp_out_concat = pd.concat(frames)
-        c = vdyp_out_concat.groupby(level="Age")[col].median()
-        c = c[c > 0]
-        c = c[c.index >= 30]
-        x = c.index.values
-        y = c.rolling(window=window).median().values
-        x, y = x[y > 0], y[y > 0]
-        if len(x) == 0 or len(y) == 0:
-            print("warning: VDYP bootstrap produced no positive age/volume points; retrying sample")
-            return np.inf, None
-        popt, pcov = curve_fit(
-            fit_func, x, y, bounds=fit_func_bounds_func(x), maxfev=maxfev
-        )
-        y_ = fit_func(x, *popt)
-        y_mai = pd.Series(y_ / x, x)
-        y_mai_max_age = y_mai.idxmax()
-        sigma = vdyp_out_concat.groupby(level="Age")[col].std().loc[y_mai_max_age]
-        moe = c.loc[y_mai_max_age] * half_rel_ci * 2
-        nsamples = (
-            min(int((z * sigma / moe) ** 2) + 1, max_samples)
-            if not np.isnan(sigma)
-            else max_samples
-        )
-        return nsamples, (y_mai_max_age, c.loc[y_mai_max_age], moe, sigma)
-
     from datetime import datetime, timezone
     import json
     import os
@@ -874,7 +824,12 @@ def run_tsa():
                 vdyp_out_cache.update(vdyp_out)
             ss.drop(samples.index, inplace=True)
             nsamples_target, _ = nsamples_from_curves(
-                vdyp_out, confidence=confidence, half_rel_ci=half_rel_ci
+                vdyp_out,
+                curve_fit_fn=curve_fit,
+                fit_func=body_fit_func,
+                fit_func_bounds_func=body_fit_func_bounds_func,
+                confidence=confidence,
+                half_rel_ci=half_rel_ci,
             )
             nsamples_target = min(max(nsamples_target, min_samples), ss.shape[0])
             nsamples_gap = nsamples_target - len(vdyp_out)
@@ -940,7 +895,12 @@ def run_tsa():
                                 print("failed chunk", msg_id)
                 ss.drop(samples.index, inplace=True)
                 nsamples_target, _ = nsamples_from_curves(
-                    vdyp_out, confidence=confidence, half_rel_ci=half_rel_ci
+                    vdyp_out,
+                    curve_fit_fn=curve_fit,
+                    fit_func=body_fit_func,
+                    fit_func_bounds_func=body_fit_func_bounds_func,
+                    confidence=confidence,
+                    half_rel_ci=half_rel_ci,
                 )
                 nsamples_target = min(max(nsamples_target, min_samples), s.shape[0])
                 nsamples_gap = nsamples_target - len(vdyp_out)
