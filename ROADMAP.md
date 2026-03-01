@@ -176,3 +176,6 @@
 - Removed hardcoded multi-TSA defaults from new pipeline helpers; default TSA selection now reads
   from dev config (`config/dev.toml`, `[run].default_tsa_list`) with `["08"]` fallback for local
   testing.
+- Introduced explicit `PipelineRunConfig` handoff from CLI to workflow wrapper so run settings
+  (`tsa_list`, `resume`, `debug_rows`, `run_id`, `log_dir`) are passed as typed config instead of
+  loose parameters; this is the first concrete step toward `P2.1b` global-state reduction.

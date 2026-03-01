@@ -108,3 +108,5 @@
   VDYP path builders.
 - Replaced hardcoded default TSA list in pipeline helpers with dev-config-driven defaults from
   `config/dev.toml` (`[run].default_tsa_list`), using `["08"]` fallback for local testing.
+- Added `PipelineRunConfig` and `build_pipeline_run_config` so `femic run` now passes explicit
+  typed run settings from CLI to legacy workflow wrapper (first `P2.1b` seam).

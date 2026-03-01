@@ -49,10 +49,40 @@ class RunPaths:
     log_dir: Path
 
 
+@dataclass(frozen=True)
+class PipelineRunConfig:
+    """Explicit run configuration passed from CLI into workflow wrappers."""
+
+    tsa_list: list[str]
+    resume: bool
+    debug_rows: int | None = None
+    run_id: str | None = None
+    log_dir: Path | None = None
+
+
 def resolve_run_paths(*, script_path: Path, log_dir: Path | None = None) -> RunPaths:
     repo_root = script_path.parent.resolve()
     return RunPaths(
         repo_root=repo_root,
         script_path=script_path.resolve(),
         log_dir=(log_dir or (repo_root / "vdyp_io" / "logs")).resolve(),
+    )
+
+
+def build_pipeline_run_config(
+    *,
+    tsa_list: Iterable[str] | None,
+    resume: bool,
+    debug_rows: int | None = None,
+    run_id: str | None = None,
+    log_dir: Path | None = None,
+) -> PipelineRunConfig:
+    """Create normalized pipeline run configuration from CLI inputs."""
+    normalized_tsas = normalize_tsa_list(tsa_list)
+    return PipelineRunConfig(
+        tsa_list=normalized_tsas,
+        resume=resume,
+        debug_rows=debug_rows,
+        run_id=run_id,
+        log_dir=log_dir,
     )

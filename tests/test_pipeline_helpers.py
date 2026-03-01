@@ -4,6 +4,7 @@ from pathlib import Path
 
 from femic.pipeline.io import (
     FALLBACK_DEFAULT_TSA_LIST,
+    build_pipeline_run_config,
     load_default_tsa_list,
     normalize_tsa_list,
     resolve_run_paths,
@@ -48,3 +49,17 @@ def test_plot_path_helpers() -> None:
     assert pdf_path == Path("plots/strata-tsa08.pdf")
     assert png_path == Path("plots/strata-tsa08.png")
     assert tipsy_path == Path("plots/tipsy_vdyp_tsa08-23005.png")
+
+
+def test_build_pipeline_run_config_normalizes_tsa_values() -> None:
+    cfg = build_pipeline_run_config(
+        tsa_list=[8, "16"],
+        resume=True,
+        debug_rows=25,
+        run_id="test123",
+        log_dir=Path("vdyp_io/logs"),
+    )
+    assert cfg.tsa_list == ["08", "16"]
+    assert cfg.resume is True
+    assert cfg.debug_rows == 25
+    assert cfg.run_id == "test123"

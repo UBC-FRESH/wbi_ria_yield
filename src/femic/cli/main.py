@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 
 from femic import __version__
+from femic.pipeline.io import build_pipeline_run_config
 from femic.vdyp.reporting import (
     VdypWarningBudget,
     evaluate_warning_budget,
@@ -279,13 +280,14 @@ def run_all(
             f"Running legacy pipeline for tsa={tsa or 'ALL'} (resume={resume}, "
             f"debug_rows={debug_rows}, run_id={run_id or 'AUTO'})"
         )
-    manifest_path = run_data_prep(
-        tsa,
+    run_config = build_pipeline_run_config(
+        tsa_list=tsa,
         resume=resume,
         debug_rows=debug_rows,
         run_id=run_id,
         log_dir=log_dir,
     )
+    manifest_path = run_data_prep(run_config)
     console.print(f"Run manifest: {manifest_path}")
 
 

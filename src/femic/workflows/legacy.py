@@ -12,9 +12,8 @@ import uuid
 from datetime import datetime, timezone
 from importlib import metadata
 from pathlib import Path
-from typing import Iterable
 
-from femic.pipeline.io import normalize_tsa_list, resolve_run_paths
+from femic.pipeline.io import PipelineRunConfig, resolve_run_paths
 from femic.pipeline.vdyp import build_vdyp_log_paths
 
 
@@ -118,12 +117,7 @@ def _build_manifest_payload(
 
 
 def run_data_prep(
-    tsa_list: Iterable[str] | None,
-    *,
-    resume: bool,
-    debug_rows: int | None = None,
-    run_id: str | None = None,
-    log_dir: Path | None = None,
+    run_config: PipelineRunConfig,
 ) -> Path:
     """Run the legacy 00_data-prep.py workflow in a subprocess with overrides."""
 
@@ -131,9 +125,11 @@ def run_data_prep(
     if not script_path.exists():
         raise FileNotFoundError(f"Expected legacy script at {script_path}")
 
-    run_paths = resolve_run_paths(script_path=script_path, log_dir=log_dir)
-    resolved_tsas = normalize_tsa_list(tsa_list)
-    resolved_run_id = run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run_paths = resolve_run_paths(script_path=script_path, log_dir=run_config.log_dir)
+    resolved_tsas = run_config.tsa_list
+    resolved_run_id = run_config.run_id or datetime.now(timezone.utc).strftime(
+        "%Y%m%dT%H%M%SZ"
+    )
     resolved_log_dir = run_paths.log_dir
     manifest_path = resolved_log_dir / f"run_manifest-{resolved_run_id}.json"
     started_at = datetime.now(timezone.utc)
@@ -142,9 +138,9 @@ def run_data_prep(
 
     env = dict(os.environ)
     env["FEMIC_TSA_LIST"] = ",".join(resolved_tsas)
-    env["FEMIC_RESUME"] = "1" if resume else "0"
-    if debug_rows:
-        env["FEMIC_DEBUG_ROWS"] = str(debug_rows)
+    env["FEMIC_RESUME"] = "1" if run_config.resume else "0"
+    if run_config.debug_rows:
+        env["FEMIC_DEBUG_ROWS"] = str(run_config.debug_rows)
     else:
         env.pop("FEMIC_DEBUG_ROWS", None)
     env["FEMIC_RUN_ID"] = resolved_run_id
@@ -168,8 +164,8 @@ def run_data_prep(
             script_path=script_path,
             log_dir=resolved_log_dir,
             tsa_list=resolved_tsas,
-            resume=resume,
-            debug_rows=debug_rows,
+            resume=run_config.resume,
+            debug_rows=run_config.debug_rows,
             env=env,
             checkpoint_paths=checkpoint_paths,
         ),
@@ -206,8 +202,8 @@ def run_data_prep(
             script_path=script_path,
             log_dir=resolved_log_dir,
             tsa_list=resolved_tsas,
-            resume=resume,
-            debug_rows=debug_rows,
+            resume=run_config.resume,
+            debug_rows=run_config.debug_rows,
             env=env,
             checkpoint_paths=checkpoint_paths,
         ),
