@@ -7,8 +7,15 @@ def run_tsa():
         load_vdyp_prep_checkpoint,
         save_vdyp_prep_checkpoint,
     )
+    from femic.pipeline.vdyp_logging import (
+        append_jsonl,
+        append_text,
+        build_tsa_vdyp_log_paths,
+        resolve_run_id,
+    )
     from femic.pipeline.vdyp_sampling import nsamples_from_curves
     from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
+
     if "vdyp_out_cache" not in globals():
         vdyp_out_cache = None
     _curve_fit_local = globals().get("_curve_fit")
@@ -427,10 +434,7 @@ def run_tsa():
         try:
             results[tsa] = load_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path)
             prep_loaded = True
-            print(
-                "resume: loaded pre-VDYP checkpoint (%s strata)"
-                % len(results[tsa])
-            )
+            print("resume: loaded pre-VDYP checkpoint (%s strata)" % len(results[tsa]))
         except Exception as exc:
             print(
                 "resume: failed to load pre-VDYP checkpoint %s: %s"
@@ -467,54 +471,18 @@ def run_tsa():
     # --- cell 30/32 ---
 
     from datetime import datetime, timezone
-    import json
-    import os
     from pathlib import Path
     import time
     import traceback
 
-    def _append_jsonl(path, payload):
-        try:
-            path = Path(path)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with path.open("a", encoding="utf-8") as fh:
-                fh.write(json.dumps(payload, default=str) + "\n")
-        except Exception as exc:
-            print(f"warning: failed to write VDYP log to {path}: {exc}")
+    femic_run_id = resolve_run_id()
 
-    def _append_text(path, text):
-        try:
-            path = Path(path)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with path.open("a", encoding="utf-8") as fh:
-                fh.write(text)
-        except Exception as exc:
-            print(f"warning: failed to write VDYP text log to {path}: {exc}")
-
-    def _vdyp_log_base(vdyp_io_dirname):
-        log_dir_env = os.environ.get("FEMIC_LOG_DIR")
-        if log_dir_env:
-            return Path(log_dir_env)
-        return Path(vdyp_io_dirname) / "logs"
-
-    femic_run_id = os.environ.get("FEMIC_RUN_ID")
-    if not femic_run_id:
-        femic_run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-
-    def _vdyp_run_log_path(vdyp_io_dirname="vdyp_io"):
-        return _vdyp_log_base(vdyp_io_dirname) / f"vdyp_runs-tsa{tsa}-{femic_run_id}.jsonl"
-
-    def _vdyp_curve_log_path(vdyp_io_dirname="vdyp_io"):
-        return (
-            _vdyp_log_base(vdyp_io_dirname)
-            / f"vdyp_curve_events-tsa{tsa}-{femic_run_id}.jsonl"
-        )
-
-    def _vdyp_stdout_log_path(vdyp_io_dirname="vdyp_io"):
-        return _vdyp_log_base(vdyp_io_dirname) / f"vdyp_stdout-tsa{tsa}-{femic_run_id}.log"
-
-    def _vdyp_stderr_log_path(vdyp_io_dirname="vdyp_io"):
-        return _vdyp_log_base(vdyp_io_dirname) / f"vdyp_stderr-tsa{tsa}-{femic_run_id}.log"
+    def _tsa_log_path(kind, vdyp_io_dirname="vdyp_io"):
+        return build_tsa_vdyp_log_paths(
+            tsa_code=tsa,
+            run_id=femic_run_id,
+            vdyp_io_dirname=vdyp_io_dirname,
+        )[kind]
 
     def _prepend_quasi_origin_point(x, y, age=1, epsilon=1e-6):
         x = np.asarray(x)
@@ -575,11 +543,11 @@ def run_tsa():
             )
         Path(vdyp_io_dirname).mkdir(parents=True, exist_ok=True)
         if vdyp_log_path is None:
-            vdyp_log_path = _vdyp_run_log_path(vdyp_io_dirname)
+            vdyp_log_path = _tsa_log_path("run", vdyp_io_dirname)
         if vdyp_stdout_log_path is None:
-            vdyp_stdout_log_path = _vdyp_stdout_log_path(vdyp_io_dirname)
+            vdyp_stdout_log_path = _tsa_log_path("stdout", vdyp_io_dirname)
         if vdyp_stderr_log_path is None:
-            vdyp_stderr_log_path = _vdyp_stderr_log_path(vdyp_io_dirname)
+            vdyp_stderr_log_path = _tsa_log_path("stderr", vdyp_io_dirname)
         base_context = dict(log_context) if log_context else {}
         base_context.setdefault("tsa", tsa)
         base_context.setdefault("run_id", femic_run_id)
@@ -602,7 +570,7 @@ def run_tsa():
             feature_ids = list(feature_ids)
             feature_count = len(feature_ids)
             if feature_count == 0:
-                _append_jsonl(
+                append_jsonl(
                     vdyp_log_path,
                     {
                         "event": "vdyp_run",
@@ -631,7 +599,7 @@ def run_tsa():
             vdyp_lyr_csv = vdyp_lyr_csv_.name.split("/")[-1]
             vdyp_out_txt = vdyp_out_txt_.name.split("/")[-1]
             vdyp_err_txt = vdyp_err_txt_.name.split("/")[-1]
-            _append_jsonl(
+            append_jsonl(
                 vdyp_log_path,
                 {
                     "event": "vdyp_run",
@@ -679,7 +647,7 @@ def run_tsa():
                     text=True,
                 )
             except subprocess.TimeoutExpired as exc:
-                _append_jsonl(
+                append_jsonl(
                     vdyp_log_path,
                     {
                         "event": "vdyp_run",
@@ -698,7 +666,7 @@ def run_tsa():
                 )
                 return {}
             except Exception as exc:
-                _append_jsonl(
+                append_jsonl(
                     vdyp_log_path,
                     {
                         "event": "vdyp_run",
@@ -722,9 +690,9 @@ def run_tsa():
                 f"cmd: {args}\n"
             )
             if result.stdout:
-                _append_text(vdyp_stdout_log_path, stream_header + result.stdout + "\n")
+                append_text(vdyp_stdout_log_path, stream_header + result.stdout + "\n")
             if result.stderr:
-                _append_text(vdyp_stderr_log_path, stream_header + result.stderr + "\n")
+                append_text(vdyp_stderr_log_path, stream_header + result.stderr + "\n")
             err_size = err_path.stat().st_size if err_path.exists() else 0
             err_head = ""
             if err_size:
@@ -737,7 +705,7 @@ def run_tsa():
                     "./%s/%s" % (vdyp_io_dirname, vdyp_out_txt)
                 )
             except Exception as exc:
-                _append_jsonl(
+                append_jsonl(
                     vdyp_log_path,
                     {
                         "event": "vdyp_run",
@@ -766,7 +734,7 @@ def run_tsa():
             vdyp_lyr_csv_.close()
             vdyp_out_txt_.close()
             vdyp_err_txt_.close()
-            _append_jsonl(
+            append_jsonl(
                 vdyp_log_path,
                 {
                     "event": "vdyp_run",
@@ -917,8 +885,8 @@ def run_tsa():
             assert False  # bad nsamples value
         return vdyp_out
 
-    vdyp_run_events_path = _vdyp_run_log_path("vdyp_io")
-    vdyp_curve_events_path = _vdyp_curve_log_path("vdyp_io")
+    vdyp_run_events_path = _tsa_log_path("run", "vdyp_io")
+    vdyp_curve_events_path = _tsa_log_path("curve", "vdyp_io")
 
     # --- cell 38 ---
     # if not os.path.isfile(vdyp_ply_feather_path):
@@ -960,7 +928,7 @@ def run_tsa():
                     "stratum_code": sc,
                     "si_level": si_level,
                 }
-                _append_jsonl(
+                append_jsonl(
                     vdyp_run_events_path,
                     {
                         "event": "vdyp_run",
@@ -983,7 +951,7 @@ def run_tsa():
                         log_context=run_context,
                     )
                 except Exception as exc:
-                    _append_jsonl(
+                    append_jsonl(
                         vdyp_run_events_path,
                         {
                             "event": "vdyp_run",
@@ -1040,7 +1008,7 @@ def run_tsa():
                     "stratum_code": sc,
                     "si_level": si_level,
                 }
-                _append_jsonl(
+                append_jsonl(
                     vdyp_run_events_path,
                     {
                         "event": "vdyp_run",
@@ -1063,7 +1031,7 @@ def run_tsa():
                         log_context=run_context,
                     )
                 except Exception as exc:
-                    _append_jsonl(
+                    append_jsonl(
                         vdyp_run_events_path,
                         {
                             "event": "vdyp_run",
@@ -1160,7 +1128,7 @@ def run_tsa():
         skip_step=1,
     ):
         if curve_log_path is None:
-            curve_log_path = _vdyp_curve_log_path("vdyp_io")
+            curve_log_path = _tsa_log_path("curve", "vdyp_io")
         base_event = {
             "event": "vdyp_curve",
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -1194,7 +1162,7 @@ def run_tsa():
                 payload["error"] = str(exc)
                 payload["error_type"] = type(exc).__name__
                 payload["traceback"] = traceback.format_exc()
-            _append_jsonl(curve_log_path, payload)
+            append_jsonl(curve_log_path, payload)
             return x_arr, y_arr
 
         vdyp_tables = [
@@ -1247,7 +1215,7 @@ def run_tsa():
                 sigma=sigma,
             )
         except Exception as exc:
-            _append_jsonl(
+            append_jsonl(
                 curve_log_path,
                 {
                     **base_event,
@@ -1290,7 +1258,7 @@ def run_tsa():
                     print(f"vdyp toe fit: increased skip to {used_skip}")
                 print(popt_toe)
                 x_, y_ = _prepend_quasi_origin_point(x_, y_)
-                _append_jsonl(
+                append_jsonl(
                     curve_log_path,
                     {
                         **base_event,
@@ -1310,7 +1278,7 @@ def run_tsa():
             except Exception as exc:
                 last_exc = exc
                 continue
-        _append_jsonl(
+        append_jsonl(
             curve_log_path,
             {
                 **base_event,
@@ -1330,7 +1298,7 @@ def run_tsa():
             "(1, epsilon) anchor"
         )
         x, y = _prepend_quasi_origin_point(x, y)
-        _append_jsonl(
+        append_jsonl(
             curve_log_path,
             {
                 **base_event,
@@ -1377,7 +1345,7 @@ def run_tsa():
                 vdyp_out = vdyp_results.get(tsa, {}).get(stratumi, {}).get(si_level)
                 if not isinstance(vdyp_out, dict) or len(vdyp_out) == 0:
                     print("  missing vdyp results for", sc, si_level)
-                    _append_jsonl(
+                    append_jsonl(
                         vdyp_curve_events_path,
                         {
                             "event": "vdyp_curve_fit",
@@ -2205,7 +2173,7 @@ def run_tsa():
             if not species_map:
                 if verbose:
                     print("  ", si_level, "no species candidates after filtering")
-                _append_jsonl(
+                append_jsonl(
                     vdyp_curve_events_path,
                     {
                         "event": "vdyp_curve_fit",
@@ -2259,7 +2227,7 @@ def run_tsa():
             if not isinstance(vdyp_result, dict):
                 if verbose:
                     print("    missing vdyp result table for", sc, si_level)
-                _append_jsonl(
+                append_jsonl(
                     vdyp_curve_events_path,
                     {
                         "event": "vdyp_curve_fit",

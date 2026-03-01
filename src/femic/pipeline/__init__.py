@@ -22,6 +22,13 @@ from femic.pipeline.pre_vdyp import (
     save_vdyp_prep_checkpoint,
     serialize_vdyp_prep_payload,
 )
+from femic.pipeline.vdyp_logging import (
+    append_jsonl,
+    append_text,
+    build_tsa_vdyp_log_paths,
+    resolve_run_id,
+    vdyp_log_base,
+)
 from femic.pipeline.stages import StageResult, run_legacy_subprocess
 from femic.pipeline.vdyp_sampling import nsamples_from_curves
 from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
@@ -40,6 +47,11 @@ __all__ = [
     "load_vdyp_prep_checkpoint",
     "save_vdyp_prep_checkpoint",
     "serialize_vdyp_prep_payload",
+    "append_jsonl",
+    "append_text",
+    "build_tsa_vdyp_log_paths",
+    "resolve_run_id",
+    "vdyp_log_base",
     "import_vdyp_tables",
     "write_vdyp_infiles_plylyr",
     "nsamples_from_curves",

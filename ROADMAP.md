@@ -172,3 +172,6 @@
   `import_vdyp_tables`), extending `P2.2a` modularization with explicit helper seams.
 - Extracted VDYP sample-size estimator into `femic.pipeline.vdyp_sampling.nsamples_from_curves`
   and refactored the auto-sampling loop in `01a_run-tsa.py` to consume this helper.
+- Extracted run-id/log-path resolution and append helpers into
+  `femic.pipeline.vdyp_logging` (`resolve_run_id`, `build_tsa_vdyp_log_paths`,
+  `append_jsonl`, `append_text`) and refactored `01a_run-tsa.py` to consume them.
