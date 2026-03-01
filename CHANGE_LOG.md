@@ -110,3 +110,5 @@
   `config/dev.toml` (`[run].default_tsa_list`), using `["08"]` fallback for local testing.
 - Added `PipelineRunConfig` and `build_pipeline_run_config` so `femic run` now passes explicit
   typed run settings from CLI to legacy workflow wrapper (first `P2.1b` seam).
+- Added `LegacyExecutionPlan` and `build_legacy_execution_plan` so legacy subprocess command/env/
+  path/checkpoint resolution is centralized in pipeline helpers instead of inline workflow code.

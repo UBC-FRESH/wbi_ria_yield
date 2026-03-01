@@ -8,12 +8,11 @@ import os
 import subprocess
 import sys
 import time
-import uuid
 from datetime import datetime, timezone
 from importlib import metadata
 from pathlib import Path
 
-from femic.pipeline.io import PipelineRunConfig, resolve_run_paths
+from femic.pipeline.io import PipelineRunConfig, build_legacy_execution_plan
 from femic.pipeline.vdyp import build_vdyp_log_paths
 
 
@@ -125,30 +124,22 @@ def run_data_prep(
     if not script_path.exists():
         raise FileNotFoundError(f"Expected legacy script at {script_path}")
 
-    run_paths = resolve_run_paths(script_path=script_path, log_dir=run_config.log_dir)
-    resolved_tsas = run_config.tsa_list
-    resolved_run_id = run_config.run_id or datetime.now(timezone.utc).strftime(
-        "%Y%m%dT%H%M%SZ"
+    execution_plan = build_legacy_execution_plan(
+        run_config=run_config,
+        script_path=script_path,
+        python_executable=sys.executable,
+        base_env=os.environ,
     )
-    resolved_log_dir = run_paths.log_dir
-    manifest_path = resolved_log_dir / f"run_manifest-{resolved_run_id}.json"
+    resolved_tsas = execution_plan.tsa_list
+    resolved_run_id = execution_plan.run_id
+    resolved_log_dir = execution_plan.run_paths.log_dir
+    manifest_path = execution_plan.manifest_path
     started_at = datetime.now(timezone.utc)
     monotonic_started = time.monotonic()
-    checkpoint_paths = [Path(f"data/vdyp_prep-tsa{tsa}.pkl") for tsa in resolved_tsas]
-
-    env = dict(os.environ)
-    env["FEMIC_TSA_LIST"] = ",".join(resolved_tsas)
-    env["FEMIC_RESUME"] = "1" if run_config.resume else "0"
-    if run_config.debug_rows:
-        env["FEMIC_DEBUG_ROWS"] = str(run_config.debug_rows)
-    else:
-        env.pop("FEMIC_DEBUG_ROWS", None)
-    env["FEMIC_RUN_ID"] = resolved_run_id
-    env["FEMIC_LOG_DIR"] = str(resolved_log_dir)
-    env.setdefault("FEMIC_RUN_UUID", str(uuid.uuid4()))
-    run_uuid = env["FEMIC_RUN_UUID"]
-
-    cmd = [sys.executable, str(script_path)]
+    checkpoint_paths = execution_plan.checkpoint_paths
+    env = execution_plan.env
+    run_uuid = execution_plan.run_uuid
+    cmd = execution_plan.cmd
 
     _write_manifest(
         manifest_path,

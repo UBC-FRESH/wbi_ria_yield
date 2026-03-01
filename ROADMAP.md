@@ -179,3 +179,6 @@
 - Introduced explicit `PipelineRunConfig` handoff from CLI to workflow wrapper so run settings
   (`tsa_list`, `resume`, `debug_rows`, `run_id`, `log_dir`) are passed as typed config instead of
   loose parameters; this is the first concrete step toward `P2.1b` global-state reduction.
+- Added `LegacyExecutionPlan` builder in pipeline I/O helpers; legacy runner now consumes a fully
+  resolved execution plan (command, env, run IDs, paths, checkpoints) instead of constructing this
+  state inline.

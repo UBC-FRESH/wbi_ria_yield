@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 import tomllib
-from typing import Iterable
+from typing import Iterable, Mapping
+import uuid
 
 
 DEFAULT_DEV_CONFIG_PATH = Path("config/dev.toml")
@@ -60,6 +62,21 @@ class PipelineRunConfig:
     log_dir: Path | None = None
 
 
+@dataclass(frozen=True)
+class LegacyExecutionPlan:
+    """Fully resolved execution inputs for legacy subprocess runs."""
+
+    script_path: Path
+    run_paths: RunPaths
+    run_id: str
+    run_uuid: str
+    tsa_list: list[str]
+    manifest_path: Path
+    checkpoint_paths: list[Path]
+    env: dict[str, str]
+    cmd: list[str]
+
+
 def resolve_run_paths(*, script_path: Path, log_dir: Path | None = None) -> RunPaths:
     repo_root = script_path.parent.resolve()
     return RunPaths(
@@ -85,4 +102,45 @@ def build_pipeline_run_config(
         debug_rows=debug_rows,
         run_id=run_id,
         log_dir=log_dir,
+    )
+
+
+def build_legacy_execution_plan(
+    *,
+    run_config: PipelineRunConfig,
+    script_path: Path,
+    python_executable: str,
+    base_env: Mapping[str, str],
+) -> LegacyExecutionPlan:
+    """Resolve all command/env/path details needed to execute the legacy script."""
+    run_paths = resolve_run_paths(script_path=script_path, log_dir=run_config.log_dir)
+    run_id = run_config.run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    manifest_path = run_paths.log_dir / f"run_manifest-{run_id}.json"
+    checkpoint_paths = [
+        Path(f"data/vdyp_prep-tsa{tsa}.pkl") for tsa in run_config.tsa_list
+    ]
+
+    env = dict(base_env)
+    env["FEMIC_TSA_LIST"] = ",".join(run_config.tsa_list)
+    env["FEMIC_RESUME"] = "1" if run_config.resume else "0"
+    if run_config.debug_rows:
+        env["FEMIC_DEBUG_ROWS"] = str(run_config.debug_rows)
+    else:
+        env.pop("FEMIC_DEBUG_ROWS", None)
+    env["FEMIC_RUN_ID"] = run_id
+    env["FEMIC_LOG_DIR"] = str(run_paths.log_dir)
+    env.setdefault("FEMIC_RUN_UUID", str(uuid.uuid4()))
+    run_uuid = env["FEMIC_RUN_UUID"]
+
+    cmd = [python_executable, str(script_path)]
+    return LegacyExecutionPlan(
+        script_path=script_path,
+        run_paths=run_paths,
+        run_id=run_id,
+        run_uuid=run_uuid,
+        tsa_list=run_config.tsa_list,
+        manifest_path=manifest_path,
+        checkpoint_paths=checkpoint_paths,
+        env=env,
+        cmd=cmd,
     )

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from femic.pipeline.io import (
     FALLBACK_DEFAULT_TSA_LIST,
+    build_legacy_execution_plan,
     build_pipeline_run_config,
     load_default_tsa_list,
     normalize_tsa_list,
@@ -63,3 +64,33 @@ def test_build_pipeline_run_config_normalizes_tsa_values() -> None:
     assert cfg.resume is True
     assert cfg.debug_rows == 25
     assert cfg.run_id == "test123"
+
+
+def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> None:
+    script_path = tmp_path / "00_data-prep.py"
+    script_path.write_text("# test\n", encoding="utf-8")
+    cfg = build_pipeline_run_config(
+        tsa_list=["8", "24"],
+        resume=False,
+        debug_rows=100,
+        run_id="runabc",
+        log_dir=tmp_path / "logs",
+    )
+
+    plan = build_legacy_execution_plan(
+        run_config=cfg,
+        script_path=script_path,
+        python_executable="/usr/bin/python3",
+        base_env={},
+    )
+
+    assert plan.run_id == "runabc"
+    assert plan.tsa_list == ["08", "24"]
+    assert (
+        plan.manifest_path == (tmp_path / "logs" / "run_manifest-runabc.json").resolve()
+    )
+    assert plan.env["FEMIC_TSA_LIST"] == "08,24"
+    assert plan.env["FEMIC_RESUME"] == "0"
+    assert plan.env["FEMIC_DEBUG_ROWS"] == "100"
+    assert plan.env["FEMIC_RUN_ID"] == "runabc"
+    assert plan.cmd == ["/usr/bin/python3", str(script_path)]
