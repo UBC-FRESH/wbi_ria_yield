@@ -193,3 +193,6 @@
   (`load_tipsy_tsa_config`, `validate_tipsy_tsa_config`, `build_tipsy_params_from_config`), and
   wired `01a_run-tsa.py` to prefer `config/tipsy/tsa{tsa}.yaml` (or `.yml`) when present, with
   legacy dict-based dispatch as fallback.
+- Added first concrete migrated TSA config `config/tipsy/tsa08.yaml` plus tokenized assignment
+  support (e.g., `$leading_species_tipsy`) so config rules can preserve legacy species normalization
+  behavior (notably `SX -> SW`) while keeping per-TSA rule logic out of Python code.

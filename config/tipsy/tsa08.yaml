@@ -1,0 +1,90 @@
+schema_version: 1
+tsa_code: "08"
+
+metadata:
+  source_tsr:
+    - title: "TSA 08 TSR data package"
+      year: null
+      url: ""
+      notes: "Translate from legacy in-code tipsy_params_tsa08 rules."
+  author: ""
+  created_utc: ""
+  notes: "Config parity target is current legacy tsa08 behavior."
+
+defaults:
+  e:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    Regen_Delay: 2
+    SPP_1: "$leading_species_tipsy"
+    PCT_1: 100
+    SPP_2: null
+    SPP_3: null
+    SPP_4: null
+    SPP_5: null
+    PCT_2: null
+    PCT_3: null
+    PCT_4: null
+    PCT_5: null
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+  f:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    Regen_Delay: 1
+    SPP_1: "$leading_species_tipsy"
+    PCT_1: 100
+    SPP_2: null
+    SPP_3: null
+    SPP_4: null
+    SPP_5: null
+    PCT_2: null
+    PCT_3: null
+    PCT_4: null
+    PCT_5: null
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+
+rules:
+  - id: "spruce"
+    when:
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
+    assign:
+      e:
+        Density: 1472
+        Util_DBH_cm: 17.5
+      f:
+        Density: 1416
+        Util_DBH_cm: 17.5
+    notes: ""
+  - id: "pine"
+    when:
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e:
+        Density: 1624
+        Util_DBH_cm: 12.5
+      f:
+        Density: 1285
+        Util_DBH_cm: 12.5
+    notes: ""

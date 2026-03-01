@@ -77,3 +77,34 @@ def test_build_tipsy_params_from_config_assigns_rule_and_derived_fields() -> Non
     assert out["e"]["BEC"] == "SBS"
     assert out["e"]["SPP_1"] == "SW"
     assert out["f"]["Density"] == 1100
+
+
+def test_build_tipsy_params_from_config_resolves_species_token_for_sx() -> None:
+    cfg = {
+        "schema_version": 1,
+        "tsa_code": "08",
+        "defaults": {
+            "e": {"SPP_1": "$leading_species_tipsy"},
+            "f": {"SPP_1": "$leading_species_tipsy"},
+        },
+        "rules": [
+            {
+                "id": "spruce_rule",
+                "when": {"leading_species_in": ["SX"]},
+                "assign": {"e": {"Density": 1000}, "f": {"Density": 900}},
+            }
+        ],
+    }
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [15.0], "BEC_ZONE_CODE": ["SBS"]}),
+        "species": {"SX": {"pct": 70.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [15.0], "% Stk": [90.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=3002,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["SPP_1"] == "SW"
+    assert out["f"]["SPP_1"] == "SW"

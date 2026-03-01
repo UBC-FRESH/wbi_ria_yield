@@ -97,6 +97,49 @@ def _rule_matches(
     return True
 
 
+def _normalize_species_for_tipsy(species: str) -> str:
+    """Normalize species codes for TIPSY compatibility where needed."""
+    return "SW" if species == "SX" else species
+
+
+def _resolve_assignment_value(
+    value: Any,
+    *,
+    leading_species: str,
+    bec: str,
+    forest_type: int | None,
+) -> Any:
+    if not isinstance(value, str):
+        return value
+    if value == "$leading_species":
+        return leading_species
+    if value == "$leading_species_tipsy":
+        return _normalize_species_for_tipsy(leading_species)
+    if value == "$bec":
+        return bec
+    if value == "$forest_type":
+        return forest_type
+    return value
+
+
+def _resolve_assignment_block(
+    block: Mapping[str, Any],
+    *,
+    leading_species: str,
+    bec: str,
+    forest_type: int | None,
+) -> dict[str, Any]:
+    return {
+        key: _resolve_assignment_value(
+            value,
+            leading_species=leading_species,
+            bec=bec,
+            forest_type=forest_type,
+        )
+        for key, value in block.items()
+    }
+
+
 def build_tipsy_params_from_config(
     *,
     au_id: int,
@@ -120,7 +163,14 @@ def build_tipsy_params_from_config(
     for side in ("e", "f"):
         defaults = config.get("defaults", {}).get(side, {})
         if isinstance(defaults, Mapping):
-            tp[side].update(defaults)
+            tp[side].update(
+                _resolve_assignment_block(
+                    defaults,
+                    leading_species=leading_species,
+                    bec=bec,
+                    forest_type=forest_type,
+                )
+            )
     for rule in config["rules"]:
         if _rule_matches(
             rule,
@@ -129,7 +179,14 @@ def build_tipsy_params_from_config(
             forest_type=forest_type,
         ):
             for side in ("e", "f"):
-                tp[side].update(rule["assign"][side])
+                tp[side].update(
+                    _resolve_assignment_block(
+                        rule["assign"][side],
+                        leading_species=leading_species,
+                        bec=bec,
+                        forest_type=forest_type,
+                    )
+                )
             break
     else:
         raise ValueError(

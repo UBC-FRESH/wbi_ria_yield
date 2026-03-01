@@ -144,3 +144,6 @@
 - Added `femic.pipeline.tipsy_config` with TSA YAML loading/validation and config-rule parameter
   generation, plus optional runtime wiring in `01a_run-tsa.py` to use
   `config/tipsy/tsa{tsa}.yaml` (or `.yml`) when present (legacy in-code dict logic remains fallback).
+- Added `config/tipsy/tsa08.yaml` as the first concrete TSA migration to config-driven TIPSY rules,
+  and extended config assignment resolution to support dynamic tokens like
+  `$leading_species_tipsy` for legacy-compatible species normalization (`SX -> SW`).
