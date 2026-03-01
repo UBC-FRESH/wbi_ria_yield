@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "femic"
+version = "0.1.0"
+description = "Forest Estate Model Input Compiler"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.9",
+    "rich>=13",
+]
+
+[project.scripts]
+femic = "femic.cli.main:app"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
