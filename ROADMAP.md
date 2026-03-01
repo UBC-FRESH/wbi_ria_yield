@@ -190,3 +190,6 @@
 - Extracted run-manifest assembly into `femic.pipeline.manifest` (`build_run_manifest_payload`,
   `collect_runtime_versions`, `write_manifest`) so workflow wrapper orchestration now calls reusable
   stage + manifest builders instead of maintaining these internals inline.
+- Extracted pre-VDYP checkpoint serialization/load/save into `femic.pipeline.pre_vdyp` and wired
+  `01a_run-tsa.py` to use these helpers (`load_vdyp_prep_checkpoint`,
+  `save_vdyp_prep_checkpoint`), creating the first notebook-derived data-stage seam for `P2.2a`.

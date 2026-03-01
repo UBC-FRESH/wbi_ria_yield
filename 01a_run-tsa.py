@@ -3,7 +3,10 @@
 
 def run_tsa():
     global vdyp_out_cache, tsa, stratum_col, f, si_levels
-    import copy
+    from femic.pipeline.pre_vdyp import (
+        load_vdyp_prep_checkpoint,
+        save_vdyp_prep_checkpoint,
+    )
     if "vdyp_out_cache" not in globals():
         vdyp_out_cache = None
     _curve_fit_local = globals().get("_curve_fit")
@@ -416,21 +419,11 @@ def run_tsa():
     verbose = False
     plot = False
 
-    def _serialize_vdyp_prep_payload(results_tsa):
-        payload = []
-        for stratumi, sc, fit_out in results_tsa:
-            fit_out_clean = copy.deepcopy(fit_out)
-            for si_level_data in fit_out_clean.values():
-                for species_data in si_level_data["species"].values():
-                    species_data.pop("fit_func", None)
-            payload.append([stratumi, sc, fit_out_clean])
-        return payload
-
     vdyp_prep_checkpoint_path = "./data/vdyp_prep-tsa%s.pkl" % tsa
     prep_loaded = False
     if _femic_resume_effective and os.path.isfile(vdyp_prep_checkpoint_path):
         try:
-            results[tsa] = pickle.load(open(vdyp_prep_checkpoint_path, "rb"))
+            results[tsa] = load_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path)
             prep_loaded = True
             print(
                 "resume: loaded pre-VDYP checkpoint (%s strata)"
@@ -463,11 +456,10 @@ def run_tsa():
                 xlim=[0, 400],
             )
             results[tsa].append([stratumi, sc, fit_out])
-        checkpoint_payload = _serialize_vdyp_prep_payload(results[tsa])
-        pickle.dump(checkpoint_payload, open(vdyp_prep_checkpoint_path, "wb"))
+        saved_count = save_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path, results[tsa])
         print(
             "saved pre-VDYP checkpoint with %s strata to %s"
-            % (len(results[tsa]), vdyp_prep_checkpoint_path)
+            % (saved_count, vdyp_prep_checkpoint_path)
         )
 
     # --- cell 30 ---

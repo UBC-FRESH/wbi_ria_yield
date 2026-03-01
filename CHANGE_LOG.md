@@ -116,3 +116,5 @@
   to call this stage executor for filtered subprocess streaming.
 - Added `femic.pipeline.manifest` and moved run-manifest payload/version/file-write logic out of
   workflow wrapper into reusable helpers; updated workflow/tests to consume the new module.
+- Added `femic.pipeline.pre_vdyp` to centralize pre-VDYP checkpoint serialization/load/save and
+  refactored `01a_run-tsa.py` to use these helpers; added dedicated unit tests.
