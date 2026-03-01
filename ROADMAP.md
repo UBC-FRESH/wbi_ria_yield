@@ -196,3 +196,6 @@
 - Added first concrete migrated TSA config `config/tipsy/tsa08.yaml` plus tokenized assignment
   support (e.g., `$leading_species_tipsy`) so config rules can preserve legacy species normalization
   behavior (notably `SX -> SW`) while keeping per-TSA rule logic out of Python code.
+- Added second migrated TSA config `config/tipsy/tsa16.yaml` (high-variability case with full
+  species-mix/GW field coverage), plus tests that load the repo config and verify expected
+  config-driven rule selection output.

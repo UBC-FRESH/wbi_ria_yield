@@ -108,3 +108,23 @@ def test_build_tipsy_params_from_config_resolves_species_token_for_sx() -> None:
     )
     assert out["e"]["SPP_1"] == "SW"
     assert out["f"]["SPP_1"] == "SW"
+
+
+def test_repo_tsa16_config_loads_and_matches_spruce_rule() -> None:
+    cfg = load_tipsy_tsa_config(tsa_code="16", config_dir="config/tipsy")
+    assert cfg is not None
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [18.0], "BEC_ZONE_CODE": ["SBS"]}),
+        "species": {"SW": {"pct": 55.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [18.0], "% Stk": [90.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=4001,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["Density"] == 1147
+    assert out["f"]["Density"] == 1245
+    assert out["e"]["SPP_1"] == "SW"
+    assert out["f"]["SPP_2"] == "PLI"

@@ -147,3 +147,6 @@
 - Added `config/tipsy/tsa08.yaml` as the first concrete TSA migration to config-driven TIPSY rules,
   and extended config assignment resolution to support dynamic tokens like
   `$leading_species_tipsy` for legacy-compatible species normalization (`SX -> SW`).
+- Added `config/tipsy/tsa16.yaml` as a second concrete migration (capturing higher-complexity
+  multi-species/GW assignment logic) and expanded tests to validate repo-backed TSA16 config loading
+  and rule selection.
