@@ -209,3 +209,6 @@
 - Switched legacy runner default to require config-driven TIPSY rules for TSA processing; missing
   config now fails fast with explicit guidance, while `FEMIC_TIPSY_USE_LEGACY=1` preserves an
   opt-in escape hatch to legacy in-code rule dispatch during transition.
+- Added `femic tipsy validate` CLI command for preflight validation of TSA YAML handoff files
+  (all discovered configs, or explicit `--tsa` subset), including missing-file detection and schema
+  checks via shared `tipsy_config` loader/validator helpers.

@@ -35,6 +35,22 @@ def load_tipsy_tsa_config(
     return payload
 
 
+def discover_tipsy_config_tsas(
+    config_dir: str | Path = "config/tipsy",
+) -> dict[str, Path]:
+    """Discover TSA config files under a directory."""
+    base = Path(config_dir)
+    found: dict[str, Path] = {}
+    if not base.exists():
+        return found
+    for path in sorted(base.glob("tsa*.y*ml")):
+        match = re.fullmatch(r"tsa(\d+)\.ya?ml", path.name)
+        if not match:
+            continue
+        found[match.group(1).zfill(2)] = path
+    return found
+
+
 def validate_tipsy_tsa_config(
     payload: Mapping[str, Any],
     *,

@@ -46,6 +46,7 @@ from femic.pipeline.tipsy import (
 )
 from femic.pipeline.tipsy_config import (
     build_tipsy_params_from_config,
+    discover_tipsy_config_tsas,
     load_tipsy_tsa_config,
     tipsy_config_path_for_tsa,
     validate_tipsy_tsa_config,
@@ -82,6 +83,7 @@ __all__ = [
     "evaluate_tipsy_candidate",
     "TIPSYCandidateEvaluation",
     "tipsy_config_path_for_tsa",
+    "discover_tipsy_config_tsas",
     "load_tipsy_tsa_config",
     "validate_tipsy_tsa_config",
     "build_tipsy_params_from_config",

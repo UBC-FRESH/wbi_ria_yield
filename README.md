@@ -89,3 +89,9 @@ run path now prefers that config for TIPSY parameter generation for that TSA.
 Override the config directory with `FEMIC_TIPSY_CONFIG_DIR`.
 If no config exists for a requested TSA, the run now fails fast unless
 `FEMIC_TIPSY_USE_LEGACY=1` is set.
+
+Validate TIPSY config handoff files before running:
+
+```bash
+femic tipsy validate --config-dir config/tipsy --tsa 08 --tsa 16
+```

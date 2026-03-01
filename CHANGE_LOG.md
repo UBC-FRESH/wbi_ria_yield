@@ -158,3 +158,5 @@
 - Updated legacy run behavior to require TSA YAML TIPSY config by default (fail-fast when missing),
   with explicit opt-in fallback to legacy in-code dispatch via `FEMIC_TIPSY_USE_LEGACY=1`; added a
   test asserting all five migrated TSA config files are present/loadable.
+- Added `femic tipsy validate` CLI command to validate config-driven TIPSY handoff files
+  (`config/tipsy/tsaXX.yaml`) and report missing requested TSAs before pipeline execution.

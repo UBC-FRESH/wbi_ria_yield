@@ -10,6 +10,10 @@ from rich.console import Console
 
 from femic import __version__
 from femic.pipeline.io import build_pipeline_run_config
+from femic.pipeline.tipsy_config import (
+    discover_tipsy_config_tsas,
+    load_tipsy_tsa_config,
+)
 from femic.vdyp.reporting import (
     VdypWarningBudget,
     evaluate_warning_budget,
@@ -30,6 +34,11 @@ vdyp_app = typer.Typer(
 )
 tsa_app = typer.Typer(
     add_completion=False, no_args_is_help=True, help="Process individual TSAs."
+)
+tipsy_app = typer.Typer(
+    add_completion=False,
+    no_args_is_help=True,
+    help="Validate TIPSY config handoff files.",
 )
 console = Console()
 
@@ -400,6 +409,33 @@ def tsa_run(
     _emit_stub("femic tsa run")
 
 
+@tipsy_app.command("validate")
+def tipsy_validate(
+    config_dir: Path = typer.Option(
+        Path("config/tipsy"),
+        "--config-dir",
+        help="Directory containing tsaXX.yaml files.",
+    ),
+    tsa: list[str] | None = TSA_OPTION,
+) -> None:
+    found = discover_tipsy_config_tsas(config_dir)
+    if not found:
+        console.print(f"[red]No TIPSY configs found in {config_dir}[/red]")
+        raise typer.Exit(code=1)
+    targets = sorted({str(v).zfill(2) for v in tsa}) if tsa else sorted(found.keys())
+    missing = [code for code in targets if code not in found]
+    if missing:
+        console.print(f"[red]Missing TSA config files:[/red] {', '.join(missing)}")
+        raise typer.Exit(code=1)
+    for code in targets:
+        load_tipsy_tsa_config(tsa_code=code, config_dir=config_dir)
+    console.print(
+        f"[green]Validated TIPSY configs:[/green] {', '.join(targets)} "
+        f"(dir={config_dir})"
+    )
+
+
 app.add_typer(prep_app, name="prep")
 app.add_typer(vdyp_app, name="vdyp")
 app.add_typer(tsa_app, name="tsa")
+app.add_typer(tipsy_app, name="tipsy")
