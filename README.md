@@ -64,3 +64,17 @@ filters can remain unchanged while avoiding zero-age intercept issues.
 Raw BC datasets are expected under `../data` relative to the repo root (e.g.,
 `../data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb`). You can override this by setting
 `FEMIC_EXTERNAL_DATA_ROOT` to a different base path.
+
+## TIPSY Handoff Boundary
+
+The TIPSY stage is currently a human-in-the-loop boundary:
+
+1. Expert modeller derives TSA/AU-specific TIPSY parameter logic from TSR data packages.
+2. FEMIC generates batch TIPSY input tables from that logic.
+3. Batch TIPSY is run manually in Windows GUI.
+4. Raw TIPSY output is copied back to Linux for automated downstream stages.
+
+Draft config scaffolding for this handoff now lives in `config/tipsy/`:
+
+- `config/tipsy/README.md`
+- `config/tipsy/template.tsa.yaml`

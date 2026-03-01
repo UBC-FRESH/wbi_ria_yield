@@ -138,3 +138,6 @@
 - Added `evaluate_tipsy_candidate` and `build_tipsy_warning_event` to
   `femic.pipeline.tipsy`, and refactored `01a_run-tsa.py` TIPSY AU selection to consume these
   helpers for centralized eligibility checks and standardized warning-event payloads.
+- Added draft TIPSY manual-handoff config scaffolding in `config/tipsy/` (`README.md` and
+  `template.tsa.yaml`) and documented the human-in-the-loop TIPSY boundary in `README.md`,
+  including variability expectations across legacy TSA rule implementations.
