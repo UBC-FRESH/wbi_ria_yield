@@ -135,3 +135,6 @@
 - Added `femic.pipeline.tipsy` with shared VDYP-derived scalar helpers
   (`compute_vdyp_site_index`, `compute_vdyp_oaf1`) and refactored TSA-specific TIPSY parameter
   builders in `01a_run-tsa.py` to use these helpers; added dedicated unit tests.
+- Added `evaluate_tipsy_candidate` and `build_tipsy_warning_event` to
+  `femic.pipeline.tipsy`, and refactored `01a_run-tsa.py` TIPSY AU selection to consume these
+  helpers for centralized eligibility checks and standardized warning-event payloads.

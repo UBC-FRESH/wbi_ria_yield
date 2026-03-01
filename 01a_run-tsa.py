@@ -16,7 +16,12 @@ def run_tsa():
     from femic.pipeline.vdyp_sampling import nsamples_from_curves
     from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
     from femic.pipeline.vdyp_curves import process_vdyp_out
-    from femic.pipeline.tipsy import compute_vdyp_oaf1, compute_vdyp_site_index
+    from femic.pipeline.tipsy import (
+        build_tipsy_warning_event,
+        compute_vdyp_oaf1,
+        compute_vdyp_site_index,
+        evaluate_tipsy_candidate,
+    )
 
     if "vdyp_out_cache" not in globals():
         vdyp_out_cache = None
@@ -1841,88 +1846,83 @@ def run_tsa():
                 if verbose:
                     print("  missing vdyp curves for", sc, si_level)
                 continue
-            max_vol = df.volume.max()
-            min_vol = te["min_vol"](sc.split("_")[1][0])
-            if max_vol < min_vol:
-                if verbose:
-                    print("  ", si_level, "max_vol too low", max_vol, te["min_vol"])
-                continue
-            operable_ages = df[df.volume >= min_vol].age
-            operable_years = operable_ages.max() - operable_ages.min()
-            if operable_years < min_operable_years:
-                if verbose:
+            try:
+                candidate = evaluate_tipsy_candidate(
+                    sc=sc,
+                    vdyp_curve_df=df,
+                    result_si=result[si_level],
+                    exclusion=te,
+                    min_operable_years=min_operable_years,
+                    si_iqrlo_quantile=si_iqrlo_quantile,
+                )
+            except Exception:
+                print(sc, si_level)
+                print(result[si_level]["ss"])
+                raise
+            if not candidate.eligible:
+                if verbose and candidate.reason == "max_vol_too_low":
+                    print(
+                        "  ",
+                        si_level,
+                        "max_vol too low",
+                        candidate.max_vol,
+                        candidate.min_vol,
+                    )
+                elif verbose and candidate.reason == "operability_window_too_narrow":
                     print(
                         "  ",
                         si_level,
                         "operability window too narrow",
-                        operable_years,
+                        candidate.operable_years,
                         min_operable_years,
                     )
-                continue
-            try:
-                si_vri_iqrlo = result[si_level]["ss"].SITE_INDEX.quantile(
-                    si_iqrlo_quantile
-                )
-            except:
-                print(sc, si_level)
-                print(result[si_level]["ss"])
-                assert False
-            si_spr_iqrlo = result[si_level]["ss"].siteprod.quantile(si_iqrlo_quantile)
-            si_vri_med = result[si_level]["ss"].SITE_INDEX.median()
-            si_spr_med = result[si_level]["ss"].siteprod.median()
-            species_map = result[si_level]["species"]
-            if not species_map:
-                if verbose:
-                    print("  ", si_level, "no species candidates after filtering")
-                append_jsonl(
-                    vdyp_curve_events_path,
-                    {
-                        "event": "vdyp_curve_fit",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "status": "warning",
-                        "stage": "tipsy_input",
-                        "reason": "no_species_candidates",
-                        "context": {
-                            "tsa": tsa,
-                            "stratum_index": int(stratumi),
-                            "stratum_code": sc,
-                            "si_level": si_level,
-                            "au": int(au),
-                        },
-                    },
-                )
-                continue
-            leading_species = list(species_map.keys())[0]
-            min_si = te["min_si"](leading_species)
-            if min(si_vri_iqrlo, si_spr_iqrlo) < min_si:
-                if verbose:
+                elif verbose and candidate.reason == "si_too_low":
                     print(
                         "  ",
                         si_level,
                         "SI too low (using %0.2f quantile)" % si_iqrlo_quantile,
-                        "%2.1f" % si_vri_iqrlo,
-                        "%2.1f" % si_spr_iqrlo,
-                        min_si,
+                        "%2.1f" % candidate.si_vri_iqrlo,
+                        "%2.1f" % candidate.si_spr_iqrlo,
+                        candidate.min_si,
                     )
-                continue
-            if leading_species in te["excl_leading_species"]:
-                if verbose:
-                    print("  ", si_level, "bad leading species", leading_species)
-                continue
-            bec = sc.split("_")[0]
-            if bec in te["excl_bec"]:
-                if verbose:
-                    print("  ", si_level, "bad bec", bec)
+                elif verbose and candidate.reason == "excluded_leading_species":
+                    print(
+                        "  ",
+                        si_level,
+                        "bad leading species",
+                        candidate.leading_species,
+                    )
+                elif verbose and candidate.reason == "excluded_bec":
+                    print("  ", si_level, "bad bec", candidate.bec)
+                elif verbose and candidate.reason == "no_species_candidates":
+                    print("  ", si_level, "no species candidates after filtering")
+                    append_jsonl(
+                        vdyp_curve_events_path,
+                        build_tipsy_warning_event(
+                            tsa=tsa,
+                            stratumi=int(stratumi),
+                            sc=sc,
+                            si_level=si_level,
+                            au=int(au),
+                            reason="no_species_candidates",
+                        ),
+                    )
                 continue
 
             print("  ", si_level, au)
-            print("    median SI (VRI)               ", ("%2.1f" % si_vri_med).rjust(4))
-            print("    median SI (siteprod)          ", ("%2.1f" % si_spr_med).rjust(4))
+            print(
+                "    median SI (VRI)               ",
+                ("%2.1f" % candidate.si_vri_med).rjust(4),
+            )
+            print(
+                "    median SI (siteprod)          ",
+                ("%2.1f" % candidate.si_spr_med).rjust(4),
+            )
             print(
                 "    median SI ratio (VRI/siteprod) ",
-                "%0.2f" % (si_vri_med / si_spr_med),
+                "%0.2f" % (candidate.si_vri_med / candidate.si_spr_med),
             )
-            for species, v in species_map.items():
+            for species, v in candidate.species_map.items():
                 print("    species", species.ljust(3), "%3.0f" % v["pct"])
             vdyp_result = vdyp_results.get(tsa, {}).get(stratumi, {}).get(si_level)
             if not isinstance(vdyp_result, dict):
@@ -1930,20 +1930,14 @@ def run_tsa():
                     print("    missing vdyp result table for", sc, si_level)
                 append_jsonl(
                     vdyp_curve_events_path,
-                    {
-                        "event": "vdyp_curve_fit",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "status": "warning",
-                        "stage": "tipsy_input",
-                        "reason": "missing_vdyp_output",
-                        "context": {
-                            "tsa": tsa,
-                            "stratum_index": int(stratumi),
-                            "stratum_code": sc,
-                            "si_level": si_level,
-                            "au": int(au),
-                        },
-                    },
+                    build_tipsy_warning_event(
+                        tsa=tsa,
+                        stratumi=int(stratumi),
+                        sc=sc,
+                        si_level=si_level,
+                        au=int(au),
+                        reason="missing_vdyp_output",
+                    ),
                 )
                 continue
             scsi_au[tsa][(sc, si_level)] = au

@@ -183,3 +183,6 @@
 - Extracted shared VDYP-to-TIPSY scalar derivations into `femic.pipeline.tipsy`
   (`compute_vdyp_site_index`, `compute_vdyp_oaf1`) and refactored all TSA-specific TIPSY parameter
   builders in `01a_run-tsa.py` to consume these helpers instead of duplicating inline parsing logic.
+- Added reusable TIPSY candidate evaluation + warning payload helpers in `femic.pipeline.tipsy`
+  (`evaluate_tipsy_candidate`, `build_tipsy_warning_event`) and rewired the AU-selection loop in
+  `01a_run-tsa.py` to use centralized eligibility reasoning + standardized warning metadata.
