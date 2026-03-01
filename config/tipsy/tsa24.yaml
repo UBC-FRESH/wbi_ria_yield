@@ -1,0 +1,355 @@
+schema_version: 1
+tsa_code: "24"
+
+metadata:
+  source_tsr:
+    - title: "TSA 24 TSR data package"
+      year: null
+      url: ""
+      notes: "Translated from legacy tipsy_params_tsa24 implementation."
+  author: ""
+  created_utc: ""
+  notes: ""
+
+defaults:
+  e:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+    Util_DBH_cm: 17.5
+  f:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+    Util_DBH_cm: 17.5
+
+rules:
+  - id: "sbs_pine"
+    when:
+      bec_in: ["SBS"]
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 5700
+        Regen_Method: "N"
+        SPP_1: "PL"
+        SPP_2: "SW"
+        SPP_3: "BL"
+        SPP_4: "FDI"
+        SPP_5: null
+        PCT_1: 69
+        PCT_2: 13
+        PCT_3: 11
+        PCT_4: 7
+        PCT_5: null
+        GW_1: null
+        GW_2: null
+        GW_age_1: null
+        GW_age_2: null
+      f:
+        Regen_Delay: 2
+        Density: 1700
+        SPP_1: "PL"
+        SPP_2: "SW"
+        SPP_3: null
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 67
+        PCT_2: 33
+        PCT_3: null
+        PCT_4: null
+        PCT_5: null
+        GW_1: 2
+        GW_2: 18
+        GW_age_1: 12
+        GW_age_2: 12
+  - id: "sbs_spruce"
+    when:
+      bec_in: ["SBS"]
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1600
+        SPP_1: "SW"
+        SPP_2: "PL"
+        SPP_3: "FDI"
+        SPP_4: "BL"
+        SPP_5: null
+        PCT_1: 55
+        PCT_2: 38
+        PCT_3: 5
+        PCT_4: 2
+        PCT_5: null
+        GW_1: 18
+        GW_2: 1
+        GW_age_1: 12
+        GW_age_2: 12
+      f:
+        Regen_Delay: 2
+        Density: 1600
+        SPP_1: "SW"
+        SPP_2: "PL"
+        SPP_3: "FDI"
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 55
+        PCT_2: 38
+        PCT_3: 7
+        PCT_4: null
+        PCT_5: null
+        GW_1: 18
+        GW_2: 1
+        GW_age_1: 12
+        GW_age_2: 12
+  - id: "sbs_cedar"
+    when:
+      bec_in: ["SBS"]
+      leading_species_in: ["C", "CW"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 2200
+        SPP_1: "SW"
+        SPP_2: "PL"
+        SPP_3: "FDI"
+        SPP_4: "BL"
+        SPP_5: null
+        PCT_1: 55
+        PCT_2: 21
+        PCT_3: 16
+        PCT_4: 8
+        PCT_5: null
+        GW_1: 21
+        GW_2: 2
+        GW_age_1: 12
+        GW_age_2: 12
+      f:
+        Regen_Delay: 2
+        Density: 2200
+        SPP_1: "SW"
+        SPP_2: "PL"
+        SPP_3: "FDI"
+        SPP_4: "BL"
+        SPP_5: null
+        PCT_1: 55
+        PCT_2: 21
+        PCT_3: 16
+        PCT_4: 8
+        PCT_5: null
+        GW_1: 21
+        GW_2: 2
+        GW_age_1: 12
+        GW_age_2: 12
+  - id: "sbs_fir"
+    when:
+      bec_in: ["SBS"]
+      leading_species_in: ["B", "BA", "BB", "BG", "BL", "BM", "BP"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 2500
+        SPP_1: "SW"
+        SPP_2: "PL"
+        SPP_3: "BL"
+        SPP_4: "FDI"
+        SPP_5: null
+        PCT_1: 57
+        PCT_2: 25
+        PCT_3: 10
+        PCT_4: 8
+        PCT_5: null
+        GW_1: 15
+        GW_2: 1
+        GW_age_1: 12
+        GW_age_2: 12
+      f:
+        Regen_Delay: 2
+        Density: 2500
+        SPP_1: "SW"
+        SPP_2: "PL"
+        SPP_3: "BL"
+        SPP_4: "FDI"
+        SPP_5: null
+        PCT_1: 57
+        PCT_2: 25
+        PCT_3: 10
+        PCT_4: 8
+        PCT_5: null
+        GW_1: 15
+        GW_2: 1
+        GW_age_1: 12
+        GW_age_2: 12
+  - id: "sbs_douglasfir"
+    when:
+      bec_in: ["SBS"]
+      leading_species_in: ["F", "FD", "FDC", "FDI"]
+    assign:
+      e:
+        Regen_Delay: 1
+        Density: 1600
+        SPP_1: "FDI"
+        SPP_2: null
+        SPP_3: null
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 100
+        PCT_2: null
+        PCT_3: null
+        PCT_4: null
+        PCT_5: null
+        GW_1: null
+        GW_2: null
+        GW_age_1: null
+        GW_age_2: null
+      f:
+        Regen_Delay: 1
+        Density: 1600
+        SPP_1: "FDI"
+        SPP_2: null
+        SPP_3: null
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 100
+        PCT_2: null
+        PCT_3: null
+        PCT_4: null
+        PCT_5: null
+        GW_1: null
+        GW_2: null
+        GW_age_1: null
+        GW_age_2: null
+  - id: "essf_fir"
+    when:
+      bec_in: ["ESSF"]
+      leading_species_in: ["B", "BA", "BB", "BG", "BL", "BM", "BP"]
+    assign:
+      e:
+        Regen_Delay: 1
+        Density: 1500
+        SPP_1: "SE"
+        SPP_2: "PL"
+        SPP_3: "BL"
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 73
+        PCT_2: 21
+        PCT_3: 6
+        PCT_4: null
+        PCT_5: null
+        GW_1: 12
+        GW_2: 2
+        GW_age_1: 12
+        GW_age_2: 12
+      f:
+        Regen_Delay: 1
+        Density: 1500
+        SPP_1: "SE"
+        SPP_2: "PL"
+        SPP_3: "BL"
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 73
+        PCT_2: 21
+        PCT_3: 6
+        PCT_4: null
+        PCT_5: null
+        GW_1: 12
+        GW_2: 2
+        GW_age_1: 12
+        GW_age_2: 12
+  - id: "essf_spruce"
+    when:
+      bec_in: ["ESSF"]
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
+    assign:
+      e:
+        Regen_Delay: 1
+        Density: 1500
+        SPP_1: "SE"
+        SPP_2: "PL"
+        SPP_3: "BL"
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 82
+        PCT_2: 13
+        PCT_3: 5
+        PCT_4: null
+        PCT_5: null
+        GW_1: 18
+        GW_2: 2
+        GW_age_1: 12
+        GW_age_2: 12
+      f:
+        Regen_Delay: 1
+        Density: 1500
+        SPP_1: "SE"
+        SPP_2: "PL"
+        SPP_3: "BL"
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 82
+        PCT_2: 13
+        PCT_3: 5
+        PCT_4: null
+        PCT_5: null
+        GW_1: 18
+        GW_2: 2
+        GW_age_1: 12
+        GW_age_2: 12
+  - id: "essf_pine"
+    when:
+      bec_in: ["ESSF"]
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 2900
+        SPP_1: "PL"
+        SPP_2: "BL"
+        SPP_3: "SE"
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 62
+        PCT_2: 21
+        PCT_3: 17
+        PCT_4: null
+        PCT_5: null
+        GW_1: 1
+        GW_2: 13
+        GW_age_1: 12
+        GW_age_2: 12
+        Util_DBH_cm: 12.5
+      f:
+        Regen_Delay: 2
+        Density: 2900
+        SPP_1: "PL"
+        SPP_2: "BL"
+        SPP_3: "SE"
+        SPP_4: null
+        SPP_5: null
+        PCT_1: 62
+        PCT_2: 21
+        PCT_3: 17
+        PCT_4: null
+        PCT_5: null
+        GW_1: 1
+        GW_2: 13
+        GW_age_1: 12
+        GW_age_2: 12
+        Util_DBH_cm: 12.5

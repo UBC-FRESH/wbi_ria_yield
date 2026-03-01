@@ -199,3 +199,6 @@
 - Added second migrated TSA config `config/tipsy/tsa16.yaml` (high-variability case with full
   species-mix/GW field coverage), plus tests that load the repo config and verify expected
   config-driven rule selection output.
+- Added third migrated TSA config `config/tipsy/tsa24.yaml` capturing BEC-dependent branching
+  (`SBS` vs `ESSF`) and species-group-specific assignment blocks; expanded config tests to verify
+  both SBS and ESSF rule-path selection from repo-backed YAML.

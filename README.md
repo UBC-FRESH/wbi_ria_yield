@@ -80,6 +80,7 @@ Draft config scaffolding for this handoff now lives in `config/tipsy/`:
 - `config/tipsy/template.tsa.yaml`
 - `config/tipsy/tsa08.yaml` and `config/tipsy/tsa16.yaml` (concrete TSA configs migrated from
   legacy logic)
+- `config/tipsy/tsa24.yaml` (BEC-dependent branching migration from legacy logic)
 
 If a TSA config file exists at `config/tipsy/tsaXX.yaml` (or `.yml`), the legacy
 run path now prefers that config for TIPSY parameter generation for that TSA.

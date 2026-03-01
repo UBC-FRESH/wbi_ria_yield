@@ -150,3 +150,5 @@
 - Added `config/tipsy/tsa16.yaml` as a second concrete migration (capturing higher-complexity
   multi-species/GW assignment logic) and expanded tests to validate repo-backed TSA16 config loading
   and rule selection.
+- Added `config/tipsy/tsa24.yaml` with BEC-dependent branching (`SBS`/`ESSF`) translated from legacy
+  rules, and expanded tests to validate repo-backed TSA24 rule selection for both branches.
