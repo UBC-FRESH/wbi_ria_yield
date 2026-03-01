@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import platform
 import os
 import subprocess
 import sys
 import time
 import uuid
 from datetime import datetime, timezone
+from importlib import metadata
 from pathlib import Path
 from typing import Iterable
 
@@ -27,6 +29,120 @@ def _write_manifest(path: Path, payload: dict[str, object]) -> None:
     path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+
+
+def _safe_version(dist_name: str) -> str | None:
+    try:
+        return metadata.version(dist_name)
+    except metadata.PackageNotFoundError:
+        return None
+
+
+def _collect_runtime_versions() -> dict[str, object]:
+    return {
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "femic": _safe_version("femic"),
+        "packages": {
+            "numpy": _safe_version("numpy"),
+            "pandas": _safe_version("pandas"),
+            "geopandas": _safe_version("geopandas"),
+            "scipy": _safe_version("scipy"),
+            "rasterio": _safe_version("rasterio"),
+            "shapely": _safe_version("shapely"),
+            "typer": _safe_version("typer"),
+            "rich": _safe_version("rich"),
+        },
+    }
+
+
+def _build_log_paths(
+    resolved_log_dir: Path, resolved_tsas: list[str], resolved_run_id: str
+) -> dict[str, list[str]]:
+    return {
+        "vdyp_runs": [
+            str(resolved_log_dir / f"vdyp_runs-tsa{tsa}-{resolved_run_id}.jsonl")
+            for tsa in resolved_tsas
+        ],
+        "vdyp_curve_events": [
+            str(
+                resolved_log_dir / f"vdyp_curve_events-tsa{tsa}-{resolved_run_id}.jsonl"
+            )
+            for tsa in resolved_tsas
+        ],
+        "vdyp_stdout": [
+            str(resolved_log_dir / f"vdyp_stdout-tsa{tsa}-{resolved_run_id}.log")
+            for tsa in resolved_tsas
+        ],
+        "vdyp_stderr": [
+            str(resolved_log_dir / f"vdyp_stderr-tsa{tsa}-{resolved_run_id}.log")
+            for tsa in resolved_tsas
+        ],
+    }
+
+
+def _build_manifest_payload(
+    *,
+    run_id: str,
+    run_uuid: str,
+    status: str,
+    started_at: datetime,
+    finished_at: datetime | None,
+    duration_sec: float | None,
+    exit_code: int | None,
+    cmd: list[str],
+    script_path: Path,
+    log_dir: Path,
+    tsa_list: list[str],
+    resume: bool,
+    debug_rows: int | None,
+    env: dict[str, str],
+    checkpoint_paths: list[Path],
+) -> dict[str, object]:
+    log_paths = _build_log_paths(log_dir, tsa_list, run_id)
+    return {
+        "run_id": run_id,
+        "run_uuid": run_uuid,
+        "status": status,
+        "started_at_utc": started_at.isoformat(),
+        "finished_at_utc": finished_at.isoformat() if finished_at else None,
+        "duration_sec": duration_sec,
+        "exit_code": exit_code,
+        "command": cmd,
+        "script_path": str(script_path),
+        "cwd": str(script_path.parent),
+        "log_dir": str(log_dir),
+        "tsa_list": tsa_list,
+        "options": {"resume": resume, "debug_rows": debug_rows},
+        "env_flags": {
+            "FEMIC_DISABLE_IPP": env.get("FEMIC_DISABLE_IPP"),
+            "FEMIC_USE_SWIFTER": env.get("FEMIC_USE_SWIFTER"),
+            "FEMIC_SKIP_STANDS_SHP": env.get("FEMIC_SKIP_STANDS_SHP"),
+            "FEMIC_EXTERNAL_DATA_ROOT": env.get("FEMIC_EXTERNAL_DATA_ROOT"),
+        },
+        "runtime_versions": _collect_runtime_versions(),
+        "paths": {
+            "repo_root": str(script_path.parent),
+            "data_dir": str((script_path.parent / "data").resolve()),
+            "vdyp_cfg_dir": str(
+                (script_path.parent / "vdyp_io" / "VDYP_CFG").resolve()
+            ),
+            "vdyp_executable": str(
+                (script_path.parent / "VDYP7" / "VDYP7" / "VDYP7Console.exe").resolve()
+            ),
+        },
+        "log_paths": log_paths,
+        "artifacts": {
+            key: [{"path": path, "exists": Path(path).exists()} for path in path_list]
+            for key, path_list in log_paths.items()
+        },
+        "checkpoints": {
+            "pre_vdyp": [
+                {"path": str(path), "exists": path.exists()}
+                for path in checkpoint_paths
+            ]
+        },
+    }
 
 
 def run_data_prep(
@@ -61,53 +177,31 @@ def run_data_prep(
     env["FEMIC_RUN_ID"] = resolved_run_id
     env["FEMIC_LOG_DIR"] = str(resolved_log_dir)
     env.setdefault("FEMIC_RUN_UUID", str(uuid.uuid4()))
+    run_uuid = env["FEMIC_RUN_UUID"]
+
+    cmd = [sys.executable, str(script_path)]
 
     _write_manifest(
         manifest_path,
-        {
-            "run_id": resolved_run_id,
-            "status": "started",
-            "started_at_utc": started_at.isoformat(),
-            "finished_at_utc": None,
-            "duration_sec": None,
-            "exit_code": None,
-            "command": [sys.executable, str(script_path)],
-            "script_path": str(script_path),
-            "cwd": str(script_path.parent),
-            "log_dir": str(resolved_log_dir),
-            "tsa_list": resolved_tsas,
-            "options": {"resume": resume, "debug_rows": debug_rows},
-            "env_flags": {
-                "FEMIC_DISABLE_IPP": env.get("FEMIC_DISABLE_IPP"),
-                "FEMIC_USE_SWIFTER": env.get("FEMIC_USE_SWIFTER"),
-                "FEMIC_SKIP_STANDS_SHP": env.get("FEMIC_SKIP_STANDS_SHP"),
-                "FEMIC_EXTERNAL_DATA_ROOT": env.get("FEMIC_EXTERNAL_DATA_ROOT"),
-            },
-            "log_paths": {
-                "vdyp_runs": [
-                    str(
-                        resolved_log_dir / f"vdyp_runs-tsa{tsa}-{resolved_run_id}.jsonl"
-                    )
-                    for tsa in resolved_tsas
-                ],
-                "vdyp_curve_events": [
-                    str(
-                        resolved_log_dir
-                        / f"vdyp_curve_events-tsa{tsa}-{resolved_run_id}.jsonl"
-                    )
-                    for tsa in resolved_tsas
-                ],
-            },
-            "checkpoints": {
-                "pre_vdyp": [
-                    {"path": str(path), "exists": path.exists()}
-                    for path in checkpoint_paths
-                ]
-            },
-        },
+        _build_manifest_payload(
+            run_id=resolved_run_id,
+            run_uuid=run_uuid,
+            status="started",
+            started_at=started_at,
+            finished_at=None,
+            duration_sec=None,
+            exit_code=None,
+            cmd=cmd,
+            script_path=script_path,
+            log_dir=resolved_log_dir,
+            tsa_list=resolved_tsas,
+            resume=resume,
+            debug_rows=debug_rows,
+            env=env,
+            checkpoint_paths=checkpoint_paths,
+        ),
     )
 
-    cmd = [sys.executable, str(script_path)]
     process = subprocess.Popen(
         cmd,
         cwd=str(script_path.parent),
@@ -127,47 +221,23 @@ def run_data_prep(
     duration_sec = round(time.monotonic() - monotonic_started, 3)
     _write_manifest(
         manifest_path,
-        {
-            "run_id": resolved_run_id,
-            "status": "ok" if return_code == 0 else "failed",
-            "started_at_utc": started_at.isoformat(),
-            "finished_at_utc": finished_at.isoformat(),
-            "duration_sec": duration_sec,
-            "exit_code": return_code,
-            "command": [sys.executable, str(script_path)],
-            "script_path": str(script_path),
-            "cwd": str(script_path.parent),
-            "log_dir": str(resolved_log_dir),
-            "tsa_list": resolved_tsas,
-            "options": {"resume": resume, "debug_rows": debug_rows},
-            "env_flags": {
-                "FEMIC_DISABLE_IPP": env.get("FEMIC_DISABLE_IPP"),
-                "FEMIC_USE_SWIFTER": env.get("FEMIC_USE_SWIFTER"),
-                "FEMIC_SKIP_STANDS_SHP": env.get("FEMIC_SKIP_STANDS_SHP"),
-                "FEMIC_EXTERNAL_DATA_ROOT": env.get("FEMIC_EXTERNAL_DATA_ROOT"),
-            },
-            "log_paths": {
-                "vdyp_runs": [
-                    str(
-                        resolved_log_dir / f"vdyp_runs-tsa{tsa}-{resolved_run_id}.jsonl"
-                    )
-                    for tsa in resolved_tsas
-                ],
-                "vdyp_curve_events": [
-                    str(
-                        resolved_log_dir
-                        / f"vdyp_curve_events-tsa{tsa}-{resolved_run_id}.jsonl"
-                    )
-                    for tsa in resolved_tsas
-                ],
-            },
-            "checkpoints": {
-                "pre_vdyp": [
-                    {"path": str(path), "exists": path.exists()}
-                    for path in checkpoint_paths
-                ]
-            },
-        },
+        _build_manifest_payload(
+            run_id=resolved_run_id,
+            run_uuid=run_uuid,
+            status="ok" if return_code == 0 else "failed",
+            started_at=started_at,
+            finished_at=finished_at,
+            duration_sec=duration_sec,
+            exit_code=return_code,
+            cmd=cmd,
+            script_path=script_path,
+            log_dir=resolved_log_dir,
+            tsa_list=resolved_tsas,
+            resume=resume,
+            debug_rows=debug_rows,
+            env=env,
+            checkpoint_paths=checkpoint_paths,
+        ),
     )
     if return_code != 0:
         raise RuntimeError(

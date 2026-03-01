@@ -63,8 +63,8 @@
 - [x] NF3a Verify `wine` availability and `VDYP7/VDYP7/VDYP7Console.exe` path
 - [x] NF3b Verify `vdyp_io/VDYP_CFG` and required input files under `data/`
 - [x] NF4 Add minimal run metadata + logging
-- [ ] NF4a Emit per-TSA log files and capture full VDYP stdout/stderr artifacts
-- [ ] NF4b Write a run manifest (timestamp, TSA list, paths, versions)
+- [x] NF4a Emit per-TSA log files and capture full VDYP stdout/stderr artifacts
+- [x] NF4b Write a run manifest (timestamp, TSA list, paths, versions)
 - [x] NF5 Quick README update for femic usage
 - [x] NF5a Add a 5-minute “run the pipeline” quickstart
 - [x] NF6 VDYP debug + metadata dive to reduce late-stage failures
@@ -162,3 +162,8 @@
   tests that assert stable `summarize_vdyp_logs` counts.
 - Added warning-budget evaluation (`evaluate_warning_budget`) and CLI threshold flags on
   `femic vdyp report` so CI can fail when warnings/parse-errors grow beyond expected bounds.
+- Added per-TSA raw VDYP stream artifacts:
+  `vdyp_stdout-tsa{tsa}-{run_id}.log` and `vdyp_stderr-tsa{tsa}-{run_id}.log`.
+- Expanded run manifest payloads with runtime/package versions, resolved key paths, and per-TSA
+  artifact existence inventory for `vdyp_runs`, `vdyp_curve_events`, `vdyp_stdout`, and
+  `vdyp_stderr`.

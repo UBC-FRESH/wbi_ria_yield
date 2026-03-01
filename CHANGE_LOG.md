@@ -95,3 +95,7 @@
 - Added warning-budget guardrails in `femic vdyp report` with threshold flags
   (`--max-curve-warnings`, `--max-first-point-mismatches`, parse-error maxima, and minimum event
   counts) and non-zero exit on budget violations.
+- Added raw VDYP process stream artifact capture per TSA/run:
+  `vdyp_stdout-tsa{tsa}-{run_id}.log` and `vdyp_stderr-tsa{tsa}-{run_id}.log`.
+- Expanded run manifest payloads with runtime/package versions, resolved key paths, and
+  per-TSA artifact existence inventory for run/curve JSONL and stdout/stderr artifacts.

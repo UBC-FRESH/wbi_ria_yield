@@ -581,6 +581,15 @@ def run_tsa():
         except Exception as exc:
             print(f"warning: failed to write VDYP log to {path}: {exc}")
 
+    def _append_text(path, text):
+        try:
+            path = Path(path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(text)
+        except Exception as exc:
+            print(f"warning: failed to write VDYP text log to {path}: {exc}")
+
     def _vdyp_log_base(vdyp_io_dirname):
         log_dir_env = os.environ.get("FEMIC_LOG_DIR")
         if log_dir_env:
@@ -599,6 +608,12 @@ def run_tsa():
             _vdyp_log_base(vdyp_io_dirname)
             / f"vdyp_curve_events-tsa{tsa}-{femic_run_id}.jsonl"
         )
+
+    def _vdyp_stdout_log_path(vdyp_io_dirname="vdyp_io"):
+        return _vdyp_log_base(vdyp_io_dirname) / f"vdyp_stdout-tsa{tsa}-{femic_run_id}.log"
+
+    def _vdyp_stderr_log_path(vdyp_io_dirname="vdyp_io"):
+        return _vdyp_log_base(vdyp_io_dirname) / f"vdyp_stderr-tsa{tsa}-{femic_run_id}.log"
 
     def _prepend_quasi_origin_point(x, y, age=1, epsilon=1e-6):
         x = np.asarray(x)
@@ -634,6 +649,8 @@ def run_tsa():
         vdyp_timeout=2.0,
         vdyp_out_cache=None,
         vdyp_log_path=None,
+        vdyp_stdout_log_path=None,
+        vdyp_stderr_log_path=None,
         log_context=None,
     ):
         import subprocess
@@ -658,9 +675,15 @@ def run_tsa():
         Path(vdyp_io_dirname).mkdir(parents=True, exist_ok=True)
         if vdyp_log_path is None:
             vdyp_log_path = _vdyp_run_log_path(vdyp_io_dirname)
+        if vdyp_stdout_log_path is None:
+            vdyp_stdout_log_path = _vdyp_stdout_log_path(vdyp_io_dirname)
+        if vdyp_stderr_log_path is None:
+            vdyp_stderr_log_path = _vdyp_stderr_log_path(vdyp_io_dirname)
         base_context = dict(log_context) if log_context else {}
         base_context.setdefault("tsa", tsa)
         base_context.setdefault("run_id", femic_run_id)
+        base_context.setdefault("vdyp_stdout_log", str(vdyp_stdout_log_path))
+        base_context.setdefault("vdyp_stderr_log", str(vdyp_stderr_log_path))
         base_context.setdefault("vdyp_binpath", str(vdyp_binpath_path))
         base_context.setdefault("vdyp_params", str(vdyp_params_path))
         vdyp_output_path = "%s/%s" % (vdyp_io_dirname, vdyp_outfile)
@@ -748,7 +771,12 @@ def run_tsa():
                 vdyp_err_txt,
             )
             try:
-                result = subprocess.run(shlex.split(args), timeout=timeout)
+                result = subprocess.run(
+                    shlex.split(args),
+                    timeout=timeout,
+                    capture_output=True,
+                    text=True,
+                )
             except subprocess.TimeoutExpired as exc:
                 _append_jsonl(
                     vdyp_log_path,
@@ -787,11 +815,22 @@ def run_tsa():
                     },
                 )
                 return {}
+            stream_header = (
+                f"\n=== {datetime.now(timezone.utc).isoformat()} "
+                f"phase={phase} feature_count={feature_count} cache_hits={cache_hits} ===\n"
+                f"cmd: {args}\n"
+            )
+            if result.stdout:
+                _append_text(vdyp_stdout_log_path, stream_header + result.stdout + "\n")
+            if result.stderr:
+                _append_text(vdyp_stderr_log_path, stream_header + result.stderr + "\n")
             err_size = err_path.stat().st_size if err_path.exists() else 0
             err_head = ""
             if err_size:
                 err_head = err_path.read_text(encoding="utf-8", errors="ignore")[:500]
             out_size = out_path.stat().st_size if out_path.exists() else 0
+            proc_stdout_head = (result.stdout or "")[:500]
+            proc_stderr_head = (result.stderr or "")[:500]
             try:
                 vdyp_out = import_vdyp_tables(
                     "./%s/%s" % (vdyp_io_dirname, vdyp_out_txt)
@@ -814,6 +853,8 @@ def run_tsa():
                         "out_size": int(out_size),
                         "err_size": int(err_size),
                         "err_head": err_head,
+                        "proc_stdout_head": proc_stdout_head,
+                        "proc_stderr_head": proc_stderr_head,
                         "error": str(exc),
                         "traceback": traceback.format_exc(),
                         "context": base_context,
@@ -841,6 +882,8 @@ def run_tsa():
                     "out_size": int(out_size),
                     "err_size": int(err_size),
                     "err_head": err_head,
+                    "proc_stdout_head": proc_stdout_head,
+                    "proc_stderr_head": proc_stderr_head,
                     "vdyp_out_tables": int(len(vdyp_out)),
                     "context": base_context,
                 },

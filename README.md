@@ -14,6 +14,9 @@ femic run --tsa 08 --resume
 non-fatal shutdown noise lines from legacy stderr output.
 Each run writes a manifest at `vdyp_io/logs/run_manifest-<run_id>.json` and uses
 run-scoped VDYP log files (per TSA + run id).
+For each TSA, raw VDYP process streams are also captured to:
+`vdyp_io/logs/vdyp_stdout-tsa<tsa>-<run_id>.log` and
+`vdyp_io/logs/vdyp_stderr-tsa<tsa>-<run_id>.log`.
 
 For faster debugging, limit the number of VRI rows processed (this disables cached checkpoints
 and output reuse):
