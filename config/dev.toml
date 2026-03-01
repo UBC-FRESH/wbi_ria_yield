@@ -1,0 +1,3 @@
+[run]
+# Dev-facing default for quick local iterations.
+default_tsa_list = ["08"]

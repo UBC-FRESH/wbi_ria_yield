@@ -173,3 +173,6 @@
   `io.py`, `vdyp.py`, `tsa.py`, and `plots.py`.
 - Legacy workflow manifest/log path logic now consumes `femic.pipeline` helpers, reducing
   duplicated logic and defining a stable seam for future migration out of notebook-generated code.
+- Removed hardcoded multi-TSA defaults from new pipeline helpers; default TSA selection now reads
+  from dev config (`config/dev.toml`, `[run].default_tsa_list`) with `["08"]` fallback for local
+  testing.

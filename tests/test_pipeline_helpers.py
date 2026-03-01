@@ -2,14 +2,28 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from femic.pipeline.io import DEFAULT_TSA_LIST, normalize_tsa_list, resolve_run_paths
+from femic.pipeline.io import (
+    FALLBACK_DEFAULT_TSA_LIST,
+    load_default_tsa_list,
+    normalize_tsa_list,
+    resolve_run_paths,
+)
 from femic.pipeline.plots import strata_plot_paths, tipsy_vdyp_plot_path
 from femic.pipeline.tsa import target_nstrata_for
 
 
-def test_normalize_tsa_list_defaults_and_padding() -> None:
-    assert normalize_tsa_list(None) == DEFAULT_TSA_LIST
+def test_normalize_tsa_list_defaults_and_padding(tmp_path: Path) -> None:
+    cfg = tmp_path / "dev.toml"
+    cfg.write_text("[run]\ndefault_tsa_list = ['24','41']\n", encoding="utf-8")
+    assert normalize_tsa_list(None, default_tsa_list=load_default_tsa_list(cfg)) == [
+        "24",
+        "41",
+    ]
     assert normalize_tsa_list([8, "16", "041"]) == ["08", "16", "041"]
+
+
+def test_load_default_tsa_list_fallback_when_missing(tmp_path: Path) -> None:
+    assert load_default_tsa_list(tmp_path / "missing.toml") == FALLBACK_DEFAULT_TSA_LIST
 
 
 def test_resolve_run_paths_uses_script_parent_as_repo_root(tmp_path: Path) -> None:

@@ -31,6 +31,8 @@ You can override run metadata/log routing:
 femic run --tsa 08 --resume --run-id mytest01 --log-dir vdyp_io/logs
 ```
 
+If `--tsa` is omitted, defaults are loaded from `config/dev.toml` (`[run].default_tsa_list`).
+
 Note: In debug mode, some strata may lack VDYP curves. These are skipped with a warning.
 Rows whose strata do not map to an AU/curve (missing VDYP curves) are dropped with a warning
 summary.

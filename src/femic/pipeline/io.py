@@ -4,16 +4,39 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import tomllib
 from typing import Iterable
 
 
-DEFAULT_TSA_LIST = ["08", "16", "24", "40", "41"]
+DEFAULT_DEV_CONFIG_PATH = Path("config/dev.toml")
+FALLBACK_DEFAULT_TSA_LIST = ["08"]
 
 
-def normalize_tsa_list(tsa_list: Iterable[str] | None) -> list[str]:
-    """Return zero-padded TSA codes, defaulting to the configured working set."""
+def load_default_tsa_list(config_path: Path = DEFAULT_DEV_CONFIG_PATH) -> list[str]:
+    """Load default TSA list from a dev-facing TOML config file."""
+    if not config_path.exists():
+        return FALLBACK_DEFAULT_TSA_LIST.copy()
+    try:
+        parsed = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError:
+        return FALLBACK_DEFAULT_TSA_LIST.copy()
+    run_cfg = parsed.get("run", {})
+    if not isinstance(run_cfg, dict):
+        return FALLBACK_DEFAULT_TSA_LIST.copy()
+    default_tsa_list = run_cfg.get("default_tsa_list")
+    if not isinstance(default_tsa_list, list) or not default_tsa_list:
+        return FALLBACK_DEFAULT_TSA_LIST.copy()
+    return [str(tsa).zfill(2) for tsa in default_tsa_list]
+
+
+def normalize_tsa_list(
+    tsa_list: Iterable[str] | None, *, default_tsa_list: Iterable[str] | None = None
+) -> list[str]:
+    """Return zero-padded TSA codes, defaulting to configured dev defaults."""
     if not tsa_list:
-        return DEFAULT_TSA_LIST.copy()
+        if default_tsa_list is None:
+            return load_default_tsa_list()
+        return [str(tsa).zfill(2) for tsa in default_tsa_list]
     return [str(tsa).zfill(2) for tsa in tsa_list]
 
 
