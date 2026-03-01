@@ -141,3 +141,6 @@
 - Added draft TIPSY manual-handoff config scaffolding in `config/tipsy/` (`README.md` and
   `template.tsa.yaml`) and documented the human-in-the-loop TIPSY boundary in `README.md`,
   including variability expectations across legacy TSA rule implementations.
+- Added `femic.pipeline.tipsy_config` with TSA YAML loading/validation and config-rule parameter
+  generation, plus optional runtime wiring in `01a_run-tsa.py` to use
+  `config/tipsy/tsa{tsa}.yaml` (or `.yml`) when present (legacy in-code dict logic remains fallback).

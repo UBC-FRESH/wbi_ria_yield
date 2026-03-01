@@ -22,6 +22,11 @@ def run_tsa():
         compute_vdyp_site_index,
         evaluate_tipsy_candidate,
     )
+    from femic.pipeline.tipsy_config import (
+        build_tipsy_params_from_config,
+        load_tipsy_tsa_config,
+        tipsy_config_path_for_tsa,
+    )
 
     if "vdyp_out_cache" not in globals():
         vdyp_out_cache = None
@@ -1820,6 +1825,21 @@ def run_tsa():
         "40": tipsy_params_tsa40,
         "41": tipsy_params_tsa41,
     }
+    tipsy_config_dir = os.environ.get("FEMIC_TIPSY_CONFIG_DIR", "config/tipsy")
+    tipsy_cfg = load_tipsy_tsa_config(tsa_code=tsa, config_dir=tipsy_config_dir)
+    if tipsy_cfg is not None:
+        tipsy_cfg_path = tipsy_config_path_for_tsa(tsa, tipsy_config_dir)
+        print("using config-driven TIPSY rules from", tipsy_cfg_path)
+
+        def _tipsy_params_from_config(au_id, au_data, vdyp_out):
+            return build_tipsy_params_from_config(
+                au_id=au_id,
+                au_data=au_data,
+                vdyp_out=vdyp_out,
+                config=tipsy_cfg,
+            )
+
+        tipsy_params_dispatch[tsa] = _tipsy_params_from_config
 
     # --- cell 55 ---
     min_operable_years = 50

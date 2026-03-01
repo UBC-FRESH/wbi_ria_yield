@@ -189,3 +189,7 @@
 - Added initial manual-handoff TIPSY config scaffolding under `config/tipsy/` with a draft template
   (`template.tsa.yaml`) and notes capturing cross-TSA variability from the five legacy TSA rule
   dicts (08/16/24/40/41), to guide migration from hard-coded logic to expert-authored config.
+- Added `femic.pipeline.tipsy_config` with TSA YAML loader/validator and config-rule evaluation
+  (`load_tipsy_tsa_config`, `validate_tipsy_tsa_config`, `build_tipsy_params_from_config`), and
+  wired `01a_run-tsa.py` to prefer `config/tipsy/tsa{tsa}.yaml` (or `.yml`) when present, with
+  legacy dict-based dispatch as fallback.

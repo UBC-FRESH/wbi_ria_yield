@@ -44,6 +44,12 @@ from femic.pipeline.tipsy import (
     compute_vdyp_site_index,
     evaluate_tipsy_candidate,
 )
+from femic.pipeline.tipsy_config import (
+    build_tipsy_params_from_config,
+    load_tipsy_tsa_config,
+    tipsy_config_path_for_tsa,
+    validate_tipsy_tsa_config,
+)
 from femic.pipeline.vdyp import build_vdyp_log_paths
 
 __all__ = [
@@ -75,6 +81,10 @@ __all__ = [
     "build_tipsy_warning_event",
     "evaluate_tipsy_candidate",
     "TIPSYCandidateEvaluation",
+    "tipsy_config_path_for_tsa",
+    "load_tipsy_tsa_config",
+    "validate_tipsy_tsa_config",
+    "build_tipsy_params_from_config",
     "write_manifest",
     "build_vdyp_log_paths",
     "build_pipeline_run_config",

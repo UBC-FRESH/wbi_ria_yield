@@ -78,3 +78,7 @@ Draft config scaffolding for this handoff now lives in `config/tipsy/`:
 
 - `config/tipsy/README.md`
 - `config/tipsy/template.tsa.yaml`
+
+If a TSA config file exists at `config/tipsy/tsaXX.yaml` (or `.yml`), the legacy
+run path now prefers that config for TIPSY parameter generation for that TSA.
+Override the config directory with `FEMIC_TIPSY_CONFIG_DIR`.
