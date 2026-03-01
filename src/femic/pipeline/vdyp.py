@@ -4,23 +4,24 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from femic.pipeline.vdyp_logging import build_tsa_vdyp_log_paths
+
 
 def build_vdyp_log_paths(
     log_dir: Path, tsa_list: list[str], run_id: str
 ) -> dict[str, list[str]]:
     """Build run-scoped VDYP artifact paths for each TSA."""
+    tsa_paths = [
+        build_tsa_vdyp_log_paths(
+            tsa_code=tsa,
+            run_id=run_id,
+            env={"FEMIC_LOG_DIR": str(log_dir)},
+        )
+        for tsa in tsa_list
+    ]
     return {
-        "vdyp_runs": [
-            str(log_dir / f"vdyp_runs-tsa{tsa}-{run_id}.jsonl") for tsa in tsa_list
-        ],
-        "vdyp_curve_events": [
-            str(log_dir / f"vdyp_curve_events-tsa{tsa}-{run_id}.jsonl")
-            for tsa in tsa_list
-        ],
-        "vdyp_stdout": [
-            str(log_dir / f"vdyp_stdout-tsa{tsa}-{run_id}.log") for tsa in tsa_list
-        ],
-        "vdyp_stderr": [
-            str(log_dir / f"vdyp_stderr-tsa{tsa}-{run_id}.log") for tsa in tsa_list
-        ],
+        "vdyp_runs": [str(paths["run"]) for paths in tsa_paths],
+        "vdyp_curve_events": [str(paths["curve"]) for paths in tsa_paths],
+        "vdyp_stdout": [str(paths["stdout"]) for paths in tsa_paths],
+        "vdyp_stderr": [str(paths["stderr"]) for paths in tsa_paths],
     }

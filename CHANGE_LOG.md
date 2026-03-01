@@ -126,3 +126,6 @@
   loop to call this helper; added focused unit tests for empty and finite-result cases.
 - Added `femic.pipeline.vdyp_logging` for run-id resolution, run-scoped VDYP log paths, and JSONL/
   text append helpers; refactored `01a_run-tsa.py` to consume these helpers and added unit tests.
+- Updated `femic.pipeline.vdyp.build_vdyp_log_paths` to reuse
+  `femic.pipeline.vdyp_logging.build_tsa_vdyp_log_paths`, removing duplicate VDYP artifact filename
+  construction logic.

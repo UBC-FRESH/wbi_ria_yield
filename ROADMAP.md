@@ -175,3 +175,5 @@
 - Extracted run-id/log-path resolution and append helpers into
   `femic.pipeline.vdyp_logging` (`resolve_run_id`, `build_tsa_vdyp_log_paths`,
   `append_jsonl`, `append_text`) and refactored `01a_run-tsa.py` to consume them.
+- Rewired manifest-facing VDYP artifact path builder (`femic.pipeline.vdyp.build_vdyp_log_paths`)
+  to reuse `build_tsa_vdyp_log_paths`, removing duplicated filename logic between modules.
