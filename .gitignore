@@ -6,5 +6,15 @@ tipsy44
 .venv
 data/
 *.pyc
+__pycache__/
+*.egg-info/
 vdyp_io/tmp*
+vdyp_io/logs/
 .vscode
+tmp/
+_build/
+
+# Runtime/generated plot artifacts
+plots/tipsy_vdyp_tsa*.png
+plots/strata-tsa*.png
+plots/strata-tsa*.pdf

@@ -12,3 +12,10 @@ swifter
 fiona
 distance
 nbformat
+typer
+rich
+ruff
+mypy
+pytest
+pre-commit
+sphinx
