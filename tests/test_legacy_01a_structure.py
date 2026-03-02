@@ -249,6 +249,32 @@ def test_run01a_uses_build_fit_stratum_curves_runner_helper_call() -> None:
     raise AssertionError("run_tsa should call build_fit_stratum_curves_runner(...)")
 
 
+def test_run01a_uses_build_stratum_fit_run_config_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "build_stratum_fit_run_config":
+            return
+    raise AssertionError("run_tsa should call build_stratum_fit_run_config(...)")
+
+
+def test_run01a_no_inline_stratum_fit_constant_assignments() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    forbidden = {"fit_rawdata", "min_age", "agg_type", "verbose", "plot"}
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in forbidden:
+                raise AssertionError(
+                    "run_tsa should source stratum-fit stage constants from shared config helper"
+                )
+
+
 def test_run01a_no_direct_fit_stratum_curves_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

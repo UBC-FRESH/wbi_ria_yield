@@ -42,6 +42,44 @@ class CurveSmoothingPlotConfig:
     ylim: tuple[float, float]
 
 
+@dataclass(frozen=True)
+class StratumFitRunConfig:
+    """Defaults for pre-VDYP stratum curve-fit compilation runs."""
+
+    fit_rawdata: bool
+    min_age: int
+    agg_type: str
+    plot: bool
+    verbose: bool
+    figsize: tuple[float, float]
+    ylim: tuple[float, float]
+    xlim: tuple[float, float]
+
+
+def build_stratum_fit_run_config(
+    *,
+    fit_rawdata: bool = True,
+    min_age: int = 30,
+    agg_type: str = "median",
+    plot: bool = False,
+    verbose: bool = False,
+    figsize: tuple[float, float] = (8, 16),
+    ylim: tuple[float, float] = (0, 600),
+    xlim: tuple[float, float] = (0, 400),
+) -> StratumFitRunConfig:
+    """Build defaults for pre-VDYP stratum fit stage settings."""
+    return StratumFitRunConfig(
+        fit_rawdata=bool(fit_rawdata),
+        min_age=int(min_age),
+        agg_type=str(agg_type),
+        plot=bool(plot),
+        verbose=bool(verbose),
+        figsize=figsize,
+        ylim=ylim,
+        xlim=xlim,
+    )
+
+
 def build_curve_smoothing_plot_config(
     *,
     sns_module: Any,

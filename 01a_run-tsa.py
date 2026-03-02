@@ -55,6 +55,7 @@ def run_tsa(
         build_bootstrap_vdyp_results_runner,
         build_curve_fit_adapter,
         build_curve_smoothing_plot_config,
+        build_stratum_fit_run_config,
         build_fit_stratum_curves_runner,
         build_run_vdyp_for_stratum_runner,
         build_smoothed_curve_table,
@@ -177,14 +178,7 @@ def run_tsa(
 
     # --- cell 28 ---
     N = 30
-    figsize = (8, 16)
-
-    debug = 0
-    fit_rawdata = 1
-    min_age = 30
-    agg_type = "median"
-    verbose = False
-    plot = False
+    stratum_fit_cfg = build_stratum_fit_run_config()
 
     vdyp_prep_checkpoint_path = "./data/vdyp_prep-tsa%s.pkl" % tsa
     prep_loaded = False
@@ -212,14 +206,14 @@ def run_tsa(
             pd_module=pd,
             sns_module=sns,
             plt_module=plt,
-            fit_rawdata=fit_rawdata,
-            min_age=min_age,
-            agg_type=agg_type,
-            plot=plot,
-            figsize=figsize,
-            verbose=verbose,
-            ylim=[0, 600],
-            xlim=[0, 400],
+            fit_rawdata=stratum_fit_cfg.fit_rawdata,
+            min_age=stratum_fit_cfg.min_age,
+            agg_type=stratum_fit_cfg.agg_type,
+            plot=stratum_fit_cfg.plot,
+            figsize=stratum_fit_cfg.figsize,
+            verbose=stratum_fit_cfg.verbose,
+            ylim=stratum_fit_cfg.ylim,
+            xlim=stratum_fit_cfg.xlim,
             message_fn=print,
         )
         results[tsa] = compile_strata_fit_results(

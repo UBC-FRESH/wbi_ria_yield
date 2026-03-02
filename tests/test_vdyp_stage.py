@@ -10,10 +10,12 @@ import numpy as np
 
 from femic.pipeline.vdyp_stage import (
     CurveSmoothingPlotConfig,
+    StratumFitRunConfig,
     SmoothedCurveResult,
     build_bootstrap_vdyp_results_runner,
     build_curve_fit_adapter,
     build_curve_smoothing_plot_config,
+    build_stratum_fit_run_config,
     build_fit_stratum_curves_runner,
     build_run_vdyp_for_stratum_runner,
     build_smoothed_curve_table,
@@ -771,6 +773,20 @@ def test_build_curve_smoothing_plot_config_applies_defaults() -> None:
     assert cfg.ylim == (0, 600)
     assert fake_sns.palette_calls == [("Greens", 3)]
     assert fake_sns.set_palette_calls == [cfg.palette]
+
+
+def test_build_stratum_fit_run_config_applies_defaults() -> None:
+    cfg = build_stratum_fit_run_config()
+
+    assert isinstance(cfg, StratumFitRunConfig)
+    assert cfg.fit_rawdata is True
+    assert cfg.min_age == 30
+    assert cfg.agg_type == "median"
+    assert cfg.plot is False
+    assert cfg.verbose is False
+    assert cfg.figsize == (8, 16)
+    assert cfg.ylim == (0, 600)
+    assert cfg.xlim == (0, 400)
 
 
 def test_plot_curve_overlays_renders_expected_series() -> None:
