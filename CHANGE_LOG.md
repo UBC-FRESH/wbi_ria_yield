@@ -867,3 +867,12 @@
 - Queued next extraction slice: continue P2.2 by removing notebook carry-over no-op aliases like
   `stratify_stand = stratify_stand` if any remain, or mark completion of this cleanup tranche if
   none remain.
+- Confirmed no residual notebook no-op alias assignments remained; removed adjacent dead empty cell
+  marker artifacts in `00_data-prep.py` (`# --- cell 85 ---`, `# --- cell 101 ---`,
+  `# --- cell 105 ---`) as part of the same cleanup tranche.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (204 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by reducing residual generic exception handling in
+  `00_data-prep.py` (e.g., broad `except:` blocks around helperable operations) into explicit helper
+  seams or narrowed exception paths.

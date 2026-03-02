@@ -700,8 +700,6 @@ f = filter_post_thlb_stands(f_table=f)
 # implies f.BCLCS_LEVEL_1 == 'V'
 # f = f[f.NON_PRODUCTIVE_CD != None]
 
-# --- cell 85 ---
-
 # --- cell 87 ---
 f = assign_stratum_codes_with_lexmatch(
     f_table=f,
@@ -768,12 +766,9 @@ validate_nonempty_au_assignment(
     si_level_col="si_level",
 )
 
-# --- cell 101 ---
-
 # --- cell 103 ---
 f = f[~f.au.isnull()]
 
-# --- cell 105 ---
 # --- cell 107 ---
 f.to_feather(ria_vri_vclr1p_checkpoint6_feather_path)
 
