@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 
+from femic.pipeline.diagnostics import build_contextual_error_message
 from femic.pipeline.tipsy import compute_vdyp_oaf1, compute_vdyp_site_index
 
 species_spruce = ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
@@ -32,14 +33,18 @@ def _raise_invalid_legacy_tipsy_rule(
     bec: str | None = None,
     forest_type: object | None = None,
 ) -> None:
-    details = [f"tsa={tsa_code}", f"reason={reason}"]
-    if leading_species is not None:
-        details.append(f"leading_species={leading_species}")
-    if bec is not None:
-        details.append(f"bec={bec}")
-    if forest_type is not None:
-        details.append(f"forest_type={forest_type}")
-    raise ValueError("Invalid legacy TIPSY rule selection: " + ", ".join(details))
+    raise ValueError(
+        build_contextual_error_message(
+            prefix="Invalid legacy TIPSY rule selection",
+            context={
+                "tsa": tsa_code,
+                "reason": reason,
+                "leading_species": leading_species,
+                "bec": bec,
+                "forest_type": forest_type,
+            },
+        )
+    )
 
 
 def _raise_unimplemented_legacy_tipsy_rule(
@@ -49,8 +54,14 @@ def _raise_unimplemented_legacy_tipsy_rule(
     forest_type: object,
 ) -> None:
     raise NotImplementedError(
-        "Legacy TIPSY rule path is not implemented: "
-        f"tsa={tsa_code}, leading_species={leading_species}, forest_type={forest_type}"
+        build_contextual_error_message(
+            prefix="Legacy TIPSY rule path is not implemented",
+            context={
+                "tsa": tsa_code,
+                "leading_species": leading_species,
+                "forest_type": forest_type,
+            },
+        )
     )
 
 

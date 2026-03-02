@@ -16,6 +16,8 @@ import traceback
 from pathlib import Path
 from typing import Any, cast
 
+from femic.pipeline.diagnostics import build_contextual_error_message
+
 
 @dataclass(frozen=True)
 class SmoothedCurveResult:
@@ -725,7 +727,10 @@ def run_vdyp_sampling(
                     vdyp_out_cache.update(vdyp_out)
             elif ipp_mode == "load_balanced":
                 raise NotImplementedError(
-                    "ipp_mode='load_balanced' is not supported in run_vdyp_sampling"
+                    build_contextual_error_message(
+                        prefix="Unsupported VDYP sampling mode",
+                        context={"ipp_mode": ipp_mode, "nsamples": nsamples},
+                    )
                 )
             ss.drop(samples.index, inplace=True)
             nsamples_target, _ = nsamples_from_curves_fn(
@@ -748,8 +753,14 @@ def run_vdyp_sampling(
         samples = sample_table.sample(nsamples)
         return run_batch_fn(samples.FEATURE_ID.values, phase="fixed")
     raise ValueError(
-        "Unsupported nsamples mode in run_vdyp_sampling: "
-        f"{nsamples!r} (expected 'auto', 'all', or int)"
+        build_contextual_error_message(
+            prefix="Unsupported nsamples mode in run_vdyp_sampling",
+            context={
+                "nsamples": repr(nsamples),
+                "expected": "'auto' | 'all' | int",
+            },
+            skip_none=False,
+        )
     )
 
 

@@ -1072,3 +1072,17 @@
 - Queued next extraction slice: continue P2.2 by consolidating repeated legacy rule-error
   construction patterns (currently duplicated across TIPSY/VDYP helper seams) into shared diagnostic
   helpers where practical, while preserving existing external behavior and messages.
+- Added shared diagnostics formatting helpers in `src/femic/pipeline/diagnostics.py`
+  (`format_context_kv(...)`, `build_contextual_error_message(...)`) to centralize contextual
+  error-string construction.
+- Rewired legacy TIPSY and VDYP typed-error branches to use shared diagnostics formatting:
+  `src/femic/pipeline/tipsy_legacy.py` and `src/femic/pipeline/vdyp_stage.py`, preserving existing
+  behavior while reducing duplicated message assembly logic.
+- Added deterministic coverage in `tests/test_diagnostics.py` and verified existing regression
+  coverage still exercises the rewired TIPSY/VDYP error branches.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (240 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by consolidating repeated structured event payload
+  assembly in VDYP/TIPSY warning/error logging paths into shared builders where this can be done
+  without changing emitted field sets.
