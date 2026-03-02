@@ -330,3 +330,11 @@
   species payload output and curve-fit error skip/log behavior), and extended
   `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls the stage helper and no
   longer defines a nested `fit_stratum`.
+- Extracted stratum-compilation loop orchestration into
+  `femic.pipeline.vdyp_stage.compile_strata_fit_results(...)`, so 01a now delegates per-stratum
+  iteration/message/result assembly through a reusable stage helper.
+- Rewired `01a_run-tsa.py` pre-VDYP compilation path to call
+  `compile_strata_fit_results(...)` with the extracted `fit_stratum_curves(...)` seam.
+- Expanded `tests/test_vdyp_stage.py` with deterministic compile-loop helper coverage, and extended
+  `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls
+  `compile_strata_fit_results(...)`.
