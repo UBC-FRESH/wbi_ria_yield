@@ -348,3 +348,12 @@
   (auto-small-sample path, auto gap-fill phase path, and invalid-mode assertion), and extended
   `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls
   `run_vdyp_sampling(...)`.
+- Extracted the nested 01a `run_vdyp(...)` wrapper into
+  `femic.pipeline.vdyp_stage.run_vdyp_for_stratum(...)`, centralizing per-stratum VDYP runtime
+  checks (wine/bin/params), default log-path resolution, run-event logging, batch execution, and
+  sampling orchestration handoff.
+- Rewired `01a_run-tsa.py` bootstrap execution to call `run_vdyp_for_stratum(...)` directly and
+  removed nested `run_vdyp`/`_tsa_log_path` definitions from `run_tsa(...)`.
+- Extended `tests/test_vdyp_stage.py` with `run_vdyp_for_stratum(...)` coverage and updated
+  `tests/test_legacy_01a_structure.py` guardrails to assert 01a no longer calls
+  `run_vdyp_sampling(...)` directly and no longer defines nested `run_vdyp`.
