@@ -365,3 +365,6 @@
   this constant instead of hardcoded local values.
 - Removed additional inline bootstrap tuning constants from `01a_run-tsa.py` by relying on
   `execute_bootstrap_vdyp_runs(...)` defaults for `half_rel_ci`, `nsamples_c1`, and `ipp_mode`.
+- Added `tests/test_legacy_01a_structure.py` AST guardrails that lock 01a structural cleanup:
+  `run_tsa(...)` must call `target_nstrata_for(...)`, must not reintroduce an inline
+  `target_nstrata` dict assignment, and must not locally reassign `si_levels`.
