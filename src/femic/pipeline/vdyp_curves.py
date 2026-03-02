@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 import importlib
 from typing import Any, Callable
 import traceback
 
 import numpy as np
 
+from femic.pipeline.diagnostics import build_timestamped_event
 
 CurveFitFn = Callable[..., tuple[np.ndarray, Any]]
 BoundsFn = Callable[[np.ndarray], tuple[Any, Any]]
@@ -122,11 +122,10 @@ def process_vdyp_out(
     skip_step: int = 1,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Build smoothed VDYP curve with toe splice and quasi-origin fallback behavior."""
-    base_event = {
-        "event": "vdyp_curve",
-        "timestamp": datetime.now(UTC).isoformat(),
-        "context": dict(curve_context) if curve_context else {},
-    }
+    base_event = build_timestamped_event(
+        event="vdyp_curve",
+        context=dict(curve_context) if curve_context else {},
+    )
 
     def emit(msg: str) -> None:
         if message is not None:

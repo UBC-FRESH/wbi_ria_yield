@@ -1112,3 +1112,19 @@
   (`src/femic/pipeline/vdyp_curves.py`) can adopt shared timestamped event builder without
   changing its intentional single-base-event timestamp semantics; if not, explicitly document that
   rationale and mark this consolidation sub-track complete.
+- Completed the queued `vdyp_curves.py` evaluation and successfully adopted shared event helpers
+  without changing its single-base-event timestamp semantics: `process_vdyp_out(...)` now builds its
+  base event via shared `build_timestamped_event(...)` exactly once per run and reuses that payload
+  across emitted events.
+- Extended `build_timestamped_event(...)` (`src/femic/pipeline/diagnostics.py`) to support optional
+  `status` and explicit `timestamp` override so both per-event and base-event patterns are supported
+  through one helper.
+- Expanded deterministic coverage in `tests/test_diagnostics.py` for status-optional event payloads
+  and validated `tests/test_vdyp_curves.py` against the rewired base-event construction path.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (241 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by closing the event-consolidation sub-track with a
+  quick repo-wide audit for remaining ad hoc `event` + `timestamp` payload construction in
+  production code and either (a) rewire to shared diagnostics helpers or (b) document explicit
+  exceptions where intentional.

@@ -36,16 +36,18 @@ def build_contextual_error_message(
 def build_timestamped_event(
     *,
     event: str,
-    status: str,
+    status: str | None = None,
     context: Mapping[str, Any] | None = None,
+    timestamp: str | None = None,
     **fields: Any,
 ) -> dict[str, Any]:
     """Build a timestamped structured event payload with optional context."""
     payload: dict[str, Any] = {
         "event": event,
-        "timestamp": datetime.now(UTC).isoformat(),
-        "status": status,
+        "timestamp": timestamp or datetime.now(UTC).isoformat(),
     }
+    if status is not None:
+        payload["status"] = status
     payload.update(fields)
     if context is not None:
         payload["context"] = dict(context)
