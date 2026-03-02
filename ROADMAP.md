@@ -1073,3 +1073,18 @@
   handlers in pipeline helper modules that support legacy orchestration (next target:
   `src/femic/pipeline/vdyp_curves.py`) and narrow them to explicit operational fallback classes
   without changing emitted diagnostics.
+- Narrowed remaining broad curve-smoothing exception handling in
+  `src/femic/pipeline/vdyp_curves.py` by introducing an explicit
+  `_curve_fit_fallback_exception_types()` tuple and applying it to both body-fit and toe-fit retry
+  fallback paths in `process_vdyp_out(...)`.
+- Preserved legacy fallback behavior for expected operational fit failures while allowing unexpected
+  exceptions to propagate for visibility/debuggability.
+- Expanded deterministic coverage in `tests/test_vdyp_curves.py` to assert:
+  runtime body-fit failures still fallback to quasi-origin outputs, and unexpected body/toe failures
+  (`ZeroDivisionError`) now propagate.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (214 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing broad fallback handlers in
+  `src/femic/pipeline/vdyp_stage.py` and narrowing them to explicit subprocess/IO/parsing exception
+  classes while preserving current logging semantics.

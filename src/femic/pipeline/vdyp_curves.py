@@ -16,6 +16,18 @@ EventLoggerFn = Callable[[dict[str, Any]], None]
 MessageFn = Callable[[str], None]
 
 
+def _curve_fit_fallback_exception_types() -> tuple[type[Exception], ...]:
+    """Operational curve-fit/toe-fit failures that should trigger legacy fallback curves."""
+    return (
+        RuntimeError,
+        ValueError,
+        TypeError,
+        OverflowError,
+        FloatingPointError,
+        np.linalg.LinAlgError,
+    )
+
+
 def legacy_fit_func1(
     x: np.ndarray, a: float, b: float, c: float, s: float
 ) -> np.ndarray:
@@ -206,7 +218,7 @@ def process_vdyp_out(
             maxfev=maxfev,
             sigma=sigma,
         )
-    except Exception as exc:
+    except _curve_fit_fallback_exception_types() as exc:
         log_event(
             {
                 **base_event,
@@ -267,7 +279,7 @@ def process_vdyp_out(
                 }
             )
             return x_, y_
-        except Exception as exc:
+        except _curve_fit_fallback_exception_types() as exc:
             last_exc = exc
             continue
 
