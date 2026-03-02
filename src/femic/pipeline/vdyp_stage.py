@@ -16,7 +16,10 @@ import traceback
 from pathlib import Path
 from typing import Any, cast
 
-from femic.pipeline.diagnostics import build_contextual_error_message
+from femic.pipeline.diagnostics import (
+    build_contextual_error_message,
+    build_timestamped_event,
+)
 
 
 @dataclass(frozen=True)
@@ -1035,13 +1038,12 @@ def execute_bootstrap_vdyp_runs(
             }
             append_jsonl_fn(
                 vdyp_run_events_path,
-                {
-                    "event": "vdyp_run",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "status": "dispatch",
-                    "phase": "bootstrap",
-                    "context": run_context,
-                },
+                build_timestamped_event(
+                    event="vdyp_run",
+                    status="dispatch",
+                    phase="bootstrap",
+                    context=run_context,
+                ),
             )
             try:
                 vdyp_out = run_vdyp_fn(
@@ -1056,17 +1058,16 @@ def execute_bootstrap_vdyp_runs(
             except _bootstrap_dispatch_exception_types() as exc:
                 append_jsonl_fn(
                     vdyp_run_events_path,
-                    {
-                        "event": "vdyp_run",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "status": "dispatch_error",
-                        "phase": "bootstrap",
-                        "error_type": type(exc).__name__,
-                        "error": str(exc),
-                        "error_repr": repr(exc),
-                        "traceback": traceback.format_exc(),
-                        "context": run_context,
-                    },
+                    build_timestamped_event(
+                        event="vdyp_run",
+                        status="dispatch_error",
+                        phase="bootstrap",
+                        error_type=type(exc).__name__,
+                        error=str(exc),
+                        error_repr=repr(exc),
+                        traceback=traceback.format_exc(),
+                        context=run_context,
+                    ),
                 )
                 raise
             vdyp_results_tsa[stratumi][si_level] = vdyp_out
@@ -1223,39 +1224,37 @@ def execute_vdyp_batch(
         except subprocess.TimeoutExpired as exc:
             append_jsonl_(
                 vdyp_log_path,
-                {
-                    "event": "vdyp_run",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "status": "timeout",
-                    "phase": phase,
-                    "feature_count": int(feature_count),
-                    "cache_hits": int(cache_hits),
-                    "ply_rows": int(ply_rows),
-                    "lyr_rows": int(lyr_rows),
-                    "cmd": args,
-                    "timeout_sec": timeout,
-                    "error": str(exc),
-                    "context": context,
-                },
+                build_timestamped_event(
+                    event="vdyp_run",
+                    status="timeout",
+                    phase=phase,
+                    feature_count=int(feature_count),
+                    cache_hits=int(cache_hits),
+                    ply_rows=int(ply_rows),
+                    lyr_rows=int(lyr_rows),
+                    cmd=args,
+                    timeout_sec=timeout,
+                    error=str(exc),
+                    context=context,
+                ),
             )
             return {}
         except _subprocess_run_exception_types() as exc:
             append_jsonl_(
                 vdyp_log_path,
-                {
-                    "event": "vdyp_run",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "status": "error",
-                    "phase": phase,
-                    "feature_count": int(feature_count),
-                    "cache_hits": int(cache_hits),
-                    "ply_rows": int(ply_rows),
-                    "lyr_rows": int(lyr_rows),
-                    "cmd": args,
-                    "error": str(exc),
-                    "traceback": traceback.format_exc(),
-                    "context": context,
-                },
+                build_timestamped_event(
+                    event="vdyp_run",
+                    status="error",
+                    phase=phase,
+                    feature_count=int(feature_count),
+                    cache_hits=int(cache_hits),
+                    ply_rows=int(ply_rows),
+                    lyr_rows=int(lyr_rows),
+                    cmd=args,
+                    error=str(exc),
+                    traceback=traceback.format_exc(),
+                    context=context,
+                ),
             )
             return {}
 
@@ -1281,52 +1280,50 @@ def execute_vdyp_batch(
         except _vdyp_parse_exception_types() as exc:
             append_jsonl_(
                 vdyp_log_path,
-                {
-                    "event": "vdyp_run",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "status": "parse_error",
-                    "phase": phase,
-                    "feature_count": int(feature_count),
-                    "cache_hits": int(cache_hits),
-                    "ply_rows": int(ply_rows),
-                    "lyr_rows": int(lyr_rows),
-                    "cmd": args,
-                    "returncode": getattr(result, "returncode", None),
-                    "duration_sec": round(time.time() - run_started, 3),
-                    "out_size": int(out_size),
-                    "err_size": int(err_size),
-                    "err_head": err_head,
-                    "proc_stdout_head": proc_stdout_head,
-                    "proc_stderr_head": proc_stderr_head,
-                    "error": str(exc),
-                    "traceback": traceback.format_exc(),
-                    "context": context,
-                },
+                build_timestamped_event(
+                    event="vdyp_run",
+                    status="parse_error",
+                    phase=phase,
+                    feature_count=int(feature_count),
+                    cache_hits=int(cache_hits),
+                    ply_rows=int(ply_rows),
+                    lyr_rows=int(lyr_rows),
+                    cmd=args,
+                    returncode=getattr(result, "returncode", None),
+                    duration_sec=round(time.time() - run_started, 3),
+                    out_size=int(out_size),
+                    err_size=int(err_size),
+                    err_head=err_head,
+                    proc_stdout_head=proc_stdout_head,
+                    proc_stderr_head=proc_stderr_head,
+                    error=str(exc),
+                    traceback=traceback.format_exc(),
+                    context=context,
+                ),
             )
             return {}
 
         append_jsonl_(
             vdyp_log_path,
-            {
-                "event": "vdyp_run",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "status": "ok" if vdyp_out else "empty_output",
-                "phase": phase,
-                "feature_count": int(feature_count),
-                "cache_hits": int(cache_hits),
-                "ply_rows": int(ply_rows),
-                "lyr_rows": int(lyr_rows),
-                "cmd": args,
-                "returncode": getattr(result, "returncode", None),
-                "duration_sec": round(time.time() - run_started, 3),
-                "out_size": int(out_size),
-                "err_size": int(err_size),
-                "err_head": err_head,
-                "proc_stdout_head": proc_stdout_head,
-                "proc_stderr_head": proc_stderr_head,
-                "vdyp_out_tables": int(len(vdyp_out)),
-                "context": context,
-            },
+            build_timestamped_event(
+                event="vdyp_run",
+                status="ok" if vdyp_out else "empty_output",
+                phase=phase,
+                feature_count=int(feature_count),
+                cache_hits=int(cache_hits),
+                ply_rows=int(ply_rows),
+                lyr_rows=int(lyr_rows),
+                cmd=args,
+                returncode=getattr(result, "returncode", None),
+                duration_sec=round(time.time() - run_started, 3),
+                out_size=int(out_size),
+                err_size=int(err_size),
+                err_head=err_head,
+                proc_stdout_head=proc_stdout_head,
+                proc_stderr_head=proc_stderr_head,
+                vdyp_out_tables=int(len(vdyp_out)),
+                context=context,
+            ),
         )
         return vdyp_out
 

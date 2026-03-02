@@ -1086,3 +1086,18 @@
 - Queued next extraction slice: continue P2.2 by consolidating repeated structured event payload
   assembly in VDYP/TIPSY warning/error logging paths into shared builders where this can be done
   without changing emitted field sets.
+- Extended shared diagnostics utilities in `src/femic/pipeline/diagnostics.py` with
+  `build_timestamped_event(...)` to centralize structured event payload construction.
+- Rewired duplicated VDYP/TIPSY event payload assembly to use shared helpers without changing
+  emitted field sets:
+  `build_tipsy_warning_event(...)` (`src/femic/pipeline/tipsy.py`) and bootstrap/batch
+  VDYP run event logging paths in `src/femic/pipeline/vdyp_stage.py`
+  (`dispatch`, `dispatch_error`, `timeout`, `error`, `parse_error`, `ok|empty_output`).
+- Added deterministic unit coverage in `tests/test_diagnostics.py` for the shared event helper and
+  validated existing TIPSY/VDYP regression suites against the rewired event construction paths.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (240 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing remaining ad hoc timestamped event/log
+  payload builders outside VDYP/TIPSY (if any) and consolidating them into shared diagnostics
+  helpers where this can be done with zero field-shape drift.

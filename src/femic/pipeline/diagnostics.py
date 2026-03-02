@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any, Mapping
 
 
@@ -30,3 +31,22 @@ def build_contextual_error_message(
     if not details:
         return prefix
     return f"{prefix}: {details}"
+
+
+def build_timestamped_event(
+    *,
+    event: str,
+    status: str,
+    context: Mapping[str, Any] | None = None,
+    **fields: Any,
+) -> dict[str, Any]:
+    """Build a timestamped structured event payload with optional context."""
+    payload: dict[str, Any] = {
+        "event": event,
+        "timestamp": datetime.now(UTC).isoformat(),
+        "status": status,
+    }
+    payload.update(fields)
+    if context is not None:
+        payload["context"] = dict(context)
+    return payload

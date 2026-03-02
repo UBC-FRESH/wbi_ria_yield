@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 import numpy as np
+
+from femic.pipeline.diagnostics import build_timestamped_event
 
 
 @dataclass(frozen=True)
@@ -78,20 +79,19 @@ def build_tipsy_warning_event(
     reason: str,
 ) -> dict[str, Any]:
     """Build standardized warning payload for TIPSY-input stage issues."""
-    return {
-        "event": "vdyp_curve_fit",
-        "timestamp": datetime.now(UTC).isoformat(),
-        "status": "warning",
-        "stage": "tipsy_input",
-        "reason": reason,
-        "context": {
+    return build_timestamped_event(
+        event="vdyp_curve_fit",
+        status="warning",
+        stage="tipsy_input",
+        reason=reason,
+        context={
             "tsa": tsa,
             "stratum_index": int(stratumi),
             "stratum_code": sc,
             "si_level": si_level,
             "au": int(au),
         },
-    }
+    )
 
 
 def build_tipsy_input_table(
