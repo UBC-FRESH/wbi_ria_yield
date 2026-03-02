@@ -111,11 +111,15 @@ from femic.pipeline.tipsy_legacy import (
 )
 from femic.pipeline.vdyp import build_vdyp_cache_paths, build_vdyp_log_paths
 from femic.pipeline.siteprod import (
+    DEFAULT_SITEPROD_SPECIES_LOOKUP,
+    assign_siteprod_from_raster,
     build_siteprod_layer_tif_path,
     enumerate_siteprod_layer_tif_paths,
     export_and_stack_siteprod_layers,
     list_siteprod_layers,
+    mean_siteprod_for_row,
     parse_arc_raster_rescue_layer_mappings,
+    siteprod_species_lookup,
 )
 from femic.pipeline.stands import (
     DEFAULT_STANDS_PROP_NAMES,
@@ -233,11 +237,15 @@ __all__ = [
     "write_manifest",
     "build_vdyp_cache_paths",
     "build_vdyp_log_paths",
+    "DEFAULT_SITEPROD_SPECIES_LOOKUP",
     "parse_arc_raster_rescue_layer_mappings",
     "list_siteprod_layers",
     "build_siteprod_layer_tif_path",
     "enumerate_siteprod_layer_tif_paths",
     "export_and_stack_siteprod_layers",
+    "siteprod_species_lookup",
+    "mean_siteprod_for_row",
+    "assign_siteprod_from_raster",
     "DEFAULT_STANDS_PROP_NAMES",
     "DEFAULT_STANDS_PROP_TYPES",
     "build_stands_column_map",

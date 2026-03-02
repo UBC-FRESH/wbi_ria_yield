@@ -690,3 +690,19 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline siteprod sampling
   orchestration in `00_data-prep.py` (`siteprod_species_lookup`, `mean_siteprod` closure, and row
   apply wiring) into reusable helper seams under `femic.pipeline.siteprod`.
+- Expanded `src/femic/pipeline/siteprod.py` with reusable siteprod sampling helpers:
+  `DEFAULT_SITEPROD_SPECIES_LOOKUP`, `siteprod_species_lookup(...)`,
+  `mean_siteprod_for_row(...)`, and `assign_siteprod_from_raster(...)`.
+- Rewired `00_data-prep.py` checkpoint2 siteprod assignment to call
+  `assign_siteprod_from_raster(...)`, removing inline `siteprod_species_lookup` and nested
+  `mean_siteprod(...)` closure logic from the script.
+- Exported new sampling helpers via `femic.pipeline.__init__`, extended
+  `tests/test_siteprod.py` with lookup + row-mean + assignment coverage, and updated AST guardrails
+  in `tests/test_legacy_orchestration_wiring.py` to assert
+  `assign_siteprod_from_raster(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (190 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting remaining inline species-volume
+  compilation orchestration in checkpoint3 (`compile_species_vol` local function, map dispatch, and
+  per-species assignment loop) into reusable helper seams.

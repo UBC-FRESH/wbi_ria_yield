@@ -6,6 +6,110 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 
 
+DEFAULT_SITEPROD_SPECIES_LOOKUP: dict[str, str] = {
+    "AC": "AT",
+    "PLI": "PL",
+    "FDI": "FD",
+    "S": "SW",
+    "SXL": "SX",
+    "ACT": "AT",
+    "E": "EP",
+    "P": "PL",
+    "EA": "EP",
+    "SXW": "SX",
+    "W": "EP",
+    "T": "LT",
+    "L": "LT",
+    "B": "BL",
+    "ACB": "AT",
+    "PJ": "PL",
+    "WS": "EP",
+    "LA": "LT",
+    "AX": "AT",
+    "BB": "BL",
+    "H": "HW",
+    "BM": "BL",
+    "V": "DR",
+    "F": "FD",
+    "C": "CW",
+    "XC": "PL",
+    "XD": "SW",
+    "X": "SW",
+    "A": "AT",
+    "D": "DR",
+    "Z": "SW",
+    "Q": "AT",
+    "Y": "YC",
+    "R": "DR",
+    "G": "DR",
+}
+
+
+def siteprod_species_lookup(
+    species_code: str,
+    *,
+    mapping: Mapping[str, str] = DEFAULT_SITEPROD_SPECIES_LOOKUP,
+) -> str:
+    """Map VRI species code to siteprod layer code with first-letter fallback."""
+    code = str(species_code)
+    if code in mapping:
+        return mapping[code]
+    first = code[:1]
+    if first in mapping:
+        return mapping[first]
+    raise ValueError(f"bad species code: {species_code!r}")
+
+
+def mean_siteprod_for_row(
+    *,
+    row: Any,
+    raster_src: Any,
+    mask_fn: Callable[..., Any],
+    np_module: Any,
+    siteprod_specieslayer: Mapping[str, int],
+    species_lookup_fn: Callable[[str], str] = siteprod_species_lookup,
+) -> float:
+    """Compute mean positive siteprod value for one stand record."""
+    values, _ = mask_fn(raster_src, [row.geometry], crop=True)
+    species = row.SPECIES_CD_1
+    species = (
+        species if species in siteprod_specieslayer else species_lookup_fn(str(species))
+    )
+    band_index = siteprod_specieslayer[species]
+    band_values = values[band_index]
+    return float(np_module.mean(band_values[band_values > 0]))
+
+
+def assign_siteprod_from_raster(
+    *,
+    f_table: Any,
+    siteprod_tif_path: str | Path,
+    siteprod_specieslayer: Mapping[str, int],
+    rio_module: Any,
+    mask_fn: Callable[..., Any],
+    np_module: Any,
+    row_apply_fn: Callable[..., Any],
+    species_lookup_fn: Callable[[str], str] = siteprod_species_lookup,
+    out_col: str = "siteprod",
+) -> Any:
+    """Assign siteprod column by masking the stacked siteprod raster per stand row."""
+    table = f_table.copy()
+    with rio_module.open(siteprod_tif_path) as src:
+
+        def _mean(row: Any) -> float:
+            return mean_siteprod_for_row(
+                row=row,
+                raster_src=src,
+                mask_fn=mask_fn,
+                np_module=np_module,
+                siteprod_specieslayer=siteprod_specieslayer,
+                species_lookup_fn=species_lookup_fn,
+            )
+
+        table[out_col] = row_apply_fn(table, _mean, axis=1)
+    return table
+
+
 def parse_arc_raster_rescue_layer_mappings(
     *,
     stdout_text: str,

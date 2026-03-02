@@ -56,6 +56,7 @@ try:
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.siteprod import (
+        assign_siteprod_from_raster,
         export_and_stack_siteprod_layers,
         list_siteprod_layers,
     )
@@ -107,6 +108,7 @@ except ModuleNotFoundError:
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.siteprod import (
+        assign_siteprod_from_raster,
         export_and_stack_siteprod_layers,
         list_siteprod_layers,
     )
@@ -394,56 +396,6 @@ if not siteprod_tif_path.is_file():
     )
 
 
-# --- cell 21 ---
-def siteprod_species_lookup(s):
-    spp = {
-        "AC": "AT",
-        "PLI": "PL",
-        "FDI": "FD",
-        "S": "SW",
-        "SXL": "SX",
-        "ACT": "AT",
-        "E": "EP",
-        "P": "PL",
-        "EA": "EP",
-        "SXW": "SX",
-        "W": "EP",  # ?
-        "T": "LT",  # ?
-        "L": "LT",
-        "B": "BL",
-        "ACB": "AT",
-        "PJ": "PL",  # ?
-        "WS": "EP",
-        "LA": "LT",
-        "AX": "AT",
-        "BB": "BL",
-        "H": "HW",
-        "BM": "BL",
-        "V": "DR",
-        "F": "FD",
-        "C": "CW",
-        "XC": "PL",
-        "XD": "SW",
-        "X": "SW",
-        "A": "AT",
-        "D": "DR",
-        "Z": "SW",
-        "Q": "AT",
-        "Y": "YC",
-        "R": "DR",
-        "G": "DR",
-    }  # ?
-    try:
-        result = spp[s]
-    except:
-        try:
-            result = spp[s[0]]
-        except:
-            print(s)
-            assert False  # bad species code
-    return result
-
-
 species_list = list(
     set().union(*[ria_vri_vclr1p["SPECIES_CD_%i" % i].unique() for i in range(1, 7)])
 )
@@ -481,17 +433,16 @@ if process_checkpoint2:
     # vri_vclr1p_categorical_columns = open(vri_vclr1p_categorical_columns_path).read().split('\n')
     # for c in vri_vclr1p_categorical_columns:
     #    f[c] = f[c].astype('category')
-    with rio.open(siteprod_tif_path) as src:
-
-        def mean_siteprod(r):
-            a, _ = mask(src, [r.geometry], crop=True)
-            s = r.SPECIES_CD_1
-            s = s if s in siteprod_specieslayer else siteprod_species_lookup(s)
-            i = siteprod_specieslayer[s]
-            aa = a[i]
-            return np.mean(aa[aa > 0])
-
-        f["siteprod"] = _row_apply(f, mean_siteprod, axis=1)
+    f = assign_siteprod_from_raster(
+        f_table=f,
+        siteprod_tif_path=siteprod_tif_path,
+        siteprod_specieslayer=siteprod_specieslayer,
+        rio_module=rio,
+        mask_fn=mask,
+        np_module=np,
+        row_apply_fn=_row_apply,
+        out_col="siteprod",
+    )
     f.to_feather(ria_vri_vclr1p_checkpoint2_feather_path)
 else:
     print("loading VRI data from checkpoint2 feather")

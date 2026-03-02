@@ -6,11 +6,15 @@ from types import SimpleNamespace
 import numpy as np
 
 from femic.pipeline.siteprod import (
+    DEFAULT_SITEPROD_SPECIES_LOOKUP,
+    assign_siteprod_from_raster,
     build_siteprod_layer_tif_path,
     enumerate_siteprod_layer_tif_paths,
     export_and_stack_siteprod_layers,
     list_siteprod_layers,
+    mean_siteprod_for_row,
     parse_arc_raster_rescue_layer_mappings,
+    siteprod_species_lookup,
 )
 
 
@@ -21,6 +25,12 @@ def test_parse_arc_raster_rescue_layer_mappings() -> None:
     )
     assert layer_species == {0: "SW", 1: "PL"}
     assert species_layer == {"SW": 0, "PL": 1}
+
+
+def test_siteprod_species_lookup_prefers_full_code_then_initial() -> None:
+    assert siteprod_species_lookup("FDI") == "FD"
+    assert siteprod_species_lookup("FAKE") == "FD"
+    assert DEFAULT_SITEPROD_SPECIES_LOOKUP["FDI"] == "FD"
 
 
 def test_build_and_enumerate_siteprod_temp_paths(tmp_path: Path) -> None:
@@ -130,3 +140,68 @@ def test_export_and_stack_siteprod_layers(tmp_path: Path) -> None:
         enumerate_siteprod_layer_tif_paths(siteprod_tmpexport_tif_path_prefix=prefix)
         == []
     )
+
+
+def test_mean_siteprod_for_row_and_assign_siteprod_from_raster() -> None:
+    class _Row:
+        def __init__(self, species: str) -> None:
+            self.SPECIES_CD_1 = species
+            self.geometry = object()
+
+    values = np.array([[[0.0, 2.0]], [[0.0, 4.0]]], dtype=float)
+
+    def _mask(
+        _src: object, _geoms: list[object], crop: bool
+    ) -> tuple[np.ndarray, None]:
+        assert crop is True
+        return values, None
+
+    row = _Row("FDI")
+    mean_value = mean_siteprod_for_row(
+        row=row,
+        raster_src=object(),
+        mask_fn=_mask,
+        np_module=np,
+        siteprod_specieslayer={"FD": 1},
+    )
+    assert mean_value == 4.0
+
+    class _FakeSrc:
+        def __enter__(self) -> "_FakeSrc":
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+    class _FakeRio:
+        def open(self, _path: Path) -> _FakeSrc:
+            return _FakeSrc()
+
+    class _Table:
+        def __init__(self) -> None:
+            self.written: dict[str, object] = {}
+
+        def copy(self) -> "_Table":
+            return self
+
+        def __setitem__(self, key: str, value: object) -> None:
+            self.written[key] = value
+
+    table = _Table()
+
+    def _row_apply(_table: _Table, fn: object, axis: int) -> list[float]:
+        assert axis == 1
+        assert callable(fn)
+        return [fn(_Row("FDI"))]  # type: ignore[misc]
+
+    out = assign_siteprod_from_raster(
+        f_table=table,
+        siteprod_tif_path=Path("siteprod.tif"),
+        siteprod_specieslayer={"FD": 1},
+        rio_module=_FakeRio(),
+        mask_fn=_mask,
+        np_module=np,
+        row_apply_fn=_row_apply,
+    )
+    assert out is table
+    assert table.written["siteprod"] == [4.0]
