@@ -413,3 +413,9 @@
   longer consumed by active stage paths.
 - Added `tests/test_legacy_01a_structure.py` guardrails asserting `run_tsa(...)` no longer assigns
   local legacy fit2 bindings.
+- Removed inline TIPSY staging constant assignments from `01a_run-tsa.py`
+  (`min_operable_years`, `si_iqrlo_quantile`, local `verbose`) and now rely on
+  `build_tipsy_params_for_tsa(...)` shared defaults.
+- Extended `tests/test_legacy_01a_structure.py` with guardrails asserting 01a no longer assigns
+  these constants inline and does not override corresponding
+  `build_tipsy_params_for_tsa(...)` keyword defaults.

@@ -500,3 +500,11 @@
 - Queued next extraction slice: move inline TIPSY staging defaults
   (`min_operable_years`, `si_iqrlo_quantile`, local `verbose`) into a shared helper seam so 01a no
   longer embeds these constants directly.
+- Removed inline TIPSY staging constant assignments from `01a_run-tsa.py`
+  (`min_operable_years`, `si_iqrlo_quantile`, local `verbose`) and now rely on
+  `build_tipsy_params_for_tsa(...)` shared default thresholds.
+- Expanded `tests/test_legacy_01a_structure.py` with guardrails asserting 01a no longer assigns
+  these constants inline and no longer overrides corresponding
+  `build_tipsy_params_for_tsa(...)` keyword defaults.
+- Queued next extraction slice: move overlay axis-bound constants (`xlim`, `ylim`) passed to
+  `plot_curve_overlays(...)` out of `01a_run-tsa.py` into a shared stage/default helper.
