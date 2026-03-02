@@ -42,6 +42,7 @@ try:
         build_bundle_tables_from_curves,
         bundle_tables_ready,
         emit_missing_au_curve_mapping_warning,
+        ensure_au_table_index,
         ensure_scsi_au_from_table,
         load_bundle_tables,
         resolve_bundle_paths,
@@ -104,6 +105,7 @@ except ModuleNotFoundError:
         build_bundle_tables_from_curves,
         bundle_tables_ready,
         emit_missing_au_curve_mapping_warning,
+        ensure_au_table_index,
         ensure_scsi_au_from_table,
         load_bundle_tables,
         resolve_bundle_paths,
@@ -773,10 +775,7 @@ f = f[~f.au.isnull()]
 f.to_feather(ria_vri_vclr1p_checkpoint6_feather_path)
 
 # --- cell 108 ---
-try:
-    au_table.set_index("au_id", inplace=True)
-except:
-    pass
+au_table = ensure_au_table_index(au_table=au_table, au_id_col="au_id")
 
 
 # --- cell 110 ---

@@ -127,6 +127,7 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "load_bundle_tables": 1,
         "build_bundle_tables_from_curves": 1,
         "emit_missing_au_curve_mapping_warning": 1,
+        "ensure_au_table_index": 1,
         "write_bundle_tables": 1,
         "ensure_scsi_au_from_table": 2,
         "assign_stratum_matches_from_au_table": 1,

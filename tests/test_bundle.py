@@ -10,6 +10,7 @@ from femic.pipeline.bundle import (
     build_bundle_tables_from_curves,
     bundle_tables_ready,
     emit_missing_au_curve_mapping_warning,
+    ensure_au_table_index,
     ensure_scsi_au_from_table,
     load_bundle_tables,
     resolve_bundle_paths,
@@ -71,6 +72,19 @@ def test_ensure_scsi_au_from_table_populates_missing_entries() -> None:
     )
 
     assert scsi_au["08"][("BWBS_AT", "L")] == 5
+
+
+def test_ensure_au_table_index_sets_index_when_column_present() -> None:
+    frame = pd.DataFrame([{"au_id": 800001, "tsa": "08"}])
+    out = ensure_au_table_index(au_table=frame)
+    assert out.index.name == "au_id"
+    assert int(out.index[0]) == 800001
+
+
+def test_ensure_au_table_index_noops_when_column_missing() -> None:
+    frame = pd.DataFrame([{"tsa": "08"}]).set_index("tsa")
+    out = ensure_au_table_index(au_table=frame)
+    assert out.index.name == "tsa"
 
 
 def test_build_bundle_tables_from_curves_builds_unmanaged_and_managed_rows() -> None:

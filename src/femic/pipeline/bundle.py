@@ -98,6 +98,19 @@ def ensure_scsi_au_from_table(
         tsa_map[scsi_key] = au_base
 
 
+def ensure_au_table_index(
+    *,
+    au_table: Any,
+    au_id_col: str = "au_id",
+) -> Any:
+    """Return AU table indexed by AU id when available."""
+    if getattr(au_table.index, "name", None) == au_id_col:
+        return au_table
+    if au_id_col not in au_table.columns:
+        return au_table
+    return au_table.set_index(au_id_col)
+
+
 def build_bundle_tables_from_curves(
     *,
     tsa_list: list[str],

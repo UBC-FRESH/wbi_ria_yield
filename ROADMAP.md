@@ -1028,3 +1028,15 @@
 - Queued next extraction slice: continue P2.2 by reducing residual generic exception handling in
   `00_data-prep.py` (e.g., broad `except:` blocks around helperable operations) into explicit helper
   seams or narrowed exception paths.
+- Added `ensure_au_table_index(...)` in `src/femic/pipeline/bundle.py` and rewired
+  `00_data-prep.py` to call it in place of the broad `try/except:` around
+  `au_table.set_index("au_id", inplace=True)`.
+- Exported the helper via `femic.pipeline.__init__`, expanded deterministic coverage in
+  `tests/test_bundle.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert `ensure_au_table_index(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (206 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by narrowing broad `except Exception` around
+  ipyparallel client initialization into explicit import/runtime exception paths (or helper seam)
+  while preserving serial fallback behavior.
