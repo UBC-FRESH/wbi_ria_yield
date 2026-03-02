@@ -466,3 +466,10 @@
 - Extended `tests/test_tipsy_config.py` with defaults/override coverage for the new helper and
   added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a no longer reads
   `os.environ` directly for this stage.
+- Added `StratumFitRunConfig` and `build_stratum_fit_run_config(...)` in
+  `femic.pipeline.vdyp_stage` to centralize pre-VDYP stratum fit-stage defaults.
+- Rewired `01a_run-tsa.py` pre-VDYP fit compilation path to consume
+  `build_stratum_fit_run_config(...)` instead of assigning fit-stage constants inline.
+- Extended `tests/test_vdyp_stage.py` with defaults coverage for the new helper and added AST
+  guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and no longer
+  assigns inline stratum fit-stage constants.

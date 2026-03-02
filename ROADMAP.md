@@ -577,3 +577,13 @@
   stage.
 - Queued next extraction slice: begin consolidating remaining inline 01a run-stage constants
   (`fit_rawdata`, `min_age`, `agg_type`, `verbose`, `plot`) into dedicated stage/config helpers.
+- Added `StratumFitRunConfig` and `build_stratum_fit_run_config(...)` in
+  `femic.pipeline.vdyp_stage` to centralize pre-VDYP stratum fit-stage defaults
+  (`fit_rawdata`, `min_age`, `agg_type`, `plot`, `verbose`, `figsize`, `xlim`, `ylim`).
+- Rewired `01a_run-tsa.py` pre-VDYP fit compilation path to consume
+  `build_stratum_fit_run_config(...)` instead of assigning these constants inline.
+- Expanded `tests/test_vdyp_stage.py` with defaults coverage for the new fit-stage config helper
+  and added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper
+  and no longer assigns inline stratum fit-stage constants.
+- Queued next extraction slice: centralize pre-VDYP checkpoint filename construction
+  (`"./data/vdyp_prep-tsa%s.pkl"`) into a shared path helper seam.
