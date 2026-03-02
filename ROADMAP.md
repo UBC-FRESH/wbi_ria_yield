@@ -977,3 +977,11 @@
 - Queued next extraction slice: continue P2.2 by extracting residual inline `f.shape` diagnostic
   notebook artifacts from `00_data-prep.py` into optional helper/log seams (or remove where dead)
   so the script body remains pure orchestration.
+- Removed residual dead inline `f.shape` notebook diagnostic expressions from
+  `00_data-prep.py` where they had no runtime effect.
+- Verified this cleanup does not alter pipeline behavior; all required gates passed:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (204 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by removing remaining dead notebook preview artifacts
+  (`au_table.head()`, `curve_table.head()`, `curve_points_table.head()`) so `00_data-prep.py`
+  remains a pure orchestration script.

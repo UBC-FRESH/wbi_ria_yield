@@ -422,7 +422,6 @@ if process_checkpoint2:
     f = normalize_and_filter_checkpoint2_records(f_table=f)
     # implies f.BCLCS_LEVEL_1 == 'V'
     # f = f[f.BCLCS_LEVEL_5 != 'OP']
-    f.shape
     # vri_vclr1p_categorical_columns = open(vri_vclr1p_categorical_columns_path).read().split('\n')
     # for c in vri_vclr1p_categorical_columns:
     #    f[c] = f[c].astype('category')
@@ -704,7 +703,6 @@ if 1:
     # f = f[f.NON_PRODUCTIVE_CD != None]
 
 # --- cell 85 ---
-f.shape
 
 # --- cell 87 ---
 f = assign_stratum_codes_with_lexmatch(
@@ -773,14 +771,11 @@ validate_nonempty_au_assignment(
 )
 
 # --- cell 101 ---
-f.shape
 
 # --- cell 103 ---
 f = f[~f.au.isnull()]
 
 # --- cell 105 ---
-f.shape
-
 # --- cell 107 ---
 f.to_feather(ria_vri_vclr1p_checkpoint6_feather_path)
 
