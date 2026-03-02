@@ -174,6 +174,22 @@ def test_collect_vdyp_batch_run_metadata_captures_expected_fields(
     }
 
 
+def test_collect_vdyp_batch_run_metadata_accepts_string_paths(tmp_path: Path) -> None:
+    out_path = tmp_path / "out.out"
+    err_path = tmp_path / "err.err"
+    out_path.write_text("o", encoding="utf-8")
+    err_path.write_text("e", encoding="utf-8")
+    metadata = collect_vdyp_batch_run_metadata(
+        result=_RunResult(stdout="", stderr="", returncode=0),
+        out_path=str(out_path),
+        err_path=str(err_path),
+        run_started=10.0,
+        time_fn=lambda: 10.0,
+    )
+    assert metadata["out_size"] == 1
+    assert metadata["err_size"] == 1
+
+
 def test_resolve_vdyp_batch_temp_artifacts_returns_names_and_paths() -> None:
     artifacts = resolve_vdyp_batch_temp_artifacts(
         vdyp_ply_name="/tmp/vdyp_ply_123.csv",

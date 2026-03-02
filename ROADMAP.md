@@ -1446,3 +1446,17 @@
 - Queued next extraction slice: continue P2.2 by auditing repeated `Path(...)` coercions in VDYP
   helpers (`build_vdyp_batch_command`, `resolve_vdyp_batch_temp_artifacts`,
   `collect_vdyp_batch_run_metadata`) and centralizing only where behavior remains unchanged.
+- Completed the queued VDYP path-coercion consolidation by adding `_as_path(...)` in
+  `src/femic/pipeline/vdyp_stage.py` and reusing it in:
+  `build_vdyp_batch_command(...)`, `resolve_vdyp_batch_temp_artifacts(...)`, and
+  `collect_vdyp_batch_run_metadata(...)`.
+- Preserved behavior while reducing repeated inline `Path(...)` casts and broadened
+  `collect_vdyp_batch_run_metadata(...)` to accept either `str` or `Path` path-like inputs.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` with a string-path metadata test
+  to confirm unchanged size/head extraction behavior across path input types.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (255 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing repeated callable-cast setup in
+  `execute_vdyp_batch(...)` and centralizing safe dependency-resolution/cast seams without changing
+  runtime defaults or injection points.

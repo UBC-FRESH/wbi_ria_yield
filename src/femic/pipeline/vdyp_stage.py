@@ -115,6 +115,11 @@ def _bootstrap_dispatch_exception_types() -> tuple[type[Exception], ...]:
     )
 
 
+def _as_path(path: str | Path) -> Path:
+    """Normalize path-like inputs to `Path`."""
+    return path if isinstance(path, Path) else Path(path)
+
+
 def build_vdyp_batch_command(
     *,
     vdyp_binpath: str,
@@ -126,7 +131,7 @@ def build_vdyp_batch_command(
     vdyp_err_txt: str,
 ) -> str:
     """Build legacy VDYP command text used for execution and logging metadata."""
-    vdyp_io_dir_str = str(vdyp_io_dir)
+    vdyp_io_dir_str = str(_as_path(vdyp_io_dir))
     args = "wine %s -p %s -ip .\\\\%s\\\\%s -il .\\\\%s\\\\%s" % (
         vdyp_binpath,
         vdyp_params_infile,
@@ -147,17 +152,19 @@ def build_vdyp_batch_command(
 def collect_vdyp_batch_run_metadata(
     *,
     result: Any,
-    out_path: Path,
-    err_path: Path,
+    out_path: str | Path,
+    err_path: str | Path,
     run_started: float,
     time_fn: Callable[[], float] = time.time,
 ) -> dict[str, Any]:
     """Collect subprocess/file metadata shared by parse-error and success events."""
-    err_size = err_path.stat().st_size if err_path.exists() else 0
+    out_path_ = _as_path(out_path)
+    err_path_ = _as_path(err_path)
+    err_size = err_path_.stat().st_size if err_path_.exists() else 0
     err_head = ""
     if err_size:
-        err_head = err_path.read_text(encoding="utf-8", errors="ignore")[:500]
-    out_size = out_path.stat().st_size if out_path.exists() else 0
+        err_head = err_path_.read_text(encoding="utf-8", errors="ignore")[:500]
+    out_size = out_path_.stat().st_size if out_path_.exists() else 0
     return {
         "returncode": getattr(result, "returncode", None),
         "duration_sec": round(time_fn() - run_started, 3),
@@ -244,11 +251,13 @@ def resolve_vdyp_batch_temp_artifacts(
     vdyp_err_name: str,
 ) -> VdypBatchTempArtifacts:
     """Resolve temp-file basenames and full paths for VDYP batch processing."""
-    out_path = Path(vdyp_out_name)
-    err_path = Path(vdyp_err_name)
+    vdyp_ply_path = _as_path(vdyp_ply_name)
+    vdyp_lyr_path = _as_path(vdyp_lyr_name)
+    out_path = _as_path(vdyp_out_name)
+    err_path = _as_path(vdyp_err_name)
     return VdypBatchTempArtifacts(
-        vdyp_ply_csv=Path(vdyp_ply_name).name,
-        vdyp_lyr_csv=Path(vdyp_lyr_name).name,
+        vdyp_ply_csv=vdyp_ply_path.name,
+        vdyp_lyr_csv=vdyp_lyr_path.name,
         vdyp_out_txt=out_path.name,
         vdyp_err_txt=err_path.name,
         out_path=out_path,
