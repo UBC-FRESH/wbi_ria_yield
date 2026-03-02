@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 TARGET_NSTRATA_BY_TSA: dict[str, int] = {
     "08": 9,
@@ -93,3 +93,20 @@ def build_stratum_lexmatch_alias_map(
         ]
         for n2 in names2
     }
+
+
+def apply_stratum_alias_map(
+    *,
+    f_table: Any,
+    stratum_col: str,
+    selected_strata_codes: Sequence[str],
+    best_match: Mapping[str, str],
+) -> str:
+    """Apply selected+alias stratum mapping and return matched-column name."""
+    selected = set(selected_strata_codes)
+    matched_col = f"{stratum_col}_matched"
+    f_table[matched_col] = [
+        key if key in selected else best_match.get(key, key)
+        for key in f_table[stratum_col].values
+    ]
+    return matched_col

@@ -66,6 +66,7 @@ def run_tsa(
         plot_curve_overlays,
     )
     from femic.pipeline.tsa import (
+        apply_stratum_alias_map,
         build_strata_summary,
         build_stratum_lexmatch_alias_map,
     )
@@ -173,16 +174,12 @@ def run_tsa(
     f_.reset_index(inplace=True)
 
     # --- cell 18 ---
-    def match_stratum(r):
-        key = r[stratum_col]
-        if key in selected_strata_codes:
-            return key
-        return best_match.get(key, key)
-
-    f_["%s_matched" % stratum_col] = f_.apply(match_stratum, axis=1)
-
-    # --- cell 19 ---
-    stratum_col = "%s_matched" % stratum_col
+    stratum_col = apply_stratum_alias_map(
+        f_table=f_,
+        stratum_col=stratum_col,
+        selected_strata_codes=selected_strata_codes,
+        best_match=best_match,
+    )
 
     # --- cell 20 ---
     f__ = f_.set_index(stratum_col)

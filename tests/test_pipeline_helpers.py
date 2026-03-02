@@ -16,6 +16,7 @@ import pandas as pd
 
 from femic.pipeline.tsa import (
     MIN_STANDCOUNT,
+    apply_stratum_alias_map,
     build_strata_summary,
     build_stratum_lexmatch_alias_map,
     target_nstrata_for,
@@ -126,6 +127,24 @@ def test_build_stratum_lexmatch_alias_map_prefers_highest_area_on_distance_tie()
     )
 
     assert alias_map == {"SAB": "SBB"}
+
+
+def test_apply_stratum_alias_map_assigns_selected_or_best_match() -> None:
+    frame = pd.DataFrame(
+        {
+            "stratum": ["SAA", "SAB", "SXX"],
+            "value": [1, 2, 3],
+        }
+    )
+    matched_col = apply_stratum_alias_map(
+        f_table=frame,
+        stratum_col="stratum",
+        selected_strata_codes=["SAA", "SBB"],
+        best_match={"SAB": "SBB"},
+    )
+
+    assert matched_col == "stratum_matched"
+    assert frame["stratum_matched"].tolist() == ["SAA", "SBB", "SXX"]
 
 
 def test_plot_path_helpers() -> None:
