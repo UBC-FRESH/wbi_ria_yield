@@ -160,3 +160,138 @@
   test asserting all five migrated TSA config files are present/loadable.
 - Added `femic tipsy validate` CLI command to validate config-driven TIPSY handoff files
   (`config/tipsy/tsaXX.yaml`) and report missing requested TSAs before pipeline execution.
+- Reduced notebook-script global coupling at the 00/01a/01b stage boundary by changing
+  `01a_run-tsa.run_tsa(...)` and `01b_run-tsa.run_tsa(...)` to accept explicit runtime args, and
+  updating `00_data-prep.py` to pass these values directly instead of setting `tsa`/`stratum_col`
+  module globals before invocation.
+- Replaced broad legacy module namespace injection (`__dict__.update(globals())`) with explicit,
+  validated context binding through `femic.pipeline.legacy_context.bind_legacy_module_context(...)`
+  plus scoped 01a/01b symbol allowlists, and added tests for the new binder.
+- Extracted VDYP batch prep/run/import orchestration into new
+  `femic.pipeline.vdyp_stage.execute_vdyp_batch(...)` helper and rewired `01a_run-tsa.py` to call
+  this stage seam for subprocess execution + structured run logging.
+- Added `tests/test_vdyp_stage.py` coverage for success, parse-error, and timeout behavior of the
+  extracted VDYP stage helper.
+- Extracted bootstrap dispatch orchestration into
+  `femic.pipeline.vdyp_stage.execute_bootstrap_vdyp_runs(...)` and rewired the `force_run_vdyp`
+  branch in `01a_run-tsa.py` to use the shared helper for per-stratum SI run-context logging and
+  result accumulation.
+- Extended `tests/test_vdyp_stage.py` with bootstrap success and dispatch-error coverage.
+- Extracted curve-smoothing dispatch orchestration into
+  `femic.pipeline.vdyp_stage.execute_curve_smoothing_runs(...)` and rewired `01a_run-tsa.py` to
+  consume returned smoothed-curve records for `vdyp_smoothxy` table assembly and downstream plot
+  overlays.
+- Extended `tests/test_vdyp_stage.py` with curve-smoothing coverage for missing-output warning
+  logging and per-curve kwarg-override propagation.
+- Extracted legacy VDYP overlay plotting into
+  `femic.pipeline.vdyp_stage.plot_curve_overlays(...)` and rewired `01a_run-tsa.py` to delegate
+  per-stratum overlay plotting through this shared helper.
+- Reduced the explicit 01a legacy context allowlist by removing stale symbols no longer used after
+  stage extraction (`Path`, `curve_fit`, `shlex`, `subprocess`).
+- Extended `tests/test_vdyp_stage.py` with overlay-plot orchestration assertions for plot calls and
+  axis/legend behavior.
+- Extracted smooth-curve table assembly/write into
+  `femic.pipeline.vdyp_stage.build_smoothed_curve_table(...)` and rewired `01a_run-tsa.py` to use
+  this helper for consolidated DataFrame construction + feather persistence.
+- Reduced `RUN_01A_CONTEXT_SYMBOLS` further by dropping no-longer-used symbols
+  (`_curve_fit`, `wraps`) after curve-table helper extraction.
+- Extended `tests/test_vdyp_stage.py` with `build_smoothed_curve_table(...)` coverage for assembled
+  rows and output write callback behavior.
+- Extracted VDYP result-resolution branching into
+  `femic.pipeline.vdyp_stage.load_or_build_vdyp_results_tsa(...)` and rewired `01a_run-tsa.py` to
+  use this helper for force-run/bootstrap, per-TSA cache loads, combined-cache fallback, and cache
+  persistence.
+- Reduced `RUN_01A_CONTEXT_SYMBOLS` again by removing stale `pickle` dependency after migrating
+  cache/load orchestration into the shared stage helper.
+- Extended `tests/test_vdyp_stage.py` with `load_or_build_vdyp_results_tsa(...)` coverage for
+  force-run, TSA-cache, combined-cache, and compat-loader fallback paths.
+- Extracted VDYP polygon/layer table loading into
+  `femic.pipeline.vdyp_stage.load_vdyp_input_tables(...)` and rewired `01a_run-tsa.py` to use this
+  shared loader instead of inline source/feather branch logic.
+- Reduced `RUN_01A_CONTEXT_SYMBOLS` again by removing stale `gpd` dependency after input-table
+  loader extraction.
+- Extended `tests/test_vdyp_stage.py` with `load_vdyp_input_tables(...)` coverage for feather-cache
+  reads and source-geodatabase load+persist behavior.
+- Added `femic.pipeline.vdyp_stage.build_curve_fit_adapter(...)` and rewired `01a_run-tsa.py` to
+  build a local `curve_fit` adapter from `curve_fit_impl`, centralizing legacy
+  `maxfev -> max_nfev` compatibility handling.
+- Removed obsolete `wraps_impl` argument plumbing from `01a_run-tsa.run_tsa(...)` and the
+  `00_data-prep.py` `run_tsa(...)` callsite.
+- Extended `tests/test_vdyp_stage.py` with `build_curve_fit_adapter(...)` coverage for
+  `maxfev` translation and existing `max_nfev` passthrough behavior.
+- Reduced additional legacy global-state coupling by extending `01a_run-tsa.run_tsa(...)` with
+  explicit path/export arguments (`vdyp_results_*`, `vdyp_input_pandl_path`,
+  `vdyp_{ply,lyr}_feather_path`, `tipsy_params_columns`, `tipsy_params_path_prefix`) and passing
+  these from `00_data-prep.py`.
+- Trimmed `RUN_01A_CONTEXT_SYMBOLS` to remove now-redundant path/export globals after the signature
+  handoff refactor.
+- Extended `01a_run-tsa.run_tsa(...)` to accept mutable run-state/data inputs explicitly
+  (`results`, `vdyp_results`, `vdyp_curves_smooth`, `scsi_au`, `au_scsi`, `tipsy_params`,
+  `si_levelquants`, `species_list`, `vdyp_curves_smooth_tsa_feather_path_prefix`) and passed these
+  from `00_data-prep.py`.
+- Trimmed `RUN_01A_CONTEXT_SYMBOLS` again so context binding now only injects baseline runtime
+  helper modules/flags instead of per-run dataset/state payload variables.
+- Converted `01b_run-tsa.run_tsa(...)` to accept explicit runtime data inputs
+  (`results`, `au_scsi`, `tipsy_curves`, `vdyp_curves_smooth`) with direct argument passing from
+  `00_data-prep.py`.
+- Removed all 01b legacy context payload requirements by setting `RUN_01B_CONTEXT_SYMBOLS = ()`
+  and localizing `matplotlib.pyplot`/`seaborn` imports inside `01b_run-tsa.py`.
+- Extracted TIPSY table assembly/export logic into `femic.pipeline.tipsy`
+  (`build_tipsy_input_table`, `write_tipsy_input_exports`) and rewired `01a_run-tsa.py` to
+  delegate xlsx/dat output generation through these helpers.
+- Extended `tests/test_tipsy.py` with coverage for TIPSY export helper behavior (row assembly,
+  empty-input error, and output file writes).
+- Extracted config-vs-legacy TIPSY builder selection into
+  `femic.pipeline.tipsy_config.resolve_tipsy_param_builder(...)` and rewired `01a_run-tsa.py` to
+  use this shared resolver instead of inline branch logic.
+- Extended `tests/test_tipsy_config.py` with resolver coverage for config-preferred, forced-legacy,
+  and missing-config failure behavior.
+- Localized `distance`/`itertools`/`operator`/`os` imports inside `01a_run-tsa.run_tsa(...)`,
+  removing these requirements from injected legacy context.
+- Trimmed `RUN_01A_CONTEXT_SYMBOLS` accordingly; 01a context now only injects
+  `_femic_resume_effective`, `kwarg_overrides`, `np`, `pd`, `plt`, and `sns`.
+- Extracted TIPSY candidate-selection/AU-assignment orchestration into
+  `femic.pipeline.tipsy.build_tipsy_params_for_tsa(...)` and rewired `01a_run-tsa.py` to delegate
+  eligibility filtering, warning logging, and `scsi_au`/`au_scsi`/`tipsy_params` map updates.
+- Added explicit runtime arguments to `01a_run-tsa.run_tsa(...)` for
+  `resume_effective`, `force_run_vdyp`, and `kwarg_overrides_for_tsa`, with direct argument passing
+  from `00_data-prep.py`.
+- Localized `numpy`/`pandas`/`matplotlib`/`seaborn` imports inside `01a_run-tsa.run_tsa(...)` and
+  reduced `RUN_01A_CONTEXT_SYMBOLS` to `()`, eliminating required 01a context injection.
+- Extended `tests/test_tipsy.py` with `build_tipsy_params_for_tsa(...)` coverage for success,
+  missing-VDYP warning, and no-species warning paths.
+- Extracted legacy in-code TIPSY rule implementations and exclusion setup from `01a_run-tsa.py`
+  into `femic.pipeline.tipsy_legacy` and rewired 01a to consume
+  `build_tipsy_exclusion()`/`get_legacy_tipsy_builders()` from this module.
+- Added `tests/test_tipsy_legacy.py` with coverage for legacy TSA key dispatch, exclusion-map
+  presence, and baseline TSA08 builder output fields.
+- Added legacy-context regression tests asserting `RUN_01A_CONTEXT_SYMBOLS` and
+  `RUN_01B_CONTEXT_SYMBOLS` are empty and that binding with an empty required-symbol list is a
+  no-op.
+- Removed `bind_legacy_module_context(...)` callsites and related legacy-context imports from
+  `00_data-prep.py` now that both 01a/01b required-symbol lists are empty.
+- Removed the inactive `if 0:` duplicate TIPSY export branch in `01a_run-tsa.py`, leaving the
+  helper-driven export path (`build_tipsy_input_table` + `write_tipsy_input_exports`) as the single
+  active flow.
+- Removed `legacy_context` symbol re-exports from `femic.pipeline.__init__` to reflect current
+  runtime behavior (no required legacy context injection path in the active orchestration flow).
+- Removed additional inactive `if 0:` notebook-era debug/reload blocks from `00_data-prep.py`
+  (manual checkpoint rollback/cache/load snippets and dormant shapefile export path) to reduce dead
+  code around active orchestration logic.
+- Added `tests/test_legacy_orchestration_wiring.py` AST-based regression checks that enforce explicit
+  01a/01b `run_tsa(...)` keyword handoff arguments and verify no
+  `bind_legacy_module_context(...)` call remains in `00_data-prep.py`.
+- Removed the final inactive `if 0:` notebook-era debug blocks from `00_data-prep.py` (dormant
+  legacy `process_vdyp_out(...)` sandbox and manual TSA smoothing loop), leaving only active
+  orchestration code paths.
+- Expanded `tests/test_tipsy_legacy.py` with a TSA24 regression case that verifies BEC-dependent
+  legacy rule branching (`SBS` vs `ESSF`) for a fir-leading stand.
+- Extracted default VDYP curve-smoothing kwarg overrides into
+  `femic.pipeline.vdyp_overrides` (`DEFAULT_VDYP_KWARG_OVERRIDES`,
+  `vdyp_kwarg_overrides_for_tsa(...)`) to remove hardcoded override dicts from
+  `00_data-prep.py` and centralize override defaults in a reusable pipeline seam.
+- Updated `01a_run-tsa.run_tsa(...)` to resolve override defaults internally when
+  `kwarg_overrides_for_tsa` is not provided; `00_data-prep.py` now passes `None` explicitly.
+- Added regression coverage for the new override helper (`tests/test_vdyp_overrides.py`) plus AST
+  wiring coverage asserting the 00->01a handoff uses internal defaults
+  (`kwarg_overrides_for_tsa=None`).
