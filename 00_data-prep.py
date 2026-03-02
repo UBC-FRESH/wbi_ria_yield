@@ -43,6 +43,13 @@ from pathlib import Path
 import sys
 
 try:
+    from femic.pipeline.bundle import (
+        bundle_tables_ready,
+        ensure_scsi_au_from_table,
+        load_bundle_tables,
+        resolve_bundle_paths,
+        write_bundle_tables,
+    )
     from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
@@ -55,6 +62,13 @@ except ModuleNotFoundError:
     _src_dir = Path(__file__).resolve().parent / "src"
     if _src_dir.is_dir():
         sys.path.insert(0, str(_src_dir))
+    from femic.pipeline.bundle import (
+        bundle_tables_ready,
+        ensure_scsi_au_from_table,
+        load_bundle_tables,
+        resolve_bundle_paths,
+        write_bundle_tables,
+    )
     from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
@@ -740,40 +754,21 @@ def canfi_species(stratum_code):
 
 
 # --- cell 67 ---
-_bundle_dir = Path("./data/model_input_bundle")
-_active_bundle_dir = _bundle_dir
-_required_bundle_files = ("au_table.csv", "curve_table.csv", "curve_points_table.csv")
-
-os.makedirs(_active_bundle_dir, exist_ok=True)
-
-_au_table_path = _active_bundle_dir / "au_table.csv"
-_curve_table_path = _active_bundle_dir / "curve_table.csv"
-_curve_points_path = _active_bundle_dir / "curve_points_table.csv"
-_bundle_ready = (
-    _au_table_path.is_file()
-    and _curve_table_path.is_file()
-    and _curve_points_path.is_file()
-)
-
-
-def _ensure_scsi_au_from_table(_au_table):
-    for _row in _au_table.itertuples(index=False):
-        _tsa = _normalize_tsa_code(_row.tsa)
-        _tsa_map = scsi_au.setdefault(_tsa, {})
-        _key = (str(_row.stratum_code), str(_row.si_level))
-        if _key in _tsa_map:
-            continue
-        _au_base = int(_row.au_id) - 100000 * int(_tsa)
-        _tsa_map[_key] = _au_base
+bundle_paths = resolve_bundle_paths(base_dir="./data/model_input_bundle", ensure_dir=True)
+_bundle_ready = bundle_tables_ready(paths=bundle_paths)
 
 
 if _femic_resume_effective and _bundle_ready:
-    au_table = pd.read_csv(_au_table_path)
-    curve_table = pd.read_csv(_curve_table_path)
-    curve_points_table = pd.read_csv(_curve_points_path)
-    if "tsa" in au_table.columns:
-        au_table["tsa"] = au_table["tsa"].apply(_normalize_tsa_code)
-    _ensure_scsi_au_from_table(au_table)
+    au_table, curve_table, curve_points_table = load_bundle_tables(
+        paths=bundle_paths,
+        pd_module=pd,
+        normalize_tsa_code_fn=_normalize_tsa_code,
+    )
+    ensure_scsi_au_from_table(
+        au_table=au_table,
+        scsi_au=scsi_au,
+        normalize_tsa_code_fn=_normalize_tsa_code,
+    )
 else:
     au_table_data = {
         "au_id": [],
@@ -850,7 +845,11 @@ else:
     curve_points_table = pd.DataFrame(curve_points_table_data)
     if "tsa" in au_table.columns:
         au_table["tsa"] = au_table["tsa"].apply(_normalize_tsa_code)
-    _ensure_scsi_au_from_table(au_table)
+    ensure_scsi_au_from_table(
+        au_table=au_table,
+        scsi_au=scsi_au,
+        normalize_tsa_code_fn=_normalize_tsa_code,
+    )
 
     # --- cell 69 ---
     au_table.head()
@@ -862,9 +861,12 @@ else:
     curve_points_table.head()
 
     # --- cell 73 ---
-    au_table.to_csv(_au_table_path)
-    curve_table.to_csv(_curve_table_path)
-    curve_points_table.to_csv(_curve_points_path)
+    write_bundle_tables(
+        paths=bundle_paths,
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points_table,
+    )
 
 # --- cell 77 ---
 if not _femic_no_cache:

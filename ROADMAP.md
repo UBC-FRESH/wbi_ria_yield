@@ -668,3 +668,13 @@
   helper seams.
 - Queued next extraction slice: continue thinning 00_data-prep by extracting remaining post-01b
   bundle/table orchestration and path wiring into shared helpers under `femic.pipeline`.
+- Added new bundle orchestration helpers in `femic.pipeline.bundle`:
+  `resolve_bundle_paths(...)`, `bundle_tables_ready(...)`, `load_bundle_tables(...)`,
+  `write_bundle_tables(...)`, and `ensure_scsi_au_from_table(...)`.
+- Rewired 00_data-prep post-01b bundle block to use shared bundle helpers for path wiring,
+  resume-time table loading, CSV persistence, and `scsi_au` backfill.
+- Added focused bundle helper tests in `tests/test_bundle.py` and expanded orchestration AST
+  guardrails in `tests/test_legacy_orchestration_wiring.py` to assert 00_data-prep calls bundle
+  helper seams.
+- Queued next extraction slice: move the heavy AU/curve table assembly loop (currently inline in
+  00_data-prep) into a reusable pipeline helper with deterministic unit coverage.

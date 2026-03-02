@@ -108,6 +108,11 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "prepare_tsa_index": 1,
         "build_legacy_01a_runtime_config": 1,
         "should_skip_if_outputs_exist": 2,
+        "resolve_bundle_paths": 1,
+        "bundle_tables_ready": 1,
+        "load_bundle_tables": 1,
+        "write_bundle_tables": 1,
+        "ensure_scsi_au_from_table": 2,
     }
     observed = {name: 0 for name in required_calls}
     for node in ast.walk(tree):

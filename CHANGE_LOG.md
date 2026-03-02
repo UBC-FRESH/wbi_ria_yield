@@ -528,3 +528,12 @@
 - Expanded tests:
   `tests/test_pipeline_stages.py` now covers the new setup/runtime helpers and
   `tests/test_legacy_orchestration_wiring.py` asserts 00-data-prep wiring uses these helper seams.
+- Added `src/femic/pipeline/bundle.py` to centralize model-input bundle pathing and I/O helpers
+  (`resolve_bundle_paths`, `bundle_tables_ready`, `load_bundle_tables`, `write_bundle_tables`,
+  `ensure_scsi_au_from_table`).
+- Rewired 00_data-prep post-01b bundle orchestration to consume shared bundle helpers for
+  resume-time bundle reads, path wiring, CSV writes, and `scsi_au` backfill.
+- Added `tests/test_bundle.py` with deterministic coverage for bundle path readiness, table
+  load/write behavior, TSA normalization, and `scsi_au` reconstruction from AU tables.
+- Expanded `tests/test_legacy_orchestration_wiring.py` guardrails to assert 00_data-prep calls
+  bundle helper seams.
