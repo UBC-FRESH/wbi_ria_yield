@@ -234,7 +234,7 @@ def _preflight_checks(*, resume: bool) -> None:
 def _enable_rich_tracebacks() -> None:
     try:
         from rich.traceback import install
-    except Exception:
+    except (ModuleNotFoundError, ImportError):
         return
     install(show_locals=True, width=140, extra_lines=2)
 

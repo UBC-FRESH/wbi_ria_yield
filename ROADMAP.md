@@ -1162,3 +1162,18 @@
 - Queued next extraction slice: continue P2.2 by narrowing the remaining broad exception handler in
   CLI entry wiring (`src/femic/cli/main.py`) with explicit command/runtime exception classes and
   targeted CLI regression coverage.
+- Narrowed the remaining broad CLI debug-traceback handler in `src/femic/cli/main.py`
+  (`_enable_rich_tracebacks`) to explicit optional-import failures
+  (`ModuleNotFoundError`, `ImportError`) so unexpected import-time/runtime failures are no longer
+  silently swallowed.
+- Added targeted CLI coverage in `tests/test_cli_main.py` to assert missing optional `rich`
+  dependency is ignored while unexpected import failures propagate.
+- Completed broad-exception hardening audit for active orchestration/code paths:
+  no `except Exception` or bare `except:` handlers remain in `src/`, `tests/`,
+  `00_data-prep.py`, or `01a_run-tsa.py`.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (227 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by replacing remaining sentinel `assert False`
+  branches in legacy orchestration/helper modules with explicit typed errors carrying actionable
+  context (start with legacy TIPSY builders in `src/femic/pipeline/tipsy_legacy.py`).
