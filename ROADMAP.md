@@ -529,3 +529,10 @@
   and no longer assigns inline strata-plot constants.
 - Queued next extraction slice: replace inline strata plot output path literals in `01a_run-tsa.py`
   with `femic.pipeline.plots.strata_plot_paths(...)` helper output.
+- Rewired `01a_run-tsa.py` strata diagnostic plot output writes to call
+  `femic.pipeline.plots.strata_plot_paths(...)` and save to returned PDF/PNG paths instead of
+  inline `"plots/strata-tsa%s.*"` string literals.
+- Added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls
+  `strata_plot_paths(...)` and no longer embeds inline strata plot output path literals.
+- Queued next extraction slice: move inline stratum-label ordering toggle (`sort_lex` branch) from
+  `01a_run-tsa.py` into a reusable TSA/plot helper seam.

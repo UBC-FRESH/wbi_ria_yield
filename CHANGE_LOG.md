@@ -433,3 +433,8 @@
 - Extended `tests/test_pipeline_helpers.py` with defaults coverage for the new helper and added AST
   guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and no longer
   assigns inline strata-plot constants.
+- Rewired `01a_run-tsa.py` strata diagnostic plot output writes to call
+  `femic.pipeline.plots.strata_plot_paths(...)` and save to helper-provided PDF/PNG paths instead
+  of inline `"plots/strata-tsa%s.*"` literals.
+- Added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls
+  `strata_plot_paths(...)` and no longer embeds inline strata output path literals.
