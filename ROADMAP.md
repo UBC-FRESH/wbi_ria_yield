@@ -1346,3 +1346,19 @@
 - Queued next extraction slice: continue P2.2 by auditing duplicated newline/stream framing usage
   around legacy subprocess output (`run_legacy_subprocess` and VDYP batch stream capture) and
   centralizing safe formatting seams without altering emitted log text.
+- Completed the queued subprocess/stream-format audit by adding explicit formatting seams for both
+  line-forwarded legacy subprocess output and VDYP stream artifact capture.
+- Added `stream_filtered_subprocess_output(...)` in `src/femic/pipeline/stages.py` and rewired
+  `run_legacy_subprocess(...)` to consume this helper, preserving line text/newline behavior while
+  centralizing known-noise filtering.
+- Added `build_vdyp_stream_log_block(...)` in `src/femic/pipeline/vdyp_logging.py` and rewired
+  `execute_vdyp_batch(...)` (`src/femic/pipeline/vdyp_stage.py`) to use it for both stdout/stderr
+  stream block assembly (`header + stream + trailing newline`), removing duplicated inline framing.
+- Expanded deterministic coverage in `tests/test_pipeline_stages.py` and
+  `tests/test_vdyp_logging.py` for these new stream-formatting helper seams.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (247 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing duplicated VDYP subprocess command-string
+  assembly/metadata capture in `execute_vdyp_batch(...)` and centralizing it behind a helper seam
+  without changing emitted command text or event fields.

@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 from types import ModuleType
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 from femic.pipeline.io import LegacyExecutionPlan
 
@@ -184,8 +184,22 @@ def run_legacy_subprocess(
     )
     if process.stdout is None:
         raise RuntimeError("Legacy subprocess stdout pipe was not created")
-    for line in process.stdout:
+    stream_filtered_subprocess_output(
+        lines=process.stdout,
+        drop_lines=drop_lines,
+        write_fn=sys.stdout.write,
+    )
+    return StageResult(exit_code=process.wait())
+
+
+def stream_filtered_subprocess_output(
+    *,
+    lines: Iterable[str],
+    drop_lines: set[str],
+    write_fn: Callable[[str], Any],
+) -> None:
+    """Forward subprocess output lines, omitting exact known-noise line matches."""
+    for line in lines:
         if line.strip() in drop_lines:
             continue
-        sys.stdout.write(line)
-    return StageResult(exit_code=process.wait())
+        write_fn(line)

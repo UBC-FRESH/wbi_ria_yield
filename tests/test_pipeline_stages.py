@@ -14,6 +14,7 @@ from femic.pipeline.stages import (
     run_legacy_subprocess,
     run_legacy_tsa_loop,
     should_skip_if_outputs_exist,
+    stream_filtered_subprocess_output,
 )
 import pandas as pd
 import pytest
@@ -47,6 +48,16 @@ def test_run_legacy_subprocess_filters_known_noise(capsys, tmp_path: Path) -> No
     assert "done" in out
     assert "Error in sys.excepthook:" not in out
     assert "Original exception was:" not in out
+
+
+def test_stream_filtered_subprocess_output_keeps_line_format() -> None:
+    written: list[str] = []
+    stream_filtered_subprocess_output(
+        lines=["alpha\n", "Error in sys.excepthook:\n", "beta\n"],
+        drop_lines={"Error in sys.excepthook:"},
+        write_fn=written.append,
+    )
+    assert written == ["alpha\n", "beta\n"]
 
 
 def test_run_legacy_subprocess_raises_when_stdout_pipe_missing(tmp_path: Path) -> None:

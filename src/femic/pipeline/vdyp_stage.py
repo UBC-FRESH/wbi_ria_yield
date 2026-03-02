@@ -1125,6 +1125,7 @@ def execute_vdyp_batch(
     append_jsonl_fn: Callable[[str | Path, Any], None] | None = None,
     append_text_fn: Callable[[str | Path, str], None] | None = None,
     build_stream_header_fn: Callable[..., str] | None = None,
+    build_stream_log_block_fn: Callable[..., str] | None = None,
     subprocess_run: Callable[..., Any] | None = None,
 ) -> dict[Any, Any]:
     """Run one VDYP batch and return parsed per-feature output tables."""
@@ -1145,6 +1146,10 @@ def execute_vdyp_batch(
         from femic.pipeline.vdyp_logging import (
             build_vdyp_stream_header as build_stream_header_fn,
         )
+    if build_stream_log_block_fn is None:
+        from femic.pipeline.vdyp_logging import (
+            build_vdyp_stream_log_block as build_stream_log_block_fn,
+        )
     if subprocess_run is None:
         subprocess_run = subprocess.run
 
@@ -1153,6 +1158,7 @@ def execute_vdyp_batch(
     append_jsonl_ = cast(Callable[[str | Path, Any], None], append_jsonl_fn)
     append_text_ = cast(Callable[[str | Path, str], None], append_text_fn)
     build_stream_header_ = cast(Callable[..., str], build_stream_header_fn)
+    build_stream_log_block_ = cast(Callable[..., str], build_stream_log_block_fn)
     subprocess_run_ = cast(Callable[..., Any], subprocess_run)
 
     feature_count = len(feature_ids_list)
@@ -1268,9 +1274,21 @@ def execute_vdyp_batch(
             cmd=args,
         )
         if result.stdout:
-            append_text_(vdyp_stdout_log_path, stream_header + result.stdout + "\n")
+            append_text_(
+                vdyp_stdout_log_path,
+                build_stream_log_block_(
+                    stream_header=stream_header,
+                    stream_text=result.stdout,
+                ),
+            )
         if result.stderr:
-            append_text_(vdyp_stderr_log_path, stream_header + result.stderr + "\n")
+            append_text_(
+                vdyp_stderr_log_path,
+                build_stream_log_block_(
+                    stream_header=stream_header,
+                    stream_text=result.stderr,
+                ),
+            )
 
         err_size = err_path.stat().st_size if err_path.exists() else 0
         err_head = ""

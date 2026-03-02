@@ -8,6 +8,7 @@ from femic.pipeline.vdyp_logging import (
     append_jsonl,
     append_text,
     build_vdyp_stream_header,
+    build_vdyp_stream_log_block,
     build_tsa_vdyp_log_paths,
     resolve_run_id,
     serialize_jsonl_payload,
@@ -84,4 +85,15 @@ def test_build_vdyp_stream_header_uses_expected_format() -> None:
         header
         == "\n=== 2026-03-02T00:00:00+00:00 phase=initial feature_count=12 cache_hits=3 ===\n"
         "cmd: wine VDYP7Console.exe\n"
+    )
+
+
+def test_build_vdyp_stream_log_block_appends_trailing_newline() -> None:
+    stream_text = "vdyp stdout chunk"
+    stream_header = "header\n"
+    assert (
+        build_vdyp_stream_log_block(
+            stream_header=stream_header, stream_text=stream_text
+        )
+        == "header\nvdyp stdout chunk\n"
     )

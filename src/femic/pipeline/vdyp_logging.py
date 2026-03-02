@@ -89,3 +89,8 @@ def build_vdyp_stream_header(
         f"\n=== {ts} phase={phase} feature_count={feature_count} cache_hits={cache_hits} ===\n"
         f"cmd: {cmd}\n"
     )
+
+
+def build_vdyp_stream_log_block(*, stream_header: str, stream_text: str) -> str:
+    """Build one persisted VDYP stream log block from header + process stream text."""
+    return stream_header + stream_text + "\n"
