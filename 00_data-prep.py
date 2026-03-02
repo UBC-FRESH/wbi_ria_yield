@@ -835,13 +835,6 @@ f = assign_thlb_area_and_flag(
     thlb_col="thlb",
 )
 
-# --- cell 123 ---
-f.query("thlb == 1").groupby("tsa_code").FEATURE_AREA_SQM.sum() * 0.0001
-
-# --- cell 124 ---
-f.groupby("tsa_code").thlb_area.sum()
-
-
 # --- cell 126 ---
 f.to_feather(ria_vri_vclr1p_checkpoint8_feather_path)
 

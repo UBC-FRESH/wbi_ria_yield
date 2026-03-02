@@ -1010,3 +1010,12 @@
 - Queued next extraction slice: continue P2.2 by removing remaining dead inline aggregate preview
   expressions (`f.query(...).groupby(...).sum()` and `f.groupby(...).sum()`) from
   `00_data-prep.py` so script-mode orchestration contains only side-effecting pipeline steps.
+- Removed remaining dead inline aggregate preview expressions from `00_data-prep.py`
+  (`f.query("thlb == 1").groupby(...).sum()` and `f.groupby("tsa_code").thlb_area.sum()`), leaving
+  only side-effecting pipeline steps in this stage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (204 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by removing notebook carry-over no-op aliases like
+  `stratify_stand = stratify_stand` if any remain, or mark completion of this cleanup tranche if
+  none remain.
