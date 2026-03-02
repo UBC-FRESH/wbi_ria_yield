@@ -116,6 +116,9 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "ensure_scsi_au_from_table": 2,
         "assign_stratum_matches_from_au_table": 1,
         "assign_si_levels_from_stratum_quantiles": 1,
+        "assign_au_ids_from_scsi": 1,
+        "summarize_missing_au_mappings": 1,
+        "validate_nonempty_au_assignment": 1,
     }
     observed = {name: 0 for name in required_calls}
     for node in ast.walk(tree):

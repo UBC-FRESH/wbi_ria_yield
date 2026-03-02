@@ -58,8 +58,11 @@ try:
         should_skip_if_outputs_exist,
     )
     from femic.pipeline.tsa import (
+        assign_au_ids_from_scsi,
         assign_si_levels_from_stratum_quantiles,
         assign_stratum_matches_from_au_table,
+        summarize_missing_au_mappings,
+        validate_nonempty_au_assignment,
     )
 except ModuleNotFoundError:
     _src_dir = Path(__file__).resolve().parent / "src"
@@ -82,8 +85,11 @@ except ModuleNotFoundError:
         should_skip_if_outputs_exist,
     )
     from femic.pipeline.tsa import (
+        assign_au_ids_from_scsi,
         assign_si_levels_from_stratum_quantiles,
         assign_stratum_matches_from_au_table,
+        summarize_missing_au_mappings,
+        validate_nonempty_au_assignment,
     )
 
 # --- cell 5 ---
@@ -901,48 +907,35 @@ f, stratum_si_stats = assign_si_levels_from_stratum_quantiles(
 )
 
 
-# --- cell 98 ---
-def _lookup_scsi_au(tsa_code, stratum_code, si_level):
-    tsa_map = scsi_au.get(str(tsa_code))
-    if not tsa_map:
-        return None
-    return tsa_map.get((str(stratum_code), str(si_level)))
-
-
-def au_from_scsi(r):
-    au_base = _lookup_scsi_au(r.tsa_code, r.stratum_matched, r.si_level)
-    if au_base is None:
-        return None
-    return 100000 * int(r.tsa_code) + au_base
-
-
-# --- cell 99 ---
-f["au"] = _row_apply(f, au_from_scsi, axis=1)
+# --- cell 98/99 ---
+f = assign_au_ids_from_scsi(
+    f_table=f,
+    scsi_au=scsi_au,
+    tsa_col="tsa_code",
+    stratum_matched_col="stratum_matched",
+    si_level_col="si_level",
+    au_col="au",
+)
 
 if f["au"].isnull().any():
-    _missing = (
-        f.loc[f["au"].isnull(), ["tsa_code", "stratum_matched", "si_level"]]
-        .value_counts()
-        .head(10)
+    _missing = summarize_missing_au_mappings(
+        f_table=f,
+        au_col="au",
+        tsa_col="tsa_code",
+        stratum_matched_col="stratum_matched",
+        si_level_col="si_level",
+        top_n=10,
     )
     print("Warning: missing AU mappings for some strata (top 10 shown):")
     print(_missing)
 
-if f["au"].isnull().all():
-    _null_summary = {
-        "rows": int(len(f)),
-        "site_index_null": int(f.SITE_INDEX.isnull().sum())
-        if "SITE_INDEX" in f
-        else None,
-        "stratum_matched_null": int(f.stratum_matched.isnull().sum())
-        if "stratum_matched" in f
-        else None,
-        "si_level_null": int(f.si_level.isnull().sum()) if "si_level" in f else None,
-    }
-    raise ValueError(
-        "AU assignment produced no rows; check SITE_INDEX/stratum matching and "
-        f"si_level assignment. Summary: {_null_summary}"
-    )
+validate_nonempty_au_assignment(
+    f_table=f,
+    au_col="au",
+    site_index_col="SITE_INDEX",
+    stratum_matched_col="stratum_matched",
+    si_level_col="si_level",
+)
 
 # --- cell 101 ---
 f.shape

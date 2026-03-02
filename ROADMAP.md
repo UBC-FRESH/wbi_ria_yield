@@ -699,3 +699,14 @@
   `assign_si_levels_from_stratum_quantiles(...)` seam usage.
 - Queued next extraction slice: continue thinning 00_data-prep by extracting AU assignment + null
   diagnostics (`_lookup_scsi_au`, `au_from_scsi`, missing/null summaries) into reusable helper(s).
+- Added AU-assignment helper seams in `femic.pipeline.tsa`:
+  `lookup_scsi_au_base(...)`, `assign_au_ids_from_scsi(...)`,
+  `summarize_missing_au_mappings(...)`, `build_au_assignment_null_summary(...)`, and
+  `validate_nonempty_au_assignment(...)`.
+- Rewired 00_data-prep AU assignment + null-diagnostics block to consume these helpers instead of
+  inline `_lookup_scsi_au`/`au_from_scsi`/missing-summary logic.
+- Expanded tests with deterministic helper coverage in `tests/test_pipeline_helpers.py` and updated
+  orchestration guardrails in `tests/test_legacy_orchestration_wiring.py` to assert new AU helper
+  seam usage.
+- Queued next extraction slice: continue P2.2 by extracting the post-AU curve-ID assignment block
+  (`assign_curve1`, `assign_curve2`) into reusable helper(s), then wire through tests/guardrails.

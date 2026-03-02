@@ -25,12 +25,17 @@ import pandas as pd
 
 from femic.pipeline.tsa import (
     MIN_STANDCOUNT,
+    assign_au_ids_from_scsi,
     assign_si_levels_from_stratum_quantiles,
     assign_stratum_matches_from_au_table,
     apply_stratum_alias_map,
+    build_au_assignment_null_summary,
     build_strata_summary,
     build_stratum_lexmatch_alias_map,
+    lookup_scsi_au_base,
+    summarize_missing_au_mappings,
     target_nstrata_for,
+    validate_nonempty_au_assignment,
 )
 
 
@@ -208,6 +213,48 @@ def test_assign_si_levels_from_stratum_quantiles_assigns_levels() -> None:
 
     assert "S1" in stats.index
     assert set(out["si_level"].dropna().unique()) <= {"L", "M", "H"}
+
+
+def test_lookup_scsi_au_base_and_assign_au_ids_from_scsi() -> None:
+    scsi_au = {"08": {("S1", "L"): 7}}
+    assert (
+        lookup_scsi_au_base(
+            scsi_au=scsi_au,
+            tsa_code="08",
+            stratum_code="S1",
+            si_level="L",
+        )
+        == 7
+    )
+    frame = pd.DataFrame(
+        {
+            "tsa_code": ["08", "08"],
+            "stratum_matched": ["S1", "S2"],
+            "si_level": ["L", "L"],
+        }
+    )
+    out = assign_au_ids_from_scsi(f_table=frame, scsi_au=scsi_au)
+    assert int(out["au"].iloc[0]) == 800007
+    assert pd.isna(out["au"].iloc[1])
+
+
+def test_summarize_missing_au_mappings_and_null_summary() -> None:
+    frame = pd.DataFrame(
+        {
+            "tsa_code": ["08", "08", "16"],
+            "stratum_matched": ["S1", "S1", "S9"],
+            "si_level": ["L", "L", "H"],
+            "SITE_INDEX": [10.0, None, None],
+            "au": [None, None, None],
+        }
+    )
+    missing = summarize_missing_au_mappings(f_table=frame, top_n=1)
+    assert missing.index[0] == ("08", "S1", "L")
+    summary = build_au_assignment_null_summary(f_table=frame)
+    assert summary["rows"] == 3
+    assert summary["site_index_null"] == 2
+    with pytest.raises(ValueError, match="AU assignment produced no rows"):
+        validate_nonempty_au_assignment(f_table=frame)
 
 
 def test_plot_path_helpers() -> None:

@@ -555,3 +555,10 @@
 - Extended `tests/test_legacy_orchestration_wiring.py` guardrails to assert
   `assign_stratum_matches_from_au_table(...)` and
   `assign_si_levels_from_stratum_quantiles(...)` seam usage in 00_data-prep.
+- Added AU assignment/null-diagnostics helpers to `src/femic/pipeline/tsa.py`:
+  `lookup_scsi_au_base`, `assign_au_ids_from_scsi`, `summarize_missing_au_mappings`,
+  `build_au_assignment_null_summary`, and `validate_nonempty_au_assignment`.
+- Rewired the 00_data-prep AU assignment stage to consume these helpers, removing inline
+  `_lookup_scsi_au` / `au_from_scsi` logic and preserving warning + fail-fast behavior.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic AU helper coverage and updated
+  `tests/test_legacy_orchestration_wiring.py` guardrails to assert AU helper seam usage.

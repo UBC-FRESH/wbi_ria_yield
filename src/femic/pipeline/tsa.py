@@ -197,3 +197,117 @@ def assign_si_levels_from_stratum_quantiles(
                 si_level_col,
             ] = si_level
     return table, stratum_si_stats
+
+
+def lookup_scsi_au_base(
+    *,
+    scsi_au: Mapping[str, Mapping[tuple[str, str], int]],
+    tsa_code: Any,
+    stratum_code: Any,
+    si_level: Any,
+) -> int | None:
+    """Lookup base AU id for a TSA/stratum/SI combination."""
+    tsa_map = scsi_au.get(str(tsa_code))
+    if not tsa_map:
+        return None
+    return tsa_map.get((str(stratum_code), str(si_level)))
+
+
+def assign_au_ids_from_scsi(
+    *,
+    f_table: Any,
+    scsi_au: Mapping[str, Mapping[tuple[str, str], int]],
+    tsa_col: str = "tsa_code",
+    stratum_matched_col: str = "stratum_matched",
+    si_level_col: str = "si_level",
+    au_col: str = "au",
+) -> Any:
+    """Assign absolute AU ids from `scsi_au` lookup map."""
+    table = f_table.copy()
+    table[au_col] = [
+        (
+            None
+            if (
+                (
+                    au_base := lookup_scsi_au_base(
+                        scsi_au=scsi_au,
+                        tsa_code=tsa_code,
+                        stratum_code=stratum_code,
+                        si_level=si_level,
+                    )
+                )
+                is None
+            )
+            else (100000 * int(tsa_code) + au_base)
+        )
+        for tsa_code, stratum_code, si_level in zip(
+            table[tsa_col].values,
+            table[stratum_matched_col].values,
+            table[si_level_col].values,
+        )
+    ]
+    return table
+
+
+def summarize_missing_au_mappings(
+    *,
+    f_table: Any,
+    au_col: str = "au",
+    tsa_col: str = "tsa_code",
+    stratum_matched_col: str = "stratum_matched",
+    si_level_col: str = "si_level",
+    top_n: int = 10,
+) -> Any:
+    """Return top-N missing AU mapping combinations for diagnostics."""
+    return (
+        f_table.loc[
+            f_table[au_col].isnull(), [tsa_col, stratum_matched_col, si_level_col]
+        ]
+        .value_counts()
+        .head(top_n)
+    )
+
+
+def build_au_assignment_null_summary(
+    *,
+    f_table: Any,
+    site_index_col: str = "SITE_INDEX",
+    stratum_matched_col: str = "stratum_matched",
+    si_level_col: str = "si_level",
+) -> dict[str, int | None]:
+    """Build null-diagnostics summary used when AU assignment yields no rows."""
+    return {
+        "rows": int(len(f_table)),
+        "site_index_null": int(f_table[site_index_col].isnull().sum())
+        if site_index_col in f_table
+        else None,
+        "stratum_matched_null": int(f_table[stratum_matched_col].isnull().sum())
+        if stratum_matched_col in f_table
+        else None,
+        "si_level_null": int(f_table[si_level_col].isnull().sum())
+        if si_level_col in f_table
+        else None,
+    }
+
+
+def validate_nonempty_au_assignment(
+    *,
+    f_table: Any,
+    au_col: str = "au",
+    site_index_col: str = "SITE_INDEX",
+    stratum_matched_col: str = "stratum_matched",
+    si_level_col: str = "si_level",
+) -> None:
+    """Raise with null diagnostics when AU assignment produces no mapped rows."""
+    if not f_table[au_col].isnull().all():
+        return
+    null_summary = build_au_assignment_null_summary(
+        f_table=f_table,
+        site_index_col=site_index_col,
+        stratum_matched_col=stratum_matched_col,
+        si_level_col=si_level_col,
+    )
+    raise ValueError(
+        "AU assignment produced no rows; check SITE_INDEX/stratum matching and "
+        f"si_level assignment. Summary: {null_summary}"
+    )

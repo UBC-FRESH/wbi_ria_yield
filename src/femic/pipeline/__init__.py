@@ -78,8 +78,13 @@ from femic.pipeline.tipsy import (
     write_tipsy_input_exports,
 )
 from femic.pipeline.tsa import (
+    assign_au_ids_from_scsi,
     assign_si_levels_from_stratum_quantiles,
     assign_stratum_matches_from_au_table,
+    build_au_assignment_null_summary,
+    lookup_scsi_au_base,
+    summarize_missing_au_mappings,
+    validate_nonempty_au_assignment,
 )
 from femic.pipeline.tipsy_config import (
     build_tipsy_params_from_config,
@@ -171,6 +176,11 @@ __all__ = [
     "write_tipsy_input_exports",
     "assign_stratum_matches_from_au_table",
     "assign_si_levels_from_stratum_quantiles",
+    "lookup_scsi_au_base",
+    "assign_au_ids_from_scsi",
+    "summarize_missing_au_mappings",
+    "build_au_assignment_null_summary",
+    "validate_nonempty_au_assignment",
     "build_tipsy_params_for_tsa",
     "build_tipsy_warning_event",
     "evaluate_tipsy_candidate",
