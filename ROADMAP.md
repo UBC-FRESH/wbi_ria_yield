@@ -1431,3 +1431,18 @@
 - Queued next extraction slice: continue P2.2 by auditing duplicated numeric coercion (`int(...)`)
   across VDYP batch run-event payload construction and consolidating this coercion at one seam
   without changing emitted values.
+- Completed the queued VDYP numeric-coercion consolidation by adding
+  `VdypRunEventCounts` + `normalize_vdyp_run_event_counts(...)` in
+  `src/femic/pipeline/vdyp_stage.py` and routing shared count coercion through this seam.
+- Rewired `build_vdyp_run_event(...)` to consume normalized count payloads and updated
+  `execute_vdyp_batch(...)` to reuse the same normalized counts for both run-event emission and
+  stream-header construction.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` for
+  `normalize_vdyp_run_event_counts(...)` and updated `build_vdyp_run_event(...)` tests to assert
+  unchanged emitted values under the new count wrapper.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (254 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing repeated `Path(...)` coercions in VDYP
+  helpers (`build_vdyp_batch_command`, `resolve_vdyp_batch_temp_artifacts`,
+  `collect_vdyp_batch_run_metadata`) and centralizing only where behavior remains unchanged.

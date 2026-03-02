@@ -72,6 +72,16 @@ class VdypBatchTempArtifacts:
     err_path: Path
 
 
+@dataclass(frozen=True)
+class VdypRunEventCounts:
+    """Normalized integer count fields shared by VDYP run events/headers."""
+
+    feature_count: int
+    cache_hits: int
+    ply_rows: int
+    lyr_rows: int
+
+
 def _curve_fit_skip_exception_types() -> tuple[type[Exception], ...]:
     """Curve-fit failures that should skip one species and continue."""
     return (
@@ -190,10 +200,7 @@ def build_vdyp_run_event(
     *,
     status: str,
     phase: str,
-    feature_count: int,
-    cache_hits: int,
-    ply_rows: int,
-    lyr_rows: int,
+    counts: VdypRunEventCounts,
     cmd: str,
     context: Mapping[str, Any],
     **extra_fields: Any,
@@ -203,13 +210,29 @@ def build_vdyp_run_event(
         event="vdyp_run",
         status=status,
         phase=phase,
+        feature_count=counts.feature_count,
+        cache_hits=counts.cache_hits,
+        ply_rows=counts.ply_rows,
+        lyr_rows=counts.lyr_rows,
+        cmd=cmd,
+        context=dict(context),
+        **extra_fields,
+    )
+
+
+def normalize_vdyp_run_event_counts(
+    *,
+    feature_count: Any,
+    cache_hits: Any,
+    ply_rows: Any,
+    lyr_rows: Any,
+) -> VdypRunEventCounts:
+    """Normalize run-event count fields to integers in one shared seam."""
+    return VdypRunEventCounts(
         feature_count=int(feature_count),
         cache_hits=int(cache_hits),
         ply_rows=int(ply_rows),
         lyr_rows=int(lyr_rows),
-        cmd=cmd,
-        context=dict(context),
-        **extra_fields,
     )
 
 
@@ -1308,6 +1331,12 @@ def execute_vdyp_batch(
     vdyp_lyr_ = vdyp_lyr[vdyp_lyr.FEATURE_ID.isin(feature_ids_list)]
     ply_rows = vdyp_ply_.shape[0]
     lyr_rows = vdyp_lyr_.shape[0]
+    counts = normalize_vdyp_run_event_counts(
+        feature_count=feature_count,
+        cache_hits=cache_hits,
+        ply_rows=ply_rows,
+        lyr_rows=lyr_rows,
+    )
     context = build_vdyp_run_context(
         base_context=base_context,
         run_id=run_id,
@@ -1319,10 +1348,7 @@ def execute_vdyp_batch(
             build_vdyp_run_event(
                 status=status,
                 phase=phase,
-                feature_count=feature_count,
-                cache_hits=cache_hits,
-                ply_rows=ply_rows,
-                lyr_rows=lyr_rows,
+                counts=counts,
                 cmd=args,
                 context=context,
                 **extra_fields,
@@ -1406,8 +1432,8 @@ def execute_vdyp_batch(
 
         stream_header = build_stream_header_(
             phase=phase,
-            feature_count=feature_count,
-            cache_hits=int(cache_hits),
+            feature_count=counts.feature_count,
+            cache_hits=counts.cache_hits,
             cmd=args,
         )
         if result.stdout:

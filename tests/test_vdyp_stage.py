@@ -15,6 +15,7 @@ from femic.pipeline.vdyp_stage import (
     build_bootstrap_vdyp_results_runner,
     build_vdyp_batch_command,
     build_vdyp_run_event,
+    normalize_vdyp_run_event_counts,
     build_vdyp_run_context,
     build_curve_fit_adapter,
     build_curve_smoothing_plot_config,
@@ -88,13 +89,16 @@ def test_build_vdyp_run_context_preserves_existing_values() -> None:
 
 
 def test_build_vdyp_run_event_builds_shared_payload() -> None:
-    payload = build_vdyp_run_event(
-        status="ok",
-        phase="initial",
+    counts = normalize_vdyp_run_event_counts(
         feature_count=2.0,
         cache_hits=1.0,
         ply_rows=3.0,
         lyr_rows=4.0,
+    )
+    payload = build_vdyp_run_event(
+        status="ok",
+        phase="initial",
+        counts=counts,
         cmd="wine VDYP7Console.exe",
         context={"tsa": "08"},
         returncode=0,
@@ -109,6 +113,19 @@ def test_build_vdyp_run_event_builds_shared_payload() -> None:
     assert payload["cmd"] == "wine VDYP7Console.exe"
     assert payload["returncode"] == 0
     assert payload["context"] == {"tsa": "08"}
+
+
+def test_normalize_vdyp_run_event_counts_coerces_to_ints() -> None:
+    counts = normalize_vdyp_run_event_counts(
+        feature_count=2.9,
+        cache_hits=1.2,
+        ply_rows=3.0,
+        lyr_rows=4.7,
+    )
+    assert counts.feature_count == 2
+    assert counts.cache_hits == 1
+    assert counts.ply_rows == 3
+    assert counts.lyr_rows == 4
 
 
 def test_build_vdyp_batch_command_preserves_legacy_string_shape() -> None:
