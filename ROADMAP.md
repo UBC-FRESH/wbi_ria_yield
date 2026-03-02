@@ -469,3 +469,14 @@
   and bounds, and added AST guardrails asserting 01a no longer defines nested legacy fit functions.
 - Queued next extraction slice: remove the final nested `match_stratum(...)` function definition in
   `01a_run-tsa.py` by moving alias-application logic into a reusable TSA helper.
+- Added `femic.pipeline.tsa.apply_stratum_alias_map(...)` to encapsulate selected-strata retention
+  plus alias fallback assignment for `*_matched` stratum columns.
+- Rewired `01a_run-tsa.py` to call `apply_stratum_alias_map(...)` for stratum matching, removing
+  the final nested helper definition (`match_stratum`) from `run_tsa(...)`.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic alias-application coverage and added
+  AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and has no
+  nested `match_stratum`.
+- `01a_run-tsa.run_tsa(...)` now has zero nested function definitions; remaining extraction focus is
+  reducing inline notebook-style constant/plot configuration blocks into reusable stage helpers.
+- Queued next extraction slice: move curve-smoothing plot setup constants
+  (`palette_flavours`/palette/alpha defaults) from `01a_run-tsa.py` into a shared stage helper.

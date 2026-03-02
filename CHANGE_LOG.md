@@ -391,3 +391,10 @@
 - Extended `tests/test_vdyp_curves.py` with deterministic checks for legacy fit-function outputs and
   bounds, and updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a no longer
   defines nested legacy fit functions.
+- Added `femic.pipeline.tsa.apply_stratum_alias_map(...)` to encapsulate selected-strata retention
+  and alias-fallback assignment for `*_matched` stratum columns.
+- Rewired `01a_run-tsa.py` to call `apply_stratum_alias_map(...)` for stratum matching, removing
+  the final nested helper definition (`match_stratum`) from `run_tsa(...)`.
+- Extended `tests/test_pipeline_helpers.py` with deterministic alias-application coverage and
+  updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls the helper and has no
+  nested `match_stratum`.
