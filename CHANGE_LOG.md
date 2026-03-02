@@ -1025,3 +1025,18 @@
 - Queued next extraction slice: continue P2.2 by replacing remaining sentinel `assert False`
   branches in legacy orchestration/helper modules with explicit typed errors carrying actionable
   context (start with legacy TIPSY builders in `src/femic/pipeline/tipsy_legacy.py`).
+- Replaced sentinel `assert False` branches in legacy TIPSY builders
+  (`src/femic/pipeline/tipsy_legacy.py`) with explicit typed errors carrying actionable context:
+  `ValueError` for invalid unsupported species/BEC rule selections and `NotImplementedError` for
+  explicitly unimplemented legacy forest-type branches.
+- Added reusable error helpers (`_raise_invalid_legacy_tipsy_rule(...)`,
+  `_raise_unimplemented_legacy_tipsy_rule(...)`) so failure paths are explicit and consistent.
+- Expanded deterministic coverage in `tests/test_tipsy_legacy.py` to assert unsupported inputs raise
+  typed/contextual errors and added an AST guardrail ensuring `tipsy_legacy.py` contains no
+  `assert False` sentinels.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (231 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by replacing remaining `assert False` sentinels in
+  `src/femic/pipeline/vdyp_stage.py` (unreachable load-balanced branch and invalid `nsamples`
+  guard) with explicit typed errors plus regression tests.

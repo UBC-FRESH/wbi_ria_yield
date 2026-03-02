@@ -24,6 +24,36 @@ species_oak = ["Q"]
 species_maple = ["M", "MB", "MV"]
 
 
+def _raise_invalid_legacy_tipsy_rule(
+    *,
+    tsa_code: str,
+    reason: str,
+    leading_species: str | None = None,
+    bec: str | None = None,
+    forest_type: object | None = None,
+) -> None:
+    details = [f"tsa={tsa_code}", f"reason={reason}"]
+    if leading_species is not None:
+        details.append(f"leading_species={leading_species}")
+    if bec is not None:
+        details.append(f"bec={bec}")
+    if forest_type is not None:
+        details.append(f"forest_type={forest_type}")
+    raise ValueError("Invalid legacy TIPSY rule selection: " + ", ".join(details))
+
+
+def _raise_unimplemented_legacy_tipsy_rule(
+    *,
+    tsa_code: str,
+    leading_species: str,
+    forest_type: object,
+) -> None:
+    raise NotImplementedError(
+        "Legacy TIPSY rule path is not implemented: "
+        f"tsa={tsa_code}, leading_species={leading_species}, forest_type={forest_type}"
+    )
+
+
 # --- cell 50 ---
 def tipsy_minsi_tsa08(leading_species):
     if leading_species in species_pine:
@@ -115,7 +145,11 @@ def tipsy_params_tsa08(au_id, au_data, vdyp_out):
         tp["f"]["Density"] = 1285
         tp["e"]["Util_DBH_cm"] = tp["f"]["Util_DBH_cm"] = 12.5
     else:
-        assert False  # only planting spruce and pine
+        _raise_invalid_legacy_tipsy_rule(
+            tsa_code="08",
+            reason="unsupported_leading_species",
+            leading_species=spp_1,
+        )
     # si = au_data['ss'].siteprod.median()
     si = round(au_data["ss"].SITE_INDEX.median(), 1)
     # cc = au_data['ss'].CROWN_CLOSURE.median() * 0.01
@@ -259,7 +293,11 @@ def tipsy_params_tsa16(au_id, au_data, vdyp_out):
         tp["e"]["GW_age_5"] = tp["f"]["GW_age_5"] = None
         tp["e"]["Util_DBH_cm"] = tp["f"]["Util_DBH_cm"] = 17.5
     else:
-        assert False  # bad leading species
+        _raise_invalid_legacy_tipsy_rule(
+            tsa_code="16",
+            reason="unsupported_leading_species",
+            leading_species=spp_1,
+        )
     tp["e"]["AU"] = tp["e"]["TBLno"] = 10000 + au_id
     tp["f"]["AU"] = tp["f"]["TBLno"] = 20000 + au_id
     # si = au_data['ss'].SITE_INDEX.median()
@@ -408,8 +446,12 @@ def tipsy_params_tsa24(au_id, au_data, vdyp_out):
             tp["e"]["GW_age_1"] = tp["f"]["GW_age_1"] = None
             tp["e"]["GW_age_2"] = tp["f"]["GW_age_2"] = None
         else:
-            print(spp_1)
-            assert False  # bad species
+            _raise_invalid_legacy_tipsy_rule(
+                tsa_code="24",
+                reason="unsupported_species_for_bec",
+                leading_species=spp_1,
+                bec=bec,
+            )
     elif bec == "ESSF":
         if spp_1 in species_fir:
             tp["e"]["Regen_Delay"] = tp["f"]["Regen_Delay"] = 1
@@ -476,11 +518,19 @@ def tipsy_params_tsa24(au_id, au_data, vdyp_out):
             )
             tp["e"]["Util_DBH_cm"] = tp["f"]["Util_DBH_cm"] = 12.5
         else:
-            print(spp_1)
-            assert False  # bad species
+            _raise_invalid_legacy_tipsy_rule(
+                tsa_code="24",
+                reason="unsupported_species_for_bec",
+                leading_species=spp_1,
+                bec=bec,
+            )
     else:
-        print(bec)
-        assert False  # bad BEC zone
+        _raise_invalid_legacy_tipsy_rule(
+            tsa_code="24",
+            reason="unsupported_bec",
+            leading_species=spp_1,
+            bec=bec,
+        )
     return tp
 
 
@@ -532,8 +582,12 @@ def tipsy_params_tsa40(au_id, au_data, vdyp_out):
             tp["e"]["Density"] = tp["f"]["Density"] = 1167
             tp["e"]["Regen_Method"] = tp["f"]["Regen_Method"] = "P"
         else:
-            print("bad species", spp_1)
-            assert False
+            _raise_invalid_legacy_tipsy_rule(
+                tsa_code="40",
+                reason="unsupported_species_for_bec",
+                leading_species=spp_1,
+                bec=bec,
+            )
     elif bec == "ESSF":
         if spp_1 in species_pine:
             tp["e"]["Regen_Delay"] = tp["f"]["Regen_Delay"] = 2
@@ -544,8 +598,12 @@ def tipsy_params_tsa40(au_id, au_data, vdyp_out):
             tp["e"]["Density"] = tp["f"]["Density"] = 1070
             tp["e"]["Regen_Method"] = tp["f"]["Regen_Method"] = "P"
         else:
-            print("bad species", spp_1)
-            assert False
+            _raise_invalid_legacy_tipsy_rule(
+                tsa_code="40",
+                reason="unsupported_species_for_bec",
+                leading_species=spp_1,
+                bec=bec,
+            )
     elif bec == "SWB":
         if spp_1 in species_pine:
             tp["e"]["Regen_Delay"] = tp["f"]["Regen_Delay"] = 2
@@ -556,11 +614,19 @@ def tipsy_params_tsa40(au_id, au_data, vdyp_out):
             tp["e"]["Density"] = tp["f"]["Density"] = 1338
             tp["e"]["Regen_Method"] = tp["f"]["Regen_Method"] = "P"
         else:
-            print("bad species", spp_1)
-            assert False
+            _raise_invalid_legacy_tipsy_rule(
+                tsa_code="40",
+                reason="unsupported_species_for_bec",
+                leading_species=spp_1,
+                bec=bec,
+            )
     else:
-        print("bad BEC", bec)
-        assert False
+        _raise_invalid_legacy_tipsy_rule(
+            tsa_code="40",
+            reason="unsupported_bec",
+            leading_species=spp_1,
+            bec=bec,
+        )
     return tp
 
 
@@ -600,20 +666,17 @@ def tipsy_params_tsa41(au_id, au_data, vdyp_out):
             tp["e"]["Regen_Delay"] = tp["f"]["Regen_Delay"] = 1
             tp["e"]["Density"] = tp["f"]["Density"] = 1335
         elif forest_type == 2:  # conifer mix
-            assert False
-            tp["e"]["SPP_1"] = tp["f"]["SPP_1"] = "BL"
-            tp["e"]["SPP_2"] = tp["f"]["SPP_2"] = "BL"
-            tp["e"]["SPP_3"] = tp["f"]["SPP_3"] = ""
-            tp["e"]["SPP_4"] = tp["f"]["SPP_4"] = "AT"
-            tp["e"]["PCT_1"] = tp["f"]["PCT_1"] = 63
-            tp["e"]["PCT_2"] = tp["f"]["PCT_2"] = 21
-            tp["e"]["PCT_3"] = tp["f"]["PCT_3"] = 17
-            tp["e"]["PCT_4"] = tp["f"]["PCT_4"] = 1
-            tp["e"]["Regen_Delay"] = tp["f"]["Regen_Delay"] = 1
-            tp["e"]["Density"] = tp["f"]["Density"] = 1335
+            _raise_unimplemented_legacy_tipsy_rule(
+                tsa_code="41",
+                leading_species=spp_1,
+                forest_type=forest_type,
+            )
         else:
-            print(spp_pct)
-            assert False  # not implemented (don't need to?)
+            _raise_unimplemented_legacy_tipsy_rule(
+                tsa_code="41",
+                leading_species=spp_1,
+                forest_type=forest_type,
+            )
         tp["e"]["Util_DBH_cm"] = tp["f"]["Util_DBH_cm"] = 17.5
     elif spp_1 in species_fir:
         if forest_type == 1:  # pure conifer
@@ -627,7 +690,11 @@ def tipsy_params_tsa41(au_id, au_data, vdyp_out):
             tp["e"]["PCT_4"] = tp["f"]["PCT_4"] = 1
             tp["e"]["Density"] = tp["f"]["Density"] = 1064
         else:
-            assert False  # not implemented (don't need to?)
+            _raise_unimplemented_legacy_tipsy_rule(
+                tsa_code="41",
+                leading_species=spp_1,
+                forest_type=forest_type,
+            )
         tp["e"]["Util_DBH_cm"] = tp["f"]["Util_DBH_cm"] = 17.5
     elif spp_1 in species_pine:
         if forest_type == 1:  # pure conifer
@@ -641,7 +708,11 @@ def tipsy_params_tsa41(au_id, au_data, vdyp_out):
             tp["e"]["PCT_4"] = tp["f"]["PCT_4"] = 2
             tp["e"]["Density"] = tp["f"]["Density"] = 1219
         else:
-            assert False  # not implemented (don't need to?)
+            _raise_unimplemented_legacy_tipsy_rule(
+                tsa_code="41",
+                leading_species=spp_1,
+                forest_type=forest_type,
+            )
         tp["e"]["Util_DBH_cm"] = tp["f"]["Util_DBH_cm"] = 12.5
     elif spp_1 in species_aspen:
         if forest_type == 4:  # pure conifer
@@ -656,11 +727,20 @@ def tipsy_params_tsa41(au_id, au_data, vdyp_out):
             tp["e"]["Density"] = tp["f"]["Density"] = 3134
             tp["e"]["Regen_Method"] = tp["f"]["Regen_Method"] = "N"
         else:
-            assert False  # not implemented (don't need to?)
+            _raise_unimplemented_legacy_tipsy_rule(
+                tsa_code="41",
+                leading_species=spp_1,
+                forest_type=forest_type,
+            )
         tp["e"]["Util_DBH_cm"] = tp["f"]["Util_DBH_cm"] = 12.5
     else:
-        print("bad species", spp_1)
-        assert False
+        _raise_invalid_legacy_tipsy_rule(
+            tsa_code="41",
+            reason="unsupported_leading_species",
+            leading_species=spp_1,
+            bec=bec,
+            forest_type=forest_type,
+        )
     return tp
 
 

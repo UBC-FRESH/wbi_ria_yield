@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import pandas as pd
+import pytest
 
 from femic.pipeline.tipsy_legacy import (
     build_tipsy_exclusion,
@@ -78,3 +82,58 @@ def test_tsa40_legacy_builder_sets_none_for_missing_species_slots() -> None:
     assert out["e"]["PCT_1"] == 100.0
     assert out["e"]["SPP_2"] is None
     assert out["e"]["PCT_2"] is None
+
+
+def test_tsa08_legacy_builder_unsupported_species_raises_value_error() -> None:
+    builder = get_legacy_tipsy_builders()["08"]
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [17.0], "BEC_ZONE_CODE": ["SBS"]}),
+        "species": {"AT": {"pct": 100.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"% Stk": [90.0]})}
+    with pytest.raises(ValueError, match="tsa=08"):
+        builder(1, au_data, vdyp_out)
+
+
+def test_tsa40_legacy_builder_unsupported_bec_raises_value_error() -> None:
+    builder = get_legacy_tipsy_builders()["40"]
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [17.0], "BEC_ZONE_CODE": ["ICH"]}),
+        "species": {"SW": {"pct": 100.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [17.0], "% Stk": [89.0]})}
+    with pytest.raises(ValueError, match="unsupported_bec"):
+        builder(1, au_data, vdyp_out)
+
+
+def test_tsa41_legacy_builder_unimplemented_forest_type_raises_not_implemented() -> (
+    None
+):
+    builder = get_legacy_tipsy_builders()["41"]
+    au_data = {
+        "ss": pd.DataFrame(
+            {"SITE_INDEX": [16.0], "BEC_ZONE_CODE": ["BWBS"], "forest_type": [2]}
+        ),
+        "species": {"SW": {"pct": 100.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [16.0], "% Stk": [92.0]})}
+    with pytest.raises(NotImplementedError, match="tsa=41"):
+        builder(1, au_data, vdyp_out)
+
+
+def test_tipsy_legacy_module_has_no_assert_false_sentinels() -> None:
+    source_path = (
+        Path(__file__).resolve().parents[1]
+        / "src"
+        / "femic"
+        / "pipeline"
+        / "tipsy_legacy.py"
+    )
+    tree = ast.parse(source_path.read_text(encoding="utf-8"), filename=str(source_path))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assert):
+            continue
+        if isinstance(node.test, ast.Constant) and node.test.value is False:
+            raise AssertionError(
+                "tipsy_legacy.py should not contain assert False sentinels"
+            )
