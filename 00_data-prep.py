@@ -54,7 +54,10 @@ try:
         resolve_legacy_external_data_paths,
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
-    from femic.pipeline.vri import normalize_and_filter_checkpoint2_records
+    from femic.pipeline.vri import (
+        assign_forest_type_from_species_pct,
+        normalize_and_filter_checkpoint2_records,
+    )
     from femic.pipeline.siteprod import (
         assign_siteprod_from_raster,
         export_and_stack_siteprod_layers,
@@ -108,7 +111,10 @@ except ModuleNotFoundError:
         resolve_legacy_external_data_paths,
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
-    from femic.pipeline.vri import normalize_and_filter_checkpoint2_records
+    from femic.pipeline.vri import (
+        assign_forest_type_from_species_pct,
+        normalize_and_filter_checkpoint2_records,
+    )
     from femic.pipeline.siteprod import (
         assign_siteprod_from_raster,
         export_and_stack_siteprod_layers,
@@ -451,65 +457,6 @@ else:
 
 
 # --- cell 29 ---
-def is_conif(species_code):
-    # return True if species_code is coniferous species
-    return species_code[:1] in ["B", "C", "F", "H", "J", "L", "P", "S", "T", "Y"]
-
-
-def is_decid(species_code):
-    # return True if species_code is deciduous species
-    return species_code[:1] in ["A", "D", "E", "G", "M", "Q", "R", "U", "V", "W"]
-
-
-def pconif(r):
-    # return proportion of volume from coniferous species in record r
-    return (
-        sum(
-            r["SPECIES_PCT_%i" % i]
-            for i in range(1, 7)
-            if is_conif(r["SPECIES_CD_%i" % i])
-        )
-        / 100.0
-    )
-
-
-def pdecid(r):
-    # return proportion of volume from deciduous species in record r
-    return (
-        sum(
-            r["SPECIES_PCT_%i" % i]
-            for i in range(1, 7)
-            if is_decid(r["SPECIES_CD_%i" % i])
-        )
-        / 100.0
-    )
-
-
-def classify_stand_cdm(r):
-    # Classify stand (from VRI record r) as one of: conif (c), decid (d), or mixed (m), where
-    #   c >= 80% softwood
-    #   d >= 80% hardwood
-    #   m otherwise
-    if pconif(r) >= 0.8:
-        return "c"
-    elif pdecid(r) >= 0.8:
-        return "d"
-    else:
-        return "m"
-
-
-def classify_stand_forest_type(r):
-    # to (approximately) match TSA 41 TSR data package AU regeneration logic
-    if pconif(r) >= 0.75:
-        return 1  # pure conif
-    elif pconif(r) >= 0.50:
-        return 2  # conif mix
-    elif pconif(r) >= 0.25:
-        return 3  # decid mix
-    else:
-        return 4  # pure decid
-
-
 # --- cell 31 ---
 def stratify_stand(r, lexmatch=False, lexmatch_fieldname_suffix="_lexmatch"):
     result = ""
@@ -551,7 +498,7 @@ stratum_col = "stratum"
 
 # --- cell 36 ---
 # f['forest_type'] = f.reset_index().swifter.apply(classify_stand_forest_type, axis=1)
-f["forest_type"] = f.apply(classify_stand_forest_type, axis=1)
+f = assign_forest_type_from_species_pct(f_table=f, out_col="forest_type")
 
 # --- cell 38 ---
 f.to_feather(ria_vri_vclr1p_checkpoint4_feather_path)

@@ -2,7 +2,16 @@ from __future__ import annotations
 
 import pandas as pd
 
-from femic.pipeline.vri import normalize_and_filter_checkpoint2_records
+from femic.pipeline.vri import (
+    assign_forest_type_from_species_pct,
+    classify_stand_cdm,
+    classify_stand_forest_type,
+    is_conifer_species_code,
+    is_deciduous_species_code,
+    normalize_and_filter_checkpoint2_records,
+    pconif,
+    pdecid,
+)
 
 
 def _base_row() -> dict[str, object]:
@@ -62,3 +71,86 @@ def test_normalize_and_filter_checkpoint2_records_filters_excluded_rows() -> Non
     out = normalize_and_filter_checkpoint2_records(f_table=frame)
     assert len(out) == 1
     assert out.iloc[0]["BEC_ZONE_CODE"] == "SBS"
+
+
+def test_conifer_deciduous_helpers_and_proportions() -> None:
+    assert is_conifer_species_code("SW") is True
+    assert is_deciduous_species_code("AT") is True
+    row = {
+        "SPECIES_CD_1": "SW",
+        "SPECIES_CD_2": "AT",
+        "SPECIES_CD_3": "PL",
+        "SPECIES_CD_4": "X",
+        "SPECIES_CD_5": "X",
+        "SPECIES_CD_6": "X",
+        "SPECIES_PCT_1": 50,
+        "SPECIES_PCT_2": 30,
+        "SPECIES_PCT_3": 20,
+        "SPECIES_PCT_4": 0,
+        "SPECIES_PCT_5": 0,
+        "SPECIES_PCT_6": 0,
+    }
+    assert pconif(row) == 0.7
+    assert pdecid(row) == 0.3
+
+
+def test_stand_classification_helpers() -> None:
+    conif_row = {
+        "SPECIES_CD_1": "SW",
+        "SPECIES_CD_2": "PL",
+        "SPECIES_CD_3": "AT",
+        "SPECIES_CD_4": "X",
+        "SPECIES_CD_5": "X",
+        "SPECIES_CD_6": "X",
+        "SPECIES_PCT_1": 60,
+        "SPECIES_PCT_2": 25,
+        "SPECIES_PCT_3": 15,
+        "SPECIES_PCT_4": 0,
+        "SPECIES_PCT_5": 0,
+        "SPECIES_PCT_6": 0,
+    }
+    decid_row = conif_row | {
+        "SPECIES_CD_1": "AT",
+        "SPECIES_CD_2": "EP",
+        "SPECIES_PCT_1": 70,
+    }
+    assert classify_stand_cdm(conif_row) == "c"
+    assert classify_stand_cdm(decid_row) == "d"
+    assert classify_stand_forest_type(conif_row) == 1
+
+
+def test_assign_forest_type_from_species_pct_assigns_column() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "SPECIES_CD_1": "SW",
+                "SPECIES_CD_2": "PL",
+                "SPECIES_CD_3": "AT",
+                "SPECIES_CD_4": "X",
+                "SPECIES_CD_5": "X",
+                "SPECIES_CD_6": "X",
+                "SPECIES_PCT_1": 60,
+                "SPECIES_PCT_2": 25,
+                "SPECIES_PCT_3": 15,
+                "SPECIES_PCT_4": 0,
+                "SPECIES_PCT_5": 0,
+                "SPECIES_PCT_6": 0,
+            },
+            {
+                "SPECIES_CD_1": "AT",
+                "SPECIES_CD_2": "EP",
+                "SPECIES_CD_3": "SW",
+                "SPECIES_CD_4": "X",
+                "SPECIES_CD_5": "X",
+                "SPECIES_CD_6": "X",
+                "SPECIES_PCT_1": 50,
+                "SPECIES_PCT_2": 35,
+                "SPECIES_PCT_3": 15,
+                "SPECIES_PCT_4": 0,
+                "SPECIES_PCT_5": 0,
+                "SPECIES_PCT_6": 0,
+            },
+        ]
+    )
+    out = assign_forest_type_from_species_pct(f_table=frame)
+    assert list(out["forest_type"]) == [1, 4]

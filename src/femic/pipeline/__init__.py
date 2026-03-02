@@ -110,7 +110,16 @@ from femic.pipeline.tipsy_legacy import (
     get_legacy_tipsy_builders,
 )
 from femic.pipeline.vdyp import build_vdyp_cache_paths, build_vdyp_log_paths
-from femic.pipeline.vri import normalize_and_filter_checkpoint2_records
+from femic.pipeline.vri import (
+    assign_forest_type_from_species_pct,
+    classify_stand_cdm,
+    classify_stand_forest_type,
+    is_conifer_species_code,
+    is_deciduous_species_code,
+    normalize_and_filter_checkpoint2_records,
+    pconif,
+    pdecid,
+)
 from femic.pipeline.species_volume import (
     compile_species_volume_columns,
     compile_species_volume_series,
@@ -243,6 +252,13 @@ __all__ = [
     "write_manifest",
     "build_vdyp_cache_paths",
     "build_vdyp_log_paths",
+    "is_conifer_species_code",
+    "is_deciduous_species_code",
+    "pconif",
+    "pdecid",
+    "classify_stand_cdm",
+    "classify_stand_forest_type",
+    "assign_forest_type_from_species_pct",
     "normalize_and_filter_checkpoint2_records",
     "species_volume_input_columns",
     "compile_species_volume_series",

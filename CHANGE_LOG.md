@@ -737,3 +737,19 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline conifer/deciduous
   classification helpers (`is_conif`, `is_decid`, `pconif`, `pdecid`, stand-type classifiers) from
   `00_data-prep.py` into reusable helper seams.
+- Expanded `src/femic/pipeline/vri.py` with reusable stand-classification helpers:
+  `is_conifer_species_code(...)`, `is_deciduous_species_code(...)`, `pconif(...)`, `pdecid(...)`,
+  `classify_stand_cdm(...)`, `classify_stand_forest_type(...)`, and
+  `assign_forest_type_from_species_pct(...)`.
+- Rewired `00_data-prep.py` to remove inline conifer/deciduous classifier function definitions and
+  call `assign_forest_type_from_species_pct(...)` for forest-type assignment.
+- Exported new VRI classification helpers via `femic.pipeline.__init__`, expanded
+  `tests/test_vri.py` coverage for all classification helpers, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `assign_forest_type_from_species_pct(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (198 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting remaining inline stratum-code assembly
+  logic (`stratify_stand` + `stratify_stand_lexmatch` partial wiring) from `00_data-prep.py` into
+  reusable helper seams.
