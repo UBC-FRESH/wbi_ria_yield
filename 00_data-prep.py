@@ -66,6 +66,13 @@ try:
         summarize_missing_au_mappings,
         validate_nonempty_au_assignment,
     )
+    from femic.pipeline.stands import (
+        DEFAULT_STANDS_PROP_NAMES,
+        DEFAULT_STANDS_PROP_TYPES,
+        build_stands_column_map,
+        export_stands_shapefiles,
+        should_skip_stands_export,
+    )
 except ModuleNotFoundError:
     _src_dir = Path(__file__).resolve().parent / "src"
     if _src_dir.is_dir():
@@ -94,6 +101,13 @@ except ModuleNotFoundError:
         assign_stratum_matches_from_au_table,
         summarize_missing_au_mappings,
         validate_nonempty_au_assignment,
+    )
+    from femic.pipeline.stands import (
+        DEFAULT_STANDS_PROP_NAMES,
+        DEFAULT_STANDS_PROP_TYPES,
+        build_stands_column_map,
+        export_stands_shapefiles,
+        should_skip_stands_export,
     )
 
 # --- cell 5 ---
@@ -1016,110 +1030,32 @@ f.query("thlb == 1").groupby("tsa_code").FEATURE_AREA_SQM.sum() * 0.0001
 f.groupby("tsa_code").thlb_area.sum()
 
 
-# --- cell 125 ---
-def has_managed_curve(r):
-    if r.thlb == 0:
-        return -1
-    else:
-        if np.isnan(au_table.loc[int(r.au)].managed_curve_id):
-            return 0
-        else:
-            return 1
-
-
 # --- cell 126 ---
 f.to_feather(ria_vri_vclr1p_checkpoint8_feather_path)
 
 
-# --- cell 129 ---
-def clean_geometry(r):
-    from shapely.geometry import MultiPolygon
-
-    g = r.geometry
-    if not g.is_valid:
-        _g = g.buffer(0)
-        ################################
-        # HACK
-        # Something changed (maybe in fiona?) and now all GDB datasets are
-        # loading as MultiPolygon geometry type (instead of Polygon).
-        # The buffer(0) trick smashes the geometry back to Polygon,
-        # so this hack upcasts it back to MultiPolygon.
-        #
-        # Not sure how robust this is going to be (guessing not robust).
-        _g = MultiPolygon([_g])
-        assert _g.is_valid
-        assert _g.geom_type == "MultiPolygon"
-        g = _g
-    return g
-
-
-# --- cell 130 ---
-def extract_features(f, tsa):
-    f_ = f[
-        [
-            "geometry",
-            "tsa_code",
-            "thlb",
-            "au",
-            "curve1",
-            "curve2",
-            "SPECIES_CD_1",
-            "PROJ_AGE_1",
-            "FEATURE_AREA_SQM",
-        ]
-    ]
-    f_ = f_.set_index("tsa_code").loc[tsa].reset_index()
-    f_.geometry = f_.apply(clean_geometry, axis=1)
-    return f_
-
-
-# --- cell 131 ---
-# prop_names = [u'tsa_code', u'thlb', u'au', u'SPECIES_CD_1', u'PROJ_AGE_1', u'FEATURE_AREA_SQM']
-prop_names = [
-    "tsa_code",
-    "thlb",
-    "au",
-    "canfi_species",
-    "PROJ_AGE_1",
-    "FEATURE_AREA_SQM",
-]
-prop_types = [
-    ("theme0", "str:10"),
-    ("theme1", "str:1"),
-    ("theme2", "str:10"),
-    ("theme3", "str:5"),
-    ("age", "int:5"),
-    ("area", "float:10.1"),
-]
-
-# --- cell 132 ---
-columns = dict(zip(prop_names, dict(prop_types).keys()))
+columns = build_stands_column_map(
+    prop_names=DEFAULT_STANDS_PROP_NAMES,
+    prop_types=DEFAULT_STANDS_PROP_TYPES,
+)
 
 # --- cell 133 ---
-import os
-
 _skip_stands_shp_raw = os.environ.get("FEMIC_SKIP_STANDS_SHP")
-if _skip_stands_shp_raw is None:
-    _skip_stands_shp = _femic_no_cache
-else:
-    _skip_stands_shp = _skip_stands_shp_raw.strip().lower() in ("1", "true", "yes")
+_skip_stands_shp = should_skip_stands_export(
+    skip_raw=_skip_stands_shp_raw,
+    default_skip=_femic_no_cache,
+)
 if _skip_stands_shp:
     print(
         "debug: skipping stand shapefile export (set FEMIC_SKIP_STANDS_SHP=0 to enable)"
     )
 else:
-    for tsa in ria_tsas[:]:
-        print("processing tsa", tsa)
-        f_ = extract_features(f, tsa)
-        try:
-            os.mkdir("./data/shp/tsa%s.shp" % tsa)
-        except:
-            pass
-        f_.rename(columns=columns, inplace=True)
-        f_.theme0 = "tsa" + f_.theme0
-        f_.theme2 = f_.theme2.astype(int)
-        f_.theme3 = f_.apply(lambda r: au_table.loc[r.theme2].canfi_species, axis=1)
-        f_.age = f_.age.fillna(0)
-        f_.age = f_.age.astype(int)
-        f_.area = (f_.area * 0.0001).round(1)
-        f_.to_file("./data/shp/tsa%s.shp/stands.shp" % tsa)
+    export_stands_shapefiles(
+        tsa_list=ria_tsas[:],
+        f_table=f,
+        au_table=au_table,
+        columns_map=columns,
+        output_root="./data/shp",
+        pd_module=pd,
+        message_fn=print,
+    )

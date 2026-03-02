@@ -121,6 +121,9 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "validate_nonempty_au_assignment": 1,
         "assign_curve_ids_from_au_table": 1,
         "assign_thlb_area_and_flag": 1,
+        "build_stands_column_map": 1,
+        "should_skip_stands_export": 1,
+        "export_stands_shapefiles": 1,
     }
     observed = {name: 0 for name in required_calls}
     for node in ast.walk(tree):

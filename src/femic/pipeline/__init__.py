@@ -102,6 +102,15 @@ from femic.pipeline.tipsy_legacy import (
     get_legacy_tipsy_builders,
 )
 from femic.pipeline.vdyp import build_vdyp_cache_paths, build_vdyp_log_paths
+from femic.pipeline.stands import (
+    DEFAULT_STANDS_PROP_NAMES,
+    DEFAULT_STANDS_PROP_TYPES,
+    build_stands_column_map,
+    export_stands_shapefiles,
+    extract_stand_features_for_tsa,
+    prepare_stands_export_frame,
+    should_skip_stands_export,
+)
 from femic.pipeline.vdyp_stage import (
     CurveSmoothingPlotConfig,
     StratumFitRunConfig,
@@ -201,6 +210,13 @@ __all__ = [
     "write_manifest",
     "build_vdyp_cache_paths",
     "build_vdyp_log_paths",
+    "DEFAULT_STANDS_PROP_NAMES",
+    "DEFAULT_STANDS_PROP_TYPES",
+    "build_stands_column_map",
+    "export_stands_shapefiles",
+    "extract_stand_features_for_tsa",
+    "prepare_stands_export_frame",
+    "should_skip_stands_export",
     "build_pipeline_run_config",
     "load_default_tsa_list",
     "normalize_tsa_list",

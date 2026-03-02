@@ -728,3 +728,21 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining theme/shapefile post-processing
   orchestration (`has_managed_curve`, `extract_features`, per-TSA stand export transforms) into
   reusable helper seams.
+- Added `src/femic/pipeline/stands.py` to centralize stand-export post-processing helpers:
+  `should_skip_stands_export(...)`, `clean_stand_geometry(...)`,
+  `extract_stand_features_for_tsa(...)`, `build_stands_column_map(...)`,
+  `prepare_stands_export_frame(...)`, and `export_stands_shapefiles(...)`.
+- Rewired 00_data-prep stand-export orchestration to consume the new stands helpers (skip-flag
+  resolution, column-map construction, per-TSA feature extraction/transform, and shapefile write
+  loop) instead of inline local function definitions.
+- Exported stands helpers from `femic.pipeline.__init__` and added deterministic coverage in
+  `tests/test_stands.py`; updated orchestration guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `build_stands_column_map(...)`, `should_skip_stands_export(...)`, and
+  `export_stands_shapefiles(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (178 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting remaining inline post-01b orchestration
+  prints/warnings and path literals in `00_data-prep.py` into reusable logging/path helper seams so
+  the script body approaches a pure stage-composition shell.
