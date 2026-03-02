@@ -445,3 +445,10 @@
 - Extended `tests/test_pipeline_helpers.py` with deterministic ordering coverage for default and
   lexical modes, and added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a
   calls the helper and no longer assigns local `sort_lex`.
+- Added `femic.pipeline.plots.plot_strata_site_index_diagnostics(...)` to encapsulate early 01a
+  stratum diagnostics plotting (`site_index_median` histogram + abundance-vs-SI scatter).
+- Rewired `01a_run-tsa.py` to call `plot_strata_site_index_diagnostics(...)` and removed direct
+  inline histogram/scatter plotting calls from `run_tsa(...)`.
+- Extended `tests/test_pipeline_helpers.py` with deterministic coverage for this helper and added
+  AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and no
+  longer invokes direct `plt.scatter(...)` for this stage.

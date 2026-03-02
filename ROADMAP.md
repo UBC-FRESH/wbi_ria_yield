@@ -546,3 +546,12 @@
   `sort_lex`.
 - Queued next extraction slice: remove residual inline notebook-style diagnostic plot calls in early
   01a flow (`site_index_median` histogram + scatter) into a reusable plotting helper.
+- Added `femic.pipeline.plots.plot_strata_site_index_diagnostics(...)` to encapsulate early 01a
+  stratum diagnostics plotting (`site_index_median` histogram + abundance-vs-SI scatter).
+- Rewired `01a_run-tsa.py` to call `plot_strata_site_index_diagnostics(...)` and removed direct
+  inline histogram/scatter plotting calls from `run_tsa(...)`.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic behavior coverage for the new
+  diagnostics helper and added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a
+  calls the helper and no longer invokes direct `plt.scatter(...)` for this stage.
+- Queued next extraction slice: centralize stratum-distribution/ordering plotting orchestration
+  (bar+violin block) into a dedicated shared helper to further shrink inline plotting in 01a.
