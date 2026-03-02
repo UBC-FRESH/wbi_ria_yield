@@ -584,6 +584,207 @@ def run_vdyp_sampling(
     assert False  # bad nsamples value
 
 
+def run_vdyp_for_stratum(
+    *,
+    sample_table: Any,
+    tsa: str,
+    run_id: str,
+    vdyp_ply: Any,
+    vdyp_lyr: Any,
+    rc_len: int,
+    curve_fit_fn: Callable[..., Any],
+    fit_func: Callable[..., Any],
+    fit_func_bounds_func: Callable[..., Any],
+    nsamples: str | int = "auto",
+    vdyp_io_dirname: str = "vdyp_io",
+    vdyp_params_infile: str = "vdyp_params-landp",
+    vdyp_binpath: str = "VDYP7/VDYP7/VDYP7Console.exe",
+    nsamples_c1: float = 0.01,
+    nsamples_c2: float = 0.1,
+    verbose: bool = False,
+    confidence: float = 95,
+    half_rel_ci: float = 0.05,
+    min_samples: int = 100,
+    max_samples: int = 640,
+    ipp_mode: str | None = None,
+    vdyp_timeout: float = 2.0,
+    vdyp_out_cache: dict[Any, Any] | None = None,
+    vdyp_log_path: str | Path | None = None,
+    vdyp_stdout_log_path: str | Path | None = None,
+    vdyp_stderr_log_path: str | Path | None = None,
+    log_context: Mapping[str, Any] | None = None,
+    which_fn: Callable[[str], str | None] | None = None,
+    build_tsa_vdyp_log_paths_fn: Callable[..., Mapping[str, str | Path]] | None = None,
+    append_jsonl_fn: Callable[[str | Path, Any], None] | None = None,
+    append_text_fn: Callable[[str | Path, str], None] | None = None,
+    execute_vdyp_batch_fn: Callable[..., dict[Any, Any]] | None = None,
+    write_vdyp_infiles_fn: Callable[..., None] | None = None,
+    import_vdyp_tables_fn: Callable[[str], dict[Any, Any]] | None = None,
+    nsamples_from_curves_fn: Callable[..., tuple[int, Any]] | None = None,
+    message_fn: Callable[..., Any] = print,
+) -> dict[Any, Any]:
+    """Run VDYP for one stratum sample table with logging and sampling orchestration."""
+    import shutil
+
+    if which_fn is None:
+        which_fn = shutil.which
+    if build_tsa_vdyp_log_paths_fn is None:
+        from femic.pipeline.vdyp_logging import build_tsa_vdyp_log_paths
+
+        build_tsa_vdyp_log_paths_fn = build_tsa_vdyp_log_paths
+    if append_jsonl_fn is None:
+        from femic.pipeline.vdyp_logging import append_jsonl
+
+        append_jsonl_fn = append_jsonl
+    if append_text_fn is None:
+        from femic.pipeline.vdyp_logging import append_text
+
+        append_text_fn = append_text
+    if write_vdyp_infiles_fn is None:
+        from femic.pipeline.vdyp_io import write_vdyp_infiles_plylyr
+
+        write_vdyp_infiles_fn = write_vdyp_infiles_plylyr
+    if import_vdyp_tables_fn is None:
+        from femic.pipeline.vdyp_io import import_vdyp_tables
+
+        import_vdyp_tables_fn = import_vdyp_tables
+    if nsamples_from_curves_fn is None:
+        from femic.pipeline.vdyp_sampling import nsamples_from_curves
+
+        def _default_nsamples_from_curves(
+            vdyp_out: dict[Any, Any], **kwargs: Any
+        ) -> tuple[int, Any]:
+            nsamples_target, fit_out = nsamples_from_curves(vdyp_out, **kwargs)
+            return int(nsamples_target), fit_out
+
+        nsamples_from_curves_fn = _default_nsamples_from_curves
+    if execute_vdyp_batch_fn is None:
+        execute_vdyp_batch_fn = execute_vdyp_batch
+
+    build_tsa_vdyp_log_paths_ = cast(
+        Callable[..., Mapping[str, str | Path]], build_tsa_vdyp_log_paths_fn
+    )
+    append_jsonl_ = cast(Callable[[str | Path, Any], None], append_jsonl_fn)
+    append_text_ = cast(Callable[[str | Path, str], None], append_text_fn)
+    execute_vdyp_batch_ = cast(Callable[..., dict[Any, Any]], execute_vdyp_batch_fn)
+    nsamples_from_curves_ = cast(
+        Callable[..., tuple[int, Any]], nsamples_from_curves_fn
+    )
+
+    if which_fn("wine") is None:
+        raise RuntimeError(
+            "wine not found; VDYP7 requires wine to run on non-Windows systems"
+        )
+    vdyp_binpath_path = Path(vdyp_binpath)
+    if not vdyp_binpath_path.exists():
+        raise RuntimeError(f"VDYP executable not found: {vdyp_binpath_path.resolve()}")
+    vdyp_params_path = Path(vdyp_params_infile)
+    if not vdyp_params_path.exists():
+        raise RuntimeError(f"VDYP params path not found: {vdyp_params_path.resolve()}")
+    Path(vdyp_io_dirname).mkdir(parents=True, exist_ok=True)
+
+    tsa_paths = build_tsa_vdyp_log_paths_(
+        tsa_code=tsa,
+        run_id=run_id,
+        vdyp_io_dirname=vdyp_io_dirname,
+    )
+    if vdyp_log_path is None:
+        vdyp_log_path = tsa_paths["run"]
+    if vdyp_stdout_log_path is None:
+        vdyp_stdout_log_path = tsa_paths["stdout"]
+    if vdyp_stderr_log_path is None:
+        vdyp_stderr_log_path = tsa_paths["stderr"]
+
+    base_context = dict(log_context) if log_context else {}
+    base_context.setdefault("tsa", tsa)
+    base_context.setdefault("run_id", run_id)
+    base_context.setdefault("vdyp_stdout_log", str(vdyp_stdout_log_path))
+    base_context.setdefault("vdyp_stderr_log", str(vdyp_stderr_log_path))
+    base_context.setdefault("vdyp_binpath", str(vdyp_binpath_path))
+    base_context.setdefault("vdyp_params", str(vdyp_params_path))
+
+    def _run_batch(
+        feature_ids: Sequence[Any],
+        *,
+        timeout: int | float | None = None,
+        cache_hits: int = 0,
+        phase: str | None = None,
+    ) -> dict[Any, Any]:
+        feature_ids_list = list(feature_ids)
+        feature_count = len(feature_ids_list)
+        if feature_count == 0:
+            append_jsonl_(
+                vdyp_log_path,
+                {
+                    "event": "vdyp_run",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "status": "cache_only",
+                    "phase": phase,
+                    "feature_count": 0,
+                    "cache_hits": int(cache_hits),
+                    "context": base_context,
+                },
+            )
+            return {}
+        append_jsonl_(
+            vdyp_log_path,
+            {
+                "event": "vdyp_run",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "status": "start",
+                "phase": phase,
+                "feature_count": int(feature_count),
+                "cache_hits": int(cache_hits),
+                "context": base_context,
+            },
+        )
+        return execute_vdyp_batch_(
+            feature_ids=feature_ids_list,
+            vdyp_ply=vdyp_ply,
+            vdyp_lyr=vdyp_lyr,
+            vdyp_binpath=vdyp_binpath,
+            vdyp_params_infile=vdyp_params_infile,
+            vdyp_io_dirname=vdyp_io_dirname,
+            vdyp_log_path=vdyp_log_path,
+            vdyp_stdout_log_path=vdyp_stdout_log_path,
+            vdyp_stderr_log_path=vdyp_stderr_log_path,
+            phase=phase or "unknown",
+            cache_hits=cache_hits,
+            timeout=int(timeout) if timeout is not None else 30,
+            run_id=run_id,
+            base_context=base_context,
+            write_vdyp_infiles=write_vdyp_infiles_fn,
+            import_vdyp_tables_fn=import_vdyp_tables_fn,
+            append_jsonl_fn=append_jsonl_,
+            append_text_fn=append_text_,
+        )
+
+    return run_vdyp_sampling(
+        sample_table=sample_table,
+        nsamples=nsamples,
+        min_samples=min_samples,
+        max_samples=max_samples,
+        nsamples_c1=nsamples_c1,
+        nsamples_c2=nsamples_c2,
+        confidence=confidence,
+        half_rel_ci=half_rel_ci,
+        ipp_mode=ipp_mode,
+        vdyp_timeout=vdyp_timeout,
+        rc_len=rc_len,
+        verbose=verbose,
+        vdyp_out_cache=vdyp_out_cache,
+        run_batch_fn=lambda feature_ids, **kwargs: _run_batch(feature_ids, **kwargs),
+        nsamples_from_curves_fn=lambda vdyp_out, **kwargs: nsamples_from_curves_(
+            vdyp_out,
+            curve_fit_fn=curve_fit_fn,
+            fit_func=fit_func,
+            fit_func_bounds_func=fit_func_bounds_func,
+            **kwargs,
+        ),
+        message_fn=message_fn,
+    )
+
+
 def execute_bootstrap_vdyp_runs(
     *,
     tsa: str,

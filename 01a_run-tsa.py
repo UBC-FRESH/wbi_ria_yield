@@ -43,12 +43,9 @@ def run_tsa(
     )
     from femic.pipeline.vdyp_logging import (
         append_jsonl,
-        append_text,
         build_tsa_vdyp_log_paths,
         resolve_run_id,
     )
-    from femic.pipeline.vdyp_sampling import nsamples_from_curves
-    from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
     from femic.pipeline.vdyp_curves import process_vdyp_out
     from femic.pipeline.vdyp_stage import (
         build_curve_fit_adapter,
@@ -56,12 +53,11 @@ def run_tsa(
         compile_strata_fit_results,
         execute_bootstrap_vdyp_runs,
         execute_curve_smoothing_runs,
-        execute_vdyp_batch,
         fit_stratum_curves,
         load_vdyp_input_tables,
         load_or_build_vdyp_results_tsa,
         plot_curve_overlays,
-        run_vdyp_sampling,
+        run_vdyp_for_stratum,
     )
     from femic.pipeline.tsa import (
         build_strata_summary,
@@ -262,162 +258,16 @@ def run_tsa(
 
     # --- cell 30/32 ---
 
-    from datetime import datetime, timezone
-    from pathlib import Path
-
     femic_run_id = resolve_run_id()
-
-    def _tsa_log_path(kind, vdyp_io_dirname="vdyp_io"):
-        return build_tsa_vdyp_log_paths(
-            tsa_code=tsa,
-            run_id=femic_run_id,
-            vdyp_io_dirname=vdyp_io_dirname,
-        )[kind]
-
-    # --- cell 36 ---
-    def run_vdyp(
-        s,
-        vdyp_ply,
-        vdyp_lyr,
+    vdyp_log_paths = build_tsa_vdyp_log_paths(
+        tsa_code=tsa,
+        run_id=femic_run_id,
         vdyp_io_dirname="vdyp_io",
-        vdyp_outfile="ConsoleOutput.txt",
-        vdyp_params_infile="vdyp_params-landp",
-        nsamples="auto",
-        vdyp_binpath="VDYP7/VDYP7/VDYP7Console.exe",
-        si_levels=["L", "M", "H"],
-        nsamples_c1=0.01,
-        nsamples_c2=0.1,
-        verbose=False,
-        confidence=95,
-        half_rel_ci=0.05,
-        min_samples=100,
-        max_samples=640,
-        ipp_mode=None,
-        delete=True,
-        vdyp_timeout=2.0,
-        vdyp_out_cache=None,
-        vdyp_log_path=None,
-        vdyp_stdout_log_path=None,
-        vdyp_stderr_log_path=None,
-        log_context=None,
-    ):
-        import shutil
-        from pathlib import Path
-
-        global xxx
-        if shutil.which("wine") is None:
-            raise RuntimeError(
-                "wine not found; VDYP7 requires wine to run on non-Windows systems"
-            )
-        vdyp_binpath_path = Path(vdyp_binpath)
-        if not vdyp_binpath_path.exists():
-            raise RuntimeError(
-                f"VDYP executable not found: {vdyp_binpath_path.resolve()}"
-            )
-        vdyp_params_path = Path(vdyp_params_infile)
-        if not vdyp_params_path.exists():
-            raise RuntimeError(
-                f"VDYP params path not found: {vdyp_params_path.resolve()}"
-            )
-        Path(vdyp_io_dirname).mkdir(parents=True, exist_ok=True)
-        if vdyp_log_path is None:
-            vdyp_log_path = _tsa_log_path("run", vdyp_io_dirname)
-        if vdyp_stdout_log_path is None:
-            vdyp_stdout_log_path = _tsa_log_path("stdout", vdyp_io_dirname)
-        if vdyp_stderr_log_path is None:
-            vdyp_stderr_log_path = _tsa_log_path("stderr", vdyp_io_dirname)
-        base_context = dict(log_context) if log_context else {}
-        base_context.setdefault("tsa", tsa)
-        base_context.setdefault("run_id", femic_run_id)
-        base_context.setdefault("vdyp_stdout_log", str(vdyp_stdout_log_path))
-        base_context.setdefault("vdyp_stderr_log", str(vdyp_stderr_log_path))
-        base_context.setdefault("vdyp_binpath", str(vdyp_binpath_path))
-        base_context.setdefault("vdyp_params", str(vdyp_params_path))
-        vdyp_output_path = "%s/%s" % (vdyp_io_dirname, vdyp_outfile)
-
-        def _run_vdyp(
-            feature_ids,
-            vdyp_io_dirname="vdyp_io",
-            timeout=None,
-            cache_hits=0,
-            phase=None,
-        ):
-            feature_ids = list(feature_ids)
-            feature_count = len(feature_ids)
-            if feature_count == 0:
-                append_jsonl(
-                    vdyp_log_path,
-                    {
-                        "event": "vdyp_run",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "status": "cache_only",
-                        "phase": phase,
-                        "feature_count": 0,
-                        "cache_hits": int(cache_hits),
-                        "context": base_context,
-                    },
-                )
-                return {}
-            append_jsonl(
-                vdyp_log_path,
-                {
-                    "event": "vdyp_run",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "status": "start",
-                    "phase": phase,
-                    "feature_count": int(feature_count),
-                    "cache_hits": int(cache_hits),
-                    "context": base_context,
-                },
-            )
-            return execute_vdyp_batch(
-                feature_ids=feature_ids,
-                vdyp_ply=vdyp_ply,
-                vdyp_lyr=vdyp_lyr,
-                vdyp_binpath=vdyp_binpath,
-                vdyp_params_infile=vdyp_params_infile,
-                vdyp_io_dirname=vdyp_io_dirname,
-                vdyp_log_path=vdyp_log_path,
-                vdyp_stdout_log_path=vdyp_stdout_log_path,
-                vdyp_stderr_log_path=vdyp_stderr_log_path,
-                phase=phase or "unknown",
-                cache_hits=cache_hits,
-                timeout=timeout,
-                run_id=femic_run_id,
-                base_context=base_context,
-                write_vdyp_infiles=write_vdyp_infiles_plylyr,
-                import_vdyp_tables_fn=import_vdyp_tables,
-                append_jsonl_fn=append_jsonl,
-                append_text_fn=append_text,
-            )
-
-        return run_vdyp_sampling(
-            sample_table=s,
-            nsamples=nsamples,
-            min_samples=min_samples,
-            max_samples=max_samples,
-            nsamples_c1=nsamples_c1,
-            nsamples_c2=nsamples_c2,
-            confidence=confidence,
-            half_rel_ci=half_rel_ci,
-            ipp_mode=ipp_mode,
-            vdyp_timeout=vdyp_timeout,
-            rc_len=len(rc),
-            verbose=bool(verbose),
-            vdyp_out_cache=vdyp_out_cache,
-            run_batch_fn=lambda feature_ids, **kwargs: _run_vdyp(feature_ids, **kwargs),
-            nsamples_from_curves_fn=lambda vdyp_out, **kwargs: nsamples_from_curves(
-                vdyp_out,
-                curve_fit_fn=curve_fit,
-                fit_func=body_fit_func,
-                fit_func_bounds_func=body_fit_func_bounds_func,
-                **kwargs,
-            ),
-            message_fn=print,
-        )
-
-    vdyp_run_events_path = _tsa_log_path("run", "vdyp_io")
-    vdyp_curve_events_path = _tsa_log_path("curve", "vdyp_io")
+    )
+    vdyp_run_events_path = vdyp_log_paths["run"]
+    vdyp_curve_events_path = vdyp_log_paths["curve"]
+    vdyp_stdout_log_path = vdyp_log_paths["stdout"]
+    vdyp_stderr_log_path = vdyp_log_paths["stderr"]
 
     # --- cell 38 ---
     # --- cell 40 ---
@@ -445,7 +295,22 @@ def run_tsa(
             si_levels=si_levels,
             vdyp_run_events_path=vdyp_run_events_path,
             append_jsonl_fn=append_jsonl,
-            run_vdyp_fn=lambda s, **kwargs: run_vdyp(s, vdyp_ply, vdyp_lyr, **kwargs),
+            run_vdyp_fn=lambda s, **kwargs: run_vdyp_for_stratum(
+                sample_table=s,
+                tsa=tsa,
+                run_id=femic_run_id,
+                vdyp_ply=vdyp_ply,
+                vdyp_lyr=vdyp_lyr,
+                rc_len=len(rc),
+                curve_fit_fn=curve_fit,
+                fit_func=body_fit_func,
+                fit_func_bounds_func=body_fit_func_bounds_func,
+                append_jsonl_fn=append_jsonl,
+                vdyp_log_path=vdyp_run_events_path,
+                vdyp_stdout_log_path=vdyp_stdout_log_path,
+                vdyp_stderr_log_path=vdyp_stderr_log_path,
+                **kwargs,
+            ),
             vdyp_out_cache=vdyp_out_cache,
         ),
         print_fn=print,

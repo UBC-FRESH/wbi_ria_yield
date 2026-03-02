@@ -98,7 +98,7 @@ def test_run01a_uses_compile_strata_fit_results_helper_call() -> None:
     raise AssertionError("run_tsa should call compile_strata_fit_results(...)")
 
 
-def test_run01a_uses_run_vdyp_sampling_helper_call() -> None:
+def test_run01a_no_direct_run_vdyp_sampling_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
     for node in ast.walk(run_tsa):
@@ -106,5 +106,26 @@ def test_run01a_uses_run_vdyp_sampling_helper_call() -> None:
             continue
         func = node.func
         if isinstance(func, ast.Name) and func.id == "run_vdyp_sampling":
+            raise AssertionError(
+                "run_tsa should delegate via run_vdyp_for_stratum, not call run_vdyp_sampling directly"
+            )
+
+
+def test_run01a_uses_run_vdyp_for_stratum_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "run_vdyp_for_stratum":
             return
-    raise AssertionError("run_tsa should call run_vdyp_sampling(...)")
+    raise AssertionError("run_tsa should call run_vdyp_for_stratum(...)")
+
+
+def test_run01a_has_no_nested_run_vdyp_definition() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in run_tsa.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "run_vdyp":
+            raise AssertionError("run_tsa should not define nested run_vdyp")
