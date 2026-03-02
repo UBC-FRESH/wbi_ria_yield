@@ -174,6 +174,24 @@ def test_stratify_stand_builds_expected_codes() -> None:
     assert stratify_stand(row, lexmatch=True) == "SBSxSBSxSBSx_SSWSSW+PPL"
 
 
+def test_stratify_stand_supports_attribute_rows() -> None:
+    class _Row:
+        BEC_ZONE_CODE = "SBS"
+        BCLCS_LEVEL_4 = "TM"
+        SPECIES_CD_1 = "SW"
+        SPECIES_CD_2 = "PL"
+        BEC_ZONE_CODE_lexmatch = "SBSx"
+        SPECIES_CD_1_lexmatch = "SSW"
+        SPECIES_CD_2_lexmatch = "PPL"
+
+        def __getitem__(self, key: str) -> str:
+            raise TypeError("attribute-style row only")
+
+    row = _Row()
+    assert stratify_stand(row) == "SBS_SW+PL"
+    assert stratify_stand(row, lexmatch=True) == "SBSxSBSxSBSx_SSWSSW+PPL"
+
+
 def test_assign_stratum_codes_with_lexmatch_assigns_both_columns() -> None:
     frame = pd.DataFrame(
         [

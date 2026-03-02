@@ -33,6 +33,30 @@ class LegacyTSAStageState:
     results: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class ParallelExecutionBackend:
+    """Parallel execution backend selection for legacy notebook-style loops."""
+
+    use_ipp: bool
+    rc: Any
+    lbview: Any
+
+
+class _SerialView:
+    def map_async(
+        self, func: Callable[..., Any], *iterables: Sequence[Any], ordered: bool = True
+    ) -> list[Any]:
+        return [func(*args) for args in zip(*iterables)]
+
+
+class _SerialClient:
+    def wait_interactive(self) -> None:
+        return None
+
+    def __len__(self) -> int:
+        return 1
+
+
 def initialize_legacy_tsa_stage_state() -> LegacyTSAStageState:
     """Create empty state payload used by legacy 01a/01b TSA stages."""
     return LegacyTSAStageState(
@@ -44,6 +68,48 @@ def initialize_legacy_tsa_stage_state() -> LegacyTSAStageState:
         au_scsi={},
         results={},
     )
+
+
+def _ipp_fallback_exception_types(ipp_module: Any) -> tuple[type[BaseException], ...]:
+    types: list[type[BaseException]] = [
+        OSError,
+        RuntimeError,
+        TimeoutError,
+        ConnectionError,
+    ]
+    error_module = getattr(ipp_module, "error", None)
+    timeout_type = getattr(error_module, "TimeoutError", None)
+    if isinstance(timeout_type, type) and issubclass(timeout_type, BaseException):
+        types.append(timeout_type)
+    return tuple(types)
+
+
+def initialize_parallel_execution_backend(
+    *,
+    disable_ipp: bool,
+    ipp_module: Any,
+    print_fn: Callable[..., Any] = print,
+) -> ParallelExecutionBackend:
+    """Initialize ipyparallel backend or fall back to serial execution."""
+    if disable_ipp:
+        print_fn("ipyparallel disabled (FEMIC_DISABLE_IPP=1); using serial execution")
+        return ParallelExecutionBackend(
+            use_ipp=False,
+            rc=_SerialClient(),
+            lbview=_SerialView(),
+        )
+
+    try:
+        rc = ipp_module.Client()
+        lbview = rc.load_balanced_view()
+        return ParallelExecutionBackend(use_ipp=True, rc=rc, lbview=lbview)
+    except _ipp_fallback_exception_types(ipp_module) as exc:
+        print_fn(f"ipyparallel not available, falling back to serial execution: {exc}")
+        return ParallelExecutionBackend(
+            use_ipp=False,
+            rc=_SerialClient(),
+            lbview=_SerialView(),
+        )
 
 
 def prepare_tsa_index(

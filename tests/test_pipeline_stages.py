@@ -6,6 +6,8 @@ import sys
 from femic.pipeline.io import build_legacy_execution_plan, build_pipeline_run_config
 from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
 from femic.pipeline.stages import (
+    ParallelExecutionBackend,
+    initialize_parallel_execution_backend,
     initialize_legacy_tsa_stage_state,
     load_legacy_module,
     prepare_tsa_index,
@@ -109,6 +111,54 @@ def test_should_skip_if_outputs_exist(tmp_path: Path) -> None:
 
     assert should_skip is True
     assert messages == ["skip"]
+
+
+def test_initialize_parallel_execution_backend_uses_serial_when_disabled() -> None:
+    messages: list[str] = []
+    backend = initialize_parallel_execution_backend(
+        disable_ipp=True,
+        ipp_module=object(),
+        print_fn=messages.append,
+    )
+    assert isinstance(backend, ParallelExecutionBackend)
+    assert backend.use_ipp is False
+    assert "ipyparallel disabled" in messages[0]
+
+
+def test_initialize_parallel_execution_backend_falls_back_on_runtime_error() -> None:
+    messages: list[str] = []
+
+    class _IPP:
+        class Client:
+            def __init__(self) -> None:
+                raise RuntimeError("no controller")
+
+    backend = initialize_parallel_execution_backend(
+        disable_ipp=False,
+        ipp_module=_IPP(),
+        print_fn=messages.append,
+    )
+    assert backend.use_ipp is False
+    assert "falling back to serial execution" in messages[0]
+
+
+def test_initialize_parallel_execution_backend_uses_ipp_when_available() -> None:
+    class _Client:
+        def load_balanced_view(self) -> str:
+            return "lbview"
+
+    class _IPP:
+        class Client:
+            def __new__(cls) -> _Client:
+                return _Client()
+
+    backend = initialize_parallel_execution_backend(
+        disable_ipp=False,
+        ipp_module=_IPP(),
+        print_fn=lambda *_args: None,
+    )
+    assert backend.use_ipp is True
+    assert backend.lbview == "lbview"
 
 
 def test_build_legacy_01a_runtime_config_builds_cache_paths() -> None:

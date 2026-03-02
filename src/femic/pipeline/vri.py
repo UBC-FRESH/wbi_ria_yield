@@ -16,7 +16,7 @@ def stratify_stand(
     def _value(key: str) -> Any:
         try:
             return row[key]
-        except Exception:
+        except (KeyError, TypeError, IndexError):
             return getattr(row, key)
 
     if lexmatch:

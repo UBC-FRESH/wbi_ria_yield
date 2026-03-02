@@ -888,3 +888,21 @@
 - Queued next extraction slice: continue P2.2 by narrowing broad `except Exception` around
   ipyparallel client initialization into explicit import/runtime exception paths (or helper seam)
   while preserving serial fallback behavior.
+- Added `ParallelExecutionBackend` and `initialize_parallel_execution_backend(...)` in
+  `src/femic/pipeline/stages.py` to centralize ipyparallel bootstrap + serial fallback behavior with
+  explicit fallback exception classes (instead of broad `except Exception`), and rewired
+  `00_data-prep.py` to consume that helper seam.
+- Exported the new parallel backend seam via `femic.pipeline.__init__`, expanded deterministic
+  coverage in `tests/test_pipeline_stages.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `initialize_parallel_execution_backend(...)` seam usage.
+- Narrowed `stratify_stand(...)` row lookup fallback handling in `src/femic/pipeline/vri.py` from
+  broad `except Exception` to explicit lookup errors (`KeyError`, `TypeError`, `IndexError`) and
+  expanded coverage in `tests/test_vri.py` for attribute-style row objects.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (209 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by narrowing remaining broad exception fallbacks in
+  THLB helper seams (`mean_thlb_for_geometry(...)` / `assign_thlb_raw_from_raster(...)` in
+  `src/femic/pipeline/tsa.py`) into explicit raster/row-lookup exception paths while preserving
+  legacy default-on-error behavior.

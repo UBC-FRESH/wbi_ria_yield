@@ -69,6 +69,7 @@ try:
     )
     from femic.pipeline.species_volume import compile_species_volume_columns
     from femic.pipeline.stages import (
+        initialize_parallel_execution_backend,
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
         prepare_tsa_index,
@@ -132,6 +133,7 @@ except ModuleNotFoundError:
     )
     from femic.pipeline.species_volume import compile_species_volume_columns
     from femic.pipeline.stages import (
+        initialize_parallel_execution_backend,
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
         prepare_tsa_index,
@@ -197,33 +199,14 @@ _disable_ipp = os.environ.get("FEMIC_DISABLE_IPP", "1").strip().lower() in (
     "true",
     "yes",
 )
-if _disable_ipp:
-    print("ipyparallel disabled (FEMIC_DISABLE_IPP=1); using serial execution")
-    _use_ipp = False
-else:
-    try:
-        rc = ipp.Client()
-        lbview = rc.load_balanced_view()
-        _use_ipp = True
-    except Exception as e:
-        print("ipyparallel not available, falling back to serial execution:", e)
-        _use_ipp = False
-
-if not _use_ipp:
-
-    class _SerialView:
-        def map_async(self, func, *iterables, ordered=True):
-            return [func(*args) for args in zip(*iterables)]
-
-    class _SerialClient:
-        def wait_interactive(self):
-            return None
-
-        def __len__(self):
-            return 1
-
-    rc = _SerialClient()
-    lbview = _SerialView()
+_parallel_backend = initialize_parallel_execution_backend(
+    disable_ipp=_disable_ipp,
+    ipp_module=ipp,
+    print_fn=print,
+)
+_use_ipp = _parallel_backend.use_ipp
+rc = _parallel_backend.rc
+lbview = _parallel_backend.lbview
 
 # --- cell 9 ---
 _repo_root = Path(__file__).resolve().parent

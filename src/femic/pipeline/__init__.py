@@ -50,7 +50,9 @@ from femic.pipeline.vdyp_overrides import (
 )
 from femic.pipeline.stages import (
     LegacyTSAStageState,
+    ParallelExecutionBackend,
     StageResult,
+    initialize_parallel_execution_backend,
     initialize_legacy_tsa_stage_state,
     load_legacy_module,
     prepare_tsa_index,
@@ -189,11 +191,13 @@ __all__ = [
     "StageResult",
     "Legacy01ARuntimeConfig",
     "LegacyTSAStageState",
+    "ParallelExecutionBackend",
     "BundlePaths",
     "BundleAssemblyResult",
     "assign_curve_ids_from_au_table",
     "build_legacy_execution_plan",
     "build_legacy_01a_runtime_config",
+    "initialize_parallel_execution_backend",
     "initialize_legacy_tsa_stage_state",
     "load_legacy_module",
     "prepare_tsa_index",
