@@ -312,3 +312,11 @@
 - Expanded `tests/test_pipeline_helpers.py` with deterministic `build_strata_summary(...)` coverage
   (aggregate outputs + validation error path), and updated `tests/test_legacy_01a_structure.py`
   guardrails to assert `run_tsa(...)` calls the extracted helper seam.
+- Extracted 01a lexmatch alias resolution into
+  `femic.pipeline.tsa.build_stratum_lexmatch_alias_map(...)`, moving Levenshtein tie-break
+  selection logic (distance + relative-area tiebreak) out of inline notebook-era code.
+- Rewired `01a_run-tsa.py` to consume `build_stratum_lexmatch_alias_map(...)` when mapping
+  non-selected strata onto selected strata for downstream fitting.
+- Expanded tests with deterministic alias-map coverage in `tests/test_pipeline_helpers.py`, and
+  added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the new
+  lexmatch helper seam.
