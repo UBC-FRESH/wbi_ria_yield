@@ -8,6 +8,7 @@ import pytest
 from femic.pipeline.tipsy_config import (
     build_tipsy_params_from_config,
     load_tipsy_tsa_config,
+    resolve_tipsy_runtime_options,
     resolve_tipsy_param_builder,
 )
 
@@ -37,6 +38,21 @@ rules:
     payload = load_tipsy_tsa_config(tsa_code="08", config_dir=tmp_path)
     assert payload is not None
     assert payload["tsa_code"] == "08"
+
+
+def test_resolve_tipsy_runtime_options_defaults_and_overrides() -> None:
+    default_dir, default_legacy = resolve_tipsy_runtime_options(env={})
+    assert default_dir == "config/tipsy"
+    assert default_legacy is False
+
+    config_dir, use_legacy = resolve_tipsy_runtime_options(
+        env={
+            "FEMIC_TIPSY_CONFIG_DIR": "/tmp/custom",
+            "FEMIC_TIPSY_USE_LEGACY": "1",
+        }
+    )
+    assert config_dir == "/tmp/custom"
+    assert use_legacy is True
 
 
 def test_resolve_tipsy_param_builder_prefers_config_when_available(

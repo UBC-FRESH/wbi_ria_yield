@@ -128,6 +128,23 @@ def test_run01a_no_direct_site_index_diagnostic_plot_calls() -> None:
             )
 
 
+def test_run01a_no_direct_tipsy_env_reads() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Attribute):
+            continue
+        if (
+            isinstance(node.value, ast.Attribute)
+            and isinstance(node.value.value, ast.Name)
+            and node.value.value.id == "os"
+            and node.value.attr == "environ"
+        ):
+            raise AssertionError(
+                "run_tsa should resolve TIPSY env options through helper, not os.environ directly"
+            )
+
+
 def test_run01a_uses_resolve_strata_plot_ordering_helper_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

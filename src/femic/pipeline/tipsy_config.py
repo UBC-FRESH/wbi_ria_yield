@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 import re
+import os
 from typing import Any, Mapping
 
 import yaml
@@ -14,6 +15,18 @@ from femic.pipeline.tipsy import compute_vdyp_oaf1, compute_vdyp_site_index
 TipsyParamBuilder = Callable[
     [int, Mapping[str, Any], Mapping[Any, Any]], dict[str, dict[str, Any]]
 ]
+
+
+def resolve_tipsy_runtime_options(
+    env: Mapping[str, str] | None = None,
+    *,
+    default_config_dir: str = "config/tipsy",
+) -> tuple[str, bool]:
+    """Resolve TIPSY runtime config-dir and legacy-toggle flags from environment."""
+    env_map = dict(env) if env is not None else os.environ
+    config_dir = env_map.get("FEMIC_TIPSY_CONFIG_DIR", default_config_dir)
+    use_legacy = env_map.get("FEMIC_TIPSY_USE_LEGACY", "0") == "1"
+    return config_dir, use_legacy
 
 
 def tipsy_config_path_for_tsa(tsa_code: str, config_dir: str | Path) -> Path:

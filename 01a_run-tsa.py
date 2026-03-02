@@ -86,6 +86,7 @@ def run_tsa(
         get_legacy_tipsy_builders,
     )
     from femic.pipeline.tipsy_config import (
+        resolve_tipsy_runtime_options,
         resolve_tipsy_param_builder,
     )
 
@@ -340,8 +341,7 @@ def run_tsa(
 
     tipsy_exclusion = build_tipsy_exclusion()
     legacy_tipsy_builders = get_legacy_tipsy_builders()
-    tipsy_config_dir = os.environ.get("FEMIC_TIPSY_CONFIG_DIR", "config/tipsy")
-    tipsy_use_legacy = os.environ.get("FEMIC_TIPSY_USE_LEGACY", "0") == "1"
+    tipsy_config_dir, tipsy_use_legacy = resolve_tipsy_runtime_options()
     tipsy_param_builder, tipsy_param_builder_message = resolve_tipsy_param_builder(
         tsa_code=tsa,
         legacy_builder=legacy_tipsy_builders[tsa],
