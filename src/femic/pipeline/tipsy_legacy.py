@@ -508,7 +508,7 @@ def tipsy_params_tsa40(au_id, au_data, vdyp_out):
             spp, pct = spp_pct[i - 1]
             if spp == "SX":
                 spp = "SW"
-        except Exception:
+        except IndexError:
             spp = pct = None
         for j in ["e", "f"]:
             tp[j]["SPP_%i" % i] = spp

@@ -315,3 +315,80 @@ def test_repo_all_legacy_tsa_configs_present() -> None:
     for tsa in ("08", "16", "24", "40", "41"):
         payload = load_tipsy_tsa_config(tsa_code=tsa, config_dir="config/tipsy")
         assert payload is not None
+
+
+def test_build_tipsy_params_from_config_handles_missing_forest_type_mode() -> None:
+    cfg = {
+        "schema_version": 1,
+        "tsa_code": "08",
+        "rules": [
+            {
+                "id": "spruce_rule",
+                "when": {"leading_species_in": ["SW"], "bec_in": ["SBS"]},
+                "assign": {
+                    "e": {"Density": 1200, "SPP_1": "SW", "PCT_1": 100},
+                    "f": {"Density": 1100, "SPP_1": "SW", "PCT_1": 100},
+                },
+            }
+        ],
+    }
+    au_data = {
+        "ss": pd.DataFrame(
+            {
+                "SITE_INDEX": [16.0, 18.0],
+                "BEC_ZONE_CODE": ["SBS", "SBS"],
+                "forest_type": [float("nan"), float("nan")],
+            }
+        ),
+        "species": {"SW": {"pct": 60.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [17.0], "% Stk": [90.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=7001,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["SPP_1"] == "SW"
+    assert out["f"]["Density"] == 1100
+
+
+def test_build_tipsy_params_from_config_unexpected_forest_type_error_propagates() -> (
+    None
+):
+    class _BadInt:
+        def __int__(self) -> int:
+            raise ZeroDivisionError("unexpected")
+
+    cfg = {
+        "schema_version": 1,
+        "tsa_code": "08",
+        "rules": [
+            {
+                "id": "spruce_rule",
+                "when": {"leading_species_in": ["SW"], "bec_in": ["SBS"]},
+                "assign": {
+                    "e": {"Density": 1200, "SPP_1": "SW", "PCT_1": 100},
+                    "f": {"Density": 1100, "SPP_1": "SW", "PCT_1": 100},
+                },
+            }
+        ],
+    }
+    au_data = {
+        "ss": pd.DataFrame(
+            {
+                "SITE_INDEX": [16.0],
+                "BEC_ZONE_CODE": ["SBS"],
+                "forest_type": [_BadInt()],
+            }
+        ),
+        "species": {"SW": {"pct": 60.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [17.0], "% Stk": [90.0]})}
+    with pytest.raises(ZeroDivisionError):
+        build_tipsy_params_from_config(
+            au_id=7002,
+            au_data=au_data,
+            vdyp_out=vdyp_out,
+            config=cfg,
+        )

@@ -265,7 +265,7 @@ def build_tipsy_params_from_config(
     if "forest_type" in ss:
         try:
             forest_type = int(ss["forest_type"].mode().iloc[0])
-        except Exception:
+        except (ValueError, TypeError, IndexError, KeyError, AttributeError):
             forest_type = None
 
     for side in ("e", "f"):

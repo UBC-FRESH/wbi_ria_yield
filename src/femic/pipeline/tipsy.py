@@ -39,7 +39,7 @@ def compute_vdyp_site_index(
     for table in vdyp_out.values():
         try:
             value = float(table["SI"].mean())
-        except Exception:
+        except (KeyError, TypeError, ValueError, IndexError, AttributeError):
             continue
         if np.isfinite(value):
             values.append(value)
@@ -54,7 +54,7 @@ def compute_vdyp_oaf1(vdyp_out: Mapping[Any, Any]) -> float:
     for table in vdyp_out.values():
         try:
             value = float(table["% Stk"].iloc[0])
-        except Exception:
+        except (KeyError, TypeError, ValueError, IndexError, AttributeError):
             continue
         if np.isfinite(value):
             stockability.append(value)

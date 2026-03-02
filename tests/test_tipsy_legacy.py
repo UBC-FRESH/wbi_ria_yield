@@ -61,3 +61,20 @@ def test_tsa24_legacy_builder_switches_on_bec_zone_for_fir() -> None:
     assert out_essf["e"]["SPP_1"] == "SE"
     assert out_sbs["e"]["Regen_Delay"] == 2
     assert out_essf["e"]["Regen_Delay"] == 1
+
+
+def test_tsa40_legacy_builder_sets_none_for_missing_species_slots() -> None:
+    builder = get_legacy_tipsy_builders()["40"]
+    vdyp_out = {1: pd.DataFrame({"SI": [17.0], "% Stk": [89.0]})}
+    out = builder(
+        9,
+        {
+            "ss": pd.DataFrame({"SITE_INDEX": [17.0], "BEC_ZONE_CODE": ["BWBS"]}),
+            "species": {"SX": {"pct": 100.0}},
+        },
+        vdyp_out,
+    )
+    assert out["e"]["SPP_1"] == "SW"
+    assert out["e"]["PCT_1"] == 100.0
+    assert out["e"]["SPP_2"] is None
+    assert out["e"]["PCT_2"] is None

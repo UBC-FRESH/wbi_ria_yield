@@ -42,6 +42,18 @@ def test_compute_helpers_return_nan_when_no_usable_values() -> None:
     assert math.isnan(compute_vdyp_oaf1(vdyp_out))
 
 
+def test_compute_helpers_unexpected_table_error_propagates() -> None:
+    class _BadTable:
+        def __getitem__(self, _key: str) -> object:
+            raise ZeroDivisionError("unexpected")
+
+    bad = _BadTable()
+    with pytest.raises(ZeroDivisionError):
+        compute_vdyp_site_index({1: bad})
+    with pytest.raises(ZeroDivisionError):
+        compute_vdyp_oaf1({1: bad})
+
+
 def test_build_tipsy_warning_event_payload_shape() -> None:
     payload = build_tipsy_warning_event(
         tsa="08",

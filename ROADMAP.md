@@ -1117,3 +1117,19 @@
 - Queued next extraction slice: continue P2.2 by auditing remaining broad exception handlers in
   legacy-adapter modules (`src/femic/pipeline/tipsy.py`, `tipsy_config.py`, `tipsy_legacy.py`) and
   narrowing first safe operational fallback paths with explicit exception classes.
+- Narrowed a first safe subset of broad exception fallbacks in tipsy adapter modules:
+  `compute_vdyp_site_index(...)` and `compute_vdyp_oaf1(...)` in `src/femic/pipeline/tipsy.py`,
+  forest-type mode fallback in `src/femic/pipeline/tipsy_config.py`, and species-slot unpack
+  fallback in `tipsy_params_tsa40(...)` (`src/femic/pipeline/tipsy_legacy.py`).
+- Preserved malformed-input fallback behavior for expected data-shape/key issues while allowing
+  unexpected exceptions to propagate.
+- Expanded deterministic coverage in `tests/test_tipsy.py`, `tests/test_tipsy_config.py`, and
+  `tests/test_tipsy_legacy.py` to assert both expected fallback behavior and unexpected-error
+  propagation.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (222 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by narrowing the remaining broad exception wrapper in
+  `build_tipsy_params_for_tsa(...)` (`src/femic/pipeline/tipsy.py`, around
+  `evaluate_tipsy_candidate(...)`) to explicit candidate-evaluation data/runtime exception classes
+  while preserving current debug message emission and re-raise behavior.
