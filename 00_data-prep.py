@@ -663,15 +663,6 @@ else:
         normalize_tsa_code_fn=_normalize_tsa_code,
     )
 
-    # --- cell 69 ---
-    au_table.head()
-
-    # --- cell 70 ---
-    curve_table.head()
-
-    # --- cell 71 ---
-    curve_points_table.head()
-
     # --- cell 73 ---
     write_bundle_tables(
         paths=bundle_paths,
