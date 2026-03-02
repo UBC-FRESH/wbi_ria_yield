@@ -39,6 +39,7 @@ def run_tsa(
 
     from femic.pipeline.pre_vdyp import (
         load_vdyp_prep_checkpoint,
+        pre_vdyp_checkpoint_path,
         save_vdyp_prep_checkpoint,
     )
     from femic.pipeline.vdyp_logging import (
@@ -180,7 +181,7 @@ def run_tsa(
     N = 30
     stratum_fit_cfg = build_stratum_fit_run_config()
 
-    vdyp_prep_checkpoint_path = "./data/vdyp_prep-tsa%s.pkl" % tsa
+    vdyp_prep_checkpoint_path = pre_vdyp_checkpoint_path(tsa_code=tsa)
     prep_loaded = False
     if resume_effective and os.path.isfile(vdyp_prep_checkpoint_path):
         try:

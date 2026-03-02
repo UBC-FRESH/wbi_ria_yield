@@ -110,6 +110,29 @@ def test_run01a_uses_plot_strata_site_index_diagnostics_helper_call() -> None:
     raise AssertionError("run_tsa should call plot_strata_site_index_diagnostics(...)")
 
 
+def test_run01a_uses_pre_vdyp_checkpoint_path_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "pre_vdyp_checkpoint_path":
+            return
+    raise AssertionError("run_tsa should call pre_vdyp_checkpoint_path(...)")
+
+
+def test_run01a_no_inline_pre_vdyp_checkpoint_literal() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            if "vdyp_prep-tsa" in node.value:
+                raise AssertionError(
+                    "run_tsa should source pre-VDYP checkpoint path from helper"
+                )
+
+
 def test_run01a_no_direct_site_index_diagnostic_plot_calls() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

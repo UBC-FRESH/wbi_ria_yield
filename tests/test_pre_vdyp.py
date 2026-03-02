@@ -4,6 +4,7 @@ from pathlib import Path
 
 from femic.pipeline.pre_vdyp import (
     load_vdyp_prep_checkpoint,
+    pre_vdyp_checkpoint_path,
     save_vdyp_prep_checkpoint,
     serialize_vdyp_prep_payload,
 )
@@ -44,3 +45,10 @@ def test_save_and_load_vdyp_prep_checkpoint_roundtrip(tmp_path: Path) -> None:
 
     assert count == 1
     assert loaded == [[1, "BWBS_PL", {"M": {"species": {"PL": {"pct": 55}}}}]]
+
+
+def test_pre_vdyp_checkpoint_path_defaults_and_zero_padding() -> None:
+    assert pre_vdyp_checkpoint_path(tsa_code="8") == Path("data/vdyp_prep-tsa08.pkl")
+    assert pre_vdyp_checkpoint_path(tsa_code="24", base_dir=Path("/tmp")) == Path(
+        "/tmp/vdyp_prep-tsa24.pkl"
+    )

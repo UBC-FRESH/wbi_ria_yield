@@ -19,6 +19,7 @@ from femic.pipeline.manifest import (
 )
 from femic.pipeline.pre_vdyp import (
     load_vdyp_prep_checkpoint,
+    pre_vdyp_checkpoint_path,
     save_vdyp_prep_checkpoint,
     serialize_vdyp_prep_payload,
 )
@@ -103,6 +104,7 @@ __all__ = [
     "build_run_manifest_payload",
     "collect_runtime_versions",
     "load_vdyp_prep_checkpoint",
+    "pre_vdyp_checkpoint_path",
     "save_vdyp_prep_checkpoint",
     "serialize_vdyp_prep_payload",
     "append_jsonl",

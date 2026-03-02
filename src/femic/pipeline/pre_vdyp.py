@@ -20,6 +20,16 @@ def serialize_vdyp_prep_payload(results_tsa: list[list[Any]]) -> list[list[Any]]
     return payload
 
 
+def pre_vdyp_checkpoint_path(
+    *,
+    tsa_code: str,
+    base_dir: str | Path = "data",
+) -> Path:
+    """Build per-TSA pre-VDYP checkpoint path."""
+    tsa = str(tsa_code).zfill(2)
+    return Path(base_dir) / f"vdyp_prep-tsa{tsa}.pkl"
+
+
 def load_vdyp_prep_checkpoint(path: str | Path) -> list[list[Any]]:
     """Load pre-VDYP checkpoint payload from pickle."""
     checkpoint_path = Path(path)
