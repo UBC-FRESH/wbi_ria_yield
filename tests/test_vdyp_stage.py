@@ -31,6 +31,7 @@ from femic.pipeline.vdyp_stage import (
     load_vdyp_input_tables,
     load_or_build_vdyp_results_tsa,
     plot_curve_overlays,
+    resolve_vdyp_batch_temp_artifacts,
     run_vdyp_for_stratum,
     run_vdyp_sampling,
 )
@@ -154,6 +155,21 @@ def test_collect_vdyp_batch_run_metadata_captures_expected_fields(
         "proc_stdout_head": "stdout-data",
         "proc_stderr_head": "stderr-data",
     }
+
+
+def test_resolve_vdyp_batch_temp_artifacts_returns_names_and_paths() -> None:
+    artifacts = resolve_vdyp_batch_temp_artifacts(
+        vdyp_ply_name="/tmp/vdyp_ply_123.csv",
+        vdyp_lyr_name="/tmp/vdyp_lyr_123.csv",
+        vdyp_out_name="/tmp/vdyp_out_123.out",
+        vdyp_err_name="/tmp/vdyp_err_123.err",
+    )
+    assert artifacts.vdyp_ply_csv == "vdyp_ply_123.csv"
+    assert artifacts.vdyp_lyr_csv == "vdyp_lyr_123.csv"
+    assert artifacts.vdyp_out_txt == "vdyp_out_123.out"
+    assert artifacts.vdyp_err_txt == "vdyp_err_123.err"
+    assert artifacts.out_path == Path("/tmp/vdyp_out_123.out")
+    assert artifacts.err_path == Path("/tmp/vdyp_err_123.err")
 
 
 def test_build_curve_fit_adapter_converts_maxfev_to_max_nfev() -> None:

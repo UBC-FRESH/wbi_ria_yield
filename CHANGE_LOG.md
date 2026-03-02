@@ -1267,3 +1267,17 @@
 - Queued next extraction slice: continue P2.2 by auditing duplicated temporary-file basename/path
   extraction in `execute_vdyp_batch(...)` and centralizing it behind a helper seam without changing
   runtime filenames or downstream parse behavior.
+- Completed the queued temporary-file extraction consolidation in
+  `src/femic/pipeline/vdyp_stage.py` by adding `VdypBatchTempArtifacts` and
+  `resolve_vdyp_batch_temp_artifacts(...)` to centralize basename/path derivation from temp files.
+- Rewired `execute_vdyp_batch(...)` to consume resolved temp artifacts for infile writing, command
+  assembly, output-table import path resolution, and run-metadata file stats while preserving
+  runtime filename behavior.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` for
+  `resolve_vdyp_batch_temp_artifacts(...)` (basename + full-path expectations).
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (253 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing duplicated numeric coercion (`int(...)`)
+  across VDYP batch run-event payload construction and consolidating this coercion at one seam
+  without changing emitted values.

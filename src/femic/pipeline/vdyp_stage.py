@@ -60,6 +60,18 @@ class StratumFitRunConfig:
     xlim: tuple[float, float]
 
 
+@dataclass(frozen=True)
+class VdypBatchTempArtifacts:
+    """Resolved temp-file names and absolute paths for one VDYP batch run."""
+
+    vdyp_ply_csv: str
+    vdyp_lyr_csv: str
+    vdyp_out_txt: str
+    vdyp_err_txt: str
+    out_path: Path
+    err_path: Path
+
+
 def _curve_fit_skip_exception_types() -> tuple[type[Exception], ...]:
     """Curve-fit failures that should skip one species and continue."""
     return (
@@ -198,6 +210,26 @@ def build_vdyp_run_event(
         cmd=cmd,
         context=dict(context),
         **extra_fields,
+    )
+
+
+def resolve_vdyp_batch_temp_artifacts(
+    *,
+    vdyp_ply_name: str,
+    vdyp_lyr_name: str,
+    vdyp_out_name: str,
+    vdyp_err_name: str,
+) -> VdypBatchTempArtifacts:
+    """Resolve temp-file basenames and full paths for VDYP batch processing."""
+    out_path = Path(vdyp_out_name)
+    err_path = Path(vdyp_err_name)
+    return VdypBatchTempArtifacts(
+        vdyp_ply_csv=Path(vdyp_ply_name).name,
+        vdyp_lyr_csv=Path(vdyp_lyr_name).name,
+        vdyp_out_txt=out_path.name,
+        vdyp_err_txt=err_path.name,
+        out_path=out_path,
+        err_path=err_path,
     )
 
 
@@ -1326,24 +1358,29 @@ def execute_vdyp_batch(
             delete=False,
         ) as vdyp_err_txt_,
     ):
-        vdyp_ply_csv = Path(vdyp_ply_csv_.name).name
-        vdyp_lyr_csv = Path(vdyp_lyr_csv_.name).name
-        vdyp_out_txt = Path(vdyp_out_txt_.name).name
-        vdyp_err_txt = Path(vdyp_err_txt_.name).name
-        out_path = Path(vdyp_out_txt_.name)
-        err_path = Path(vdyp_err_txt_.name)
+        temp_artifacts = resolve_vdyp_batch_temp_artifacts(
+            vdyp_ply_name=vdyp_ply_csv_.name,
+            vdyp_lyr_name=vdyp_lyr_csv_.name,
+            vdyp_out_name=vdyp_out_txt_.name,
+            vdyp_err_name=vdyp_err_txt_.name,
+        )
 
-        write_vdyp_infiles_(vdyp_ply_, vdyp_lyr_, vdyp_ply_csv, vdyp_lyr_csv)
+        write_vdyp_infiles_(
+            vdyp_ply_,
+            vdyp_lyr_,
+            temp_artifacts.vdyp_ply_csv,
+            temp_artifacts.vdyp_lyr_csv,
+        )
 
         run_started = time.time()
         args = build_vdyp_batch_command(
             vdyp_binpath=vdyp_binpath,
             vdyp_params_infile=vdyp_params_infile,
             vdyp_io_dir=vdyp_io_dir,
-            vdyp_ply_csv=vdyp_ply_csv,
-            vdyp_lyr_csv=vdyp_lyr_csv,
-            vdyp_out_txt=vdyp_out_txt,
-            vdyp_err_txt=vdyp_err_txt,
+            vdyp_ply_csv=temp_artifacts.vdyp_ply_csv,
+            vdyp_lyr_csv=temp_artifacts.vdyp_lyr_csv,
+            vdyp_out_txt=temp_artifacts.vdyp_out_txt,
+            vdyp_err_txt=temp_artifacts.vdyp_err_txt,
         )
         try:
             result = subprocess_run_(
@@ -1392,12 +1429,14 @@ def execute_vdyp_batch(
 
         run_metadata = collect_vdyp_batch_run_metadata(
             result=result,
-            out_path=out_path,
-            err_path=err_path,
+            out_path=temp_artifacts.out_path,
+            err_path=temp_artifacts.err_path,
             run_started=run_started,
         )
         try:
-            vdyp_out = import_vdyp_tables_(str(vdyp_io_dir / vdyp_out_txt))
+            vdyp_out = import_vdyp_tables_(
+                str(vdyp_io_dir / temp_artifacts.vdyp_out_txt)
+            )
         except _vdyp_parse_exception_types() as exc:
             _emit_run_event(
                 "parse_error",
