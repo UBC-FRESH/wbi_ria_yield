@@ -519,3 +519,13 @@
 - Queued next extraction slice: move stratum-distribution plot constants (`bw`, `linewidth`,
   `inner`, `width`, `cut`, `alpha`) from `01a_run-tsa.py` into a shared plotting helper/config
   seam.
+- Added `StrataDistributionPlotConfig` and `build_strata_distribution_plot_config(...)` in
+  `femic.pipeline.plots` to centralize default plotting constants for 01a stratum-distribution
+  diagnostics.
+- Rewired the 01a stratum-distribution plotting block to consume
+  `build_strata_distribution_plot_config(...)` values instead of inline constants.
+- Expanded `tests/test_pipeline_helpers.py` with defaults coverage for the new plot-config helper,
+  and added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper
+  and no longer assigns inline strata-plot constants.
+- Queued next extraction slice: replace inline strata plot output path literals in `01a_run-tsa.py`
+  with `femic.pipeline.plots.strata_plot_paths(...)` helper output.

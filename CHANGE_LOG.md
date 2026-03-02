@@ -426,3 +426,10 @@
 - Extended `tests/test_vdyp_stage.py` defaults coverage for new axis config fields and added
   `tests/test_legacy_01a_structure.py` AST guardrails asserting overlay axes are sourced from
   `smooth_plot_cfg`.
+- Added `StrataDistributionPlotConfig` and `build_strata_distribution_plot_config(...)` in
+  `femic.pipeline.plots` to centralize 01a stratum-distribution plotting defaults.
+- Rewired the 01a stratum-distribution plotting block to consume
+  `build_strata_distribution_plot_config(...)` values instead of inline constants.
+- Extended `tests/test_pipeline_helpers.py` with defaults coverage for the new helper and added AST
+  guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and no longer
+  assigns inline strata-plot constants.
