@@ -480,3 +480,15 @@
   reducing inline notebook-style constant/plot configuration blocks into reusable stage helpers.
 - Queued next extraction slice: move curve-smoothing plot setup constants
   (`palette_flavours`/palette/alpha defaults) from `01a_run-tsa.py` into a shared stage helper.
+- Added `femic.pipeline.vdyp_stage.CurveSmoothingPlotConfig` and
+  `build_curve_smoothing_plot_config(...)` to centralize legacy curve-smoothing plot defaults
+  (plot toggle, `figsize`, palette setup, `palette_flavours`, `alphas`) behind a shared stage seam.
+- Rewired `01a_run-tsa.py` curve-smoothing overlay path to call
+  `build_curve_smoothing_plot_config(...)` and consume the returned config instead of defining
+  inline plot/palette constants.
+- Expanded `tests/test_vdyp_stage.py` with deterministic defaults coverage for
+  `build_curve_smoothing_plot_config(...)`, and added AST guardrails in
+  `tests/test_legacy_01a_structure.py` asserting 01a calls this helper and no longer assigns
+  inline smoothing `palette_flavours`/`alphas` constants.
+- Queued next extraction slice: remove dead legacy `fit_func2`/`fit_func2_bounds_func` local
+  bindings from `01a_run-tsa.py` now that these values are no longer consumed by any active stage.

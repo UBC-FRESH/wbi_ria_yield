@@ -398,3 +398,13 @@
 - Extended `tests/test_pipeline_helpers.py` with deterministic alias-application coverage and
   updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls the helper and has no
   nested `match_stratum`.
+- Added `femic.pipeline.vdyp_stage.CurveSmoothingPlotConfig` and
+  `build_curve_smoothing_plot_config(...)` to centralize legacy curve-smoothing plot defaults
+  (plot toggle, `figsize`, palette setup, `palette_flavours`, `alphas`) behind a shared stage
+  helper seam.
+- Rewired `01a_run-tsa.py` curve-smoothing overlay path to call
+  `build_curve_smoothing_plot_config(...)` and consume returned defaults instead of defining inline
+  smoothing plot/palette constants.
+- Extended `tests/test_vdyp_stage.py` with deterministic defaults coverage for the new helper and
+  updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls this helper and no
+  longer assigns inline smoothing `palette_flavours`/`alphas` constants.
