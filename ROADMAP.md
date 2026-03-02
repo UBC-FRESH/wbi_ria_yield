@@ -678,3 +678,12 @@
   helper seams.
 - Queued next extraction slice: move the heavy AU/curve table assembly loop (currently inline in
   00_data-prep) into a reusable pipeline helper with deterministic unit coverage.
+- Added `build_bundle_tables_from_curves(...)` and `BundleAssemblyResult` in
+  `femic.pipeline.bundle` to extract the heavy AU/curve table assembly loop from 00_data-prep.
+- Rewired 00_data-prep to consume `build_bundle_tables_from_curves(...)` and retain warning summary
+  behavior for missing AU mappings using returned diagnostics.
+- Expanded `tests/test_bundle.py` with deterministic coverage for managed/unmanaged curve assembly
+  and missing-mapping diagnostics, and extended orchestration guardrails to assert
+  `build_bundle_tables_from_curves(...)` usage.
+- Queued next extraction slice: continue P2.2 by moving residual stratum-matching + SI-level
+  assignment orchestration (post-bundle stage) into reusable helper seams.

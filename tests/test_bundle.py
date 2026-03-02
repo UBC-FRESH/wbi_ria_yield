@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from femic.pipeline.bundle import (
+    build_bundle_tables_from_curves,
     bundle_tables_ready,
     ensure_scsi_au_from_table,
     load_bundle_tables,
@@ -67,3 +68,64 @@ def test_ensure_scsi_au_from_table_populates_missing_entries() -> None:
     )
 
     assert scsi_au["08"][("BWBS_AT", "L")] == 5
+
+
+def test_build_bundle_tables_from_curves_builds_unmanaged_and_managed_rows() -> None:
+    vdyp_curves_smooth = {
+        "08": pd.DataFrame(
+            [
+                {"stratum_code": "BWBS_AT", "si_level": "L", "age": 10, "volume": 1.0},
+                {"stratum_code": "BWBS_AT", "si_level": "L", "age": 20, "volume": 2.0},
+            ]
+        )
+    }
+    tipsy_curves = {
+        "08": pd.DataFrame(
+            [
+                {"AU": 20005, "Age": 10, "Yield": 1.5},
+                {"AU": 20005, "Age": 20, "Yield": 2.5},
+            ]
+        )
+    }
+    scsi_au = {"08": {("BWBS_AT", "L"): 5}}
+
+    out = build_bundle_tables_from_curves(
+        tsa_list=["08"],
+        vdyp_curves_smooth=vdyp_curves_smooth,
+        tipsy_curves=tipsy_curves,
+        scsi_au=scsi_au,
+        canfi_species_fn=lambda _s: 100,
+        pd_module=pd,
+        message_fn=lambda _m: None,
+    )
+
+    assert len(out.au_table) == 1
+    assert int(out.au_table.loc[0, "au_id"]) == 800005
+    assert int(out.au_table.loc[0, "managed_curve_id"]) == 820005
+    assert sorted(out.curve_table["curve_type"].tolist()) == ["managed", "unmanaged"]
+    assert len(out.curve_points_table) == 4
+    assert out.missing_au_curve_mappings.empty
+
+
+def test_build_bundle_tables_from_curves_tracks_missing_mappings() -> None:
+    vdyp_curves_smooth = {
+        "08": pd.DataFrame(
+            [{"stratum_code": "BWBS_AT", "si_level": "L", "age": 10, "volume": 1.0}]
+        )
+    }
+    tipsy_curves = {"08": pd.DataFrame(columns=["AU", "Age", "Yield"])}
+    scsi_au: dict[str, dict[tuple[str, str], int]] = {"08": {}}
+
+    out = build_bundle_tables_from_curves(
+        tsa_list=["08"],
+        vdyp_curves_smooth=vdyp_curves_smooth,
+        tipsy_curves=tipsy_curves,
+        scsi_au=scsi_au,
+        canfi_species_fn=lambda _s: 100,
+        pd_module=pd,
+        message_fn=lambda _m: None,
+    )
+
+    assert out.au_table.empty
+    assert len(out.missing_au_curve_mappings) == 1
+    assert out.missing_au_curve_mappings.loc[0, "stratum_code"] == "BWBS_AT"

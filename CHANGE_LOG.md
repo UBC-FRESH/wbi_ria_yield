@@ -537,3 +537,12 @@
   load/write behavior, TSA normalization, and `scsi_au` reconstruction from AU tables.
 - Expanded `tests/test_legacy_orchestration_wiring.py` guardrails to assert 00_data-prep calls
   bundle helper seams.
+- Added `build_bundle_tables_from_curves(...)` and `BundleAssemblyResult` to
+  `src/femic/pipeline/bundle.py`, extracting the heavy AU/curve table assembly loop from
+  00_data-prep into a reusable helper.
+- Rewired 00_data-prep to call `build_bundle_tables_from_curves(...)` and consume returned
+  diagnostics for missing AU mappings while preserving existing warning output behavior.
+- Expanded `tests/test_bundle.py` with deterministic coverage for managed/unmanaged curve assembly
+  and missing AU-mapping diagnostics.
+- Extended `tests/test_legacy_orchestration_wiring.py` guardrails to assert
+  `build_bundle_tables_from_curves(...)` seam usage in 00_data-prep.

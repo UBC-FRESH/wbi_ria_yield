@@ -44,6 +44,7 @@ import sys
 
 try:
     from femic.pipeline.bundle import (
+        build_bundle_tables_from_curves,
         bundle_tables_ready,
         ensure_scsi_au_from_table,
         load_bundle_tables,
@@ -63,6 +64,7 @@ except ModuleNotFoundError:
     if _src_dir.is_dir():
         sys.path.insert(0, str(_src_dir))
     from femic.pipeline.bundle import (
+        build_bundle_tables_from_curves,
         bundle_tables_ready,
         ensure_scsi_au_from_table,
         load_bundle_tables,
@@ -770,67 +772,17 @@ if _femic_resume_effective and _bundle_ready:
         normalize_tsa_code_fn=_normalize_tsa_code,
     )
 else:
-    au_table_data = {
-        "au_id": [],
-        "tsa": [],
-        "stratum_code": [],
-        "si_level": [],
-        "canfi_species": [],
-        "unmanaged_curve_id": [],
-        "managed_curve_id": [],
-    }
-
-    curve_table_data = {"curve_id": [], "curve_type": []}
-
-    curve_points_table_data = {"curve_id": [], "x": [], "y": []}
-
-    missing_au_curve_mappings = []
-    for tsa in ria_tsas:
-        print(tsa)
-        vdyp_curves_ = vdyp_curves_smooth[tsa].set_index(["stratum_code", "si_level"])
-        tipsy_curves_ = tipsy_curves[tsa].reset_index().set_index("AU")
-        for stratum_code, si_level in list(vdyp_curves_.index.unique()):
-            scsi_key = (str(stratum_code), str(si_level))
-            au_id_ = scsi_au.get(tsa, {}).get(scsi_key)
-            if au_id_ is None:
-                missing_au_curve_mappings.append(
-                    {"tsa": tsa, "stratum_code": stratum_code, "si_level": si_level}
-                )
-                continue
-            tipsy_curve_id = 20000 + au_id_
-            is_managed_au = tipsy_curve_id in tipsy_curves_.index.unique()
-            au_id = 100000 * int(tsa) + au_id_
-            unmanaged_curve_id = au_id
-            managed_curve_id = au_id + 20000 if is_managed_au else unmanaged_curve_id
-            # print(au_id, stratum_code, si_level, is_managed_au, unmanaged_curve_id, managed_curve_id)
-            au_table_data["au_id"].append(au_id)
-            au_table_data["tsa"].append(tsa)
-            au_table_data["stratum_code"].append(stratum_code)
-            au_table_data["si_level"].append(si_level)
-            au_table_data["canfi_species"].append(canfi_species(stratum_code))
-            au_table_data["unmanaged_curve_id"].append(unmanaged_curve_id)
-            curve_table_data["curve_id"].append(unmanaged_curve_id)
-            curve_table_data["curve_type"].append("unmanaged")
-            vdyp_curve = vdyp_curves_.loc[(stratum_code, si_level)]
-            # print('vdyp curve')
-            for x, y in zip(vdyp_curve.age, vdyp_curve.volume):
-                # print(x, round(y, 2))
-                curve_points_table_data["curve_id"].append(unmanaged_curve_id)
-                curve_points_table_data["x"].append(int(x))
-                curve_points_table_data["y"].append(round(y, 2))
-            au_table_data["managed_curve_id"].append(managed_curve_id)
-            if is_managed_au:
-                curve_table_data["curve_id"].append(managed_curve_id)
-                curve_table_data["curve_type"].append("managed")
-                tipsy_curve = tipsy_curves_.loc[tipsy_curve_id]
-                # print('tipsy curve')
-                for x, y in zip(tipsy_curve.Age, tipsy_curve.Yield):
-                    # print(x, round(y, 2))
-                    curve_points_table_data["curve_id"].append(managed_curve_id)
-                    curve_points_table_data["x"].append(int(x))
-                    curve_points_table_data["y"].append(round(y, 2))
-    if missing_au_curve_mappings:
-        _missing_df = pd.DataFrame(missing_au_curve_mappings)
+    _bundle_assembly = build_bundle_tables_from_curves(
+        tsa_list=ria_tsas,
+        vdyp_curves_smooth=vdyp_curves_smooth,
+        tipsy_curves=tipsy_curves,
+        scsi_au=scsi_au,
+        canfi_species_fn=canfi_species,
+        pd_module=pd,
+        message_fn=print,
+    )
+    _missing_df = _bundle_assembly.missing_au_curve_mappings
+    if not _missing_df.empty:
         print(
             "Warning: skipped VDYP curve combos without AU mapping "
             f"({len(_missing_df)} rows). Top 10:"
@@ -840,9 +792,9 @@ else:
             .head(10)
             .to_string()
         )
-    au_table = pd.DataFrame(au_table_data)
-    curve_table = pd.DataFrame(curve_table_data)
-    curve_points_table = pd.DataFrame(curve_points_table_data)
+    au_table = _bundle_assembly.au_table
+    curve_table = _bundle_assembly.curve_table
+    curve_points_table = _bundle_assembly.curve_points_table
     if "tsa" in au_table.columns:
         au_table["tsa"] = au_table["tsa"].apply(_normalize_tsa_code)
     ensure_scsi_au_from_table(

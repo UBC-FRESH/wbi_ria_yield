@@ -17,6 +17,16 @@ class BundlePaths:
     curve_points_table: Path
 
 
+@dataclass(frozen=True)
+class BundleAssemblyResult:
+    """Assembled model-input bundle tables and missing-mapping diagnostics."""
+
+    au_table: Any
+    curve_table: Any
+    curve_points_table: Any
+    missing_au_curve_mappings: Any
+
+
 def resolve_bundle_paths(
     *,
     base_dir: str | Path = "data/model_input_bundle",
@@ -86,3 +96,78 @@ def ensure_scsi_au_from_table(
             continue
         au_base = int(row.au_id) - 100000 * int(tsa_code)
         tsa_map[scsi_key] = au_base
+
+
+def build_bundle_tables_from_curves(
+    *,
+    tsa_list: list[str],
+    vdyp_curves_smooth: dict[str, Any],
+    tipsy_curves: dict[str, Any],
+    scsi_au: dict[str, dict[tuple[str, str], int]],
+    canfi_species_fn: Callable[[str], int],
+    pd_module: Any,
+    message_fn: Callable[[str], Any] = print,
+) -> BundleAssemblyResult:
+    """Build AU/curve tables from per-TSA VDYP and TIPSY curve outputs."""
+    au_table_data: dict[str, list[Any]] = {
+        "au_id": [],
+        "tsa": [],
+        "stratum_code": [],
+        "si_level": [],
+        "canfi_species": [],
+        "unmanaged_curve_id": [],
+        "managed_curve_id": [],
+    }
+    curve_table_data: dict[str, list[Any]] = {"curve_id": [], "curve_type": []}
+    curve_points_table_data: dict[str, list[Any]] = {"curve_id": [], "x": [], "y": []}
+    missing_au_curve_mappings: list[dict[str, Any]] = []
+
+    for tsa in tsa_list:
+        message_fn(str(tsa))
+        vdyp_curves_tsa = vdyp_curves_smooth[tsa].set_index(
+            ["stratum_code", "si_level"]
+        )
+        tipsy_curves_tsa = tipsy_curves[tsa].reset_index().set_index("AU")
+        tipsy_curve_ids = set(tipsy_curves_tsa.index.unique())
+        for stratum_code, si_level in list(vdyp_curves_tsa.index.unique()):
+            scsi_key = (str(stratum_code), str(si_level))
+            au_id_ = scsi_au.get(tsa, {}).get(scsi_key)
+            if au_id_ is None:
+                missing_au_curve_mappings.append(
+                    {"tsa": tsa, "stratum_code": stratum_code, "si_level": si_level}
+                )
+                continue
+            tipsy_curve_id = 20000 + au_id_
+            is_managed_au = tipsy_curve_id in tipsy_curve_ids
+            au_id = 100000 * int(tsa) + au_id_
+            unmanaged_curve_id = au_id
+            managed_curve_id = au_id + 20000 if is_managed_au else unmanaged_curve_id
+            au_table_data["au_id"].append(au_id)
+            au_table_data["tsa"].append(tsa)
+            au_table_data["stratum_code"].append(stratum_code)
+            au_table_data["si_level"].append(si_level)
+            au_table_data["canfi_species"].append(canfi_species_fn(stratum_code))
+            au_table_data["unmanaged_curve_id"].append(unmanaged_curve_id)
+            curve_table_data["curve_id"].append(unmanaged_curve_id)
+            curve_table_data["curve_type"].append("unmanaged")
+            vdyp_curve = vdyp_curves_tsa.loc[(stratum_code, si_level)]
+            for x, y in zip(vdyp_curve.age, vdyp_curve.volume):
+                curve_points_table_data["curve_id"].append(unmanaged_curve_id)
+                curve_points_table_data["x"].append(int(x))
+                curve_points_table_data["y"].append(round(y, 2))
+            au_table_data["managed_curve_id"].append(managed_curve_id)
+            if is_managed_au:
+                curve_table_data["curve_id"].append(managed_curve_id)
+                curve_table_data["curve_type"].append("managed")
+                tipsy_curve = tipsy_curves_tsa.loc[tipsy_curve_id]
+                for x, y in zip(tipsy_curve.Age, tipsy_curve.Yield):
+                    curve_points_table_data["curve_id"].append(managed_curve_id)
+                    curve_points_table_data["x"].append(int(x))
+                    curve_points_table_data["y"].append(round(y, 2))
+
+    return BundleAssemblyResult(
+        au_table=pd_module.DataFrame(au_table_data),
+        curve_table=pd_module.DataFrame(curve_table_data),
+        curve_points_table=pd_module.DataFrame(curve_points_table_data),
+        missing_au_curve_mappings=pd_module.DataFrame(missing_au_curve_mappings),
+    )

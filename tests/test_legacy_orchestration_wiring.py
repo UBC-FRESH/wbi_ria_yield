@@ -111,6 +111,7 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "resolve_bundle_paths": 1,
         "bundle_tables_ready": 1,
         "load_bundle_tables": 1,
+        "build_bundle_tables_from_curves": 1,
         "write_bundle_tables": 1,
         "ensure_scsi_au_from_table": 2,
     }

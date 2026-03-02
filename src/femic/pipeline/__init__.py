@@ -56,7 +56,9 @@ from femic.pipeline.stages import (
 from femic.pipeline.legacy_runtime import Legacy01ARuntimeConfig
 from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
 from femic.pipeline.bundle import (
+    BundleAssemblyResult,
     BundlePaths,
+    build_bundle_tables_from_curves,
     bundle_tables_ready,
     ensure_scsi_au_from_table,
     load_bundle_tables,
@@ -121,6 +123,7 @@ __all__ = [
     "Legacy01ARuntimeConfig",
     "LegacyTSAStageState",
     "BundlePaths",
+    "BundleAssemblyResult",
     "build_legacy_execution_plan",
     "build_legacy_01a_runtime_config",
     "initialize_legacy_tsa_stage_state",
@@ -130,6 +133,7 @@ __all__ = [
     "run_legacy_tsa_loop",
     "should_skip_if_outputs_exist",
     "resolve_bundle_paths",
+    "build_bundle_tables_from_curves",
     "bundle_tables_ready",
     "load_bundle_tables",
     "write_bundle_tables",
