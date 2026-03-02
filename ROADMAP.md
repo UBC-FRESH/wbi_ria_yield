@@ -1334,3 +1334,15 @@
 - Queued next extraction slice: continue P2.2 by auditing remaining direct append-file writes
   outside `vdyp_logging`/`append_line` callsites and centralizing them only where behavior can
   remain byte-for-byte unchanged.
+- Completed the queued direct-append audit across production Python paths (`src/`,
+  `00_data-prep.py`, `01a_run-tsa.py`, `01b_run-tsa.py`): no remaining direct file-append writes
+  exist outside `src/femic/pipeline/vdyp_logging.py`.
+- Confirmed the only append-file primitive in production code is now
+  `_append_text_fragment(...)` via `append_line(...)`/`append_text(...)`; no behavior-preserving
+  rewires were needed in this slice.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (245 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing duplicated newline/stream framing usage
+  around legacy subprocess output (`run_legacy_subprocess` and VDYP batch stream capture) and
+  centralizing safe formatting seams without altering emitted log text.
