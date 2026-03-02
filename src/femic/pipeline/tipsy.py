@@ -129,6 +129,15 @@ def write_tipsy_input_exports(
     return tipsy_excel_path, tipsy_dat_path
 
 
+def tipsy_params_excel_path(
+    *,
+    tsa: str,
+    tipsy_params_path_prefix: str | Path,
+) -> Path:
+    """Build legacy per-TSA TIPSY parameter workbook path."""
+    return Path(f"{tipsy_params_path_prefix}{tsa}.xlsx")
+
+
 def tipsy_stage_output_paths(
     *,
     tsa: str,

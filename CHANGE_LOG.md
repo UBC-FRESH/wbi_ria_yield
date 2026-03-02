@@ -640,3 +640,21 @@
 - Queued next extraction slice: continue P2.2 by removing residual duplicated path-to-string
   coercion and remaining ad-hoc path joins in `00_data-prep.py` (favor passing `Path` objects
   through helper boundaries directly) so orchestration has a consistent typed path surface.
+- Reworked `00_data-prep.py` path handling to keep legacy artifact paths as `Path` objects through
+  helper boundaries (removed residual `str(...)` coercions for non-external artifact paths).
+- Replaced remaining ad-hoc path joins in 00_data-prep with helper/path-native composition:
+  `build_vdyp_cache_paths(...)` + `tipsy_params_excel_path(...)` now drive 01a resume-skip output
+  checks; siteprod layer temp paths now use `Path` joins/globs instead of `%s` string templates.
+- Replaced residual string-shell path checks/builds in this stage:
+  `Path.is_file()` for local executable/artifact presence, list-based `subprocess.run(...)` calls
+  with pathlike args, and `Path.read_text().splitlines()` for TIPSY column loading.
+- Added `tipsy_params_excel_path(...)` in `src/femic/pipeline/tipsy.py`, exported it in
+  `femic.pipeline.__init__`, added deterministic coverage in `tests/test_tipsy.py`, and updated AST
+  guardrails in `tests/test_legacy_orchestration_wiring.py` to assert
+  `build_vdyp_cache_paths(...)` + `tipsy_params_excel_path(...)` seam usage in 00_data-prep.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (183 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by centralizing remaining inline external-data root
+  resolution and path selection logic in `00_data-prep.py` (`_select_external_data_root`,
+  candidate list assembly, VRI/TSA source roots) into reusable I/O helper seams.

@@ -2,60 +2,60 @@
 
 ## Phase 1: Stabilize Runtime + Inputs
 - [x] P1.1 Stand up Typer CLI entrypoint (FHOPS-style, nemora-compatible)
-- [x] P1.1a Expose the `femic` console script (Forest Estate Model Input Compiler)
-- [x] P1.1b Create `src/femic/cli/main.py` with `Typer(add_completion=False, no_args_is_help=True)`
-- [x] P1.1c Organize subcommands (prep, vdyp, tsa, run) via `app.add_typer(...)`
-- [x] P1.1d Use module-level constants for defaults + typed `Path` args (avoid B008)
+  - [x] P1.1a Expose the `femic` console script (Forest Estate Model Input Compiler)
+  - [x] P1.1b Create `src/femic/cli/main.py` with `Typer(add_completion=False, no_args_is_help=True)`
+  - [x] P1.1c Organize subcommands (prep, vdyp, tsa, run) via `app.add_typer(...)`
+  - [x] P1.1d Use module-level constants for defaults + typed `Path` args (avoid B008)
 - [x] P1.2 Define a single entrypoint script with explicit CLI args
-- [x] P1.2a Add a `--tsa` filter and `--resume` flag
-- [x] P1.2b Centralize environment checks (VDYP, wine, data paths)
+  - [x] P1.2a Add a `--tsa` filter and `--resume` flag
+  - [x] P1.2b Centralize environment checks (VDYP, wine, data paths)
 - [x] P1.3 Normalize I/O paths and required files
-- [x] P1.3a Document expected data layout under `data/` and `vdyp_io/`
-- [x] P1.3b Add validation for missing files before processing
+  - [x] P1.3a Document expected data layout under `data/` and `vdyp_io/`
+  - [x] P1.3b Add validation for missing files before processing
 - [x] P1.4 Improve logging and error visibility
-- [x] P1.4a Add structured logging with per-TSA context
-- [x] P1.4b Capture external tool stderr/stdout to files
+  - [x] P1.4a Add structured logging with per-TSA context
+  - [x] P1.4b Capture external tool stderr/stdout to files
 - [x] P1.5 VDYP diagnostics + metadata hardening
-- [x] P1.5a Add VDYP Wine wrapper health checks (config, inputs, tmp outputs,
+  - [x] P1.5a Add VDYP Wine wrapper health checks (config, inputs, tmp outputs,
   exit codes)
-- [x] P1.5b Record VDYP run metadata + failure reasons per TSA and AU
-- [x] P1.5c Add curve-build diagnostics (binning stats, NLLS convergence,
+  - [x] P1.5b Record VDYP run metadata + failure reasons per TSA and AU
+  - [x] P1.5c Add curve-build diagnostics (binning stats, NLLS convergence,
   residuals)
-- [x] P1.5d Add ramp-splice diagnostics and iterative left-point trimming with warnings
+  - [x] P1.5d Add ramp-splice diagnostics and iterative left-point trimming with warnings
 
 ## Phase 2: Modularize Pipeline Steps
 - [ ] P2.1 Extract reusable modules from `00_data-prep.py`
-- [x] P2.1a Split into `io.py`, `vdyp.py`, `tsa.py`, `plots.py`
-- [ ] P2.1b Remove global state and pass explicit parameters
-  - [x] P2.1b.1 Centralize 01a per-TSA VDYP cache-path templates in shared helper
-  - [x] P2.1b.2 Replace residual 01a `os.path` cache checks with `Path(...).is_file()`
-  - [x] P2.1b.3 Collapse 00->01a cache-path handoff to one resolved payload
-  - [x] P2.1b.4 Reduce 01a `run_tsa(...)` signature by bundling remaining path/runtime args
+  - [x] P2.1a Split into `io.py`, `vdyp.py`, `tsa.py`, `plots.py`
+  - [ ] P2.1b Remove global state and pass explicit parameters
+    - [x] P2.1b.1 Centralize 01a per-TSA VDYP cache-path templates in shared helper
+    - [x] P2.1b.2 Replace residual 01a `os.path` cache checks with `Path(...).is_file()`
+    - [x] P2.1b.3 Collapse 00->01a cache-path handoff to one resolved payload
+    - [x] P2.1b.4 Reduce 01a `run_tsa(...)` signature by bundling remaining path/runtime args
 - [ ] P2.2 Convert notebook logic into functions
-- [ ] P2.2a Wrap major steps with clear inputs/outputs
-- [ ] P2.2b Add a small orchestration layer for sequencing
+  - [ ] P2.2a Wrap major steps with clear inputs/outputs
+  - [ ] P2.2b Add a small orchestration layer for sequencing
   - [ ] P2.2c Move 00_data-prep 01a/01b module-load + call loops behind shared stage helpers
 - [ ] P2.3 Add minimal tests for core helpers
-- [ ] P2.3a Smoke tests for file validation and key transforms
-- [ ] P2.3b Deterministic checks for small sample data
+  - [ ] P2.3a Smoke tests for file validation and key transforms
+  - [ ] P2.3b Deterministic checks for small sample data
 
 ## Phase 3: Workflow Hardening
 - [ ] P3.1 Sphinx docs + GitHub Pages (FHOPS-style)
-- [ ] P3.1a Add `docs/conf.py` with `sphinx_rtd_theme`, `nbsphinx`, `autosummary`
-- [ ] P3.1b Add `docs/index.rst` + `docs/reference/cli.rst` mirroring CLI help
-- [ ] P3.1c Add GitHub Pages workflow to build + publish `docs/_build/html`
+  - [ ] P3.1a Add `docs/conf.py` with `sphinx_rtd_theme`, `nbsphinx`, `autosummary`
+  - [ ] P3.1b Add `docs/index.rst` + `docs/reference/cli.rst` mirroring CLI help
+  - [ ] P3.1c Add GitHub Pages workflow to build + publish `docs/_build/html`
 - [ ] P3.2 Nemora alignment prep
-- [ ] P3.2a Map femic CLI commands to nemora task taxonomy
-- [ ] P3.2b Identify shared utilities to upstream into nemora later
+  - [ ] P3.2a Map femic CLI commands to nemora task taxonomy
+  - [ ] P3.2b Identify shared utilities to upstream into nemora later
 - [ ] P3.3 Add config-driven runs
-- [ ] P3.3a YAML/JSON config to select TSA, strata, and modes
-- [ ] P3.3b Store run metadata and versioned outputs
+  - [ ] P3.3a YAML/JSON config to select TSA, strata, and modes
+  - [ ] P3.3b Store run metadata and versioned outputs
 - [ ] P3.4 Make outputs reproducible
-- [ ] P3.4a Seed randomness in bootstrap/sample paths
-- [ ] P3.4b Record tool versions and runtime parameters
+  - [ ] P3.4a Seed randomness in bootstrap/sample paths
+  - [ ] P3.4b Record tool versions and runtime parameters
 - [ ] P3.5 Documentation + handoff
-- [ ] P3.5a Update README with new workflow
-- [ ] P3.5b Add a quickstart for running end-to-end
+  - [ ] P3.5a Update README with new workflow
+  - [ ] P3.5b Add a quickstart for running end-to-end
 
 ## Detailed Next Steps Notes
 - `PYTHONPATH=src python -m femic --help` now works in the venv.
@@ -792,3 +792,21 @@
 - Queued next extraction slice: continue P2.2 by removing residual duplicated path-to-string
   coercion and remaining ad-hoc path joins in `00_data-prep.py` (favor passing `Path` objects
   through helper boundaries directly) so orchestration has a consistent typed path surface.
+- Reworked `00_data-prep.py` path handling to keep legacy artifact paths as `Path` objects through
+  helper boundaries (removed residual `str(...)` coercions for non-external artifact paths).
+- Replaced remaining ad-hoc path joins in 00_data-prep with helper/path-native composition:
+  `build_vdyp_cache_paths(...)` + `tipsy_params_excel_path(...)` now drive 01a resume-skip output
+  checks; siteprod layer temp paths now use `Path` joins/globs instead of `%s` string templates.
+- Replaced residual string-shell path checks/builds in this stage:
+  `Path.is_file()` for local executable/artifact presence, list-based `subprocess.run(...)` calls
+  with pathlike args, and `Path.read_text().splitlines()` for TIPSY column loading.
+- Added `tipsy_params_excel_path(...)` in `src/femic/pipeline/tipsy.py`, exported it in
+  `femic.pipeline.__init__`, added deterministic coverage in `tests/test_tipsy.py`, and updated AST
+  guardrails in `tests/test_legacy_orchestration_wiring.py` to assert
+  `build_vdyp_cache_paths(...)` + `tipsy_params_excel_path(...)` seam usage in 00_data-prep.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (183 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by centralizing remaining inline external-data root
+  resolution and path selection logic in `00_data-prep.py` (`_select_external_data_root`,
+  candidate list assembly, VRI/TSA source roots) into reusable I/O helper seams.

@@ -21,7 +21,6 @@ from rasterio.mask import mask
 from rasterio.io import MemoryFile
 from geocube.api.core import make_geocube
 import subprocess
-import shlex
 from rasterio.plot import show, show_hist
 import warnings
 from pympler import asizeof
@@ -33,7 +32,6 @@ import fiona
 import affine
 
 # from osgeo import gdal
-import glob
 from scipy.optimize import curve_fit as _curve_fit
 from functools import partial, wraps
 import itertools
@@ -55,6 +53,7 @@ try:
         build_legacy_data_artifact_paths,
         build_ria_vri_checkpoint_paths,
     )
+    from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -71,7 +70,10 @@ try:
         summarize_missing_au_mappings,
         validate_nonempty_au_assignment,
     )
-    from femic.pipeline.tipsy import tipsy_stage_output_paths
+    from femic.pipeline.tipsy import (
+        tipsy_params_excel_path,
+        tipsy_stage_output_paths,
+    )
     from femic.pipeline.stands import (
         DEFAULT_STANDS_PROP_NAMES,
         DEFAULT_STANDS_PROP_TYPES,
@@ -97,6 +99,7 @@ except ModuleNotFoundError:
         build_legacy_data_artifact_paths,
         build_ria_vri_checkpoint_paths,
     )
+    from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -113,7 +116,10 @@ except ModuleNotFoundError:
         summarize_missing_au_mappings,
         validate_nonempty_au_assignment,
     )
-    from femic.pipeline.tipsy import tipsy_stage_output_paths
+    from femic.pipeline.tipsy import (
+        tipsy_params_excel_path,
+        tipsy_stage_output_paths,
+    )
     from femic.pipeline.stands import (
         DEFAULT_STANDS_PROP_NAMES,
         DEFAULT_STANDS_PROP_TYPES,
@@ -209,47 +215,45 @@ def _select_external_data_root():
 
 
 _external_data_root = _select_external_data_root()
-vri_vclr1p_path = str(_external_data_root / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb")
+vri_vclr1p_path = _external_data_root / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb"
 _legacy_data_paths = build_legacy_data_artifact_paths()
-ria_stands_path = str(_legacy_data_paths.ria_stands_path)
-tsa_boundaries_path = str(_external_data_root / "bc/tsa/FADM_TSA.gdb/")
+ria_stands_path = _legacy_data_paths.ria_stands_path
+tsa_boundaries_path = _external_data_root / "bc/tsa/FADM_TSA.gdb"
 ria_maptiles_path = "ria_maptiles.csv"
-vdyp_input_pandl_path = str(_legacy_data_paths.vdyp_input_pandl_path)
+vdyp_input_pandl_path = _legacy_data_paths.vdyp_input_pandl_path
 
-site_prod_bc_gdb_path = str(
+site_prod_bc_gdb_path = (
     _legacy_data_paths.site_prod_bc_gdb_path
 )  # ESRI File Geodatabase containing 22 species-wise site productivity raster layers
 
-tsa_boundaries_feather_path = str(_legacy_data_paths.tsa_boundaries_feather_path)
+tsa_boundaries_feather_path = _legacy_data_paths.tsa_boundaries_feather_path
 _ria_vri_checkpoint_paths = build_ria_vri_checkpoint_paths()
-ria_vri_vclr1p_checkpoint1_feather_path = str(_ria_vri_checkpoint_paths[1])
-ria_vri_vclr1p_checkpoint2_feather_path = str(_ria_vri_checkpoint_paths[2])
-ria_vri_vclr1p_checkpoint3_feather_path = str(_ria_vri_checkpoint_paths[3])
-ria_vri_vclr1p_checkpoint4_feather_path = str(_ria_vri_checkpoint_paths[4])
-ria_vri_vclr1p_checkpoint5_feather_path = str(_ria_vri_checkpoint_paths[5])
-ria_vri_vclr1p_checkpoint6_feather_path = str(_ria_vri_checkpoint_paths[6])
-ria_vri_vclr1p_checkpoint7_feather_path = str(_ria_vri_checkpoint_paths[7])
-ria_vri_vclr1p_checkpoint8_feather_path = str(_ria_vri_checkpoint_paths[8])
-vri_vclr1p_categorical_columns_path = str(
-    _legacy_data_paths.vri_vclr1p_categorical_columns_path
-)
-ria_vclr1p_feature_tif_path = str(_legacy_data_paths.ria_vclr1p_feature_tif_path)
+ria_vri_vclr1p_checkpoint1_feather_path = _ria_vri_checkpoint_paths[1]
+ria_vri_vclr1p_checkpoint2_feather_path = _ria_vri_checkpoint_paths[2]
+ria_vri_vclr1p_checkpoint3_feather_path = _ria_vri_checkpoint_paths[3]
+ria_vri_vclr1p_checkpoint4_feather_path = _ria_vri_checkpoint_paths[4]
+ria_vri_vclr1p_checkpoint5_feather_path = _ria_vri_checkpoint_paths[5]
+ria_vri_vclr1p_checkpoint6_feather_path = _ria_vri_checkpoint_paths[6]
+ria_vri_vclr1p_checkpoint7_feather_path = _ria_vri_checkpoint_paths[7]
+ria_vri_vclr1p_checkpoint8_feather_path = _ria_vri_checkpoint_paths[8]
+vri_vclr1p_categorical_columns_path = _legacy_data_paths.vri_vclr1p_categorical_columns_path
+ria_vclr1p_feature_tif_path = _legacy_data_paths.ria_vclr1p_feature_tif_path
 
-arc_raster_rescue_exe_path = "../ArcRasterRescue/build/arc_raster_rescue.exe"
-siteprod_gdb_path = str(_legacy_data_paths.siteprod_gdb_path)
-siteprod_tmpexport_tif_path_prefix = str(_legacy_data_paths.siteprod_tmpexport_tif_path_prefix)
-siteprod_tif_path = str(_legacy_data_paths.siteprod_tif_path)
+arc_raster_rescue_exe_path = Path("../ArcRasterRescue/build/arc_raster_rescue.exe")
+siteprod_gdb_path = _legacy_data_paths.siteprod_gdb_path
+siteprod_tmpexport_tif_path_prefix = _legacy_data_paths.siteprod_tmpexport_tif_path_prefix
+siteprod_tif_path = _legacy_data_paths.siteprod_tif_path
 
-vdyp_ply_feather_path = str(_legacy_data_paths.vdyp_ply_feather_path)
-vdyp_lyr_feather_path = str(_legacy_data_paths.vdyp_lyr_feather_path)
-vdyp_results_tsa_pickle_path_prefix = str(_legacy_data_paths.vdyp_results_tsa_pickle_path_prefix)
-vdyp_results_pickle_path = str(_legacy_data_paths.vdyp_results_pickle_path)
-vdyp_curves_smooth_tsa_feather_path_prefix = str(
+vdyp_ply_feather_path = _legacy_data_paths.vdyp_ply_feather_path
+vdyp_lyr_feather_path = _legacy_data_paths.vdyp_lyr_feather_path
+vdyp_results_tsa_pickle_path_prefix = _legacy_data_paths.vdyp_results_tsa_pickle_path_prefix
+vdyp_results_pickle_path = _legacy_data_paths.vdyp_results_pickle_path
+vdyp_curves_smooth_tsa_feather_path_prefix = (
     _legacy_data_paths.vdyp_curves_smooth_tsa_feather_path_prefix
 )
-vdyp_curves_smooth_feather_path = str(_legacy_data_paths.vdyp_curves_smooth_feather_path)
+vdyp_curves_smooth_feather_path = _legacy_data_paths.vdyp_curves_smooth_feather_path
 
-tipsy_params_path_prefix = str(_legacy_data_paths.tipsy_params_path_prefix)
+tipsy_params_path_prefix = _legacy_data_paths.tipsy_params_path_prefix
 
 _default_ria_tsas = ["08", "16", "24", "40", "41"]
 _femic_tsa_list = os.environ.get("FEMIC_TSA_LIST")
@@ -284,7 +288,7 @@ if _femic_no_cache:
 raster_pxw = raster_pxh = 100
 
 tipsy_params_columns = [
-    line.strip() for line in open(_legacy_data_paths.tipsy_params_columns_path).readlines()
+    line.strip() for line in _legacy_data_paths.tipsy_params_columns_path.read_text().splitlines()
 ]
 
 # --- cell 11 ---
@@ -306,7 +310,7 @@ species_oak = ["Q"]
 species_maple = ["M", "MB", "MV"]
 
 # --- cell 13 ---
-if not os.path.isfile(arc_raster_rescue_exe_path):
+if not arc_raster_rescue_exe_path.is_file():
     # Notebook cell only built the tool; in script keep a no-op.
     pass
 
@@ -376,7 +380,7 @@ f = _apply_debug_rows(f, "checkpoint1")
 # --- cell 19 ---
 # map layer indices to layer species codes
 result = subprocess.run(
-    shlex.split("%s %s" % (arc_raster_rescue_exe_path, siteprod_gdb_path)),
+    [arc_raster_rescue_exe_path, siteprod_gdb_path],
     capture_output=True,
 )
 siteprod_layerspecies = {
@@ -392,21 +396,30 @@ siteprod_specieslayer = {
     ]
 }
 
-if not os.path.isfile(siteprod_tif_path):
+if not siteprod_tif_path.is_file():
     # export species-wise raster layers to 22 GeoTIFFs
     print("Extracting siteprod raster data from ESRI File Geodatabase...")
     for i, species in site_prod_bc_layerspecies.items():
         print("... processing species", species)
-        args = "%s %s %i %s" % (
-            arc_raster_rescue_exe_path,
-            site_prod_bc_gdb_path,
-            i,
-            "%s%s.tif" % (siteprod_tmpexport_tif_path_prefix, species),
+        layer_tif_path = (
+            siteprod_tmpexport_tif_path_prefix.parent
+            / f"{siteprod_tmpexport_tif_path_prefix.name}{species}.tif"
         )
-        subprocess.run(shlex.split(args))
+        subprocess.run(
+            [
+                arc_raster_rescue_exe_path,
+                site_prod_bc_gdb_path,
+                str(i),
+                layer_tif_path,
+            ]
+        )
 
     # stack species-wise raster layers into a single multi-band GeoTIFF
-    file_list = sorted(glob.glob("%s*.tif" % siteprod_tmpexport_tif_path_prefix))
+    file_list = sorted(
+        siteprod_tmpexport_tif_path_prefix.parent.glob(
+            f"{siteprod_tmpexport_tif_path_prefix.name}*.tif"
+        )
+    )
     with rio.open(file_list[0]) as src:  # patch with missing CRS metadata
         meta = src.meta
         meta.update(
@@ -419,7 +432,7 @@ if not os.path.isfile(siteprod_tif_path):
             print("... processing species", siteprod_layerspecies[id - 1])
             with rio.open(layer) as src:
                 dst.write_band(id, src.read(1))
-            os.remove(layer)  # delete intermediate GeoTIFF (not needed anymore)
+            layer.unlink()  # delete intermediate GeoTIFF (not needed anymore)
 
 
 # --- cell 21 ---
@@ -696,11 +709,19 @@ if 1:
     )
 
     def _should_skip_01a(tsa):
+        vdyp_cache_paths = build_vdyp_cache_paths(
+            tsa_code=tsa,
+            vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
+            vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
+        )
         return should_skip_if_outputs_exist(
             resume_effective=_femic_resume_effective,
             output_paths=(
-                f"{tipsy_params_path_prefix}{tsa}.xlsx",
-                f"{vdyp_curves_smooth_tsa_feather_path_prefix}{tsa}.feather",
+                tipsy_params_excel_path(
+                    tsa=tsa,
+                    tipsy_params_path_prefix=tipsy_params_path_prefix,
+                ),
+                vdyp_cache_paths["vdyp_curves_smooth_tsa_feather_path"],
             ),
             skip_message=f"resume: skipping 01a for tsa {tsa} (outputs exist)",
         )
