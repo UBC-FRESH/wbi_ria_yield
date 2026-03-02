@@ -359,3 +359,9 @@
 - Added regression coverage for the new override helper (`tests/test_vdyp_overrides.py`) plus AST
   wiring coverage asserting the 00->01a handoff uses internal defaults
   (`kwarg_overrides_for_tsa=None`).
+- Rewired `01a_run-tsa.py` to consume `femic.pipeline.tsa.target_nstrata_for(...)` instead of an
+  inline TSA->target-strata dict, reducing notebook-era duplicated constants.
+- Added shared `femic.pipeline.tsa.MIN_STANDCOUNT` and updated 01a strata filtering/tests to consume
+  this constant instead of hardcoded local values.
+- Removed additional inline bootstrap tuning constants from `01a_run-tsa.py` by relying on
+  `execute_bootstrap_vdyp_runs(...)` defaults for `half_rel_ci`, `nsamples_c1`, and `ipp_mode`.
