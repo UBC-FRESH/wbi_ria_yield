@@ -706,3 +706,19 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline species-volume
   compilation orchestration in checkpoint3 (`compile_species_vol` local function, map dispatch, and
   per-species assignment loop) into reusable helper seams.
+- Added `src/femic/pipeline/species_volume.py` with reusable checkpoint3 species-volume helpers:
+  `species_volume_input_columns(...)`, `compile_species_volume_series(...)`, and
+  `compile_species_volume_columns(...)`.
+- Rewired checkpoint3 species-volume compilation in `00_data-prep.py` to call
+  `compile_species_volume_columns(...)`, removing inline `compile_species_vol(...)`, manual column
+  assembly, map dispatch, and per-species assignment loop.
+- Exported species-volume helpers via `femic.pipeline.__init__`, added deterministic coverage in
+  `tests/test_species_volume.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `compile_species_volume_columns(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (193 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting remaining inline checkpoint2
+  pre-filter/fillna normalization block (species/soil/BCLCS/LIVE_VOL defaults and filters) into a
+  dedicated reusable helper seam.

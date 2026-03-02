@@ -34,7 +34,6 @@ import affine
 # from osgeo import gdal
 from scipy.optimize import curve_fit as _curve_fit
 from functools import partial, wraps
-import itertools
 from pathlib import Path
 import sys
 
@@ -60,6 +59,7 @@ try:
         export_and_stack_siteprod_layers,
         list_siteprod_layers,
     )
+    from femic.pipeline.species_volume import compile_species_volume_columns
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -112,6 +112,7 @@ except ModuleNotFoundError:
         export_and_stack_siteprod_layers,
         list_siteprod_layers,
     )
+    from femic.pipeline.species_volume import compile_species_volume_columns
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -455,32 +456,13 @@ f.reset_index(inplace=True)
 # --- cell 27 ---
 process_checkpoint3 = 1 if _femic_no_cache else 1
 if process_checkpoint3:
-
-    def compile_species_vol(df, species):
-        return df.apply(
-            lambda r: sum(
-                r["LIVE_VOL_PER_HA_SPP%i_125" % i]
-                for i in range(1, 7)
-                if r["SPECIES_CD_%i" % i] == species
-            ),
-            axis=1,
-        )
-
-    cols = list(
-        itertools.chain.from_iterable(
-            ["LIVE_VOL_PER_HA_SPP%i_125" % i] + ["SPECIES_CD_%i" % i]
-            for i in range(1, 7)
-        )
+    f = compile_species_volume_columns(
+        f_table=f,
+        species_list=species_list,
+        map_async_fn=lbview.map_async,
+        wait_fn=rc.wait_interactive,
+        message_fn=print,
     )
-    f_ = f[cols]
-    result = lbview.map_async(
-        compile_species_vol, [f_] * len(species_list), species_list, ordered=True
-    )
-    rc.wait_interactive()
-
-    for i, species in enumerate(species_list):
-        print("compiling species", species)
-        f["live_vol_per_ha_125_%s" % species] = result[i]
     f.to_feather(ria_vri_vclr1p_checkpoint3_feather_path)
 else:
     print("loading VRI data from checkpoint3 feather")

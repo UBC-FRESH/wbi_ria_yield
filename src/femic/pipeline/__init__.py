@@ -110,6 +110,11 @@ from femic.pipeline.tipsy_legacy import (
     get_legacy_tipsy_builders,
 )
 from femic.pipeline.vdyp import build_vdyp_cache_paths, build_vdyp_log_paths
+from femic.pipeline.species_volume import (
+    compile_species_volume_columns,
+    compile_species_volume_series,
+    species_volume_input_columns,
+)
 from femic.pipeline.siteprod import (
     DEFAULT_SITEPROD_SPECIES_LOOKUP,
     assign_siteprod_from_raster,
@@ -237,6 +242,9 @@ __all__ = [
     "write_manifest",
     "build_vdyp_cache_paths",
     "build_vdyp_log_paths",
+    "species_volume_input_columns",
+    "compile_species_volume_series",
+    "compile_species_volume_columns",
     "DEFAULT_SITEPROD_SPECIES_LOOKUP",
     "parse_arc_raster_rescue_layer_mappings",
     "list_siteprod_layers",
