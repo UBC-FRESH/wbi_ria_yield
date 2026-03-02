@@ -1001,3 +1001,12 @@
 - Queued next extraction slice: continue P2.2 by removing or gating remaining notebook-only plot
   diagnostics (`f.thlb_raw.describe()` / `f.thlb_raw.hist()`) so headless/script runs stay focused
   on pipeline outputs.
+- Gated remaining notebook-only THLB diagnostics in `00_data-prep.py` behind
+  `FEMIC_THLB_DIAGNOSTICS` (`0` default; enable with `1`/`true`/`yes`) so headless/script runs do
+  not emit notebook-style plotting/stat calls unless explicitly requested.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (204 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by removing remaining dead inline aggregate preview
+  expressions (`f.query(...).groupby(...).sum()` and `f.groupby(...).sum()`) from
+  `00_data-prep.py` so script-mode orchestration contains only side-effecting pipeline steps.

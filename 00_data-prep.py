@@ -277,6 +277,12 @@ else:
     ria_tsas = _default_ria_tsas
 _femic_resume = os.environ.get("FEMIC_RESUME", "0") == "1"
 _femic_debug_rows_raw = os.environ.get("FEMIC_DEBUG_ROWS")
+_femic_thlb_diag_raw = os.environ.get("FEMIC_THLB_DIAGNOSTICS", "0")
+_femic_thlb_diagnostics = _femic_thlb_diag_raw.strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
 try:
     _femic_debug_rows = int(_femic_debug_rows_raw) if _femic_debug_rows_raw else None
 except ValueError:
@@ -802,10 +808,12 @@ if not _femic_no_cache:
     f = _apply_debug_rows(f, "checkpoint7")
 
 # --- cell 116 ---
-f.thlb_raw.describe()
+if _femic_thlb_diagnostics:
+    f.thlb_raw.describe()
 
 # --- cell 117 ---
-f.thlb_raw.hist()
+if _femic_thlb_diagnostics:
+    f.thlb_raw.hist()
 
 # --- cell 118 ---
 f.reset_index(inplace=True)
