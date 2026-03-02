@@ -1,7 +1,15 @@
 # Auto-generated from 01b_run-tsa.ipynb
 
-def run_tsa():
-    
+
+def run_tsa(
+    *,
+    tsa,
+    results,
+    au_scsi,
+    tipsy_curves,
+    vdyp_curves_smooth,
+):
+
     # --- cell 1 ---
     #!mv ./data/04_output.out ./data/tipsy_output_tsa08.out
     #!mv ./data/04_output.out ./data/tipsy_output_tsa16.out
@@ -17,6 +25,9 @@ def run_tsa():
     import pandas as pd
     import numpy as np
     import time
+    from matplotlib import pyplot as plt
+    import seaborn as sns
+
     Start = time.time()
     
     #change line below
@@ -131,4 +142,6 @@ def run_tsa():
         plt.savefig('./plots/tipsy_vdyp_tsa%s-%s.png' % (tsa, au), facecolor='white')
 
 if __name__ == '__main__':
-    run_tsa()
+    raise SystemExit(
+        "01b_run-tsa.py is intended to be launched by 00_data-prep.py or femic run."
+    )

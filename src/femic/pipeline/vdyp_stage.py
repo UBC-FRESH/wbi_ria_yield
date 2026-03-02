@@ -1,0 +1,575 @@
+"""VDYP execution stage helpers for legacy notebook migration."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from datetime import datetime, timezone
+import functools
+import importlib
+import pickle
+import shlex
+import subprocess
+import tempfile
+import time
+import traceback
+from pathlib import Path
+from typing import Any, cast
+
+
+@dataclass(frozen=True)
+class SmoothedCurveResult:
+    """One smoothed curve result for a stratum/SI combination."""
+
+    stratumi: int
+    stratum_code: str
+    si_level: str
+    x: Sequence[float]
+    y: Sequence[float]
+    vdyp_out: dict[Any, Any]
+
+
+def build_curve_fit_adapter(
+    *,
+    curve_fit_impl: Callable[..., Any] | None = None,
+    np_module: Any | None = None,
+) -> Callable[..., Any]:
+    """Build legacy-compatible curve_fit wrapper handling maxfev/max_nfev."""
+    curve_fit_fn = curve_fit_impl
+    if curve_fit_fn is None:
+        scipy_optimize = importlib.import_module("scipy.optimize")
+        curve_fit_fn = scipy_optimize.curve_fit
+    np_mod = np_module or importlib.import_module("numpy")
+
+    @functools.wraps(curve_fit_fn)
+    def curve_fit(*args: Any, **kwargs: Any) -> Any:
+        bounds = kwargs.get("bounds")
+        if bounds is not None and np_mod.any(np_mod.isfinite(bounds)):
+            if "max_nfev" not in kwargs:
+                kwargs["max_nfev"] = kwargs.pop("maxfev", None)
+        return curve_fit_fn(*args, **kwargs)
+
+    return curve_fit
+
+
+def load_vdyp_input_tables(
+    *,
+    vdyp_input_pandl_path: str | Path,
+    vdyp_ply_feather_path: str | Path,
+    vdyp_lyr_feather_path: str | Path,
+    read_from_source: bool = False,
+    gpd_module: Any | None = None,
+) -> tuple[Any, Any]:
+    """Load VDYP polygon/layer tables from feather cache or source geodatabase."""
+    gpd_mod = gpd_module or importlib.import_module("geopandas")
+    if read_from_source:
+        vdyp_ply = gpd_mod.read_file(vdyp_input_pandl_path, driver="FileGDB", layer=0)
+        vdyp_ply.to_feather(vdyp_ply_feather_path)
+        vdyp_lyr = gpd_mod.read_file(vdyp_input_pandl_path, driver="FileGDB", layer=1)
+        vdyp_lyr.to_feather(vdyp_lyr_feather_path)
+        return vdyp_ply, vdyp_lyr
+    vdyp_ply = gpd_mod.read_feather(vdyp_ply_feather_path)
+    vdyp_lyr = gpd_mod.read_feather(vdyp_lyr_feather_path)
+    return vdyp_ply, vdyp_lyr
+
+
+def _default_load_pickle(path: str | Path) -> Any:
+    with Path(path).open("rb") as handle:
+        return pickle.load(handle)
+
+
+def _default_dump_pickle(value: Any, path: str | Path) -> None:
+    with Path(path).open("wb") as handle:
+        pickle.dump(value, handle)
+
+
+def _default_load_compat_pickle(path: str | Path) -> Any:
+    pickle_compat = importlib.import_module("pandas.compat.pickle_compat")
+    with Path(path).open("rb") as handle:
+        return pickle_compat.load(handle)
+
+
+def load_or_build_vdyp_results_tsa(
+    *,
+    tsa: str,
+    force_run_vdyp: bool,
+    vdyp_results_tsa_pickle_path: str | Path,
+    vdyp_results_pickle_path: str | Path,
+    run_bootstrap_fn: Callable[[], dict[int, dict[str, dict[Any, Any]]]],
+    print_fn: Callable[..., Any] = print,
+    load_pickle_fn: Callable[[str | Path], Any] = _default_load_pickle,
+    dump_pickle_fn: Callable[[Any, str | Path], None] = _default_dump_pickle,
+    load_compat_pickle_fn: Callable[[str | Path], Any] = _default_load_compat_pickle,
+) -> dict[int, dict[str, dict[Any, Any]]]:
+    """Resolve per-TSA VDYP results from cache, combined cache, or fresh bootstrap."""
+    tsa_path = Path(vdyp_results_tsa_pickle_path)
+    combined_path = Path(vdyp_results_pickle_path)
+
+    def _bootstrap_and_cache() -> dict[int, dict[str, dict[Any, Any]]]:
+        print_fn()
+        result = run_bootstrap_fn()
+        dump_pickle_fn(result, tsa_path)
+        return result
+
+    if force_run_vdyp:
+        return _bootstrap_and_cache()
+
+    if (not tsa_path.is_file()) and combined_path.is_file():
+        try:
+            vdyp_results_all = load_pickle_fn(combined_path)
+        except ModuleNotFoundError:
+            vdyp_results_all = load_compat_pickle_fn(combined_path)
+        vdyp_key: Any = tsa
+        if vdyp_key not in vdyp_results_all:
+            try:
+                vdyp_key = int(tsa)
+            except (TypeError, ValueError):
+                vdyp_key = tsa
+        if vdyp_key in vdyp_results_all:
+            return vdyp_results_all[vdyp_key]
+        return {}
+
+    if not tsa_path.is_file():
+        return _bootstrap_and_cache()
+
+    return load_pickle_fn(tsa_path)
+
+
+def plot_curve_overlays(
+    *,
+    results_for_tsa: Sequence[tuple[int, str, Any]],
+    si_levels: Sequence[str],
+    smoothed_runs: Sequence[SmoothedCurveResult],
+    plot: bool,
+    figsize: tuple[float, float],
+    palette: Sequence[Any],
+    pd_module: Any,
+    plt_module: Any,
+    dataframe_type: type,
+    xlim: tuple[float, float] = (0, 300),
+    ylim: tuple[float, float] = (0, 600),
+    message_fn: Callable[..., Any] = print,
+) -> None:
+    """Render legacy VDYP overlay plots for smoothed curves."""
+    if not plot:
+        return
+    smoothed_run_map = {(r.stratumi, r.si_level): r for r in smoothed_runs}
+    for stratumi, sc, _result in results_for_tsa:
+        plt_module.subplots(1, 1, figsize=figsize)
+        message_fn("stratum", stratumi, sc)
+        for i, si_level in enumerate(si_levels):
+            message_fn("processing", sc, si_level)
+            run = smoothed_run_map.get((int(stratumi), si_level))
+            if run is None:
+                continue
+            x, y = run.x, run.y
+            vdyp_out = run.vdyp_out
+            vdyp_out_concat = pd_module.concat(
+                [v for v in vdyp_out.values() if isinstance(v, dataframe_type)]
+            )
+            c = vdyp_out_concat.groupby(level="Age")["Vdwb"].median()
+            c = c[c > 0]
+            c = c[c.index >= 30]
+            x_ = c.index.values
+            y_ = c.values
+            plt_module.plot(
+                x_,
+                y_,
+                linestyle=":",
+                label="VDYP->agg (%s %s)" % (sc, si_level),
+                linewidth=2,
+                color=palette[i],
+            )
+            plt_module.plot(x, y, label="%s %s" % (sc, si_level))
+        plt_module.legend()
+        plt_module.xlim(xlim)
+        plt_module.ylim(ylim)
+        plt_module.tight_layout()
+
+
+def build_smoothed_curve_table(
+    *,
+    smoothed_runs: Sequence[SmoothedCurveResult],
+    pd_module: Any,
+    output_path: str | Path | None = None,
+) -> Any:
+    """Build and optionally persist the smoothed VDYP curve table."""
+    frames = []
+    for run in smoothed_runs:
+        df = pd_module.DataFrame(zip(run.x, run.y), columns=["age", "volume"])
+        df = df[df.volume > 0]
+        df["stratum_code"] = run.stratum_code
+        df["si_level"] = run.si_level
+        frames.append(df)
+    curve_table = pd_module.concat(frames).reset_index()
+    if output_path is not None:
+        curve_table.to_feather(output_path)
+    return curve_table
+
+
+def execute_bootstrap_vdyp_runs(
+    *,
+    tsa: str,
+    run_id: str,
+    results_for_tsa: Sequence[tuple[int, str, Any]],
+    si_levels: Sequence[str],
+    vdyp_run_events_path: str | Path,
+    append_jsonl_fn: Callable[[str | Path, Any], None],
+    run_vdyp_fn: Callable[..., dict[Any, Any]],
+    vdyp_out_cache: dict[Any, Any] | None = None,
+    verbose: bool = True,
+    half_rel_ci: float = 0.01,
+    ipp_mode: str | None = None,
+    nsamples_c1: float = 0.05,
+) -> dict[int, dict[str, dict[Any, Any]]]:
+    """Execute bootstrap VDYP runs across stratum/SI combinations."""
+    vdyp_results_tsa: dict[int, dict[str, dict[Any, Any]]] = {}
+    for stratumi, sc, result in results_for_tsa:
+        vdyp_results_tsa[stratumi] = {}
+        for si_level in si_levels:
+            if verbose:
+                print(f"running VDYP in bootstrap sample mode ({sc}, {si_level})")
+            run_context = {
+                "run_id": run_id,
+                "tsa": tsa,
+                "stratum_index": int(stratumi),
+                "stratum_code": sc,
+                "si_level": si_level,
+            }
+            append_jsonl_fn(
+                vdyp_run_events_path,
+                {
+                    "event": "vdyp_run",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "status": "dispatch",
+                    "phase": "bootstrap",
+                    "context": run_context,
+                },
+            )
+            try:
+                vdyp_out = run_vdyp_fn(
+                    result[si_level]["ss"],
+                    verbose=verbose,
+                    half_rel_ci=half_rel_ci,
+                    ipp_mode=ipp_mode,
+                    nsamples_c1=nsamples_c1,
+                    vdyp_out_cache=vdyp_out_cache,
+                    log_context=run_context,
+                )
+            except Exception as exc:
+                append_jsonl_fn(
+                    vdyp_run_events_path,
+                    {
+                        "event": "vdyp_run",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "status": "dispatch_error",
+                        "phase": "bootstrap",
+                        "error_type": type(exc).__name__,
+                        "error": str(exc),
+                        "error_repr": repr(exc),
+                        "traceback": traceback.format_exc(),
+                        "context": run_context,
+                    },
+                )
+                raise
+            vdyp_results_tsa[stratumi][si_level] = vdyp_out
+            if verbose:
+                print()
+    return vdyp_results_tsa
+
+
+def execute_vdyp_batch(
+    *,
+    feature_ids: Sequence[int],
+    vdyp_ply: Any,
+    vdyp_lyr: Any,
+    vdyp_binpath: str,
+    vdyp_params_infile: str,
+    vdyp_io_dirname: str,
+    vdyp_log_path: str | Path,
+    vdyp_stdout_log_path: str | Path,
+    vdyp_stderr_log_path: str | Path,
+    phase: str,
+    cache_hits: int = 0,
+    timeout: int = 30,
+    run_id: str | None = None,
+    base_context: Mapping[str, Any] | None = None,
+    write_vdyp_infiles: Callable[..., None] | None = None,
+    import_vdyp_tables_fn: Callable[[str], dict[Any, Any]] | None = None,
+    append_jsonl_fn: Callable[[str | Path, Any], None] | None = None,
+    append_text_fn: Callable[[str | Path, str], None] | None = None,
+    subprocess_run: Callable[..., Any] | None = None,
+) -> dict[Any, Any]:
+    """Run one VDYP batch and return parsed per-feature output tables."""
+    feature_ids_list = list(feature_ids)
+    if not feature_ids_list:
+        return {}
+    if write_vdyp_infiles is None:
+        from femic.pipeline.vdyp_io import (
+            write_vdyp_infiles_plylyr as write_vdyp_infiles,
+        )
+    if import_vdyp_tables_fn is None:
+        from femic.pipeline.vdyp_io import import_vdyp_tables as import_vdyp_tables_fn
+    if append_jsonl_fn is None:
+        from femic.pipeline.vdyp_logging import append_jsonl as append_jsonl_fn
+    if append_text_fn is None:
+        from femic.pipeline.vdyp_logging import append_text as append_text_fn
+    if subprocess_run is None:
+        subprocess_run = subprocess.run
+
+    write_vdyp_infiles_ = cast(Callable[..., None], write_vdyp_infiles)
+    import_vdyp_tables_ = cast(Callable[[str], dict[Any, Any]], import_vdyp_tables_fn)
+    append_jsonl_ = cast(Callable[[str | Path, Any], None], append_jsonl_fn)
+    append_text_ = cast(Callable[[str | Path, str], None], append_text_fn)
+    subprocess_run_ = cast(Callable[..., Any], subprocess_run)
+
+    feature_count = len(feature_ids_list)
+    vdyp_ply_ = vdyp_ply[vdyp_ply.FEATURE_ID.isin(feature_ids_list)]
+    vdyp_lyr_ = vdyp_lyr[vdyp_lyr.FEATURE_ID.isin(feature_ids_list)]
+    ply_rows = vdyp_ply_.shape[0]
+    lyr_rows = vdyp_lyr_.shape[0]
+    context = dict(base_context or {})
+    if run_id is not None:
+        context.setdefault("run_id", run_id)
+
+    vdyp_io_dir = Path(vdyp_io_dirname)
+    vdyp_io_dir.mkdir(parents=True, exist_ok=True)
+
+    with (
+        tempfile.NamedTemporaryFile(
+            dir=vdyp_io_dir,
+            prefix="vdyp_ply_",
+            suffix=".csv",
+            delete=False,
+        ) as vdyp_ply_csv_,
+        tempfile.NamedTemporaryFile(
+            dir=vdyp_io_dir,
+            prefix="vdyp_lyr_",
+            suffix=".csv",
+            delete=False,
+        ) as vdyp_lyr_csv_,
+        tempfile.NamedTemporaryFile(
+            dir=vdyp_io_dir,
+            prefix="vdyp_out_",
+            suffix=".out",
+            delete=False,
+        ) as vdyp_out_txt_,
+        tempfile.NamedTemporaryFile(
+            dir=vdyp_io_dir,
+            prefix="vdyp_err_",
+            suffix=".err",
+            delete=False,
+        ) as vdyp_err_txt_,
+    ):
+        vdyp_ply_csv = Path(vdyp_ply_csv_.name).name
+        vdyp_lyr_csv = Path(vdyp_lyr_csv_.name).name
+        vdyp_out_txt = Path(vdyp_out_txt_.name).name
+        vdyp_err_txt = Path(vdyp_err_txt_.name).name
+        out_path = Path(vdyp_out_txt_.name)
+        err_path = Path(vdyp_err_txt_.name)
+
+        write_vdyp_infiles_(vdyp_ply_, vdyp_lyr_, vdyp_ply_csv, vdyp_lyr_csv)
+
+        run_started = time.time()
+        args = "wine %s -p %s -ip .\\\\%s\\\\%s -il .\\\\%s\\\\%s" % (
+            vdyp_binpath,
+            vdyp_params_infile,
+            str(vdyp_io_dir),
+            vdyp_ply_csv,
+            str(vdyp_io_dir),
+            vdyp_lyr_csv,
+        )
+        args += " -o .\\\\%s\\\\%s -e .\\\\%s\\\\%s" % (
+            str(vdyp_io_dir),
+            vdyp_out_txt,
+            str(vdyp_io_dir),
+            vdyp_err_txt,
+        )
+        try:
+            result = subprocess_run_(
+                shlex.split(args),
+                timeout=timeout,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.TimeoutExpired as exc:
+            append_jsonl_(
+                vdyp_log_path,
+                {
+                    "event": "vdyp_run",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "status": "timeout",
+                    "phase": phase,
+                    "feature_count": int(feature_count),
+                    "cache_hits": int(cache_hits),
+                    "ply_rows": int(ply_rows),
+                    "lyr_rows": int(lyr_rows),
+                    "cmd": args,
+                    "timeout_sec": timeout,
+                    "error": str(exc),
+                    "context": context,
+                },
+            )
+            return {}
+        except Exception as exc:
+            append_jsonl_(
+                vdyp_log_path,
+                {
+                    "event": "vdyp_run",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "status": "error",
+                    "phase": phase,
+                    "feature_count": int(feature_count),
+                    "cache_hits": int(cache_hits),
+                    "ply_rows": int(ply_rows),
+                    "lyr_rows": int(lyr_rows),
+                    "cmd": args,
+                    "error": str(exc),
+                    "traceback": traceback.format_exc(),
+                    "context": context,
+                },
+            )
+            return {}
+
+        stream_header = (
+            f"\n=== {datetime.now(timezone.utc).isoformat()} "
+            f"phase={phase} feature_count={feature_count} cache_hits={cache_hits} ===\n"
+            f"cmd: {args}\n"
+        )
+        if result.stdout:
+            append_text_(vdyp_stdout_log_path, stream_header + result.stdout + "\n")
+        if result.stderr:
+            append_text_(vdyp_stderr_log_path, stream_header + result.stderr + "\n")
+
+        err_size = err_path.stat().st_size if err_path.exists() else 0
+        err_head = ""
+        if err_size:
+            err_head = err_path.read_text(encoding="utf-8", errors="ignore")[:500]
+        out_size = out_path.stat().st_size if out_path.exists() else 0
+        proc_stdout_head = (result.stdout or "")[:500]
+        proc_stderr_head = (result.stderr or "")[:500]
+        try:
+            vdyp_out = import_vdyp_tables_(str(vdyp_io_dir / vdyp_out_txt))
+        except Exception as exc:
+            append_jsonl_(
+                vdyp_log_path,
+                {
+                    "event": "vdyp_run",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "status": "parse_error",
+                    "phase": phase,
+                    "feature_count": int(feature_count),
+                    "cache_hits": int(cache_hits),
+                    "ply_rows": int(ply_rows),
+                    "lyr_rows": int(lyr_rows),
+                    "cmd": args,
+                    "returncode": getattr(result, "returncode", None),
+                    "duration_sec": round(time.time() - run_started, 3),
+                    "out_size": int(out_size),
+                    "err_size": int(err_size),
+                    "err_head": err_head,
+                    "proc_stdout_head": proc_stdout_head,
+                    "proc_stderr_head": proc_stderr_head,
+                    "error": str(exc),
+                    "traceback": traceback.format_exc(),
+                    "context": context,
+                },
+            )
+            return {}
+
+        append_jsonl_(
+            vdyp_log_path,
+            {
+                "event": "vdyp_run",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "status": "ok" if vdyp_out else "empty_output",
+                "phase": phase,
+                "feature_count": int(feature_count),
+                "cache_hits": int(cache_hits),
+                "ply_rows": int(ply_rows),
+                "lyr_rows": int(lyr_rows),
+                "cmd": args,
+                "returncode": getattr(result, "returncode", None),
+                "duration_sec": round(time.time() - run_started, 3),
+                "out_size": int(out_size),
+                "err_size": int(err_size),
+                "err_head": err_head,
+                "proc_stdout_head": proc_stdout_head,
+                "proc_stderr_head": proc_stderr_head,
+                "vdyp_out_tables": int(len(vdyp_out)),
+                "context": context,
+            },
+        )
+        return vdyp_out
+
+
+def execute_curve_smoothing_runs(
+    *,
+    tsa: str,
+    run_id: str,
+    results_for_tsa: Sequence[tuple[int, str, Any]],
+    si_levels: Sequence[str],
+    vdyp_results_for_tsa: Mapping[int, Mapping[str, dict[Any, Any]]],
+    kwarg_overrides_for_tsa: Mapping[tuple[str, str], Mapping[str, Any]],
+    process_vdyp_out_fn: Callable[..., tuple[Sequence[float], Sequence[float]]],
+    append_jsonl_fn: Callable[[str | Path, Any], None],
+    vdyp_curve_events_path: str | Path,
+    curve_fit_fn: Callable[..., Any],
+    body_fit_func: Callable[..., Any],
+    body_fit_func_bounds_func: Callable[..., Any],
+    toe_fit_func: Callable[..., Any],
+    toe_fit_func_bounds_func: Callable[..., Any],
+    message_fn: Callable[..., Any] = print,
+) -> list[SmoothedCurveResult]:
+    """Build smoothed VDYP curves for each stratum/SI combination."""
+    smoothed_runs: list[SmoothedCurveResult] = []
+    for stratumi, sc, _result in results_for_tsa:
+        for si_level in si_levels:
+            kwargs = dict(kwarg_overrides_for_tsa.get((sc, si_level), {}))
+            curve_context = {
+                "run_id": run_id,
+                "tsa": tsa,
+                "stratum_index": int(stratumi),
+                "stratum_code": sc,
+                "si_level": si_level,
+            }
+            vdyp_out = vdyp_results_for_tsa.get(stratumi, {}).get(si_level)
+            if not isinstance(vdyp_out, dict) or len(vdyp_out) == 0:
+                message_fn("  missing vdyp results for", sc, si_level)
+                append_jsonl_fn(
+                    vdyp_curve_events_path,
+                    {
+                        "event": "vdyp_curve_fit",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "status": "warning",
+                        "stage": "curve_input",
+                        "reason": "missing_vdyp_output",
+                        "context": curve_context,
+                    },
+                )
+                continue
+            x, y = process_vdyp_out_fn(
+                vdyp_out,
+                curve_fit_fn=curve_fit_fn,
+                body_fit_func=body_fit_func,
+                body_fit_func_bounds_func=body_fit_func_bounds_func,
+                toe_fit_func=toe_fit_func,
+                toe_fit_func_bounds_func=toe_fit_func_bounds_func,
+                log_event=lambda payload: append_jsonl_fn(
+                    vdyp_curve_events_path, payload
+                ),
+                message=message_fn,
+                curve_context=curve_context,
+                **kwargs,
+            )
+            smoothed_runs.append(
+                SmoothedCurveResult(
+                    stratumi=int(stratumi),
+                    stratum_code=sc,
+                    si_level=si_level,
+                    x=x,
+                    y=y,
+                    vdyp_out=vdyp_out,
+                )
+            )
+    return smoothed_runs

@@ -3,10 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from femic.pipeline.tipsy_config import (
     build_tipsy_params_from_config,
     load_tipsy_tsa_config,
+    resolve_tipsy_param_builder,
 )
 
 
@@ -35,6 +37,88 @@ rules:
     payload = load_tipsy_tsa_config(tsa_code="08", config_dir=tmp_path)
     assert payload is not None
     assert payload["tsa_code"] == "08"
+
+
+def test_resolve_tipsy_param_builder_prefers_config_when_available(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "tsa08.yaml").write_text(
+        """
+schema_version: 1
+tsa_code: "08"
+defaults:
+  e: {Proportion: 1}
+  f: {Proportion: 1}
+rules:
+  - id: spruce
+    when:
+      leading_species_in: ["SW"]
+      bec_in: ["SBS"]
+    assign:
+      e: {Density: 1200, SPP_1: "SW", PCT_1: 100}
+      f: {Density: 1100, SPP_1: "SW", PCT_1: 100}
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    def _legacy_builder(
+        *_args: object, **_kwargs: object
+    ) -> dict[str, dict[str, object]]:
+        raise AssertionError("legacy builder should not be used")
+
+    builder, message = resolve_tipsy_param_builder(
+        tsa_code="08",
+        legacy_builder=_legacy_builder,
+        config_dir=tmp_path,
+        use_legacy=False,
+    )
+    assert "using config-driven TIPSY rules from" in message
+    out = builder(
+        3001,
+        {
+            "ss": pd.DataFrame({"SITE_INDEX": [16.0], "BEC_ZONE_CODE": ["SBS"]}),
+            "species": {"SW": {"pct": 60.0}},
+        },
+        {1: pd.DataFrame({"SI": [16.0], "% Stk": [90.0]})},
+    )
+    assert out["e"]["SPP_1"] == "SW"
+    assert out["f"]["Density"] == 1100
+
+
+def test_resolve_tipsy_param_builder_returns_legacy_when_enabled() -> None:
+    sentinel = {"e": {"x": 1}, "f": {"y": 2}}
+
+    def _legacy_builder(
+        *_args: object, **_kwargs: object
+    ) -> dict[str, dict[str, object]]:
+        return sentinel
+
+    builder, message = resolve_tipsy_param_builder(
+        tsa_code="08",
+        legacy_builder=_legacy_builder,
+        config_dir="nonexistent",
+        use_legacy=True,
+    )
+    assert "using legacy in-code TIPSY rules" in message
+    assert builder(1, {}, {}) == sentinel
+
+
+def test_resolve_tipsy_param_builder_raises_when_config_missing_and_not_legacy(
+    tmp_path: Path,
+) -> None:
+    def _legacy_builder(
+        *_args: object, **_kwargs: object
+    ) -> dict[str, dict[str, object]]:
+        return {"e": {}, "f": {}}
+
+    with pytest.raises(RuntimeError, match="Missing TIPSY config for TSA 08"):
+        resolve_tipsy_param_builder(
+            tsa_code="08",
+            legacy_builder=_legacy_builder,
+            config_dir=tmp_path,
+            use_legacy=False,
+        )
 
 
 def test_build_tipsy_params_from_config_assigns_rule_and_derived_fields() -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
@@ -86,6 +86,46 @@ def build_tipsy_warning_event(
             "au": int(au),
         },
     }
+
+
+def build_tipsy_input_table(
+    *,
+    tipsy_params_for_tsa: Mapping[int, Mapping[str, Mapping[str, Any]]],
+    tipsy_params_columns: Sequence[str],
+    pd_module: Any,
+    table_key: str = "f",
+) -> Any:
+    """Build TIPSY input table rows from per-AU parameter payloads."""
+    rows: list[Any] = []
+    for au in tipsy_params_for_tsa:
+        table_map = tipsy_params_for_tsa[au].get(table_key)
+        if table_map is None:
+            continue
+        if "TBLno" not in table_map:
+            raise KeyError(f"missing TBLno in tipsy_params[{au!r}][{table_key!r}]")
+        rows.append(pd_module.DataFrame(table_map, index=[table_map["TBLno"]]))
+    if not rows:
+        raise RuntimeError("No TIPSY parameter tables generated.")
+    return pd_module.concat(rows)[list(tipsy_params_columns)]
+
+
+def write_tipsy_input_exports(
+    *,
+    tipsy_table: Any,
+    tsa: str,
+    tipsy_params_path_prefix: str,
+    dat_path_template: str = "./data/02_input-tsa{tsa}.dat",
+) -> tuple[str, str]:
+    """Write TIPSY input exports to XLSX and DAT outputs for one TSA."""
+    tipsy_excel_path = f"{tipsy_params_path_prefix}{tsa}.xlsx"
+    tipsy_dat_path = dat_path_template.format(tsa=tsa)
+    tipsy_table.to_excel(
+        tipsy_excel_path,
+        index=False,
+        sheet_name="TIPSY_inputTBL",
+    )
+    tipsy_table.fillna("").to_string(tipsy_dat_path, index=False)
+    return tipsy_excel_path, tipsy_dat_path
 
 
 def evaluate_tipsy_candidate(
@@ -225,3 +265,156 @@ def evaluate_tipsy_candidate(
         si_spr_med=si_spr_med,
         min_si=min_si,
     )
+
+
+def build_tipsy_params_for_tsa(
+    *,
+    tsa: str,
+    results_for_tsa: Sequence[tuple[int, str, Mapping[str, Any]]],
+    si_levels: Sequence[str],
+    vdyp_curves_smooth_tsa: Any,
+    vdyp_results_for_tsa: Mapping[int, Mapping[str, Any]],
+    exclusion: Mapping[str, Any],
+    tipsy_param_builder: Any,
+    vdyp_curve_events_path: Any = None,
+    append_jsonl_fn: Any = None,
+    min_operable_years: float = 50.0,
+    si_iqrlo_quantile: float = 0.50,
+    verbose: bool = True,
+    message_fn: Any = print,
+) -> tuple[
+    dict[tuple[str, str], int],
+    dict[int, tuple[str, str]],
+    dict[int, dict[str, dict[str, Any]]],
+]:
+    """Select eligible strata+SI combos and build TIPSY params for one TSA."""
+    scsi_au_tsa: dict[tuple[str, str], int] = {}
+    au_scsi_tsa: dict[int, tuple[str, str]] = {}
+    tipsy_params_tsa: dict[int, dict[str, dict[str, Any]]] = {}
+
+    vdyp_indexed = vdyp_curves_smooth_tsa.set_index(["stratum_code", "si_level"])
+    vdyp_strata = set(vdyp_indexed.index.get_level_values("stratum_code"))
+
+    for stratumi, sc, result in results_for_tsa:
+        message_fn(sc)
+        if sc not in vdyp_strata:
+            if verbose:
+                message_fn("  missing vdyp curves for stratum", sc)
+            continue
+        for i, si_level in enumerate(si_levels, start=1):
+            au = 1000 * i + stratumi
+            try:
+                df = vdyp_indexed.loc[sc, si_level]
+            except KeyError:
+                if verbose:
+                    message_fn("  missing vdyp curves for", sc, si_level)
+                continue
+            if not hasattr(df, "columns") and hasattr(df, "to_frame"):
+                # Single-row selection can downcast to Series; normalize to DataFrame.
+                df = df.to_frame().T
+            try:
+                candidate = evaluate_tipsy_candidate(
+                    sc=sc,
+                    vdyp_curve_df=df,
+                    result_si=result[si_level],
+                    exclusion=exclusion,
+                    min_operable_years=min_operable_years,
+                    si_iqrlo_quantile=si_iqrlo_quantile,
+                )
+            except Exception:
+                message_fn(sc, si_level)
+                message_fn(result[si_level]["ss"])
+                raise
+            if not candidate.eligible:
+                if verbose and candidate.reason == "max_vol_too_low":
+                    message_fn(
+                        "  ",
+                        si_level,
+                        "max_vol too low",
+                        candidate.max_vol,
+                        candidate.min_vol,
+                    )
+                elif verbose and candidate.reason == "operability_window_too_narrow":
+                    message_fn(
+                        "  ",
+                        si_level,
+                        "operability window too narrow",
+                        candidate.operable_years,
+                        min_operable_years,
+                    )
+                elif verbose and candidate.reason == "si_too_low":
+                    message_fn(
+                        "  ",
+                        si_level,
+                        "SI too low (using %0.2f quantile)" % si_iqrlo_quantile,
+                        "%2.1f" % candidate.si_vri_iqrlo,
+                        "%2.1f" % candidate.si_spr_iqrlo,
+                        candidate.min_si,
+                    )
+                elif verbose and candidate.reason == "excluded_leading_species":
+                    message_fn(
+                        "  ",
+                        si_level,
+                        "bad leading species",
+                        candidate.leading_species,
+                    )
+                elif verbose and candidate.reason == "excluded_bec":
+                    message_fn("  ", si_level, "bad bec", candidate.bec)
+                elif verbose and candidate.reason == "no_species_candidates":
+                    message_fn("  ", si_level, "no species candidates after filtering")
+                    if (
+                        append_jsonl_fn is not None
+                        and vdyp_curve_events_path is not None
+                    ):
+                        append_jsonl_fn(
+                            vdyp_curve_events_path,
+                            build_tipsy_warning_event(
+                                tsa=tsa,
+                                stratumi=int(stratumi),
+                                sc=sc,
+                                si_level=si_level,
+                                au=int(au),
+                                reason="no_species_candidates",
+                            ),
+                        )
+                continue
+
+            message_fn("  ", si_level, au)
+            message_fn(
+                "    median SI (VRI)               ",
+                ("%2.1f" % candidate.si_vri_med).rjust(4),
+            )
+            message_fn(
+                "    median SI (siteprod)          ",
+                ("%2.1f" % candidate.si_spr_med).rjust(4),
+            )
+            message_fn(
+                "    median SI ratio (VRI/siteprod) ",
+                "%0.2f" % (candidate.si_vri_med / candidate.si_spr_med),
+            )
+            for species, v in candidate.species_map.items():
+                message_fn("    species", species.ljust(3), "%3.0f" % v["pct"])
+            vdyp_result = vdyp_results_for_tsa.get(stratumi, {}).get(si_level)
+            if not isinstance(vdyp_result, dict):
+                if verbose:
+                    message_fn("    missing vdyp result table for", sc, si_level)
+                if append_jsonl_fn is not None and vdyp_curve_events_path is not None:
+                    append_jsonl_fn(
+                        vdyp_curve_events_path,
+                        build_tipsy_warning_event(
+                            tsa=tsa,
+                            stratumi=int(stratumi),
+                            sc=sc,
+                            si_level=si_level,
+                            au=int(au),
+                            reason="missing_vdyp_output",
+                        ),
+                    )
+                continue
+            scsi_au_tsa[(sc, si_level)] = au
+            au_scsi_tsa[au] = (sc, si_level)
+            tipsy_params_tsa[au] = tipsy_param_builder(
+                au, result[si_level], vdyp_result
+            )
+            message_fn()
+    return scsi_au_tsa, au_scsi_tsa, tipsy_params_tsa

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 import re
 from typing import Any, Mapping
@@ -10,11 +11,29 @@ import yaml
 
 from femic.pipeline.tipsy import compute_vdyp_oaf1, compute_vdyp_site_index
 
+TipsyParamBuilder = Callable[
+    [int, Mapping[str, Any], Mapping[Any, Any]], dict[str, dict[str, Any]]
+]
+
 
 def tipsy_config_path_for_tsa(tsa_code: str, config_dir: str | Path) -> Path:
     """Resolve default config path (`tsaXX.yaml`) for a TSA code."""
     tsa = str(tsa_code).zfill(2)
     return Path(config_dir) / f"tsa{tsa}.yaml"
+
+
+def _resolve_tipsy_config_path(
+    *,
+    tsa_code: str,
+    config_dir: str | Path,
+) -> Path | None:
+    path_yaml = tipsy_config_path_for_tsa(tsa_code, config_dir)
+    path_yml = path_yaml.with_suffix(".yml")
+    if path_yaml.exists():
+        return path_yaml
+    if path_yml.exists():
+        return path_yml
+    return None
 
 
 def load_tipsy_tsa_config(
@@ -23,9 +42,7 @@ def load_tipsy_tsa_config(
     config_dir: str | Path = "config/tipsy",
 ) -> dict[str, Any] | None:
     """Load and validate TSA config; return `None` if no TSA config file exists."""
-    path_yaml = tipsy_config_path_for_tsa(tsa_code, config_dir)
-    path_yml = path_yaml.with_suffix(".yml")
-    path = path_yaml if path_yaml.exists() else path_yml if path_yml.exists() else None
+    path = _resolve_tipsy_config_path(tsa_code=tsa_code, config_dir=config_dir)
     if path is None:
         return None
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -33,6 +50,47 @@ def load_tipsy_tsa_config(
         raise ValueError(f"TIPSY config is not a mapping: {path}")
     validate_tipsy_tsa_config(payload, tsa_code=tsa_code, path=path)
     return payload
+
+
+def resolve_tipsy_param_builder(
+    *,
+    tsa_code: str,
+    legacy_builder: TipsyParamBuilder,
+    config_dir: str | Path = "config/tipsy",
+    use_legacy: bool = False,
+) -> tuple[TipsyParamBuilder, str]:
+    """Resolve active TIPSY param builder (config-driven or legacy) for a TSA."""
+    tsa = str(tsa_code).zfill(2)
+    cfg = load_tipsy_tsa_config(tsa_code=tsa, config_dir=config_dir)
+    if cfg is not None and not use_legacy:
+        cfg_path = _resolve_tipsy_config_path(tsa_code=tsa, config_dir=config_dir)
+        assert cfg_path is not None
+
+        def _tipsy_params_from_config(
+            au_id: int,
+            au_data: Mapping[str, Any],
+            vdyp_out: Mapping[Any, Any],
+        ) -> dict[str, dict[str, Any]]:
+            return build_tipsy_params_from_config(
+                au_id=au_id,
+                au_data=au_data,
+                vdyp_out=vdyp_out,
+                config=cfg,
+            )
+
+        return (
+            _tipsy_params_from_config,
+            f"using config-driven TIPSY rules from {cfg_path}",
+        )
+    if use_legacy:
+        return (
+            legacy_builder,
+            "using legacy in-code TIPSY rules (FEMIC_TIPSY_USE_LEGACY=1)",
+        )
+    raise RuntimeError(
+        f"Missing TIPSY config for TSA {tsa} in {config_dir}. "
+        "Provide config/tipsy/tsaXX.yaml or set FEMIC_TIPSY_USE_LEGACY=1."
+    )
 
 
 def discover_tipsy_config_tsas(

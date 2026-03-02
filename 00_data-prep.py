@@ -69,6 +69,7 @@ def _row_apply(df, func, axis=1):
         return df.swifter.apply(func, axis=axis)
     return df.apply(func, axis=axis)
 
+
 # --- cell 7 ---
 # %ipcluster --help
 # %load_ext ipyparallel
@@ -582,11 +583,6 @@ f["forest_type"] = f.apply(classify_stand_forest_type, axis=1)
 # --- cell 38 ---
 f.to_feather(ria_vri_vclr1p_checkpoint4_feather_path)
 
-# --- cell 39 ---
-if 0:  # roll back if screwed up further down
-    f = gpd.read_feather(ria_vri_vclr1p_checkpoint4_feather_path)
-    f = _apply_debug_rows(f, "checkpoint4")
-
 # --- cell 42 ---
 # f = f.reset_index().set_index('tsa_code')
 
@@ -598,166 +594,6 @@ tipsy_curves = {}
 scsi_au = {}
 au_scsi = {}
 results = {}
-
-# --- cell 45 ---
-if 0:
-
-    def process_vdyp_out(
-        vdyp_out,
-        volume_flavour="Vdwb",
-        min_age=30,
-        max_age=300,
-        sigma_c1=10,
-        sigma_c2=0.4,
-        dx_c1=0.5,
-        dx_c2=10,
-        window=10,
-        skip1=0,
-        skip2=30,
-        maxfev=100000,
-        body_fit_func=body_fit_func,
-        body_fit_func_bounds_func=body_fit_func_bounds_func,
-        toe_fit_func=toe_fit_func,
-        toe_fit_func_bounds_func=toe_fit_func_bounds_func,
-    ):
-        vdyp_out_concat = pd.concat(
-            [v for v in vdyp_out.values() if type(v) == pd.core.frame.DataFrame]
-        )
-        c = vdyp_out_concat.groupby(level="Age")[volume_flavour].median()
-        c = c[c > 0]
-        c = c[c.index >= min_age]
-        x = c.index.values
-        y = c.rolling(window=window, center=True).median().values
-        x, y = x[y > 0], y[y > 0]
-        x, y = x[skip1:], y[skip1:]
-        # return x, y
-        y_mai = pd.Series(y / x, x)
-        y_mai_max_age = y_mai.idxmax()
-        sigma = (np.abs(x - y_mai_max_age) + sigma_c1) ** sigma_c2
-        popt, pcov = curve_fit(
-            body_fit_func,
-            x,
-            y,
-            bounds=body_fit_func_bounds_func(x),
-            maxfev=maxfev,
-            sigma=sigma,
-        )
-        x = np.array(range(1, max_age))
-        y = fit_func1(x, *popt)
-        dx = max(0, dx_c1 * popt[2] - dx_c2)
-        print(dx, dx_c1, popt[2], dx_c2)
-        x, y, (i1, popt_toe) = fill_curve_left(
-            x,
-            y,
-            skip=skip2,
-            dx=dx,
-            maxfev=maxfev,
-            toe_fit_func=toe_fit_func,
-            toe_fit_func_bounds_func=toe_fit_func_bounds_func,
-        )
-        print(popt_toe)
-        return x, y
-
-
-# --- cell 47 ---
-kwarg_overrides = {
-    "08": {
-        ("BWBS_SB", "H"): {"skip1": 30},
-        ("BWBS_S", "L"): {"skip1": 50},
-        ("SWB_S", "L"): {"skip1": 30},
-        ("BWBS_AT", "H"): {"skip1": 30},
-    },
-    "16": {("SWB_SX", "L"): {"skip1": 30}},
-    "24": {("ESSF_BL", "L"): {"skip1": 30}},
-    "40": {
-        ("BWBS_SX", "L"): {"skip1": 30},
-        ("SWB_SX", "L"): {"skip1": 60, "dx_c1": 1.0, "dx_c2": 0.0},
-    },
-    "41": {("ESSF_BL", "L"): {"skip1": 60}, ("ESSF_SE", "M"): {"skip1": 30}},
-}
-
-# --- cell 48 ---
-if 0:
-    tsa = "41"
-    vdyp_curves_smooth_tsa_feather_path = "%s%s.feather" % (
-        vdyp_curves_smooth_tsa_feather_path_prefix,
-        tsa,
-    )
-    # if not os.path.isfile(vdyp_curves_smooth_tsa_feather_path):
-    if 1:
-        figsize = (8, 6)
-        plot = 1
-        vdyp_smoothxy = {}
-        palette_flavours = ["RdPu", "Blues", "Greens", "Greys"]
-        palette = sns.color_palette("Greens", 3)
-        sns.set_palette(palette)
-        alphas = [1.0, 0.5, 0.1]
-        for stratumi, sc, result in results[tsa]:
-            if sc != "ESSF_SE":
-                continue
-            if plot:
-                fig, ax = plt.subplots(1, 1, figsize=figsize)
-            print("stratum", stratumi, sc)
-            # for i, si_level in enumerate(si_levels):
-            for i, si_level in enumerate(["M"]):
-                print("processing", sc, si_level)
-                vdyp_out = vdyp_results[tsa][stratumi][si_level]
-                kwargs = {}
-                if (sc, si_level) in kwarg_overrides[tsa]:
-                    kwargs.update(kwarg_overrides[tsa][(sc, si_level)])
-                x, y = process_vdyp_out(vdyp_out, **kwargs)
-                df = pd.DataFrame(zip(x, y), columns=["age", "volume"])
-                df = df[df.volume > 0]
-                df["stratum_code"] = sc
-                df["si_level"] = si_level
-                vdyp_smoothxy[(sc, si_level)] = df
-                if plot:
-                    vdyp_out_concat = pd.concat(
-                        [
-                            v
-                            for v in vdyp_out.values()
-                            if type(v) == pd.core.frame.DataFrame
-                        ]
-                    )
-                    c = vdyp_out_concat.groupby(level="Age")["Vdwb"].median()
-                    c = c[c > 0]
-                    c = c[c.index >= 30]
-                    x_ = c.index.values
-                    y_ = c.values
-                    plt.plot(
-                        x_,
-                        y_,
-                        linestyle=":",
-                        label="VDYP->agg (%s %s)" % (sc, si_level),
-                        linewidth=2,
-                        color=palette[i],
-                    )
-                    plt.plot(x, y, label="%s %s" % (sc, si_level))
-            if plot:
-                plt.legend()
-                plt.xlim([0, 300])
-                plt.ylim([0, 600])
-                plt.tight_layout()
-        vdyp_curves_smooth[tsa] = pd.concat(
-            vdyp_smoothxy.values()
-        ).reset_index()  # .set_index(['stratum_code', 'si_level'])
-        vdyp_curves_smooth[tsa].to_feather(vdyp_curves_smooth_tsa_feather_path)
-    # else:
-    #    vdyp_curves_smooth[tsa] = pd.read_feather(vdyp_curves_smooth_tsa_feather_path)
-
-# --- cell 49 ---
-if 0:
-    vdyp_out_cache = pickle.load(open("vdyp_out_cache.pkl", "rb"))
-
-# --- cell 50 ---
-if 0:
-    force_run_vdyp = 0
-    # tsa = '08' # fix bwbs sb h
-    tsa = "16"
-    # tsa = '24'
-    # tsa = '40' # fix bwbs sx l
-    # tsa = '41'
-    stratum_col = "stratum"
 
 # --- cell 52 ---
 f.set_index("tsa_code", inplace=True)
@@ -780,14 +616,33 @@ if 1:
             _spec = importlib.util.spec_from_file_location("run_tsa_01a", _path)
             _run01a_module = importlib.util.module_from_spec(_spec)
             _spec.loader.exec_module(_run01a_module)
-        _run01a_module.__dict__.update(globals())
-        _run01a_module.tsa = tsa
-        _run01a_module.stratum_col = stratum_col
-        _run01a_module.run_tsa()
-
-# --- cell 55 ---
-if 0:
-    pickle.dump(vdyp_out_cache, open("vdyp_out_cache.pkl", "wb"))
+        _run01a_module.run_tsa(
+            tsa=tsa,
+            stratum_col=stratum_col,
+            f=f,
+            si_levels=si_levels,
+            resume_effective=_femic_resume_effective,
+            force_run_vdyp=force_run_vdyp,
+            kwarg_overrides_for_tsa=None,
+            results=results,
+            vdyp_results=vdyp_results,
+            vdyp_curves_smooth=vdyp_curves_smooth,
+            scsi_au=scsi_au,
+            au_scsi=au_scsi,
+            tipsy_params=tipsy_params,
+            si_levelquants=si_levelquants,
+            species_list=species_list,
+            vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
+            vdyp_results_pickle_path=vdyp_results_pickle_path,
+            vdyp_input_pandl_path=vdyp_input_pandl_path,
+            vdyp_ply_feather_path=vdyp_ply_feather_path,
+            vdyp_lyr_feather_path=vdyp_lyr_feather_path,
+            vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
+            tipsy_params_columns=tipsy_params_columns,
+            tipsy_params_path_prefix=tipsy_params_path_prefix,
+            vdyp_out_cache=globals().get("vdyp_out_cache"),
+            curve_fit_impl=globals().get("_curve_fit"),
+        )
 
 # --- cell 58 ---
 # loop over tsas here and run notebook 01_run-tsa_step2
@@ -803,24 +658,13 @@ for tsa in ria_tsas[:]:
         _spec = importlib.util.spec_from_file_location("run_tsa_01b", _path)
         _run01b_module = importlib.util.module_from_spec(_spec)
         _spec.loader.exec_module(_run01b_module)
-    _run01b_module.__dict__.update(globals())
-    _run01b_module.tsa = tsa
-    _run01b_module.run_tsa()
-
-# --- cell 62 ---
-if 0:
-    spp_map = pd.read_csv("./data/LandR_sppEquivalencies.csv")
-    spp_map = spp_map[
-        (~spp_map["LANDIS_traits"].isnull()) & (~spp_map["BC_Forestry"].isnull())
-    ][["BC_Forestry", "LANDIS_traits"]]
-    spp_map["vri"] = spp_map["BC_Forestry"].str.upper()
-    spp_map["link"] = spp_map["LANDIS_traits"]
-    canfi = pd.read_csv("./data/canfi_species.csv")
-    canfi["link"] = canfi.genus + "." + canfi.species
-    canfi = canfi.set_index("link").merge(
-        spp_map[["link", "vri"]], on="link", how="left"
+    _run01b_module.run_tsa(
+        tsa=tsa,
+        results=results,
+        au_scsi=au_scsi,
+        tipsy_curves=tipsy_curves,
+        vdyp_curves_smooth=vdyp_curves_smooth,
     )
-    canfi = canfi[~canfi.vri.isnull()].set_index("vri")
 
 # --- cell 64 ---
 canfi_map = {
@@ -991,21 +835,6 @@ with rio.open("./data/misc.thlb.tif") as src:
 
     f["thlb_raw"] = _row_apply(f, mean_thlb, axis=1)
 
-# --- cell 81 ---
-if 0:
-    thlb_rasterprop_thresh = 0.01
-    with rio.open("./data/ria_demo/ria_landscapestack_init.tif") as src:
-
-        def is_thlb(r):
-            try:
-                a, _ = mask(src, [r.geometry], crop=True)
-            except:
-                return 0
-            aa = a[1]
-            return 1 if np.mean(aa[aa >= 0]) > thlb_rasterprop_thresh else 0
-
-        f["thlb"] = _row_apply(f, is_thlb, axis=1)
-
 # --- cell 83 ---
 if 1:
     f = f[f.BCLCS_LEVEL_2 == "T"]  # implies f.BCLCS_LEVEL_1 == 'V'
@@ -1036,21 +865,9 @@ f["stratum_lexmatch"] = _row_apply(f, stratify_stand_lexmatch, axis=1)
 # --- cell 88 ---
 f.to_feather(ria_vri_vclr1p_checkpoint5_feather_path)
 
-# --- cell 89 ---
-if 0:
-    f = pd.read_feather(ria_vri_vclr1p_checkpoint5_feather_path)
-    f = _apply_debug_rows(f, "checkpoint5")
-
 # --- cell 90 ---
 stratum_col = "stratum"
 f["%s_matched" % stratum_col] = None
-
-# --- cell 91 ---
-if 0:
-    au_table = pd.read_csv(f"{_active_bundle_dir}/au_table.csv")
-    curve_table = pd.read_csv(f"{_active_bundle_dir}/curve_table.csv")
-    curve_points_table = pd.read_csv(f"{_active_bundle_dir}/curve_points_table.csv")
-    au_table["tsa"] = au_table.apply(lambda r: "%02d" % r.tsa, axis=1)
 
 # --- cell 93 ---
 for tsa in ria_tsas:
@@ -1089,8 +906,7 @@ for tsa in ria_tsas:
     f_.reset_index(inplace=True)
     c, sc = stratum_col, stratum_codes
     f_["%s_matched" % stratum_col] = _row_apply(
-        f_,
-        lambda r: r[c] if r[c] in sc else bm[r[c]], axis=1
+        f_, lambda r: r[c] if r[c] in sc else bm[r[c]], axis=1
     )
 
     m = (
@@ -1295,15 +1111,6 @@ def has_managed_curve(r):
 # --- cell 126 ---
 f.to_feather(ria_vri_vclr1p_checkpoint8_feather_path)
 
-# --- cell 127 ---
-if 0:
-    f = gpd.read_feather(ria_vri_vclr1p_checkpoint8_feather_path)
-    f = _apply_debug_rows(f, "checkpoint8")
-
-# --- cell 128 ---
-if 0:
-    f.to_file("./data/ria_vri-final.shp")
-
 
 # --- cell 129 ---
 def clean_geometry(r):
@@ -1378,7 +1185,9 @@ if _skip_stands_shp_raw is None:
 else:
     _skip_stands_shp = _skip_stands_shp_raw.strip().lower() in ("1", "true", "yes")
 if _skip_stands_shp:
-    print("debug: skipping stand shapefile export (set FEMIC_SKIP_STANDS_SHP=0 to enable)")
+    print(
+        "debug: skipping stand shapefile export (set FEMIC_SKIP_STANDS_SHP=0 to enable)"
+    )
 else:
     for tsa in ria_tsas[:]:
         print("processing tsa", tsa)

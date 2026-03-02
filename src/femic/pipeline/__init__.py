@@ -34,24 +34,47 @@ from femic.pipeline.vdyp_curves import (
     prepend_quasi_origin_point,
     process_vdyp_out,
 )
+from femic.pipeline.vdyp_overrides import (
+    DEFAULT_VDYP_KWARG_OVERRIDES,
+    vdyp_kwarg_overrides_for_tsa,
+)
 from femic.pipeline.stages import StageResult, run_legacy_subprocess
 from femic.pipeline.vdyp_sampling import nsamples_from_curves
 from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
 from femic.pipeline.tipsy import (
     TIPSYCandidateEvaluation,
+    build_tipsy_params_for_tsa,
+    build_tipsy_input_table,
     build_tipsy_warning_event,
     compute_vdyp_oaf1,
     compute_vdyp_site_index,
     evaluate_tipsy_candidate,
+    write_tipsy_input_exports,
 )
 from femic.pipeline.tipsy_config import (
     build_tipsy_params_from_config,
     discover_tipsy_config_tsas,
     load_tipsy_tsa_config,
+    resolve_tipsy_param_builder,
     tipsy_config_path_for_tsa,
     validate_tipsy_tsa_config,
 )
+from femic.pipeline.tipsy_legacy import (
+    build_tipsy_exclusion,
+    get_legacy_tipsy_builders,
+)
 from femic.pipeline.vdyp import build_vdyp_log_paths
+from femic.pipeline.vdyp_stage import (
+    SmoothedCurveResult,
+    build_curve_fit_adapter,
+    build_smoothed_curve_table,
+    execute_bootstrap_vdyp_runs,
+    execute_curve_smoothing_runs,
+    execute_vdyp_batch,
+    load_vdyp_input_tables,
+    load_or_build_vdyp_results_tsa,
+    plot_curve_overlays,
+)
 
 __all__ = [
     "DEFAULT_DEV_CONFIG_PATH",
@@ -74,22 +97,39 @@ __all__ = [
     "fill_curve_left",
     "prepend_quasi_origin_point",
     "process_vdyp_out",
+    "DEFAULT_VDYP_KWARG_OVERRIDES",
+    "vdyp_kwarg_overrides_for_tsa",
     "import_vdyp_tables",
     "write_vdyp_infiles_plylyr",
     "nsamples_from_curves",
     "compute_vdyp_oaf1",
     "compute_vdyp_site_index",
+    "build_tipsy_input_table",
+    "write_tipsy_input_exports",
+    "build_tipsy_params_for_tsa",
     "build_tipsy_warning_event",
     "evaluate_tipsy_candidate",
     "TIPSYCandidateEvaluation",
     "tipsy_config_path_for_tsa",
     "discover_tipsy_config_tsas",
     "load_tipsy_tsa_config",
+    "resolve_tipsy_param_builder",
     "validate_tipsy_tsa_config",
     "build_tipsy_params_from_config",
+    "build_tipsy_exclusion",
+    "get_legacy_tipsy_builders",
     "write_manifest",
     "build_vdyp_log_paths",
     "build_pipeline_run_config",
     "load_default_tsa_list",
     "normalize_tsa_list",
+    "execute_vdyp_batch",
+    "execute_bootstrap_vdyp_runs",
+    "execute_curve_smoothing_runs",
+    "SmoothedCurveResult",
+    "plot_curve_overlays",
+    "build_curve_fit_adapter",
+    "build_smoothed_curve_table",
+    "load_vdyp_input_tables",
+    "load_or_build_vdyp_results_tsa",
 ]
