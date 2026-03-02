@@ -25,10 +25,12 @@ from femic.pipeline.plots import (
 from femic.pipeline.vdyp import build_vdyp_cache_paths
 import pytest
 import pandas as pd
+import numpy as np
 
 from femic.pipeline.tsa import (
     MIN_STANDCOUNT,
     assign_au_ids_from_scsi,
+    assign_thlb_raw_from_raster,
     assign_thlb_area_and_flag,
     assign_si_levels_from_stratum_quantiles,
     assign_stratum_matches_from_au_table,
@@ -38,6 +40,7 @@ from femic.pipeline.tsa import (
     build_stratum_lexmatch_alias_map,
     emit_missing_au_mapping_warning,
     lookup_scsi_au_base,
+    mean_thlb_for_geometry,
     summarize_missing_au_mappings,
     target_nstrata_for,
     validate_nonempty_au_assignment,
@@ -342,6 +345,49 @@ def test_assign_thlb_area_and_flag() -> None:
     assert out["thlb_area"].iloc[0] > 0.0
     assert out["thlb_area"].iloc[1] == 0.0
     assert out["thlb"].tolist() == [1, 0, 1]
+
+
+def test_mean_thlb_for_geometry_and_assign_thlb_raw_from_raster() -> None:
+    def _mask(
+        _src: object, _shapes: list[object], crop: bool
+    ) -> tuple[np.ndarray, None]:
+        assert crop is True
+        return np.array([[-1, 5, 7]]), None
+
+    value = mean_thlb_for_geometry(
+        geometry=object(),
+        raster_src=object(),
+        mask_fn=_mask,
+        np_module=np,
+    )
+    assert value == 6.0
+
+    class _FakeSrc:
+        def __enter__(self) -> "_FakeSrc":
+            return self
+
+        def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
+    class _FakeRio:
+        def open(self, _path: Path) -> _FakeSrc:
+            return _FakeSrc()
+
+    frame = pd.DataFrame({"geometry": [object(), object()]})
+
+    def _row_apply(table: pd.DataFrame, fn: object, axis: int) -> pd.Series:
+        assert axis == 1
+        return table.apply(fn, axis=axis)  # type: ignore[arg-type]
+
+    out = assign_thlb_raw_from_raster(
+        f_table=frame,
+        thlb_raster_path=Path("misc.thlb.tif"),
+        rio_module=_FakeRio(),
+        mask_fn=_mask,
+        np_module=np,
+        row_apply_fn=_row_apply,
+    )
+    assert out["thlb_raw"].tolist() == [6.0, 6.0]
 
 
 def test_plot_path_helpers() -> None:

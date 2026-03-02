@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 TARGET_NSTRATA_BY_TSA: dict[str, int] = {
@@ -383,4 +384,53 @@ def assign_thlb_area_and_flag(
 
     table[thlb_area_col] = thlb_area_values
     table[thlb_col] = thlb_values
+    return table
+
+
+def mean_thlb_for_geometry(
+    *,
+    geometry: Any,
+    raster_src: Any,
+    mask_fn: Callable[..., Any],
+    np_module: Any,
+    default_on_error: float = 0.0,
+) -> float:
+    """Compute mean THLB raster value for one geometry with legacy error fallback."""
+    try:
+        array, _ = mask_fn(raster_src, [geometry], crop=True)
+    except Exception:
+        return float(default_on_error)
+    return float(np_module.mean(array[array >= 0]))
+
+
+def assign_thlb_raw_from_raster(
+    *,
+    f_table: Any,
+    thlb_raster_path: str | Path,
+    rio_module: Any,
+    mask_fn: Callable[..., Any],
+    np_module: Any,
+    row_apply_fn: Callable[..., Any],
+    geometry_col: str = "geometry",
+    out_col: str = "thlb_raw",
+    default_on_error: float = 0.0,
+) -> Any:
+    """Assign per-row raw THLB values by masking a THLB raster."""
+    table = f_table.copy()
+    with rio_module.open(thlb_raster_path) as src:
+
+        def _mean(row: Any) -> float:
+            try:
+                geometry = row[geometry_col]
+            except Exception:
+                geometry = getattr(row, geometry_col)
+            return mean_thlb_for_geometry(
+                geometry=geometry,
+                raster_src=src,
+                mask_fn=mask_fn,
+                np_module=np_module,
+                default_on_error=default_on_error,
+            )
+
+        table[out_col] = row_apply_fn(table, _mean, axis=1)
     return table

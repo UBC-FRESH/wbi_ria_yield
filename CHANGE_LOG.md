@@ -767,3 +767,18 @@
 - Queued next extraction slice: continue P2.2 by extracting the remaining inline THLB sampling
   closure (`mean_thlb`) into a reusable helper seam so raster masking logic is no longer defined
   inline in `00_data-prep.py`.
+- Added reusable THLB raster sampling helpers in `src/femic/pipeline/tsa.py`:
+  `mean_thlb_for_geometry(...)` and `assign_thlb_raw_from_raster(...)`.
+- Rewired `00_data-prep.py` THLB sampling stage to call
+  `assign_thlb_raw_from_raster(...)`, removing inline `with rio.open(...): mean_thlb(...)` closure
+  logic.
+- Exported new THLB raster helpers via `femic.pipeline.__init__`, expanded deterministic coverage in
+  `tests/test_pipeline_helpers.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `assign_thlb_raw_from_raster(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (201 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting the remaining inline checkpoint83
+  post-THLB stand-filter block (`BCLCS_LEVEL_2`, management base, BEC, species/site-index null
+  filters) into a reusable helper seam in `femic.pipeline.vri`.

@@ -33,7 +33,6 @@ import affine
 
 # from osgeo import gdal
 from scipy.optimize import curve_fit as _curve_fit
-from functools import partial, wraps
 from pathlib import Path
 import sys
 
@@ -74,6 +73,7 @@ try:
     )
     from femic.pipeline.tsa import (
         assign_au_ids_from_scsi,
+        assign_thlb_raw_from_raster,
         assign_thlb_area_and_flag,
         assign_si_levels_from_stratum_quantiles,
         assign_stratum_matches_from_au_table,
@@ -132,6 +132,7 @@ except ModuleNotFoundError:
     )
     from femic.pipeline.tsa import (
         assign_au_ids_from_scsi,
+        assign_thlb_raw_from_raster,
         assign_thlb_area_and_flag,
         assign_si_levels_from_stratum_quantiles,
         assign_stratum_matches_from_au_table,
@@ -692,16 +693,15 @@ if not _femic_no_cache:
     f = _apply_debug_rows(f, "checkpoint1-reload")
 
 # --- cell 79 ---
-with rio.open(_legacy_data_paths.misc_thlb_tif_path) as src:
-
-    def mean_thlb(r):
-        try:
-            a, _ = mask(src, [r.geometry], crop=True)
-        except:
-            return 0
-        return np.mean(a[a >= 0])
-
-    f["thlb_raw"] = _row_apply(f, mean_thlb, axis=1)
+f = assign_thlb_raw_from_raster(
+    f_table=f,
+    thlb_raster_path=_legacy_data_paths.misc_thlb_tif_path,
+    rio_module=rio,
+    mask_fn=mask,
+    np_module=np,
+    row_apply_fn=_row_apply,
+    out_col="thlb_raw",
+)
 
 # --- cell 83 ---
 if 1:

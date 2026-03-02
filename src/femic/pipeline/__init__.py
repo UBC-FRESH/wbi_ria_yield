@@ -87,10 +87,12 @@ from femic.pipeline.tipsy import (
 )
 from femic.pipeline.tsa import (
     assign_au_ids_from_scsi,
+    assign_thlb_raw_from_raster,
     assign_thlb_area_and_flag,
     assign_si_levels_from_stratum_quantiles,
     assign_stratum_matches_from_au_table,
     build_au_assignment_null_summary,
+    mean_thlb_for_geometry,
     emit_missing_au_mapping_warning,
     lookup_scsi_au_base,
     summarize_missing_au_mappings,
@@ -233,6 +235,8 @@ __all__ = [
     "assign_si_levels_from_stratum_quantiles",
     "lookup_scsi_au_base",
     "assign_au_ids_from_scsi",
+    "mean_thlb_for_geometry",
+    "assign_thlb_raw_from_raster",
     "assign_thlb_area_and_flag",
     "summarize_missing_au_mappings",
     "emit_missing_au_mapping_warning",
