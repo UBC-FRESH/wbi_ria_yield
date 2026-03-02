@@ -60,6 +60,7 @@ try:
     )
     from femic.pipeline.tsa import (
         assign_au_ids_from_scsi,
+        assign_thlb_area_and_flag,
         assign_si_levels_from_stratum_quantiles,
         assign_stratum_matches_from_au_table,
         summarize_missing_au_mappings,
@@ -88,6 +89,7 @@ except ModuleNotFoundError:
     )
     from femic.pipeline.tsa import (
         assign_au_ids_from_scsi,
+        assign_thlb_area_and_flag,
         assign_si_levels_from_stratum_quantiles,
         assign_stratum_matches_from_au_table,
         summarize_missing_au_mappings,
@@ -991,40 +993,21 @@ f.thlb_raw.hist()
 f.reset_index(inplace=True)
 
 
-# --- cell 119 ---
-def thlb_area(r):
-    if r.tsa_code == "08":
-        if r.thlb_raw < 90:
-            return 0.0
-        if r.SPECIES_CD_1 in species_spruce and r.SITE_INDEX < 10:
-            return 0.0
-        if r.SPECIES_CD_1 in species_pine and r.SITE_INDEX < 15:
-            return 0.0
-        if r.SPECIES_CD_1 in species_aspen and r.SITE_INDEX < 15:
-            return 0.0
-        if r.SPECIES_CD_1 in species_fir and r.SITE_INDEX < 10:
-            return 0.0
-        if r.SPECIES_CD_1 in ("SB", "E", "EA", "EB", "LT"):
-            return 0
-    return r.thlb_raw * r.FEATURE_AREA_SQM * 0.000001
-
-
-# --- cell 120 ---
-f["thlb_area"] = _row_apply(f, thlb_area, axis=1)
-
-
-# --- cell 121 ---
-def assign_thlb(r):
-    thlb_thresh = 50
-    if r.tsa_code == "08":
-        thlb_thresh = 93
-    elif r.tsa_code == "24":
-        thlb_thresh = 69
-    return 1 if r.thlb_raw > thlb_thresh else 0
-
-
-# --- cell 122 ---
-f["thlb"] = _row_apply(f, assign_thlb, axis=1)
+# --- cell 119-122 ---
+f = assign_thlb_area_and_flag(
+    f_table=f,
+    species_spruce=species_spruce,
+    species_pine=species_pine,
+    species_aspen=species_aspen,
+    species_fir=species_fir,
+    tsa_col="tsa_code",
+    thlb_raw_col="thlb_raw",
+    area_col="FEATURE_AREA_SQM",
+    species_col="SPECIES_CD_1",
+    site_index_col="SITE_INDEX",
+    thlb_area_col="thlb_area",
+    thlb_col="thlb",
+)
 
 # --- cell 123 ---
 f.query("thlb == 1").groupby("tsa_code").FEATURE_AREA_SQM.sum() * 0.0001

@@ -112,7 +112,6 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "bundle_tables_ready": 1,
         "load_bundle_tables": 1,
         "build_bundle_tables_from_curves": 1,
-        "assign_curve_ids_from_au_table": 1,
         "write_bundle_tables": 1,
         "ensure_scsi_au_from_table": 2,
         "assign_stratum_matches_from_au_table": 1,
@@ -120,6 +119,8 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "assign_au_ids_from_scsi": 1,
         "summarize_missing_au_mappings": 1,
         "validate_nonempty_au_assignment": 1,
+        "assign_curve_ids_from_au_table": 1,
+        "assign_thlb_area_and_flag": 1,
     }
     observed = {name: 0 for name in required_calls}
     for node in ast.walk(tree):

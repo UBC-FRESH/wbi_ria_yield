@@ -311,3 +311,65 @@ def validate_nonempty_au_assignment(
         "AU assignment produced no rows; check SITE_INDEX/stratum matching and "
         f"si_level assignment. Summary: {null_summary}"
     )
+
+
+def assign_thlb_area_and_flag(
+    *,
+    f_table: Any,
+    species_spruce: Sequence[str],
+    species_pine: Sequence[str],
+    species_aspen: Sequence[str],
+    species_fir: Sequence[str],
+    tsa_col: str = "tsa_code",
+    thlb_raw_col: str = "thlb_raw",
+    area_col: str = "FEATURE_AREA_SQM",
+    species_col: str = "SPECIES_CD_1",
+    site_index_col: str = "SITE_INDEX",
+    thlb_area_col: str = "thlb_area",
+    thlb_col: str = "thlb",
+) -> Any:
+    """Assign THLB area and THLB binary flag using legacy TSA-specific rules."""
+    table = f_table.copy()
+    spruce = set(species_spruce)
+    pine = set(species_pine)
+    aspen = set(species_aspen)
+    fir = set(species_fir)
+    excluded_tsa08_species = {"SB", "E", "EA", "EB", "LT"}
+
+    thlb_area_values: list[float] = []
+    thlb_values: list[int] = []
+    for row in table.itertuples(index=False):
+        tsa_code = getattr(row, tsa_col)
+        thlb_raw = getattr(row, thlb_raw_col)
+        species = getattr(row, species_col)
+        site_index = getattr(row, site_index_col)
+        feature_area = getattr(row, area_col)
+
+        thlb_area = float(thlb_raw) * float(feature_area) * 0.000001
+        if str(tsa_code) == "08":
+            if thlb_raw < 90:
+                thlb_area = 0.0
+            elif species in spruce and site_index < 10:
+                thlb_area = 0.0
+            elif species in pine and site_index < 15:
+                thlb_area = 0.0
+            elif species in aspen and site_index < 15:
+                thlb_area = 0.0
+            elif species in fir and site_index < 10:
+                thlb_area = 0.0
+            elif species in excluded_tsa08_species:
+                thlb_area = 0.0
+
+        thlb_thresh = 50
+        if str(tsa_code) == "08":
+            thlb_thresh = 93
+        elif str(tsa_code) == "24":
+            thlb_thresh = 69
+        thlb_flag = 1 if thlb_raw > thlb_thresh else 0
+
+        thlb_area_values.append(thlb_area)
+        thlb_values.append(thlb_flag)
+
+    table[thlb_area_col] = thlb_area_values
+    table[thlb_col] = thlb_values
+    return table

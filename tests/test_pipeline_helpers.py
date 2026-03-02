@@ -26,6 +26,7 @@ import pandas as pd
 from femic.pipeline.tsa import (
     MIN_STANDCOUNT,
     assign_au_ids_from_scsi,
+    assign_thlb_area_and_flag,
     assign_si_levels_from_stratum_quantiles,
     assign_stratum_matches_from_au_table,
     apply_stratum_alias_map,
@@ -255,6 +256,46 @@ def test_summarize_missing_au_mappings_and_null_summary() -> None:
     assert summary["site_index_null"] == 2
     with pytest.raises(ValueError, match="AU assignment produced no rows"):
         validate_nonempty_au_assignment(f_table=frame)
+
+
+def test_assign_thlb_area_and_flag() -> None:
+    f_table = pd.DataFrame(
+        [
+            {
+                "tsa_code": "08",
+                "thlb_raw": 95,
+                "FEATURE_AREA_SQM": 10000.0,
+                "SPECIES_CD_1": "SW",
+                "SITE_INDEX": 20.0,
+            },
+            {
+                "tsa_code": "08",
+                "thlb_raw": 80,
+                "FEATURE_AREA_SQM": 10000.0,
+                "SPECIES_CD_1": "SW",
+                "SITE_INDEX": 20.0,
+            },
+            {
+                "tsa_code": "24",
+                "thlb_raw": 70,
+                "FEATURE_AREA_SQM": 10000.0,
+                "SPECIES_CD_1": "PL",
+                "SITE_INDEX": 20.0,
+            },
+        ]
+    )
+
+    out = assign_thlb_area_and_flag(
+        f_table=f_table,
+        species_spruce=["SW"],
+        species_pine=["PL"],
+        species_aspen=["AT"],
+        species_fir=["BL"],
+    )
+
+    assert out["thlb_area"].iloc[0] > 0.0
+    assert out["thlb_area"].iloc[1] == 0.0
+    assert out["thlb"].tolist() == [1, 0, 1]
 
 
 def test_plot_path_helpers() -> None:

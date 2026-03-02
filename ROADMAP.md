@@ -719,3 +719,12 @@
   `assign_curve_ids_from_au_table(...)` seam usage.
 - Queued next extraction slice: continue P2.2 by extracting the remaining post-curve assignment
   THLB/theme orchestration blocks into reusable helper seams.
+- Added `assign_thlb_area_and_flag(...)` in `femic.pipeline.tsa` to centralize THLB area + THLB
+  flag assignment rules previously embedded in 00_data-prep.
+- Rewired 00_data-prep to call `assign_thlb_area_and_flag(...)` instead of inline `thlb_area(...)`
+  and `assign_thlb(...)` functions.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic THLB helper coverage and updated
+  orchestration guardrails to assert `assign_thlb_area_and_flag(...)` seam usage.
+- Queued next extraction slice: continue P2.2 by extracting remaining theme/shapefile post-processing
+  orchestration (`has_managed_curve`, `extract_features`, per-TSA stand export transforms) into
+  reusable helper seams.

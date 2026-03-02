@@ -569,3 +569,10 @@
 - Expanded `tests/test_bundle.py` with deterministic curve-id assignment coverage and updated
   `tests/test_legacy_orchestration_wiring.py` guardrails to assert
   `assign_curve_ids_from_au_table(...)` seam usage.
+- Added `assign_thlb_area_and_flag(...)` to `src/femic/pipeline/tsa.py` to centralize THLB area and
+  THLB binary-flag assignment rules.
+- Rewired 00_data-prep to call `assign_thlb_area_and_flag(...)` instead of inline `thlb_area` and
+  `assign_thlb` functions.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic THLB helper coverage and updated
+  `tests/test_legacy_orchestration_wiring.py` guardrails to assert
+  `assign_thlb_area_and_flag(...)` seam usage.
