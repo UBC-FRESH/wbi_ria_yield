@@ -320,3 +320,13 @@
 - Expanded tests with deterministic alias-map coverage in `tests/test_pipeline_helpers.py`, and
   added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the new
   lexmatch helper seam.
+- Extracted the inline 01a stratum-fitting block into
+  `femic.pipeline.vdyp_stage.fit_stratum_curves(...)`, centralizing per-SI quantile filtering,
+  species-share derivation, curve-fit execution/error handling, and optional plot emission in a
+  reusable stage seam.
+- Rewired `01a_run-tsa.py` to call `fit_stratum_curves(...)` during pre-VDYP stratum compilation,
+  removing the nested `fit_stratum(...)` function definition from `run_tsa(...)`.
+- Expanded `tests/test_vdyp_stage.py` with focused `fit_stratum_curves(...)` coverage (successful
+  species payload output and curve-fit error skip/log behavior), and extended
+  `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls the stage helper and no
+  longer defines a nested `fit_stratum`.
