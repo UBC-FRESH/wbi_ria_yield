@@ -371,9 +371,6 @@ def run_tsa(
     print(tipsy_param_builder_message)
 
     # --- cell 55 ---
-    min_operable_years = 50
-    verbose = 1
-    si_iqrlo_quantile = 0.50
     (
         scsi_au[tsa],
         au_scsi[tsa],
@@ -388,9 +385,6 @@ def run_tsa(
         tipsy_param_builder=tipsy_param_builder,
         vdyp_curve_events_path=vdyp_curve_events_path,
         append_jsonl_fn=append_jsonl,
-        min_operable_years=min_operable_years,
-        si_iqrlo_quantile=si_iqrlo_quantile,
-        verbose=bool(verbose),
         message_fn=print,
     )
 

@@ -264,6 +264,38 @@ def test_run01a_no_inline_smoothing_plot_constant_assignments() -> None:
                 )
 
 
+def test_run01a_no_inline_tipsy_stage_constant_assignments() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    forbidden = {"min_operable_years", "si_iqrlo_quantile"}
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in forbidden:
+                raise AssertionError(
+                    "run_tsa should rely on shared helper defaults for TIPSY stage constants"
+                )
+
+
+def test_run01a_uses_default_tipsy_stage_kwargs() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not (isinstance(func, ast.Name) and func.id == "build_tipsy_params_for_tsa"):
+            continue
+        for keyword in node.keywords:
+            if keyword.arg in {"min_operable_years", "si_iqrlo_quantile", "verbose"}:
+                raise AssertionError(
+                    "run_tsa should not override build_tipsy_params_for_tsa defaults"
+                )
+        return
+    raise AssertionError("run_tsa should call build_tipsy_params_for_tsa(...)")
+
+
 def test_run01a_no_inline_run_bootstrap_lambda() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
