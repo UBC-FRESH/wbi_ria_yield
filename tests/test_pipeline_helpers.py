@@ -10,7 +10,12 @@ from femic.pipeline.io import (
     normalize_tsa_list,
     resolve_run_paths,
 )
-from femic.pipeline.plots import strata_plot_paths, tipsy_vdyp_plot_path
+from femic.pipeline.plots import (
+    StrataDistributionPlotConfig,
+    build_strata_distribution_plot_config,
+    strata_plot_paths,
+    tipsy_vdyp_plot_path,
+)
 import pytest
 import pandas as pd
 
@@ -154,6 +159,20 @@ def test_plot_path_helpers() -> None:
     assert pdf_path == Path("plots/strata-tsa08.pdf")
     assert png_path == Path("plots/strata-tsa08.png")
     assert tipsy_path == Path("plots/tipsy_vdyp_tsa08-23005.png")
+
+
+def test_build_strata_distribution_plot_config_defaults() -> None:
+    cfg = build_strata_distribution_plot_config()
+
+    assert isinstance(cfg, StrataDistributionPlotConfig)
+    assert cfg.figsize == (8, 12)
+    assert cfg.alpha == 0.2
+    assert cfg.linewidth == 1.0
+    assert cfg.inner == "box"
+    assert cfg.width == 0.8
+    assert cfg.bw == "scott"
+    assert cfg.cut == 0.0
+    assert cfg.site_index_xlim == (0, 30)
 
 
 def test_build_pipeline_run_config_normalizes_tsa_values() -> None:

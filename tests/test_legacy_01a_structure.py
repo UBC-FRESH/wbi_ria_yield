@@ -78,6 +78,37 @@ def test_run01a_uses_apply_stratum_alias_map_helper_call() -> None:
     raise AssertionError("run_tsa should call apply_stratum_alias_map(...)")
 
 
+def test_run01a_uses_build_strata_distribution_plot_config_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if (
+            isinstance(func, ast.Name)
+            and func.id == "build_strata_distribution_plot_config"
+        ):
+            return
+    raise AssertionError(
+        "run_tsa should call build_strata_distribution_plot_config(...)"
+    )
+
+
+def test_run01a_no_inline_strata_plot_constant_assignments() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    forbidden = {"alpha", "linewidth", "inner", "width", "bw", "cut"}
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in forbidden:
+                raise AssertionError(
+                    "run_tsa should source strata plot constants from shared plot config"
+                )
+
+
 def test_run01a_has_no_nested_match_stratum_definition() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

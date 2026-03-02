@@ -69,6 +69,7 @@ def run_tsa(
         build_strata_summary,
         build_stratum_lexmatch_alias_map,
     )
+    from femic.pipeline.plots import build_strata_distribution_plot_config
     from femic.pipeline.vdyp_overrides import vdyp_kwarg_overrides_for_tsa
     from femic.pipeline.tipsy import (
         build_tipsy_params_for_tsa,
@@ -116,14 +117,7 @@ def run_tsa(
     plt.scatter(strata_df.totalarea_p, strata_df.median_si)
 
     # --- cell 14 ---
-    figsize = (8, 12)
-    alpha = 0.2
-    linewidth = 1.0
-    inner = "box"
-    showfliers = False
-    width = 0.8
-    bw = "scott"
-    cut = 0
+    strata_plot_cfg = build_strata_distribution_plot_config()
 
     sort_lex = 0
     if sort_lex:
@@ -133,13 +127,13 @@ def run_tsa(
         stratum_props = list(strata_df.totalarea_p.values)
         labels = strata_df.index.values
 
-    fig, ax = plt.subplots(figsize=figsize)
+    fig, ax = plt.subplots(figsize=strata_plot_cfg.figsize)
     ax2 = ax.twiny()
     sns.barplot(
         y=labels,
         x=stratum_props,
         ax=ax,
-        alpha=alpha,
+        alpha=strata_plot_cfg.alpha,
         label="Relative abundance of stratum (proportion of total area)",
     )
     sns.violinplot(
@@ -147,16 +141,16 @@ def run_tsa(
         x="SITE_INDEX",
         data=f_.reset_index(),
         ax=ax2,
-        bw=bw,
+        bw=strata_plot_cfg.bw,
         order=labels,
-        linewidth=linewidth,
-        inner=inner,
-        width=width,
-        cut=cut,
+        linewidth=strata_plot_cfg.linewidth,
+        inner=strata_plot_cfg.inner,
+        width=strata_plot_cfg.width,
+        cut=strata_plot_cfg.cut,
     )
     # sns.violinplot(y=stratum_col, x='siteprod', data=f_.reset_index(), ax=ax2, bw=bw, order=labels, linewidth=linewidth, inner=inner, width=width, cut=cut)
     ax.set_xlabel("Relative abundance of stratum (proportion of total area)")
-    ax2.set_xlim([0, 30])
+    ax2.set_xlim(strata_plot_cfg.site_index_xlim)
     plt.savefig("plots/strata-tsa%s.pdf" % tsa, bbox_inches="tight")
     plt.savefig("plots/strata-tsa%s.png" % tsa, facecolor="white", bbox_inches="tight")
 
