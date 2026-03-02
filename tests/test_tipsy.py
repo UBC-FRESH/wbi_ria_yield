@@ -13,6 +13,7 @@ from femic.pipeline.tipsy import (
     compute_vdyp_oaf1,
     compute_vdyp_site_index,
     evaluate_tipsy_candidate,
+    tipsy_stage_output_paths,
     write_tipsy_input_exports,
 )
 
@@ -152,6 +153,12 @@ def test_write_tipsy_input_exports_writes_excel_and_dat(tmp_path: Path) -> None:
     assert Path(excel_path).is_file()
     assert Path(dat_path).is_file()
     assert "AU" in Path(dat_path).read_text()
+
+
+def test_tipsy_stage_output_paths_uses_expected_naming(tmp_path: Path) -> None:
+    curves_path, sppcomp_path = tipsy_stage_output_paths(tsa="08", output_root=tmp_path)
+    assert curves_path == tmp_path / "tipsy_curves_tsa08.csv"
+    assert sppcomp_path == tmp_path / "tipsy_sppcomp_tsa08.csv"
 
 
 def test_build_tipsy_params_for_tsa_assigns_expected_maps() -> None:

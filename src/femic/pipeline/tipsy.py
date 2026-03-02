@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 import numpy as np
@@ -126,6 +127,19 @@ def write_tipsy_input_exports(
     )
     tipsy_table.fillna("").to_string(tipsy_dat_path, index=False)
     return tipsy_excel_path, tipsy_dat_path
+
+
+def tipsy_stage_output_paths(
+    *,
+    tsa: str,
+    output_root: str | Path = "data",
+) -> tuple[Path, Path]:
+    """Build legacy 01b per-TSA output CSV paths."""
+    root = Path(output_root)
+    return (
+        root / f"tipsy_curves_tsa{tsa}.csv",
+        root / f"tipsy_sppcomp_tsa{tsa}.csv",
+    )
 
 
 def evaluate_tipsy_candidate(

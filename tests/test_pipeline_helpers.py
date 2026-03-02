@@ -33,6 +33,7 @@ from femic.pipeline.tsa import (
     build_au_assignment_null_summary,
     build_strata_summary,
     build_stratum_lexmatch_alias_map,
+    emit_missing_au_mapping_warning,
     lookup_scsi_au_base,
     summarize_missing_au_mappings,
     target_nstrata_for,
@@ -256,6 +257,16 @@ def test_summarize_missing_au_mappings_and_null_summary() -> None:
     assert summary["site_index_null"] == 2
     with pytest.raises(ValueError, match="AU assignment produced no rows"):
         validate_nonempty_au_assignment(f_table=frame)
+
+
+def test_emit_missing_au_mapping_warning_emits_header_and_summary() -> None:
+    messages: list[object] = []
+    emit_missing_au_mapping_warning(
+        summary={"missing": 2},
+        message_fn=messages.append,
+    )
+    assert messages[0] == "Warning: missing AU mappings for some strata (top 10 shown):"
+    assert messages[1] == {"missing": 2}
 
 
 def test_assign_thlb_area_and_flag() -> None:

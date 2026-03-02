@@ -268,6 +268,17 @@ def summarize_missing_au_mappings(
     )
 
 
+def emit_missing_au_mapping_warning(
+    *,
+    summary: Any,
+    message_fn: Callable[[Any], Any] = print,
+    header: str = "Warning: missing AU mappings for some strata (top 10 shown):",
+) -> None:
+    """Emit legacy warning lines for missing AU mapping diagnostics."""
+    message_fn(header)
+    message_fn(summary)
+
+
 def build_au_assignment_null_summary(
     *,
     f_table: Any,

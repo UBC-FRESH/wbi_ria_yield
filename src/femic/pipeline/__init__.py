@@ -76,6 +76,7 @@ from femic.pipeline.tipsy import (
     compute_vdyp_oaf1,
     compute_vdyp_site_index,
     evaluate_tipsy_candidate,
+    tipsy_stage_output_paths,
     write_tipsy_input_exports,
 )
 from femic.pipeline.tsa import (
@@ -84,6 +85,7 @@ from femic.pipeline.tsa import (
     assign_si_levels_from_stratum_quantiles,
     assign_stratum_matches_from_au_table,
     build_au_assignment_null_summary,
+    emit_missing_au_mapping_warning,
     lookup_scsi_au_base,
     summarize_missing_au_mappings,
     validate_nonempty_au_assignment,
@@ -185,6 +187,7 @@ __all__ = [
     "compute_vdyp_oaf1",
     "compute_vdyp_site_index",
     "build_tipsy_input_table",
+    "tipsy_stage_output_paths",
     "write_tipsy_input_exports",
     "assign_stratum_matches_from_au_table",
     "assign_si_levels_from_stratum_quantiles",
@@ -192,6 +195,7 @@ __all__ = [
     "assign_au_ids_from_scsi",
     "assign_thlb_area_and_flag",
     "summarize_missing_au_mappings",
+    "emit_missing_au_mapping_warning",
     "build_au_assignment_null_summary",
     "validate_nonempty_au_assignment",
     "build_tipsy_params_for_tsa",

@@ -594,3 +594,19 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline post-01b orchestration
   prints/warnings and path literals in `00_data-prep.py` into reusable logging/path helper seams so
   the script body approaches a pure stage-composition shell.
+- Added `tipsy_stage_output_paths(...)` in `src/femic/pipeline/tipsy.py` to centralize legacy 01b
+  per-TSA output CSV path construction.
+- Added `emit_missing_au_mapping_warning(...)` in `src/femic/pipeline/tsa.py` to centralize the
+  two-line warning emission for missing AU mapping diagnostics.
+- Rewired 00_data-prep post-01b orchestration to consume the new helpers:
+  `_should_skip_01b(...)` now uses `tipsy_stage_output_paths(...)`, and AU null-handling now uses
+  `emit_missing_au_mapping_warning(...)` instead of inline `print(...)` statements.
+- Exported new helpers via `femic.pipeline.__init__`, added deterministic helper tests in
+  `tests/test_tipsy.py` and `tests/test_pipeline_helpers.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (180 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by centralizing remaining `00_data-prep.py` hardcoded
+  `./data/...` artifact path literals (checkpoints, intermediates, and exports) behind reusable path
+  builders so stage orchestration uses structured path payloads instead of inline strings.

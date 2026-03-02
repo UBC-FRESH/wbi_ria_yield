@@ -63,9 +63,11 @@ try:
         assign_thlb_area_and_flag,
         assign_si_levels_from_stratum_quantiles,
         assign_stratum_matches_from_au_table,
+        emit_missing_au_mapping_warning,
         summarize_missing_au_mappings,
         validate_nonempty_au_assignment,
     )
+    from femic.pipeline.tipsy import tipsy_stage_output_paths
     from femic.pipeline.stands import (
         DEFAULT_STANDS_PROP_NAMES,
         DEFAULT_STANDS_PROP_TYPES,
@@ -99,9 +101,11 @@ except ModuleNotFoundError:
         assign_thlb_area_and_flag,
         assign_si_levels_from_stratum_quantiles,
         assign_stratum_matches_from_au_table,
+        emit_missing_au_mapping_warning,
         summarize_missing_au_mappings,
         validate_nonempty_au_assignment,
     )
+    from femic.pipeline.tipsy import tipsy_stage_output_paths
     from femic.pipeline.stands import (
         DEFAULT_STANDS_PROP_NAMES,
         DEFAULT_STANDS_PROP_TYPES,
@@ -734,11 +738,12 @@ _run01b_module = load_legacy_module(
 
 
 def _should_skip_01b(tsa):
+    tipsy_curves_path, tipsy_sppcomp_path = tipsy_stage_output_paths(tsa=tsa)
     return should_skip_if_outputs_exist(
         resume_effective=_femic_resume_effective,
         output_paths=(
-            f"./data/tipsy_curves_tsa{tsa}.csv",
-            f"./data/tipsy_sppcomp_tsa{tsa}.csv",
+            tipsy_curves_path,
+            tipsy_sppcomp_path,
         ),
         skip_message=f"resume: skipping 01b for tsa {tsa} (outputs exist)",
     )
@@ -944,8 +949,7 @@ if f["au"].isnull().any():
         si_level_col="si_level",
         top_n=10,
     )
-    print("Warning: missing AU mappings for some strata (top 10 shown):")
-    print(_missing)
+    emit_missing_au_mapping_warning(summary=_missing, message_fn=print)
 
 validate_nonempty_au_assignment(
     f_table=f,
