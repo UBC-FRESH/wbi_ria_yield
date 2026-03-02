@@ -58,6 +58,7 @@ from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
 from femic.pipeline.bundle import (
     BundleAssemblyResult,
     BundlePaths,
+    assign_curve_ids_from_au_table,
     build_bundle_tables_from_curves,
     bundle_tables_ready,
     ensure_scsi_au_from_table,
@@ -133,6 +134,7 @@ __all__ = [
     "LegacyTSAStageState",
     "BundlePaths",
     "BundleAssemblyResult",
+    "assign_curve_ids_from_au_table",
     "build_legacy_execution_plan",
     "build_legacy_01a_runtime_config",
     "initialize_legacy_tsa_stage_state",

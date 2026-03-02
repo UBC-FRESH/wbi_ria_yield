@@ -42,6 +42,7 @@ import sys
 
 try:
     from femic.pipeline.bundle import (
+        assign_curve_ids_from_au_table,
         build_bundle_tables_from_curves,
         bundle_tables_ready,
         ensure_scsi_au_from_table,
@@ -69,6 +70,7 @@ except ModuleNotFoundError:
     if _src_dir.is_dir():
         sys.path.insert(0, str(_src_dir))
     from femic.pipeline.bundle import (
+        assign_curve_ids_from_au_table,
         build_bundle_tables_from_curves,
         bundle_tables_ready,
         ensure_scsi_au_from_table,
@@ -957,38 +959,19 @@ except:
 
 
 # --- cell 110 ---
-def assign_curve1(r):
-    # age=60 managed/unmanaged cutoff assumption from Cosmin Man (personal communication)
-    if pd.isna(r.au):
-        return None
-    au_id = int(r.au)
-    if au_id not in au_table.index:
-        return None
-    au = au_table.loc[au_id]
-    if r.PROJ_AGE_1 <= 60 and not np.isnan(au["managed_curve_id"]):
-        curve_id = au["managed_curve_id"]
-    else:
-        curve_id = au["unmanaged_curve_id"]
-    return int(curve_id)
-
-
-# --- cell 111 ---
-f["curve1"] = _row_apply(f, assign_curve1, axis=1)
-
-
-# --- cell 112 ---
-def assign_curve2(r):
-    if pd.isna(r.au):
-        return None
-    au_id = int(r.au)
-    if au_id not in au_table.index:
-        return None
-    au = au_table.loc[au_id]
-    return au["unmanaged_curve_id"]
-
-
-# --- cell 113 ---
-f["curve2"] = _row_apply(f, assign_curve2, axis=1)
+f = assign_curve_ids_from_au_table(
+    f_table=f,
+    au_table=au_table,
+    pd_module=pd,
+    np_module=np,
+    au_col="au",
+    proj_age_col="PROJ_AGE_1",
+    managed_curve_col="managed_curve_id",
+    unmanaged_curve_col="unmanaged_curve_id",
+    curve1_col="curve1",
+    curve2_col="curve2",
+    managed_age_cutoff=60,
+)
 
 # --- cell 114 ---
 f.to_feather(ria_vri_vclr1p_checkpoint7_feather_path)

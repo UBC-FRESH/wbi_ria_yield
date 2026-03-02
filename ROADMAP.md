@@ -710,3 +710,12 @@
   seam usage.
 - Queued next extraction slice: continue P2.2 by extracting the post-AU curve-ID assignment block
   (`assign_curve1`, `assign_curve2`) into reusable helper(s), then wire through tests/guardrails.
+- Added `assign_curve_ids_from_au_table(...)` in `femic.pipeline.bundle` to centralize post-AU
+  curve ID assignment logic (managed/unmanaged switch and fallback handling).
+- Rewired 00_data-prep to call `assign_curve_ids_from_au_table(...)` in place of inline
+  `assign_curve1`/`assign_curve2` functions and row-wise assignment calls.
+- Expanded `tests/test_bundle.py` with deterministic coverage for managed/unmanaged curve assignment
+  behavior, and updated orchestration guardrails to assert
+  `assign_curve_ids_from_au_table(...)` seam usage.
+- Queued next extraction slice: continue P2.2 by extracting the remaining post-curve assignment
+  THLB/theme orchestration blocks into reusable helper seams.

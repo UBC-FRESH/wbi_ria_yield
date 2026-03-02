@@ -3,8 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 
 from femic.pipeline.bundle import (
+    assign_curve_ids_from_au_table,
     build_bundle_tables_from_curves,
     bundle_tables_ready,
     ensure_scsi_au_from_table,
@@ -129,3 +131,34 @@ def test_build_bundle_tables_from_curves_tracks_missing_mappings() -> None:
     assert out.au_table.empty
     assert len(out.missing_au_curve_mappings) == 1
     assert out.missing_au_curve_mappings.loc[0, "stratum_code"] == "BWBS_AT"
+
+
+def test_assign_curve_ids_from_au_table_assigns_managed_and_unmanaged() -> None:
+    f_table = pd.DataFrame(
+        [
+            {"au": 800005, "PROJ_AGE_1": 40},
+            {"au": 800005, "PROJ_AGE_1": 80},
+            {"au": None, "PROJ_AGE_1": 40},
+        ]
+    )
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 800005,
+                "managed_curve_id": 820005,
+                "unmanaged_curve_id": 800005,
+            }
+        ]
+    )
+
+    out = assign_curve_ids_from_au_table(
+        f_table=f_table,
+        au_table=au_table,
+        pd_module=pd,
+        np_module=np,
+    )
+
+    assert out["curve1"].iloc[:2].tolist() == [820005, 800005]
+    assert out["curve2"].iloc[:2].tolist() == [800005, 800005]
+    assert pd.isna(out["curve1"].iloc[2])
+    assert pd.isna(out["curve2"].iloc[2])

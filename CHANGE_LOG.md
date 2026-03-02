@@ -562,3 +562,10 @@
   `_lookup_scsi_au` / `au_from_scsi` logic and preserving warning + fail-fast behavior.
 - Expanded `tests/test_pipeline_helpers.py` with deterministic AU helper coverage and updated
   `tests/test_legacy_orchestration_wiring.py` guardrails to assert AU helper seam usage.
+- Added `assign_curve_ids_from_au_table(...)` to `src/femic/pipeline/bundle.py` to centralize
+  managed/unmanaged curve ID assignment from AU table records.
+- Rewired 00_data-prep to call `assign_curve_ids_from_au_table(...)` instead of inline
+  `assign_curve1`/`assign_curve2` function definitions and row-wise assignments.
+- Expanded `tests/test_bundle.py` with deterministic curve-id assignment coverage and updated
+  `tests/test_legacy_orchestration_wiring.py` guardrails to assert
+  `assign_curve_ids_from_au_table(...)` seam usage.

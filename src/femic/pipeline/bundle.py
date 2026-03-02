@@ -171,3 +171,52 @@ def build_bundle_tables_from_curves(
         curve_points_table=pd_module.DataFrame(curve_points_table_data),
         missing_au_curve_mappings=pd_module.DataFrame(missing_au_curve_mappings),
     )
+
+
+def assign_curve_ids_from_au_table(
+    *,
+    f_table: Any,
+    au_table: Any,
+    pd_module: Any,
+    np_module: Any,
+    au_col: str = "au",
+    proj_age_col: str = "PROJ_AGE_1",
+    managed_curve_col: str = "managed_curve_id",
+    unmanaged_curve_col: str = "unmanaged_curve_id",
+    curve1_col: str = "curve1",
+    curve2_col: str = "curve2",
+    managed_age_cutoff: int = 60,
+) -> Any:
+    """Assign curve ids from AU table for managed/unmanaged curve slots."""
+    table = f_table.copy()
+    au_indexed = au_table
+    if getattr(au_indexed.index, "name", None) != "au_id":
+        au_indexed = au_indexed.set_index("au_id")
+
+    curve1_values: list[int | None] = []
+    curve2_values: list[int | None] = []
+    for au_value, proj_age in zip(table[au_col].values, table[proj_age_col].values):
+        if pd_module.isna(au_value):
+            curve1_values.append(None)
+            curve2_values.append(None)
+            continue
+        au_id = int(au_value)
+        if au_id not in au_indexed.index:
+            curve1_values.append(None)
+            curve2_values.append(None)
+            continue
+        au_row = au_indexed.loc[au_id]
+        unmanaged_curve_id = au_row[unmanaged_curve_col]
+        managed_curve_id = au_row[managed_curve_col]
+        if proj_age <= managed_age_cutoff and not np_module.isnan(managed_curve_id):
+            curve1_id = managed_curve_id
+        else:
+            curve1_id = unmanaged_curve_id
+        curve1_values.append(None if pd_module.isna(curve1_id) else int(curve1_id))
+        curve2_values.append(
+            None if pd_module.isna(unmanaged_curve_id) else int(unmanaged_curve_id)
+        )
+
+    table[curve1_col] = curve1_values
+    table[curve2_col] = curve2_values
+    return table
