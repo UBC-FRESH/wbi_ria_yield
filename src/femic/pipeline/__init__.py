@@ -69,7 +69,7 @@ from femic.pipeline.tipsy_legacy import (
     build_tipsy_exclusion,
     get_legacy_tipsy_builders,
 )
-from femic.pipeline.vdyp import build_vdyp_log_paths
+from femic.pipeline.vdyp import build_vdyp_cache_paths, build_vdyp_log_paths
 from femic.pipeline.vdyp_stage import (
     CurveSmoothingPlotConfig,
     StratumFitRunConfig,
@@ -142,6 +142,7 @@ __all__ = [
     "build_tipsy_exclusion",
     "get_legacy_tipsy_builders",
     "write_manifest",
+    "build_vdyp_cache_paths",
     "build_vdyp_log_paths",
     "build_pipeline_run_config",
     "load_default_tsa_list",

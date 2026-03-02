@@ -133,6 +133,52 @@ def test_run01a_no_inline_pre_vdyp_checkpoint_literal() -> None:
                 )
 
 
+def test_run01a_uses_build_vdyp_cache_paths_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "build_vdyp_cache_paths":
+            return
+    raise AssertionError("run_tsa should call build_vdyp_cache_paths(...)")
+
+
+def test_run01a_no_local_os_import() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in run_tsa.body:
+        if not isinstance(node, ast.Import):
+            continue
+        for alias in node.names:
+            if alias.name == "os":
+                raise AssertionError(
+                    "run_tsa should avoid local os import for path checks"
+                )
+
+
+def test_run01a_no_inline_vdyp_cache_path_template_assignments() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    forbidden_targets = {
+        "vdyp_results_tsa_pickle_path",
+        "vdyp_curves_smooth_tsa_feather_path",
+    }
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Assign):
+            continue
+        if not isinstance(node.value, ast.BinOp):
+            continue
+        if not isinstance(node.value.op, ast.Mod):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in forbidden_targets:
+                raise AssertionError(
+                    "run_tsa should source per-TSA VDYP cache paths from helper"
+                )
+
+
 def test_run01a_no_direct_site_index_diagnostic_plot_calls() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

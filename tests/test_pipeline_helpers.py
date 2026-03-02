@@ -19,6 +19,7 @@ from femic.pipeline.plots import (
     strata_plot_paths,
     tipsy_vdyp_plot_path,
 )
+from femic.pipeline.vdyp import build_vdyp_cache_paths
 import pytest
 import pandas as pd
 
@@ -162,6 +163,21 @@ def test_plot_path_helpers() -> None:
     assert pdf_path == Path("plots/strata-tsa08.pdf")
     assert png_path == Path("plots/strata-tsa08.png")
     assert tipsy_path == Path("plots/tipsy_vdyp_tsa08-23005.png")
+
+
+def test_build_vdyp_cache_paths() -> None:
+    paths = build_vdyp_cache_paths(
+        tsa_code="08",
+        vdyp_results_tsa_pickle_path_prefix="./data/vdyp_results-tsa",
+        vdyp_curves_smooth_tsa_feather_path_prefix="./data/vdyp_curves_smooth-tsa",
+    )
+
+    assert paths["vdyp_results_tsa_pickle_path"] == Path(
+        "./data/vdyp_results-tsa08.pkl"
+    )
+    assert paths["vdyp_curves_smooth_tsa_feather_path"] == Path(
+        "./data/vdyp_curves_smooth-tsa08.feather"
+    )
 
 
 def test_build_strata_distribution_plot_config_defaults() -> None:

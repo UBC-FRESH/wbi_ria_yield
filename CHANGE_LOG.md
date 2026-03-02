@@ -473,3 +473,33 @@
 - Extended `tests/test_vdyp_stage.py` with defaults coverage for the new helper and added AST
   guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and no longer
   assigns inline stratum fit-stage constants.
+- Added `femic.pipeline.pre_vdyp.pre_vdyp_checkpoint_path(...)` to centralize per-TSA pre-VDYP
+  checkpoint path construction.
+- Rewired `01a_run-tsa.py` to call `pre_vdyp_checkpoint_path(...)` instead of constructing
+  `"./data/vdyp_prep-tsa%s.pkl"` inline.
+- Extended `tests/test_pre_vdyp.py` with path-helper coverage and added AST guardrails in
+  `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and no longer embeds
+  `vdyp_prep-tsa` literals.
+
+## 2026-03-02
+- Added `femic.pipeline.vdyp.build_vdyp_cache_paths(...)` to centralize per-TSA cache path
+  templates for `vdyp_results-tsa*.pkl` and `vdyp_curves_smooth-tsa*.feather`.
+- Rewired `01a_run-tsa.py` to source per-TSA cache artifact paths via
+  `build_vdyp_cache_paths(...)` instead of inline `%`-formatted string templates.
+- Expanded helper/guardrail coverage:
+  `tests/test_pipeline_helpers.py` now validates `build_vdyp_cache_paths(...)`, and
+  `tests/test_legacy_01a_structure.py` asserts 01a calls the helper and no longer assigns inline
+  VDYP cache path templates.
+- Removed local `os.path` checks from `01a_run-tsa.py` in favor of `Path(...).is_file()` for
+  checkpoint/cache existence checks, reducing stale local import coupling.
+- Added an AST guardrail in `tests/test_legacy_01a_structure.py` asserting `run_tsa(...)` no longer
+  imports `os` locally for path checks.
+- Ran full required validation gate successfully:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (154 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Updated the Phase 2 task checklist in `ROADMAP.md` with explicit `P2.1b` subtask status
+  (cache-path extraction done, local path-check cleanup done, remaining handoff/signature reduction
+  still queued).
+- Queued the next execution batch in roadmap notes:
+  `vdyp_cache_paths` payload handoff from 00->01a, `run_tsa(...)` argument surface reduction via
+  typed config payload, and extraction of 00_data-prep 01a/01b module-load orchestration helpers.

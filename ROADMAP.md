@@ -27,9 +27,14 @@
 - [ ] P2.1 Extract reusable modules from `00_data-prep.py`
 - [x] P2.1a Split into `io.py`, `vdyp.py`, `tsa.py`, `plots.py`
 - [ ] P2.1b Remove global state and pass explicit parameters
+  - [x] P2.1b.1 Centralize 01a per-TSA VDYP cache-path templates in shared helper
+  - [x] P2.1b.2 Replace residual 01a `os.path` cache checks with `Path(...).is_file()`
+  - [ ] P2.1b.3 Collapse 00->01a cache-path handoff to one resolved payload
+  - [ ] P2.1b.4 Reduce 01a `run_tsa(...)` signature by bundling remaining path/runtime args
 - [ ] P2.2 Convert notebook logic into functions
 - [ ] P2.2a Wrap major steps with clear inputs/outputs
 - [ ] P2.2b Add a small orchestration layer for sequencing
+  - [ ] P2.2c Move 00_data-prep 01a/01b module-load + call loops behind shared stage helpers
 - [ ] P2.3 Add minimal tests for core helpers
 - [ ] P2.3a Smoke tests for file validation and key transforms
 - [ ] P2.3b Deterministic checks for small sample data
@@ -587,3 +592,46 @@
   and no longer assigns inline stratum fit-stage constants.
 - Queued next extraction slice: centralize pre-VDYP checkpoint filename construction
   (`"./data/vdyp_prep-tsa%s.pkl"`) into a shared path helper seam.
+- Added `femic.pipeline.pre_vdyp.pre_vdyp_checkpoint_path(...)` to centralize per-TSA pre-VDYP
+  checkpoint path construction.
+- Rewired `01a_run-tsa.py` to call `pre_vdyp_checkpoint_path(...)` instead of constructing
+  `"./data/vdyp_prep-tsa%s.pkl"` inline.
+- Expanded `tests/test_pre_vdyp.py` with path-helper coverage (default dir + TSA zero-padding) and
+  added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and
+  no longer embeds `vdyp_prep-tsa` literals.
+- Queued next extraction slice: centralize remaining inline 01a path templates
+  (`vdyp_results_tsa_pickle_path`, `vdyp_curves_smooth_tsa_feather_path`) into dedicated shared
+  path helpers.
+- Transcript review checkpoint (2026-03-02): the legacy notebook-to-script debugging tranche is
+  complete (00/01a/01b script entrypoints, VDYP/Wine diagnostics hardening, config-driven TIPSY
+  handoff, and broad 01a helper extraction); active work remains in Phase 2 (`P2.1b`/`P2.2`) to
+  remove residual inline globals/path templates and tighten stage orchestration seams.
+- Planned execution sequence after transcript review:
+  1) extract remaining 01a inline path templates into shared helpers, 2) trim stale 01a imports and
+  dependency injection leftovers, 3) finish converting any residual inline stage logic to helper
+  calls with AST guardrails, 4) run full validation gate and capture a new end-to-end TSA debug run
+  summary in changelog notes.
+- Added `femic.pipeline.vdyp.build_vdyp_cache_paths(...)` to centralize per-TSA cache artifact path
+  templates for `vdyp_results-tsa*.pkl` and `vdyp_curves_smooth-tsa*.feather`.
+- Rewired `01a_run-tsa.py` to call `build_vdyp_cache_paths(...)` instead of constructing per-TSA
+  cache paths inline via string templates.
+- Expanded tests with helper and guardrail coverage:
+  `tests/test_pipeline_helpers.py` now checks `build_vdyp_cache_paths(...)`, and
+  `tests/test_legacy_01a_structure.py` now asserts 01a calls the helper and no longer assigns
+  inline `%`-formatted cache-path templates.
+- Full validation gate passes after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (154 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: trim now-stale local imports and remaining dependency handoff
+  plumbing in `01a_run-tsa.py` after path-template helper extraction.
+- Removed local `os` dependency from `01a_run-tsa.py` path checks by switching to
+  `Path(...).is_file()` for pre-VDYP checkpoint and smoothed-curve cache detection.
+- Added AST guardrail coverage in `tests/test_legacy_01a_structure.py` asserting `run_tsa(...)`
+  does not import `os` locally for this path-check stage.
+- Queued next extraction slice: reduce remaining 00->01a path handoff plumbing by passing a single
+  resolved VDYP cache-path payload instead of separate path-prefix arguments.
+- Queued execution batch (post-checklist refresh):
+  1) implement a `vdyp_cache_paths` payload handoff from `00_data-prep.py` to `01a_run-tsa.py`,
+  2) reduce `run_tsa(...)` argument surface by grouping remaining path/runtime plumbing into a
+  typed config payload,
+  3) extract 00_data-prep 01a/01b module-loader/caller loops into shared orchestration helper(s).

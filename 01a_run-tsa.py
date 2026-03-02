@@ -29,7 +29,7 @@ def run_tsa(
     vdyp_out_cache=None,
     curve_fit_impl=None,
 ):
-    import os
+    from pathlib import Path
 
     import distance
     import matplotlib.pyplot as plt
@@ -47,6 +47,7 @@ def run_tsa(
         build_tsa_vdyp_log_paths,
         resolve_run_id,
     )
+    from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.vdyp_curves import (
         legacy_fit_func1,
         legacy_fit_func1_bounds_func,
@@ -183,7 +184,7 @@ def run_tsa(
 
     vdyp_prep_checkpoint_path = pre_vdyp_checkpoint_path(tsa_code=tsa)
     prep_loaded = False
-    if resume_effective and os.path.isfile(vdyp_prep_checkpoint_path):
+    if resume_effective and Path(vdyp_prep_checkpoint_path).is_file():
         try:
             results[tsa] = load_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path)
             prep_loaded = True
@@ -251,10 +252,12 @@ def run_tsa(
     )
 
     # --- cell 42 ---
-    vdyp_results_tsa_pickle_path = "%s%s.pkl" % (
-        vdyp_results_tsa_pickle_path_prefix,
-        tsa,
+    vdyp_cache_paths = build_vdyp_cache_paths(
+        tsa_code=tsa,
+        vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
+        vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
     )
+    vdyp_results_tsa_pickle_path = vdyp_cache_paths["vdyp_results_tsa_pickle_path"]
     run_vdyp_fn = build_run_vdyp_for_stratum_runner(
         tsa=tsa,
         run_id=femic_run_id,
@@ -289,11 +292,10 @@ def run_tsa(
     )
 
     # --- cell 45 ---
-    vdyp_curves_smooth_tsa_feather_path = "%s%s.feather" % (
-        vdyp_curves_smooth_tsa_feather_path_prefix,
-        tsa,
-    )
-    if not os.path.isfile(vdyp_curves_smooth_tsa_feather_path):
+    vdyp_curves_smooth_tsa_feather_path = vdyp_cache_paths[
+        "vdyp_curves_smooth_tsa_feather_path"
+    ]
+    if not Path(vdyp_curves_smooth_tsa_feather_path).is_file():
         smooth_plot_cfg = build_curve_smoothing_plot_config(sns_module=sns)
         smoothed_runs = execute_curve_smoothing_runs(
             tsa=tsa,
