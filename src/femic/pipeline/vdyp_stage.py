@@ -174,6 +174,33 @@ def build_vdyp_run_context(
     return context
 
 
+def build_vdyp_run_event(
+    *,
+    status: str,
+    phase: str,
+    feature_count: int,
+    cache_hits: int,
+    ply_rows: int,
+    lyr_rows: int,
+    cmd: str,
+    context: Mapping[str, Any],
+    **extra_fields: Any,
+) -> dict[str, Any]:
+    """Build one VDYP run event payload with shared base fields."""
+    return build_timestamped_event(
+        event="vdyp_run",
+        status=status,
+        phase=phase,
+        feature_count=int(feature_count),
+        cache_hits=int(cache_hits),
+        ply_rows=int(ply_rows),
+        lyr_rows=int(lyr_rows),
+        cmd=cmd,
+        context=dict(context),
+        **extra_fields,
+    )
+
+
 def build_stratum_fit_run_config(
     *,
     fit_rawdata: bool = True,
@@ -1312,14 +1339,13 @@ def execute_vdyp_batch(
         except subprocess.TimeoutExpired as exc:
             append_jsonl_(
                 vdyp_log_path,
-                build_timestamped_event(
-                    event="vdyp_run",
+                build_vdyp_run_event(
                     status="timeout",
                     phase=phase,
-                    feature_count=int(feature_count),
-                    cache_hits=int(cache_hits),
-                    ply_rows=int(ply_rows),
-                    lyr_rows=int(lyr_rows),
+                    feature_count=feature_count,
+                    cache_hits=cache_hits,
+                    ply_rows=ply_rows,
+                    lyr_rows=lyr_rows,
                     cmd=args,
                     timeout_sec=timeout,
                     error=str(exc),
@@ -1330,14 +1356,13 @@ def execute_vdyp_batch(
         except _subprocess_run_exception_types() as exc:
             append_jsonl_(
                 vdyp_log_path,
-                build_timestamped_event(
-                    event="vdyp_run",
+                build_vdyp_run_event(
                     status="error",
                     phase=phase,
-                    feature_count=int(feature_count),
-                    cache_hits=int(cache_hits),
-                    ply_rows=int(ply_rows),
-                    lyr_rows=int(lyr_rows),
+                    feature_count=feature_count,
+                    cache_hits=cache_hits,
+                    ply_rows=ply_rows,
+                    lyr_rows=lyr_rows,
                     cmd=args,
                     error=str(exc),
                     traceback=traceback.format_exc(),
@@ -1380,14 +1405,13 @@ def execute_vdyp_batch(
         except _vdyp_parse_exception_types() as exc:
             append_jsonl_(
                 vdyp_log_path,
-                build_timestamped_event(
-                    event="vdyp_run",
+                build_vdyp_run_event(
                     status="parse_error",
                     phase=phase,
-                    feature_count=int(feature_count),
-                    cache_hits=int(cache_hits),
-                    ply_rows=int(ply_rows),
-                    lyr_rows=int(lyr_rows),
+                    feature_count=feature_count,
+                    cache_hits=cache_hits,
+                    ply_rows=ply_rows,
+                    lyr_rows=lyr_rows,
                     cmd=args,
                     **run_metadata,
                     error=str(exc),
@@ -1399,14 +1423,13 @@ def execute_vdyp_batch(
 
         append_jsonl_(
             vdyp_log_path,
-            build_timestamped_event(
-                event="vdyp_run",
+            build_vdyp_run_event(
                 status="ok" if vdyp_out else "empty_output",
                 phase=phase,
-                feature_count=int(feature_count),
-                cache_hits=int(cache_hits),
-                ply_rows=int(ply_rows),
-                lyr_rows=int(lyr_rows),
+                feature_count=feature_count,
+                cache_hits=cache_hits,
+                ply_rows=ply_rows,
+                lyr_rows=lyr_rows,
                 cmd=args,
                 **run_metadata,
                 vdyp_out_tables=int(len(vdyp_out)),

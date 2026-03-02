@@ -1390,3 +1390,18 @@
 - Queued next extraction slice: continue P2.2 by auditing repeated VDYP run-event payload fields
   in `execute_vdyp_batch(...)` (timeout/error/parse_error/ok) and centralizing shared payload
   assembly without changing emitted event keys/values.
+- Completed the queued VDYP run-event payload consolidation in
+  `src/femic/pipeline/vdyp_stage.py` by adding `build_vdyp_run_event(...)` for shared base field
+  assembly (`event/status/phase/feature_count/cache_hits/ply_rows/lyr_rows/cmd/context`).
+- Rewired `execute_vdyp_batch(...)` timeout/error/parse_error/ok|empty_output paths to consume
+  `build_vdyp_run_event(...)`, preserving emitted event keys/values while removing duplicated
+  inline payload assembly.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` for
+  `build_vdyp_run_event(...)`, including int normalization of count fields and passthrough extra
+  event fields.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (252 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing duplicated event-emission callsites in
+  `execute_vdyp_batch(...)` (`append_jsonl_(vdyp_log_path, ...)`) and centralizing them via a
+  local helper seam without changing write order or payload content.
