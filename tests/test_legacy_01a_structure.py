@@ -95,6 +95,32 @@ def test_run01a_uses_build_strata_distribution_plot_config_helper_call() -> None
     )
 
 
+def test_run01a_uses_strata_plot_paths_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "strata_plot_paths":
+            return
+    raise AssertionError("run_tsa should call strata_plot_paths(...)")
+
+
+def test_run01a_no_inline_strata_plot_output_path_literals() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Constant):
+            continue
+        if not isinstance(node.value, str):
+            continue
+        if "plots/strata-tsa" in node.value:
+            raise AssertionError(
+                "run_tsa should source strata output paths from strata_plot_paths helper"
+            )
+
+
 def test_run01a_no_inline_strata_plot_constant_assignments() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

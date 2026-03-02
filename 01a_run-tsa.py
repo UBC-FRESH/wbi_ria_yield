@@ -69,7 +69,10 @@ def run_tsa(
         build_strata_summary,
         build_stratum_lexmatch_alias_map,
     )
-    from femic.pipeline.plots import build_strata_distribution_plot_config
+    from femic.pipeline.plots import (
+        build_strata_distribution_plot_config,
+        strata_plot_paths,
+    )
     from femic.pipeline.vdyp_overrides import vdyp_kwarg_overrides_for_tsa
     from femic.pipeline.tipsy import (
         build_tipsy_params_for_tsa,
@@ -151,8 +154,9 @@ def run_tsa(
     # sns.violinplot(y=stratum_col, x='siteprod', data=f_.reset_index(), ax=ax2, bw=bw, order=labels, linewidth=linewidth, inner=inner, width=width, cut=cut)
     ax.set_xlabel("Relative abundance of stratum (proportion of total area)")
     ax2.set_xlim(strata_plot_cfg.site_index_xlim)
-    plt.savefig("plots/strata-tsa%s.pdf" % tsa, bbox_inches="tight")
-    plt.savefig("plots/strata-tsa%s.png" % tsa, facecolor="white", bbox_inches="tight")
+    strata_pdf_path, strata_png_path = strata_plot_paths(tsa)
+    plt.savefig(strata_pdf_path, bbox_inches="tight")
+    plt.savefig(strata_png_path, facecolor="white", bbox_inches="tight")
 
     # --- cell 16 ---
     selected_strata_codes = list(strata_df.index.values)
