@@ -66,6 +66,7 @@ from femic.pipeline.tipsy_legacy import (
 from femic.pipeline.vdyp import build_vdyp_log_paths
 from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
+    build_bootstrap_vdyp_results_runner,
     build_curve_fit_adapter,
     build_run_vdyp_for_stratum_runner,
     build_smoothed_curve_table,
@@ -130,6 +131,7 @@ __all__ = [
     "normalize_tsa_list",
     "execute_vdyp_batch",
     "execute_bootstrap_vdyp_runs",
+    "build_bootstrap_vdyp_results_runner",
     "execute_curve_smoothing_runs",
     "SmoothedCurveResult",
     "plot_curve_overlays",

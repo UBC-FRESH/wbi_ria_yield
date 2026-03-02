@@ -895,6 +895,37 @@ def execute_bootstrap_vdyp_runs(
     return vdyp_results_tsa
 
 
+def build_bootstrap_vdyp_results_runner(
+    *,
+    tsa: str,
+    run_id: str,
+    results_for_tsa: Sequence[tuple[int, str, Any]],
+    si_levels: Sequence[str],
+    vdyp_run_events_path: str | Path,
+    append_jsonl_fn: Callable[[str | Path, Any], None],
+    run_vdyp_fn: Callable[..., dict[Any, Any]],
+    vdyp_out_cache: dict[Any, Any] | None = None,
+    execute_bootstrap_vdyp_runs_fn: Callable[
+        ..., dict[int, dict[str, dict[Any, Any]]]
+    ] = execute_bootstrap_vdyp_runs,
+) -> Callable[[], dict[int, dict[str, dict[Any, Any]]]]:
+    """Build a zero-arg bootstrap callback for `load_or_build_vdyp_results_tsa(...)`."""
+
+    def _run_bootstrap() -> dict[int, dict[str, dict[Any, Any]]]:
+        return execute_bootstrap_vdyp_runs_fn(
+            tsa=tsa,
+            run_id=run_id,
+            results_for_tsa=results_for_tsa,
+            si_levels=si_levels,
+            vdyp_run_events_path=vdyp_run_events_path,
+            append_jsonl_fn=append_jsonl_fn,
+            run_vdyp_fn=run_vdyp_fn,
+            vdyp_out_cache=vdyp_out_cache,
+        )
+
+    return _run_bootstrap
+
+
 def execute_vdyp_batch(
     *,
     feature_ids: Sequence[int],

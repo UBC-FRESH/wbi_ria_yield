@@ -139,6 +139,41 @@ def test_run01a_no_direct_run_vdyp_for_stratum_call() -> None:
             )
 
 
+def test_run01a_uses_build_bootstrap_vdyp_results_runner_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if (
+            isinstance(func, ast.Name)
+            and func.id == "build_bootstrap_vdyp_results_runner"
+        ):
+            return
+    raise AssertionError("run_tsa should call build_bootstrap_vdyp_results_runner(...)")
+
+
+def test_run01a_no_inline_run_bootstrap_lambda() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not (
+            isinstance(func, ast.Name) and func.id == "load_or_build_vdyp_results_tsa"
+        ):
+            continue
+        for keyword in node.keywords:
+            if keyword.arg == "run_bootstrap_fn" and isinstance(
+                keyword.value, ast.Lambda
+            ):
+                raise AssertionError(
+                    "run_tsa should pass pre-built run_bootstrap_fn, not inline lambda"
+                )
+
+
 def test_run01a_has_no_nested_run_vdyp_definition() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

@@ -10,6 +10,7 @@ import numpy as np
 
 from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
+    build_bootstrap_vdyp_results_runner,
     build_curve_fit_adapter,
     build_run_vdyp_for_stratum_runner,
     build_smoothed_curve_table,
@@ -579,6 +580,41 @@ def test_execute_bootstrap_vdyp_runs_success() -> None:
     assert len(events) == 1
     assert events[0]["status"] == "dispatch"
     assert events[0]["phase"] == "bootstrap"
+
+
+def test_build_bootstrap_vdyp_results_runner_binds_dispatch_inputs() -> None:
+    captured: dict[str, object] = {}
+
+    def run_vdyp_fn(_sample: object, **_kwargs: object) -> dict[object, object]:
+        return {}
+
+    def fake_execute_bootstrap(
+        **kwargs: object,
+    ) -> dict[int, dict[str, dict[int, str]]]:
+        captured.update(kwargs)
+        return {9: {"L": {1: "ok"}}}
+
+    run_bootstrap = build_bootstrap_vdyp_results_runner(
+        tsa="08",
+        run_id="run-1",
+        results_for_tsa=[(9, "S9", {"L": {"ss": "sample-9"}})],
+        si_levels=["L"],
+        vdyp_run_events_path="run.jsonl",
+        append_jsonl_fn=lambda *_a, **_k: None,
+        run_vdyp_fn=run_vdyp_fn,
+        vdyp_out_cache={"cached": "value"},
+        execute_bootstrap_vdyp_runs_fn=fake_execute_bootstrap,
+    )
+
+    out = run_bootstrap()
+
+    assert out == {9: {"L": {1: "ok"}}}
+    assert captured["tsa"] == "08"
+    assert captured["run_id"] == "run-1"
+    assert captured["vdyp_run_events_path"] == "run.jsonl"
+    assert captured["si_levels"] == ["L"]
+    assert captured["run_vdyp_fn"] is run_vdyp_fn
+    assert captured["vdyp_out_cache"] == {"cached": "value"}
 
 
 def test_execute_bootstrap_vdyp_runs_logs_dispatch_error() -> None:

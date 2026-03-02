@@ -48,11 +48,11 @@ def run_tsa(
     )
     from femic.pipeline.vdyp_curves import process_vdyp_out
     from femic.pipeline.vdyp_stage import (
+        build_bootstrap_vdyp_results_runner,
         build_curve_fit_adapter,
         build_run_vdyp_for_stratum_runner,
         build_smoothed_curve_table,
         compile_strata_fit_results,
-        execute_bootstrap_vdyp_runs,
         execute_curve_smoothing_runs,
         fit_stratum_curves,
         load_vdyp_input_tables,
@@ -297,21 +297,22 @@ def run_tsa(
         vdyp_stdout_log_path=vdyp_stdout_log_path,
         vdyp_stderr_log_path=vdyp_stderr_log_path,
     )
+    run_bootstrap_fn = build_bootstrap_vdyp_results_runner(
+        tsa=tsa,
+        run_id=femic_run_id,
+        results_for_tsa=results[tsa][:],
+        si_levels=si_levels,
+        vdyp_run_events_path=vdyp_run_events_path,
+        append_jsonl_fn=append_jsonl,
+        run_vdyp_fn=run_vdyp_fn,
+        vdyp_out_cache=vdyp_out_cache,
+    )
     vdyp_results[tsa] = load_or_build_vdyp_results_tsa(
         tsa=tsa,
         force_run_vdyp=bool(force_run_vdyp),
         vdyp_results_tsa_pickle_path=vdyp_results_tsa_pickle_path,
         vdyp_results_pickle_path=vdyp_results_pickle_path,
-        run_bootstrap_fn=lambda: execute_bootstrap_vdyp_runs(
-            tsa=tsa,
-            run_id=femic_run_id,
-            results_for_tsa=results[tsa][:],
-            si_levels=si_levels,
-            vdyp_run_events_path=vdyp_run_events_path,
-            append_jsonl_fn=append_jsonl,
-            run_vdyp_fn=run_vdyp_fn,
-            vdyp_out_cache=vdyp_out_cache,
-        ),
+        run_bootstrap_fn=run_bootstrap_fn,
         print_fn=print,
     )
 
