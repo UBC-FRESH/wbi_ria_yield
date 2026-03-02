@@ -402,3 +402,13 @@
 - Expanded `tests/test_vdyp_stage.py` with deterministic compile-loop helper coverage, and extended
   `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls
   `compile_strata_fit_results(...)`.
+- Extracted VDYP sampling-mode orchestration into
+  `femic.pipeline.vdyp_stage.run_vdyp_sampling(...)`, centralizing the `auto`/`all`/fixed sample
+  flow, cache-hit handling, and gap-fill loop decision logic previously embedded in 01a.
+- Rewired `01a_run-tsa.py` `run_vdyp(...)` to delegate sampling decisions through
+  `run_vdyp_sampling(...)` while keeping batch execution/logging in its existing `_run_vdyp(...)`
+  closure.
+- Expanded `tests/test_vdyp_stage.py` with focused `run_vdyp_sampling(...)` coverage
+  (auto-small-sample path, auto gap-fill phase path, and invalid-mode assertion), and extended
+  `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls
+  `run_vdyp_sampling(...)`.
