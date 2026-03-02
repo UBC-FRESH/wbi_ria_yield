@@ -61,6 +61,7 @@ def run_tsa(
         load_or_build_vdyp_results_tsa,
         plot_curve_overlays,
     )
+    from femic.pipeline.tsa import MIN_STANDCOUNT, target_nstrata_for
     from femic.pipeline.vdyp_overrides import vdyp_kwarg_overrides_for_tsa
     from femic.pipeline.tipsy import (
         build_tipsy_params_for_tsa,
@@ -85,19 +86,14 @@ def run_tsa(
     # --- cell 2 ---
     f_ = f.loc[tsa].reset_index().set_index(stratum_col)
 
-    # --- cell 4 ---
-    target_nstrata = {"08": 9, "16": 13, "24": 8, "40": 7, "41": 10}
-
     # --- cell 5 ---
     totalarea = f_.FEATURE_AREA_SQM.sum()
     f_["totalarea_p"] = f_.FEATURE_AREA_SQM / totalarea
 
-    # --- cell 7 ---
-    min_standcount = 1000
-
     # --- cell 8 ---
     strata_gb1 = f_.groupby(level=stratum_col)
-    totalarea_p_sum = strata_gb1.totalarea_p.sum().nlargest(target_nstrata[tsa])
+    target_nstrata = target_nstrata_for(tsa)
+    totalarea_p_sum = strata_gb1.totalarea_p.sum().nlargest(target_nstrata)
     largestn_strata_codes = list(totalarea_p_sum.index.values)
     strata_gb2 = f_.groupby(level=stratum_col)
     site_index_std = strata_gb2.SITE_INDEX.std()
@@ -115,8 +111,8 @@ def run_tsa(
     strata_df["stand_count"] = stand_count
     strata_df["coverage"] = coverage
     strata_df["crown_closure"] = crown_closure
-    strata_df = strata_df[strata_df.stand_count >= min_standcount]
-    strata_df = strata_df.head(target_nstrata[tsa])
+    strata_df = strata_df[strata_df.stand_count >= MIN_STANDCOUNT]
+    strata_df = strata_df.head(target_nstrata)
     print("mean stratum SI IQR", site_index_iqr.mean())
     print("coverage", strata_df.coverage.sum())
     print("count", strata_df.shape[0])
@@ -791,11 +787,6 @@ def run_tsa(
         vdyp_results_tsa_pickle_path_prefix,
         tsa,
     )
-    si_levels = ["L", "M", "H"]
-    half_rel_ci = 0.01  # use 0.01 for production
-    si_levels_ = si_levels
-    ipp_mode = None
-    nsamples_c1 = 0.05
     vdyp_results[tsa] = load_or_build_vdyp_results_tsa(
         tsa=tsa,
         force_run_vdyp=bool(force_run_vdyp),
@@ -805,15 +796,11 @@ def run_tsa(
             tsa=tsa,
             run_id=femic_run_id,
             results_for_tsa=results[tsa][:],
-            si_levels=si_levels_,
+            si_levels=si_levels,
             vdyp_run_events_path=vdyp_run_events_path,
             append_jsonl_fn=append_jsonl,
             run_vdyp_fn=lambda s, **kwargs: run_vdyp(s, vdyp_ply, vdyp_lyr, **kwargs),
             vdyp_out_cache=vdyp_out_cache,
-            verbose=True,
-            half_rel_ci=half_rel_ci,
-            ipp_mode=ipp_mode,
-            nsamples_c1=nsamples_c1,
         ),
         print_fn=print,
     )

@@ -11,7 +11,7 @@ from femic.pipeline.io import (
     resolve_run_paths,
 )
 from femic.pipeline.plots import strata_plot_paths, tipsy_vdyp_plot_path
-from femic.pipeline.tsa import target_nstrata_for
+from femic.pipeline.tsa import MIN_STANDCOUNT, target_nstrata_for
 
 
 def test_normalize_tsa_list_defaults_and_padding(tmp_path: Path) -> None:
@@ -41,6 +41,7 @@ def test_resolve_run_paths_uses_script_parent_as_repo_root(tmp_path: Path) -> No
 def test_tsa_target_nstrata_lookup() -> None:
     assert target_nstrata_for("8") == 9
     assert target_nstrata_for("16") == 13
+    assert MIN_STANDCOUNT == 1000
 
 
 def test_plot_path_helpers() -> None:

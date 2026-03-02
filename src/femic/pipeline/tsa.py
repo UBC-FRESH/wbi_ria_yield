@@ -10,6 +10,7 @@ TARGET_NSTRATA_BY_TSA: dict[str, int] = {
     "40": 7,
     "41": 10,
 }
+MIN_STANDCOUNT = 1000
 
 
 def target_nstrata_for(tsa_code: str) -> int:
