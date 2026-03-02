@@ -673,3 +673,20 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline siteprod raster
   export/stack orchestration in `00_data-prep.py` (ArcRasterRescue command assembly, temporary
   layer path enumeration, cleanup loop) into dedicated stage/helper seams.
+- Added `src/femic/pipeline/siteprod.py` with reusable siteprod orchestration helpers:
+  `parse_arc_raster_rescue_layer_mappings(...)`, `list_siteprod_layers(...)`,
+  `build_siteprod_layer_tif_path(...)`, `enumerate_siteprod_layer_tif_paths(...)`, and
+  `export_and_stack_siteprod_layers(...)`.
+- Rewired `00_data-prep.py` siteprod stage to consume `list_siteprod_layers(...)` and
+  `export_and_stack_siteprod_layers(...)`, removing inline ArcRasterRescue command assembly,
+  temporary-layer path enumeration, and temp cleanup loop logic.
+- Exported siteprod helpers via `femic.pipeline.__init__`, added deterministic coverage in
+  `tests/test_siteprod.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `list_siteprod_layers(...)` + `export_and_stack_siteprod_layers(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (188 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting remaining inline siteprod sampling
+  orchestration in `00_data-prep.py` (`siteprod_species_lookup`, `mean_siteprod` closure, and row
+  apply wiring) into reusable helper seams under `femic.pipeline.siteprod`.

@@ -55,6 +55,10 @@ try:
         resolve_legacy_external_data_paths,
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
+    from femic.pipeline.siteprod import (
+        export_and_stack_siteprod_layers,
+        list_siteprod_layers,
+    )
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -102,6 +106,10 @@ except ModuleNotFoundError:
         resolve_legacy_external_data_paths,
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
+    from femic.pipeline.siteprod import (
+        export_and_stack_siteprod_layers,
+        list_siteprod_layers,
+    )
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -365,60 +373,25 @@ f = _apply_debug_rows(f, "checkpoint1")
 
 # --- cell 19 ---
 # map layer indices to layer species codes
-result = subprocess.run(
-    [arc_raster_rescue_exe_path, siteprod_gdb_path],
-    capture_output=True,
+siteprod_layerspecies, siteprod_specieslayer = list_siteprod_layers(
+    arc_raster_rescue_exe_path=arc_raster_rescue_exe_path,
+    siteprod_gdb_path=siteprod_gdb_path,
+    run_fn=subprocess.run,
 )
-siteprod_layerspecies = {
-    int(i): vv[10:].upper()
-    for i, vv in [
-        v.strip().split(" ") for v in result.stdout.decode().split("\n")[1:] if v
-    ]
-}
-siteprod_specieslayer = {
-    vv[10:].upper(): int(i)
-    for i, vv in [
-        v.strip().split(" ") for v in result.stdout.decode().split("\n")[1:] if v
-    ]
-}
 
 if not siteprod_tif_path.is_file():
-    # export species-wise raster layers to 22 GeoTIFFs
     print("Extracting siteprod raster data from ESRI File Geodatabase...")
-    for i, species in site_prod_bc_layerspecies.items():
-        print("... processing species", species)
-        layer_tif_path = (
-            siteprod_tmpexport_tif_path_prefix.parent
-            / f"{siteprod_tmpexport_tif_path_prefix.name}{species}.tif"
-        )
-        subprocess.run(
-            [
-                arc_raster_rescue_exe_path,
-                site_prod_bc_gdb_path,
-                str(i),
-                layer_tif_path,
-            ]
-        )
-
-    # stack species-wise raster layers into a single multi-band GeoTIFF
-    file_list = sorted(
-        siteprod_tmpexport_tif_path_prefix.parent.glob(
-            f"{siteprod_tmpexport_tif_path_prefix.name}*.tif"
-        )
+    export_and_stack_siteprod_layers(
+        arc_raster_rescue_exe_path=arc_raster_rescue_exe_path,
+        site_prod_bc_gdb_path=site_prod_bc_gdb_path,
+        site_prod_bc_layerspecies=site_prod_bc_layerspecies,
+        siteprod_layerspecies=siteprod_layerspecies,
+        siteprod_tmpexport_tif_path_prefix=siteprod_tmpexport_tif_path_prefix,
+        siteprod_tif_path=siteprod_tif_path,
+        run_fn=subprocess.run,
+        rio_module=rio,
+        message_fn=print,
     )
-    with rio.open(file_list[0]) as src:  # patch with missing CRS metadata
-        meta = src.meta
-        meta.update(
-            count=len(file_list), compress="lzw", crs=rio.crs.CRS({"init": "epsg:3005"})
-        )  # BC Albers equal area geographic projection
-
-    with rio.open(siteprod_tif_path, "w", **meta) as dst:
-        print("\nStacking siteprod raster data into a single multiband GeoTIFF file...")
-        for id, layer in enumerate(file_list, start=1):
-            print("... processing species", siteprod_layerspecies[id - 1])
-            with rio.open(layer) as src:
-                dst.write_band(id, src.read(1))
-            layer.unlink()  # delete intermediate GeoTIFF (not needed anymore)
 
 
 # --- cell 21 ---

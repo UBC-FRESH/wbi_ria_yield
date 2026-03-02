@@ -109,6 +109,8 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "build_legacy_data_artifact_paths": 1,
         "build_ria_vri_checkpoint_paths": 1,
         "build_vdyp_cache_paths": 1,
+        "list_siteprod_layers": 1,
+        "export_and_stack_siteprod_layers": 1,
         "prepare_tsa_index": 1,
         "build_legacy_01a_runtime_config": 1,
         "should_skip_if_outputs_exist": 2,
