@@ -1281,6 +1281,22 @@ def execute_vdyp_batch(
         run_id=run_id,
     )
 
+    def _emit_run_event(status: str, **extra_fields: Any) -> None:
+        append_jsonl_(
+            vdyp_log_path,
+            build_vdyp_run_event(
+                status=status,
+                phase=phase,
+                feature_count=feature_count,
+                cache_hits=cache_hits,
+                ply_rows=ply_rows,
+                lyr_rows=lyr_rows,
+                cmd=args,
+                context=context,
+                **extra_fields,
+            ),
+        )
+
     vdyp_io_dir = Path(vdyp_io_dirname)
     vdyp_io_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1337,37 +1353,17 @@ def execute_vdyp_batch(
                 text=True,
             )
         except subprocess.TimeoutExpired as exc:
-            append_jsonl_(
-                vdyp_log_path,
-                build_vdyp_run_event(
-                    status="timeout",
-                    phase=phase,
-                    feature_count=feature_count,
-                    cache_hits=cache_hits,
-                    ply_rows=ply_rows,
-                    lyr_rows=lyr_rows,
-                    cmd=args,
-                    timeout_sec=timeout,
-                    error=str(exc),
-                    context=context,
-                ),
+            _emit_run_event(
+                "timeout",
+                timeout_sec=timeout,
+                error=str(exc),
             )
             return {}
         except _subprocess_run_exception_types() as exc:
-            append_jsonl_(
-                vdyp_log_path,
-                build_vdyp_run_event(
-                    status="error",
-                    phase=phase,
-                    feature_count=feature_count,
-                    cache_hits=cache_hits,
-                    ply_rows=ply_rows,
-                    lyr_rows=lyr_rows,
-                    cmd=args,
-                    error=str(exc),
-                    traceback=traceback.format_exc(),
-                    context=context,
-                ),
+            _emit_run_event(
+                "error",
+                error=str(exc),
+                traceback=traceback.format_exc(),
             )
             return {}
 
@@ -1403,38 +1399,18 @@ def execute_vdyp_batch(
         try:
             vdyp_out = import_vdyp_tables_(str(vdyp_io_dir / vdyp_out_txt))
         except _vdyp_parse_exception_types() as exc:
-            append_jsonl_(
-                vdyp_log_path,
-                build_vdyp_run_event(
-                    status="parse_error",
-                    phase=phase,
-                    feature_count=feature_count,
-                    cache_hits=cache_hits,
-                    ply_rows=ply_rows,
-                    lyr_rows=lyr_rows,
-                    cmd=args,
-                    **run_metadata,
-                    error=str(exc),
-                    traceback=traceback.format_exc(),
-                    context=context,
-                ),
+            _emit_run_event(
+                "parse_error",
+                **run_metadata,
+                error=str(exc),
+                traceback=traceback.format_exc(),
             )
             return {}
 
-        append_jsonl_(
-            vdyp_log_path,
-            build_vdyp_run_event(
-                status="ok" if vdyp_out else "empty_output",
-                phase=phase,
-                feature_count=feature_count,
-                cache_hits=cache_hits,
-                ply_rows=ply_rows,
-                lyr_rows=lyr_rows,
-                cmd=args,
-                **run_metadata,
-                vdyp_out_tables=int(len(vdyp_out)),
-                context=context,
-            ),
+        _emit_run_event(
+            "ok" if vdyp_out else "empty_output",
+            **run_metadata,
+            vdyp_out_tables=int(len(vdyp_out)),
         )
         return vdyp_out
 

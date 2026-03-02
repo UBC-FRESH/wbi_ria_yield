@@ -1405,3 +1405,15 @@
 - Queued next extraction slice: continue P2.2 by auditing duplicated event-emission callsites in
   `execute_vdyp_batch(...)` (`append_jsonl_(vdyp_log_path, ...)`) and centralizing them via a
   local helper seam without changing write order or payload content.
+- Completed the queued VDYP event-emission callsite consolidation in
+  `src/femic/pipeline/vdyp_stage.py` by adding a local `_emit_run_event(...)` seam inside
+  `execute_vdyp_batch(...)`.
+- Rewired timeout/error/parse_error/ok|empty_output paths to call `_emit_run_event(...)`, removing
+  duplicated `append_jsonl_(vdyp_log_path, ...)` callsites while preserving event payload content
+  and emission order.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (252 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing duplicated temporary-file basename/path
+  extraction in `execute_vdyp_batch(...)` and centralizing it behind a helper seam without changing
+  runtime filenames or downstream parse behavior.
