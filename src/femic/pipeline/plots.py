@@ -68,3 +68,20 @@ def resolve_strata_plot_ordering(
     stratum_props = [float(v) for v in ordered.totalarea_p.values]
     labels = [str(v) for v in ordered.index.values]
     return stratum_props, labels
+
+
+def plot_strata_site_index_diagnostics(
+    *,
+    strata_df: Any,
+    np_module: Any,
+    plt_module: Any,
+    hist_xlim: tuple[float, float] = (0, 25),
+    hist_bin_stop: float = 25,
+    hist_bin_step: float = 1,
+) -> None:
+    """Render early 01a strata diagnostics (SI histogram + abundance scatter)."""
+    ax = strata_df.site_index_median.hist(
+        bins=np_module.arange(hist_bin_stop, step=hist_bin_step)
+    )
+    ax.set_xlim(list(hist_xlim))
+    plt_module.scatter(strata_df.totalarea_p, strata_df.median_si)

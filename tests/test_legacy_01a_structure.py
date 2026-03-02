@@ -95,6 +95,39 @@ def test_run01a_uses_build_strata_distribution_plot_config_helper_call() -> None
     )
 
 
+def test_run01a_uses_plot_strata_site_index_diagnostics_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if (
+            isinstance(func, ast.Name)
+            and func.id == "plot_strata_site_index_diagnostics"
+        ):
+            return
+    raise AssertionError("run_tsa should call plot_strata_site_index_diagnostics(...)")
+
+
+def test_run01a_no_direct_site_index_diagnostic_plot_calls() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if (
+            isinstance(func, ast.Attribute)
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "plt"
+            and func.attr == "scatter"
+        ):
+            raise AssertionError(
+                "run_tsa should delegate early site-index diagnostics plot calls via helper"
+            )
+
+
 def test_run01a_uses_resolve_strata_plot_ordering_helper_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

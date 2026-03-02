@@ -13,6 +13,7 @@ from femic.pipeline.io import (
 from femic.pipeline.plots import (
     StrataDistributionPlotConfig,
     build_strata_distribution_plot_config,
+    plot_strata_site_index_diagnostics,
     resolve_strata_plot_ordering,
     strata_plot_paths,
     tipsy_vdyp_plot_path,
@@ -197,6 +198,60 @@ def test_resolve_strata_plot_ordering_abundance_and_lex_modes() -> None:
     assert labels_default == ["B2", "A1"]
     assert props_lex == [0.4, 0.6]
     assert labels_lex == ["A1", "B2"]
+
+
+def test_plot_strata_site_index_diagnostics_calls_hist_and_scatter() -> None:
+    class _FakeAx:
+        def __init__(self) -> None:
+            self.xlim_calls: list[list[float]] = []
+
+        def set_xlim(self, value: list[float]) -> None:
+            self.xlim_calls.append(value)
+
+    class _SiteIndexSeries:
+        def __init__(self, ax: _FakeAx) -> None:
+            self.ax = ax
+            self.hist_bins: list[list[float]] = []
+
+        def hist(self, bins: list[float]) -> _FakeAx:
+            self.hist_bins.append(bins)
+            return self.ax
+
+    class _FakeStrata:
+        def __init__(self) -> None:
+            self.ax = _FakeAx()
+            self.site_index_median = _SiteIndexSeries(self.ax)
+            self.totalarea_p = [0.4, 0.6]
+            self.median_si = [12.0, 18.0]
+
+    class _FakeNp:
+        @staticmethod
+        def arange(stop: float, step: float = 1.0) -> list[float]:
+            vals = []
+            v = 0.0
+            while v < stop:
+                vals.append(v)
+                v += step
+            return vals
+
+    class _FakePlt:
+        def __init__(self) -> None:
+            self.scatter_calls: list[tuple[object, object]] = []
+
+        def scatter(self, x: object, y: object) -> None:
+            self.scatter_calls.append((x, y))
+
+    strata = _FakeStrata()
+    fake_plt = _FakePlt()
+    plot_strata_site_index_diagnostics(
+        strata_df=strata,
+        np_module=_FakeNp(),
+        plt_module=fake_plt,
+    )
+
+    assert strata.site_index_median.hist_bins == [[float(i) for i in range(25)]]
+    assert strata.ax.xlim_calls == [[0, 25]]
+    assert fake_plt.scatter_calls == [([0.4, 0.6], [12.0, 18.0])]
 
 
 def test_build_pipeline_run_config_normalizes_tsa_values() -> None:

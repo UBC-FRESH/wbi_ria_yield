@@ -71,6 +71,7 @@ def run_tsa(
     )
     from femic.pipeline.plots import (
         build_strata_distribution_plot_config,
+        plot_strata_site_index_diagnostics,
         resolve_strata_plot_ordering,
         strata_plot_paths,
     )
@@ -113,12 +114,12 @@ def run_tsa(
     print("coverage", strata_df.coverage.sum())
     print("count", strata_df.shape[0])
 
-    # --- cell 10 ---
-    ax = strata_df.site_index_median.hist(bins=np.arange(25, step=1))
-    ax.set_xlim([0, 25])
-
-    # --- cell 12 ---
-    plt.scatter(strata_df.totalarea_p, strata_df.median_si)
+    # --- cell 10/12 ---
+    plot_strata_site_index_diagnostics(
+        strata_df=strata_df,
+        np_module=np,
+        plt_module=plt,
+    )
 
     # --- cell 14 ---
     strata_plot_cfg = build_strata_distribution_plot_config()
