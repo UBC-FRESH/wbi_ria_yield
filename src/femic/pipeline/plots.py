@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 def strata_plot_paths(tsa_code: str, root: Path = Path("plots")) -> tuple[Path, Path]:
@@ -52,3 +53,18 @@ def build_strata_distribution_plot_config(
         cut=cut,
         site_index_xlim=site_index_xlim,
     )
+
+
+def resolve_strata_plot_ordering(
+    *,
+    strata_df: Any,
+    sort_lex: bool = False,
+) -> tuple[list[float], list[str]]:
+    """Resolve stratum bar/violin ordering inputs for 01a diagnostics plots."""
+    if sort_lex:
+        ordered = strata_df.sort_index()
+    else:
+        ordered = strata_df
+    stratum_props = [float(v) for v in ordered.totalarea_p.values]
+    labels = [str(v) for v in ordered.index.values]
+    return stratum_props, labels

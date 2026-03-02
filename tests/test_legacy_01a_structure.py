@@ -95,6 +95,31 @@ def test_run01a_uses_build_strata_distribution_plot_config_helper_call() -> None
     )
 
 
+def test_run01a_uses_resolve_strata_plot_ordering_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "resolve_strata_plot_ordering":
+            return
+    raise AssertionError("run_tsa should call resolve_strata_plot_ordering(...)")
+
+
+def test_run01a_no_local_sort_lex_assignment() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == "sort_lex":
+                raise AssertionError(
+                    "run_tsa should not assign local sort_lex toggle inline"
+                )
+
+
 def test_run01a_uses_strata_plot_paths_helper_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

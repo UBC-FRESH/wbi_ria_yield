@@ -13,6 +13,7 @@ from femic.pipeline.io import (
 from femic.pipeline.plots import (
     StrataDistributionPlotConfig,
     build_strata_distribution_plot_config,
+    resolve_strata_plot_ordering,
     strata_plot_paths,
     tipsy_vdyp_plot_path,
 )
@@ -173,6 +174,29 @@ def test_build_strata_distribution_plot_config_defaults() -> None:
     assert cfg.bw == "scott"
     assert cfg.cut == 0.0
     assert cfg.site_index_xlim == (0, 30)
+
+
+def test_resolve_strata_plot_ordering_abundance_and_lex_modes() -> None:
+    strata_df = pd.DataFrame(
+        {
+            "totalarea_p": [0.6, 0.4],
+        },
+        index=["B2", "A1"],
+    )
+
+    props_default, labels_default = resolve_strata_plot_ordering(
+        strata_df=strata_df,
+        sort_lex=False,
+    )
+    props_lex, labels_lex = resolve_strata_plot_ordering(
+        strata_df=strata_df,
+        sort_lex=True,
+    )
+
+    assert props_default == [0.6, 0.4]
+    assert labels_default == ["B2", "A1"]
+    assert props_lex == [0.4, 0.6]
+    assert labels_lex == ["A1", "B2"]
 
 
 def test_build_pipeline_run_config_normalizes_tsa_values() -> None:

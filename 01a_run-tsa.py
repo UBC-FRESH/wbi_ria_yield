@@ -71,6 +71,7 @@ def run_tsa(
     )
     from femic.pipeline.plots import (
         build_strata_distribution_plot_config,
+        resolve_strata_plot_ordering,
         strata_plot_paths,
     )
     from femic.pipeline.vdyp_overrides import vdyp_kwarg_overrides_for_tsa
@@ -122,13 +123,10 @@ def run_tsa(
     # --- cell 14 ---
     strata_plot_cfg = build_strata_distribution_plot_config()
 
-    sort_lex = 0
-    if sort_lex:
-        stratum_props = list(strata_df.sort_index().totalarea_p.values)
-        labels = sorted(strata_df.sort_index().index.values)
-    else:  # sort by abundance
-        stratum_props = list(strata_df.totalarea_p.values)
-        labels = strata_df.index.values
+    stratum_props, labels = resolve_strata_plot_ordering(
+        strata_df=strata_df,
+        sort_lex=False,
+    )
 
     fig, ax = plt.subplots(figsize=strata_plot_cfg.figsize)
     ax2 = ax.twiny()
