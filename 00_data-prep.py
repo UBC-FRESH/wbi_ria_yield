@@ -43,16 +43,26 @@ from pathlib import Path
 import sys
 
 try:
-    from femic.pipeline.legacy_runtime import Legacy01ARuntimeConfig
-    from femic.pipeline.stages import load_legacy_module, run_legacy_tsa_loop
-    from femic.pipeline.vdyp import build_vdyp_cache_paths
+    from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
+    from femic.pipeline.stages import (
+        initialize_legacy_tsa_stage_state,
+        load_legacy_module,
+        prepare_tsa_index,
+        run_legacy_tsa_loop,
+        should_skip_if_outputs_exist,
+    )
 except ModuleNotFoundError:
     _src_dir = Path(__file__).resolve().parent / "src"
     if _src_dir.is_dir():
         sys.path.insert(0, str(_src_dir))
-    from femic.pipeline.legacy_runtime import Legacy01ARuntimeConfig
-    from femic.pipeline.stages import load_legacy_module, run_legacy_tsa_loop
-    from femic.pipeline.vdyp import build_vdyp_cache_paths
+    from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
+    from femic.pipeline.stages import (
+        initialize_legacy_tsa_stage_state,
+        load_legacy_module,
+        prepare_tsa_index,
+        run_legacy_tsa_loop,
+        should_skip_if_outputs_exist,
+    )
 
 # --- cell 5 ---
 pd.set_option(
@@ -599,16 +609,17 @@ f.to_feather(ria_vri_vclr1p_checkpoint4_feather_path)
 # f = f.reset_index().set_index('tsa_code')
 
 # --- cell 44 ---
-vdyp_curves_smooth = {}
-vdyp_results = {}
-tipsy_params = {}
-tipsy_curves = {}
-scsi_au = {}
-au_scsi = {}
-results = {}
+_legacy_stage_state = initialize_legacy_tsa_stage_state()
+vdyp_curves_smooth = _legacy_stage_state.vdyp_curves_smooth
+vdyp_results = _legacy_stage_state.vdyp_results
+tipsy_params = _legacy_stage_state.tipsy_params
+tipsy_curves = _legacy_stage_state.tipsy_curves
+scsi_au = _legacy_stage_state.scsi_au
+au_scsi = _legacy_stage_state.au_scsi
+results = _legacy_stage_state.results
 
 # --- cell 52 ---
-f.set_index("tsa_code", inplace=True)
+f = prepare_tsa_index(f_table=f, tsa_column="tsa_code")
 
 # --- cell 54 ---
 if 1:
@@ -619,24 +630,19 @@ if 1:
     )
 
     def _should_skip_01a(tsa):
-        if _femic_resume_effective:
-            _tipsy_params_path = f"{tipsy_params_path_prefix}{tsa}.xlsx"
-            _vdyp_curves_path = (
-                f"{vdyp_curves_smooth_tsa_feather_path_prefix}{tsa}.feather"
-            )
-            if os.path.isfile(_tipsy_params_path) and os.path.isfile(_vdyp_curves_path):
-                print(f"resume: skipping 01a for tsa {tsa} (outputs exist)")
-                return True
-        return False
+        return should_skip_if_outputs_exist(
+            resume_effective=_femic_resume_effective,
+            output_paths=(
+                f"{tipsy_params_path_prefix}{tsa}.xlsx",
+                f"{vdyp_curves_smooth_tsa_feather_path_prefix}{tsa}.feather",
+            ),
+            skip_message=f"resume: skipping 01a for tsa {tsa} (outputs exist)",
+        )
 
     def _run_one_01a(tsa):
         stratum_col = "stratum"
-        vdyp_cache_paths = build_vdyp_cache_paths(
+        runtime_config = build_legacy_01a_runtime_config(
             tsa_code=tsa,
-            vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
-            vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
-        )
-        runtime_config = Legacy01ARuntimeConfig(
             resume_effective=_femic_resume_effective,
             force_run_vdyp=bool(force_run_vdyp),
             kwarg_overrides_for_tsa=None,
@@ -646,7 +652,8 @@ if 1:
             vdyp_lyr_feather_path=vdyp_lyr_feather_path,
             tipsy_params_columns=tipsy_params_columns,
             tipsy_params_path_prefix=tipsy_params_path_prefix,
-            vdyp_cache_paths=vdyp_cache_paths,
+            vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
+            vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
             vdyp_out_cache=globals().get("vdyp_out_cache"),
             curve_fit_impl=globals().get("_curve_fit"),
         )
@@ -681,13 +688,14 @@ _run01b_module = load_legacy_module(
 
 
 def _should_skip_01b(tsa):
-    if _femic_resume_effective:
-        _tipsy_curves_path = f"./data/tipsy_curves_tsa{tsa}.csv"
-        _tipsy_spp_path = f"./data/tipsy_sppcomp_tsa{tsa}.csv"
-        if os.path.isfile(_tipsy_curves_path) and os.path.isfile(_tipsy_spp_path):
-            print(f"resume: skipping 01b for tsa {tsa} (outputs exist)")
-            return True
-    return False
+    return should_skip_if_outputs_exist(
+        resume_effective=_femic_resume_effective,
+        output_paths=(
+            f"./data/tipsy_curves_tsa{tsa}.csv",
+            f"./data/tipsy_sppcomp_tsa{tsa}.csv",
+        ),
+        skip_message=f"resume: skipping 01b for tsa {tsa} (outputs exist)",
+    )
 
 
 def _run_one_01b(tsa):

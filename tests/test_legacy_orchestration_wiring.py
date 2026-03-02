@@ -99,3 +99,22 @@ def test_legacy_orchestration_uses_shared_stage_loop_and_loader_helpers() -> Non
             loop_calls += 1
     assert loader_calls == 2
     assert loop_calls == 2
+
+
+def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
+    tree = _load_legacy_orchestration_tree()
+    required_calls = {
+        "initialize_legacy_tsa_stage_state": 1,
+        "prepare_tsa_index": 1,
+        "build_legacy_01a_runtime_config": 1,
+        "should_skip_if_outputs_exist": 2,
+    }
+    observed = {name: 0 for name in required_calls}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id in observed:
+            observed[func.id] += 1
+
+    assert observed == required_calls

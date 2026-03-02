@@ -655,3 +655,16 @@
 - Queued next extraction slice: continue `P2.2` by moving remaining 00_data-prep orchestration
   logic around stage setup/checkpoints into reusable stage helpers so the top-level script becomes a
   thin workflow shell.
+- Added stage setup helpers in `femic.pipeline.stages`:
+  `initialize_legacy_tsa_stage_state(...)`, `prepare_tsa_index(...)`, and
+  `should_skip_if_outputs_exist(...)`.
+- Added `femic.pipeline.legacy_runtime.build_legacy_01a_runtime_config(...)` so 00_data-prep no
+  longer assembles the 01a runtime payload inline.
+- Rewired `00_data-prep.py` to consume these helpers for state-map initialization, TSA-index
+  preparation, resume-skip checks, and 01a runtime-config assembly.
+- Expanded tests to cover new setup/runtime helpers and wiring:
+  `tests/test_pipeline_stages.py` now covers helper behavior and runtime-config cache path build,
+  and `tests/test_legacy_orchestration_wiring.py` asserts 00_data-prep calls the new setup/runtime
+  helper seams.
+- Queued next extraction slice: continue thinning 00_data-prep by extracting remaining post-01b
+  bundle/table orchestration and path wiring into shared helpers under `femic.pipeline`.

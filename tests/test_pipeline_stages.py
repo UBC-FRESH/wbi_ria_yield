@@ -4,11 +4,16 @@ from pathlib import Path
 import sys
 
 from femic.pipeline.io import build_legacy_execution_plan, build_pipeline_run_config
+from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
 from femic.pipeline.stages import (
+    initialize_legacy_tsa_stage_state,
     load_legacy_module,
+    prepare_tsa_index,
     run_legacy_subprocess,
     run_legacy_tsa_loop,
+    should_skip_if_outputs_exist,
 )
+import pandas as pd
 
 
 def test_run_legacy_subprocess_filters_known_noise(capsys, tmp_path: Path) -> None:
@@ -64,3 +69,67 @@ def test_run_legacy_tsa_loop_applies_skip_logic() -> None:
     )
 
     assert seen == ["08", "24"]
+
+
+def test_initialize_legacy_tsa_stage_state_returns_empty_maps() -> None:
+    state = initialize_legacy_tsa_stage_state()
+
+    assert state.vdyp_curves_smooth == {}
+    assert state.vdyp_results == {}
+    assert state.tipsy_params == {}
+    assert state.tipsy_curves == {}
+    assert state.scsi_au == {}
+    assert state.au_scsi == {}
+    assert state.results == {}
+
+
+def test_prepare_tsa_index_sets_index_once() -> None:
+    frame = pd.DataFrame({"tsa_code": ["08", "16"], "x": [1, 2]})
+
+    indexed = prepare_tsa_index(f_table=frame, tsa_column="tsa_code")
+    reindexed = prepare_tsa_index(f_table=indexed, tsa_column="tsa_code")
+
+    assert indexed.index.name == "tsa_code"
+    assert reindexed is indexed
+
+
+def test_should_skip_if_outputs_exist(tmp_path: Path) -> None:
+    a = tmp_path / "a.txt"
+    b = tmp_path / "b.txt"
+    a.write_text("a", encoding="utf-8")
+    b.write_text("b", encoding="utf-8")
+    messages: list[str] = []
+
+    should_skip = should_skip_if_outputs_exist(
+        resume_effective=True,
+        output_paths=[a, b],
+        skip_message="skip",
+        print_fn=messages.append,
+    )
+
+    assert should_skip is True
+    assert messages == ["skip"]
+
+
+def test_build_legacy_01a_runtime_config_builds_cache_paths() -> None:
+    runtime_cfg = build_legacy_01a_runtime_config(
+        tsa_code="08",
+        resume_effective=True,
+        force_run_vdyp=False,
+        kwarg_overrides_for_tsa=None,
+        vdyp_results_pickle_path="./data/vdyp_results.pkl",
+        vdyp_input_pandl_path="./data/input.gdb",
+        vdyp_ply_feather_path="./data/vdyp_ply.feather",
+        vdyp_lyr_feather_path="./data/vdyp_lyr.feather",
+        tipsy_params_columns=["a", "b"],
+        tipsy_params_path_prefix="./data/tipsy_params_tsa",
+        vdyp_results_tsa_pickle_path_prefix="./data/vdyp_results-tsa",
+        vdyp_curves_smooth_tsa_feather_path_prefix="./data/vdyp_curves_smooth-tsa",
+    )
+
+    assert runtime_cfg.vdyp_cache_paths["vdyp_results_tsa_pickle_path"] == Path(
+        "./data/vdyp_results-tsa08.pkl"
+    )
+    assert runtime_cfg.vdyp_cache_paths["vdyp_curves_smooth_tsa_feather_path"] == Path(
+        "./data/vdyp_curves_smooth-tsa08.feather"
+    )

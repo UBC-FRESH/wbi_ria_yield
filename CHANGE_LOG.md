@@ -518,3 +518,13 @@
   `tests/test_pipeline_stages.py` now covers new stage helpers,
   `tests/test_legacy_orchestration_wiring.py` validates runtime-config + shared helper wiring, and
   `tests/test_legacy_01a_structure.py` checks cache-path reads from `runtime_config`.
+- Added reusable stage-setup helpers in `src/femic/pipeline/stages.py`:
+  `initialize_legacy_tsa_stage_state(...)`, `prepare_tsa_index(...)`, and
+  `should_skip_if_outputs_exist(...)`.
+- Added `build_legacy_01a_runtime_config(...)` in `src/femic/pipeline/legacy_runtime.py` so
+  00_data-prep no longer assembles the 01a runtime payload inline.
+- Rewired `00_data-prep.py` to use these helpers for stage-state initialization, TSA index setup,
+  resume output-skip checks, and 01a runtime-config construction.
+- Expanded tests:
+  `tests/test_pipeline_stages.py` now covers the new setup/runtime helpers and
+  `tests/test_legacy_orchestration_wiring.py` asserts 00-data-prep wiring uses these helper seams.
