@@ -218,3 +218,19 @@ def filter_post_thlb_stands(
     table = table[~table[bclcs_level_5_col].isnull()]
     table = table[~table[site_index_col].isnull()]
     return table
+
+
+def derive_species_list_from_slots(
+    *,
+    f_table: Any,
+    species_slot_count: int = 6,
+    species_col_prefix: str = "SPECIES_CD_",
+) -> list[str]:
+    """Derive unique non-null species codes from species slot columns."""
+    values = set().union(
+        *[
+            f_table[f"{species_col_prefix}{idx}"].unique()
+            for idx in range(1, int(species_slot_count) + 1)
+        ]
+    )
+    return [species for species in values if species is not None]

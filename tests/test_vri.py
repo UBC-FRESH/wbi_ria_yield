@@ -7,6 +7,7 @@ from femic.pipeline.vri import (
     assign_forest_type_from_species_pct,
     classify_stand_cdm,
     classify_stand_forest_type,
+    derive_species_list_from_slots,
     filter_post_thlb_stands,
     is_conifer_species_code,
     is_deciduous_species_code,
@@ -244,3 +245,18 @@ def test_filter_post_thlb_stands_filters_expected_rows() -> None:
     out = filter_post_thlb_stands(f_table=frame)
     assert len(out) == 1
     assert out.iloc[0]["BEC_ZONE_CODE"] == "SBS"
+
+
+def test_derive_species_list_from_slots_excludes_none() -> None:
+    frame = pd.DataFrame(
+        {
+            "SPECIES_CD_1": ["SW", None],
+            "SPECIES_CD_2": ["PL", "AT"],
+            "SPECIES_CD_3": [None, "SW"],
+            "SPECIES_CD_4": [None, None],
+            "SPECIES_CD_5": [None, None],
+            "SPECIES_CD_6": [None, None],
+        }
+    )
+    out = derive_species_list_from_slots(f_table=frame)
+    assert set(out) == {"SW", "PL", "AT"}

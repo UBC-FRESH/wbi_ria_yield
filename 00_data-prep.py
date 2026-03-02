@@ -56,6 +56,7 @@ try:
     from femic.pipeline.vri import (
         assign_stratum_codes_with_lexmatch,
         assign_forest_type_from_species_pct,
+        derive_species_list_from_slots,
         filter_post_thlb_stands,
         normalize_and_filter_checkpoint2_records,
     )
@@ -116,6 +117,7 @@ except ModuleNotFoundError:
     from femic.pipeline.vri import (
         assign_stratum_codes_with_lexmatch,
         assign_forest_type_from_species_pct,
+        derive_species_list_from_slots,
         filter_post_thlb_stands,
         normalize_and_filter_checkpoint2_records,
     )
@@ -410,10 +412,7 @@ if not siteprod_tif_path.is_file():
     )
 
 
-species_list = list(
-    set().union(*[ria_vri_vclr1p["SPECIES_CD_%i" % i].unique() for i in range(1, 7)])
-)
-species_list = [s for s in species_list if s is not None]
+species_list = derive_species_list_from_slots(f_table=ria_vri_vclr1p)
 
 # --- cell 24 ---
 process_checkpoint2 = 1 if _femic_no_cache else 0

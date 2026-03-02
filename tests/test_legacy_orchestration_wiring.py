@@ -112,6 +112,7 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "list_siteprod_layers": 1,
         "export_and_stack_siteprod_layers": 1,
         "assign_thlb_raw_from_raster": 1,
+        "derive_species_list_from_slots": 1,
         "normalize_and_filter_checkpoint2_records": 1,
         "filter_post_thlb_stands": 1,
         "assign_stratum_codes_with_lexmatch": 2,

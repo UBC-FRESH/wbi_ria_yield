@@ -948,3 +948,18 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline species-list
   derivation (`set().union(...)` over `SPECIES_CD_1..6`) into a reusable helper seam so derived
   species universes are no longer assembled ad hoc inside `00_data-prep.py`.
+- Expanded `src/femic/pipeline/vri.py` with
+  `derive_species_list_from_slots(...)` to centralize species-universe derivation from
+  `SPECIES_CD_1..6` slot columns.
+- Rewired `00_data-prep.py` to call `derive_species_list_from_slots(...)` instead of inline
+  `set().union(...)` species-list assembly.
+- Exported the new species-list helper via `femic.pipeline.__init__`, expanded deterministic
+  coverage in `tests/test_vri.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `derive_species_list_from_slots(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (203 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting remaining inline post-bundle warning
+  formatting for missing AU/curve mappings into a reusable diagnostics helper seam so 00_data-prep
+  no longer assembles this warning text block inline.
