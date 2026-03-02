@@ -7,6 +7,7 @@ from femic.pipeline.vri import (
     assign_forest_type_from_species_pct,
     classify_stand_cdm,
     classify_stand_forest_type,
+    filter_post_thlb_stands,
     is_conifer_species_code,
     is_deciduous_species_code,
     normalize_and_filter_checkpoint2_records,
@@ -201,3 +202,45 @@ def test_assign_stratum_codes_with_lexmatch_assigns_both_columns() -> None:
     assert out.loc[0, "stratum"] == "SBS_SW+PL"
     assert out.loc[1, "stratum"] == "BWBS_AT"
     assert out.loc[0, "stratum_lexmatch"].startswith("SBSxSBSxSBSx_")
+
+
+def test_filter_post_thlb_stands_filters_expected_rows() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "BCLCS_LEVEL_2": "T",
+                "FOR_MGMT_LAND_BASE_IND": "Y",
+                "BEC_ZONE_CODE": "SBS",
+                "SPECIES_CD_1": "SW",
+                "BCLCS_LEVEL_5": "TM",
+                "SITE_INDEX": 20.0,
+            },
+            {
+                "BCLCS_LEVEL_2": "N",
+                "FOR_MGMT_LAND_BASE_IND": "Y",
+                "BEC_ZONE_CODE": "SBS",
+                "SPECIES_CD_1": "SW",
+                "BCLCS_LEVEL_5": "TM",
+                "SITE_INDEX": 20.0,
+            },
+            {
+                "BCLCS_LEVEL_2": "T",
+                "FOR_MGMT_LAND_BASE_IND": "Y",
+                "BEC_ZONE_CODE": "BAFA",
+                "SPECIES_CD_1": "SW",
+                "BCLCS_LEVEL_5": "TM",
+                "SITE_INDEX": 20.0,
+            },
+            {
+                "BCLCS_LEVEL_2": "T",
+                "FOR_MGMT_LAND_BASE_IND": "Y",
+                "BEC_ZONE_CODE": "SBS",
+                "SPECIES_CD_1": None,
+                "BCLCS_LEVEL_5": "TM",
+                "SITE_INDEX": 20.0,
+            },
+        ]
+    )
+    out = filter_post_thlb_stands(f_table=frame)
+    assert len(out) == 1
+    assert out.iloc[0]["BEC_ZONE_CODE"] == "SBS"

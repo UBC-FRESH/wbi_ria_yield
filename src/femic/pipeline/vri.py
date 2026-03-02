@@ -197,3 +197,24 @@ def normalize_and_filter_checkpoint2_records(
     table = table[table.BASAL_AREA >= min_basal_area]
     table = table[table.LIVE_STAND_VOLUME_125 >= min_live_stand_volume]
     return table
+
+
+def filter_post_thlb_stands(
+    *,
+    f_table: Any,
+    required_bclcs_level_2: str = "T",
+    required_for_mgmt_land_base: str = "Y",
+    excluded_bec_zones: Sequence[str] = ("BAFA", "IMA"),
+    species_col: str = "SPECIES_CD_1",
+    bclcs_level_5_col: str = "BCLCS_LEVEL_5",
+    site_index_col: str = "SITE_INDEX",
+) -> Any:
+    """Apply legacy checkpoint83 post-THLB stand filters."""
+    table = f_table.copy()
+    table = table[table.BCLCS_LEVEL_2 == required_bclcs_level_2]
+    table = table[table.FOR_MGMT_LAND_BASE_IND == required_for_mgmt_land_base]
+    table = table[~table.BEC_ZONE_CODE.isin(list(excluded_bec_zones))]
+    table = table[~table[species_col].isnull()]
+    table = table[~table[bclcs_level_5_col].isnull()]
+    table = table[~table[site_index_col].isnull()]
+    return table

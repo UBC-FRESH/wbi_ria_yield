@@ -56,6 +56,7 @@ try:
     from femic.pipeline.vri import (
         assign_stratum_codes_with_lexmatch,
         assign_forest_type_from_species_pct,
+        filter_post_thlb_stands,
         normalize_and_filter_checkpoint2_records,
     )
     from femic.pipeline.siteprod import (
@@ -115,6 +116,7 @@ except ModuleNotFoundError:
     from femic.pipeline.vri import (
         assign_stratum_codes_with_lexmatch,
         assign_forest_type_from_species_pct,
+        filter_post_thlb_stands,
         normalize_and_filter_checkpoint2_records,
     )
     from femic.pipeline.siteprod import (
@@ -705,13 +707,9 @@ f = assign_thlb_raw_from_raster(
 
 # --- cell 83 ---
 if 1:
-    f = f[f.BCLCS_LEVEL_2 == "T"]  # implies f.BCLCS_LEVEL_1 == 'V'
+    f = filter_post_thlb_stands(f_table=f)
+    # implies f.BCLCS_LEVEL_1 == 'V'
     # f = f[f.NON_PRODUCTIVE_CD != None]
-    f = f[f.FOR_MGMT_LAND_BASE_IND == "Y"]
-    f = f[~f.BEC_ZONE_CODE.isin(["BAFA", "IMA"])]
-    f = f[~f.SPECIES_CD_1.isnull()]
-    f = f[~f.BCLCS_LEVEL_5.isnull()]
-    f = f[~f.SITE_INDEX.isnull()]
 
 # --- cell 85 ---
 f.shape
