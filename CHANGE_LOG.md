@@ -840,3 +840,12 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice: continue P2.2 by trimming residual notebook-only `if 1:` wrappers
   in `00_data-prep.py` where they no longer control branching, so orchestration flow is explicit.
+- Removed residual notebook-only `if 1:` wrappers in `00_data-prep.py` that no longer controlled
+  branching (01a stage block and checkpoint83 post-THLB block), leaving explicit orchestration
+  flow.
+- Verified behavior parity and full validation gate success:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (204 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by removing or gating remaining notebook-only plot
+  diagnostics (`f.thlb_raw.describe()` / `f.thlb_raw.hist()`) so headless/script runs stay focused
+  on pipeline outputs.

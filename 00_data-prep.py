@@ -495,70 +495,72 @@ results = _legacy_stage_state.results
 f = prepare_tsa_index(f_table=f, tsa_column="tsa_code")
 
 # --- cell 54 ---
-if 1:
-    force_run_vdyp = 0
-    _run01a_module = load_legacy_module(
-        script_path=Path(__file__).with_name("01a_run-tsa.py"),
-        module_name="run_tsa_01a",
-    )
+force_run_vdyp = 0
+_run01a_module = load_legacy_module(
+    script_path=Path(__file__).with_name("01a_run-tsa.py"),
+    module_name="run_tsa_01a",
+)
 
-    def _should_skip_01a(tsa):
-        vdyp_cache_paths = build_vdyp_cache_paths(
-            tsa_code=tsa,
-            vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
-            vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
-        )
-        return should_skip_if_outputs_exist(
-            resume_effective=_femic_resume_effective,
-            output_paths=(
-                tipsy_params_excel_path(
-                    tsa=tsa,
-                    tipsy_params_path_prefix=tipsy_params_path_prefix,
-                ),
-                vdyp_cache_paths["vdyp_curves_smooth_tsa_feather_path"],
+
+def _should_skip_01a(tsa):
+    vdyp_cache_paths = build_vdyp_cache_paths(
+        tsa_code=tsa,
+        vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
+        vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
+    )
+    return should_skip_if_outputs_exist(
+        resume_effective=_femic_resume_effective,
+        output_paths=(
+            tipsy_params_excel_path(
+                tsa=tsa,
+                tipsy_params_path_prefix=tipsy_params_path_prefix,
             ),
-            skip_message=f"resume: skipping 01a for tsa {tsa} (outputs exist)",
-        )
-
-    def _run_one_01a(tsa):
-        stratum_col = "stratum"
-        runtime_config = build_legacy_01a_runtime_config(
-            tsa_code=tsa,
-            resume_effective=_femic_resume_effective,
-            force_run_vdyp=bool(force_run_vdyp),
-            kwarg_overrides_for_tsa=None,
-            vdyp_results_pickle_path=vdyp_results_pickle_path,
-            vdyp_input_pandl_path=vdyp_input_pandl_path,
-            vdyp_ply_feather_path=vdyp_ply_feather_path,
-            vdyp_lyr_feather_path=vdyp_lyr_feather_path,
-            tipsy_params_columns=tipsy_params_columns,
-            tipsy_params_path_prefix=tipsy_params_path_prefix,
-            vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
-            vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
-            vdyp_out_cache=globals().get("vdyp_out_cache"),
-            curve_fit_impl=globals().get("_curve_fit"),
-        )
-        _run01a_module.run_tsa(
-            tsa=tsa,
-            stratum_col=stratum_col,
-            f=f,
-            si_levels=si_levels,
-            results=results,
-            vdyp_results=vdyp_results,
-            vdyp_curves_smooth=vdyp_curves_smooth,
-            scsi_au=scsi_au,
-            au_scsi=au_scsi,
-            tipsy_params=tipsy_params,
-            si_levelquants=si_levelquants,
-            species_list=species_list,
-            runtime_config=runtime_config,
-        )
-
-    run_legacy_tsa_loop(
-        tsa_list=ria_tsas[:],
-        should_skip_fn=_should_skip_01a,
-        run_one_fn=_run_one_01a,
+            vdyp_cache_paths["vdyp_curves_smooth_tsa_feather_path"],
+        ),
+        skip_message=f"resume: skipping 01a for tsa {tsa} (outputs exist)",
     )
+
+
+def _run_one_01a(tsa):
+    stratum_col = "stratum"
+    runtime_config = build_legacy_01a_runtime_config(
+        tsa_code=tsa,
+        resume_effective=_femic_resume_effective,
+        force_run_vdyp=bool(force_run_vdyp),
+        kwarg_overrides_for_tsa=None,
+        vdyp_results_pickle_path=vdyp_results_pickle_path,
+        vdyp_input_pandl_path=vdyp_input_pandl_path,
+        vdyp_ply_feather_path=vdyp_ply_feather_path,
+        vdyp_lyr_feather_path=vdyp_lyr_feather_path,
+        tipsy_params_columns=tipsy_params_columns,
+        tipsy_params_path_prefix=tipsy_params_path_prefix,
+        vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
+        vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
+        vdyp_out_cache=globals().get("vdyp_out_cache"),
+        curve_fit_impl=globals().get("_curve_fit"),
+    )
+    _run01a_module.run_tsa(
+        tsa=tsa,
+        stratum_col=stratum_col,
+        f=f,
+        si_levels=si_levels,
+        results=results,
+        vdyp_results=vdyp_results,
+        vdyp_curves_smooth=vdyp_curves_smooth,
+        scsi_au=scsi_au,
+        au_scsi=au_scsi,
+        tipsy_params=tipsy_params,
+        si_levelquants=si_levelquants,
+        species_list=species_list,
+        runtime_config=runtime_config,
+    )
+
+
+run_legacy_tsa_loop(
+    tsa_list=ria_tsas[:],
+    should_skip_fn=_should_skip_01a,
+    run_one_fn=_run_one_01a,
+)
 
 # --- cell 58 ---
 # loop over tsas here and run notebook 01_run-tsa_step2
@@ -688,10 +690,9 @@ f = assign_thlb_raw_from_raster(
 )
 
 # --- cell 83 ---
-if 1:
-    f = filter_post_thlb_stands(f_table=f)
-    # implies f.BCLCS_LEVEL_1 == 'V'
-    # f = f[f.NON_PRODUCTIVE_CD != None]
+f = filter_post_thlb_stands(f_table=f)
+# implies f.BCLCS_LEVEL_1 == 'V'
+# f = f[f.NON_PRODUCTIVE_CD != None]
 
 # --- cell 85 ---
 
