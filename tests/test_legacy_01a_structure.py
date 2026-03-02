@@ -16,16 +16,16 @@ def _run_tsa_function(tree: ast.AST) -> ast.FunctionDef:
     raise AssertionError("run_tsa function not found in 01a_run-tsa.py")
 
 
-def test_run01a_uses_target_nstrata_helper_call() -> None:
+def test_run01a_uses_build_strata_summary_helper_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
     for node in ast.walk(run_tsa):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        if isinstance(func, ast.Name) and func.id == "target_nstrata_for":
+        if isinstance(func, ast.Name) and func.id == "build_strata_summary":
             return
-    raise AssertionError("run_tsa should call target_nstrata_for(...)")
+    raise AssertionError("run_tsa should call build_strata_summary(...)")
 
 
 def test_run01a_no_inline_target_nstrata_dict_assignment() -> None:

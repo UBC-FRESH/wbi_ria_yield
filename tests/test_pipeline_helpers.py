@@ -11,7 +11,10 @@ from femic.pipeline.io import (
     resolve_run_paths,
 )
 from femic.pipeline.plots import strata_plot_paths, tipsy_vdyp_plot_path
-from femic.pipeline.tsa import MIN_STANDCOUNT, target_nstrata_for
+import pytest
+import pandas as pd
+
+from femic.pipeline.tsa import MIN_STANDCOUNT, build_strata_summary, target_nstrata_for
 
 
 def test_normalize_tsa_list_defaults_and_padding(tmp_path: Path) -> None:
@@ -42,6 +45,53 @@ def test_tsa_target_nstrata_lookup() -> None:
     assert target_nstrata_for("8") == 9
     assert target_nstrata_for("16") == 13
     assert MIN_STANDCOUNT == 1000
+
+
+def test_build_strata_summary_filters_and_computes_expected_fields() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["A", "A", "A", "B", "B", "C"],
+            "FEATURE_AREA_SQM": [10.0, 10.0, 10.0, 20.0, 20.0, 30.0],
+            "SITE_INDEX": [10.0, 11.0, 12.0, 20.0, 21.0, 30.0],
+            "FEATURE_ID": [1, 2, 3, 4, 5, 6],
+            "CROWN_CLOSURE": [50.0, 60.0, 55.0, 70.0, 65.0, 80.0],
+        }
+    ).set_index("stratum")
+    f_table["totalarea_p"] = f_table.FEATURE_AREA_SQM / f_table.FEATURE_AREA_SQM.sum()
+
+    strata_df, largestn, site_index_iqr_mean = build_strata_summary(
+        f_table=f_table,
+        stratum_col="stratum",
+        pd_module=pd,
+        target_nstrata=2,
+        min_standcount=2,
+    )
+
+    assert list(strata_df.index) == ["B", "A"]
+    assert largestn == ["B", "A"]
+    assert strata_df.loc["A", "median_si"] == 11.0
+    assert strata_df.loc["B", "median_si"] == 20.5
+    assert round(site_index_iqr_mean, 2) == 0.5
+
+
+def test_build_strata_summary_requires_target_or_tsa_code() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["A", "A"],
+            "FEATURE_AREA_SQM": [1.0, 1.0],
+            "SITE_INDEX": [10.0, 11.0],
+            "FEATURE_ID": [1, 2],
+            "CROWN_CLOSURE": [50.0, 55.0],
+            "totalarea_p": [0.5, 0.5],
+        }
+    ).set_index("stratum")
+
+    with pytest.raises(ValueError, match="target_nstrata or tsa_code"):
+        build_strata_summary(
+            f_table=f_table,
+            stratum_col="stratum",
+            pd_module=pd,
+        )
 
 
 def test_plot_path_helpers() -> None:

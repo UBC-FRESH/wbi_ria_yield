@@ -61,7 +61,7 @@ def run_tsa(
         load_or_build_vdyp_results_tsa,
         plot_curve_overlays,
     )
-    from femic.pipeline.tsa import MIN_STANDCOUNT, target_nstrata_for
+    from femic.pipeline.tsa import build_strata_summary
     from femic.pipeline.vdyp_overrides import vdyp_kwarg_overrides_for_tsa
     from femic.pipeline.tipsy import (
         build_tipsy_params_for_tsa,
@@ -91,29 +91,13 @@ def run_tsa(
     f_["totalarea_p"] = f_.FEATURE_AREA_SQM / totalarea
 
     # --- cell 8 ---
-    strata_gb1 = f_.groupby(level=stratum_col)
-    target_nstrata = target_nstrata_for(tsa)
-    totalarea_p_sum = strata_gb1.totalarea_p.sum().nlargest(target_nstrata)
-    largestn_strata_codes = list(totalarea_p_sum.index.values)
-    strata_gb2 = f_.groupby(level=stratum_col)
-    site_index_std = strata_gb2.SITE_INDEX.std()
-    site_index_iqr = strata_gb2.SITE_INDEX.quantile(
-        0.75
-    ) - strata_gb2.SITE_INDEX.quantile(0.25)
-    site_index_median = strata_gb2.SITE_INDEX.median()
-    stand_count = strata_gb2.FEATURE_ID.count()
-    coverage = strata_gb2.totalarea_p.sum()
-    crown_closure = strata_gb2.CROWN_CLOSURE.median()
-    strata_df = pd.DataFrame(totalarea_p_sum)
-    strata_df["site_index_std"] = site_index_std
-    strata_df["site_index_iqr"] = site_index_iqr
-    strata_df["site_index_median"] = site_index_median
-    strata_df["stand_count"] = stand_count
-    strata_df["coverage"] = coverage
-    strata_df["crown_closure"] = crown_closure
-    strata_df = strata_df[strata_df.stand_count >= MIN_STANDCOUNT]
-    strata_df = strata_df.head(target_nstrata)
-    print("mean stratum SI IQR", site_index_iqr.mean())
+    strata_df, largestn_strata_codes, site_index_iqr_mean = build_strata_summary(
+        f_table=f_,
+        stratum_col=stratum_col,
+        pd_module=pd,
+        tsa_code=tsa,
+    )
+    print("mean stratum SI IQR", site_index_iqr_mean)
     print("coverage", strata_df.coverage.sum())
     print("count", strata_df.shape[0])
 
@@ -122,11 +106,6 @@ def run_tsa(
     ax.set_xlim([0, 25])
 
     # --- cell 12 ---
-    strata_df["median_si"] = (
-        f_[f_.index.isin(largestn_strata_codes)]
-        .groupby(level=stratum_col)
-        .SITE_INDEX.median()
-    )
     plt.scatter(strata_df.totalarea_p, strata_df.median_si)
 
     # --- cell 14 ---
