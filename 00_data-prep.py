@@ -54,6 +54,7 @@ try:
         resolve_legacy_external_data_paths,
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
+    from femic.pipeline.vri import normalize_and_filter_checkpoint2_records
     from femic.pipeline.siteprod import (
         assign_siteprod_from_raster,
         export_and_stack_siteprod_layers,
@@ -107,6 +108,7 @@ except ModuleNotFoundError:
         resolve_legacy_external_data_paths,
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
+    from femic.pipeline.vri import normalize_and_filter_checkpoint2_records
     from femic.pipeline.siteprod import (
         assign_siteprod_from_raster,
         export_and_stack_siteprod_layers,
@@ -405,31 +407,9 @@ species_list = [s for s in species_list if s is not None]
 # --- cell 24 ---
 process_checkpoint2 = 1 if _femic_no_cache else 0
 if process_checkpoint2:
-    for i in range(1, 7):
-        f["SPECIES_CD_%i" % i].fillna("X", inplace=True)
-        f["SPECIES_PCT_%i" % i].fillna(0, inplace=True)
-    f["SOIL_NUTRIENT_REGIME"].fillna("X", inplace=True)
-    f["SOIL_MOISTURE_REGIME_1"].fillna("X", inplace=True)
-    f["SITE_POSITION_MESO"].fillna("X", inplace=True)
-    f["BCLCS_LEVEL_3"].fillna("X", inplace=True)
-    f["BCLCS_LEVEL_4"].fillna("X", inplace=True)
-    f["BCLCS_LEVEL_5"].fillna("X", inplace=True)
-    f["BEC_VARIANT"].fillna("X", inplace=True)
-    f["LIVE_STAND_VOLUME_125"].fillna(0, inplace=True)
-    f.LIVE_VOL_PER_HA_SPP1_125.fillna(0, inplace=True)
-    f.LIVE_VOL_PER_HA_SPP2_125.fillna(0, inplace=True)
-    f.LIVE_VOL_PER_HA_SPP3_125.fillna(0, inplace=True)
-    f.LIVE_VOL_PER_HA_SPP4_125.fillna(0, inplace=True)
-    f.LIVE_VOL_PER_HA_SPP5_125.fillna(0, inplace=True)
-    f.LIVE_VOL_PER_HA_SPP6_125.fillna(0, inplace=True)
-    f = f[f.BCLCS_LEVEL_2 == "T"]  # implies f.BCLCS_LEVEL_1 == 'V'
+    f = normalize_and_filter_checkpoint2_records(f_table=f)
+    # implies f.BCLCS_LEVEL_1 == 'V'
     # f = f[f.BCLCS_LEVEL_5 != 'OP']
-    f = f[f.NON_PRODUCTIVE_CD != None]
-    f = f[f.FOR_MGMT_LAND_BASE_IND == "Y"]
-    f = f[~f.BEC_ZONE_CODE.isin(["BAFA", "IMA"])]
-    f = f[f.PROJ_AGE_1 >= 30]
-    f = f[f.BASAL_AREA >= 5]
-    f = f[f.LIVE_STAND_VOLUME_125 >= 1]
     f.shape
     # vri_vclr1p_categorical_columns = open(vri_vclr1p_categorical_columns_path).read().split('\n')
     # for c in vri_vclr1p_categorical_columns:

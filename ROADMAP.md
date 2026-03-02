@@ -874,3 +874,18 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline checkpoint2
   pre-filter/fillna normalization block (species/soil/BCLCS/LIVE_VOL defaults and filters) into a
   dedicated reusable helper seam.
+- Added `src/femic/pipeline/vri.py` with
+  `normalize_and_filter_checkpoint2_records(...)` to centralize checkpoint2 fill-defaults and
+  row-filter rules (species slots, soil/BCLCS defaults, operability filters).
+- Rewired `00_data-prep.py` checkpoint2 normalization stage to call
+  `normalize_and_filter_checkpoint2_records(...)`, removing the large inline fillna/filter block.
+- Exported VRI helper seams via `femic.pipeline.__init__`, added deterministic unit coverage in
+  `tests/test_vri.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `normalize_and_filter_checkpoint2_records(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (195 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting remaining inline conifer/deciduous
+  classification helpers (`is_conif`, `is_decid`, `pconif`, `pdecid`, stand-type classifiers) from
+  `00_data-prep.py` into reusable helper seams.
