@@ -1101,3 +1101,14 @@
 - Queued next extraction slice: continue P2.2 by auditing remaining ad hoc timestamped event/log
   payload builders outside VDYP/TIPSY (if any) and consolidating them into shared diagnostics
   helpers where this can be done with zero field-shape drift.
+- Continued event-payload consolidation by rewiring remaining ad hoc VDYP run-event builders in
+  `src/femic/pipeline/vdyp_stage.py` (`cache_only`, `start`, and curve-input missing-output
+  warning) to use shared `build_timestamped_event(...)` helper.
+- Preserved emitted field shapes/status semantics for existing log consumers and regression tests.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (240 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by evaluating whether `process_vdyp_out(...)`
+  (`src/femic/pipeline/vdyp_curves.py`) can adopt shared timestamped event builder without
+  changing its intentional single-base-event timestamp semantics; if not, explicitly document that
+  rationale and mark this consolidation sub-track complete.

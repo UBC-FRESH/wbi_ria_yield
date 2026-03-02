@@ -898,28 +898,26 @@ def run_vdyp_for_stratum(
         if feature_count == 0:
             append_jsonl_(
                 vdyp_log_path,
-                {
-                    "event": "vdyp_run",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "status": "cache_only",
-                    "phase": phase,
-                    "feature_count": 0,
-                    "cache_hits": int(cache_hits),
-                    "context": base_context,
-                },
+                build_timestamped_event(
+                    event="vdyp_run",
+                    status="cache_only",
+                    phase=phase,
+                    feature_count=0,
+                    cache_hits=int(cache_hits),
+                    context=base_context,
+                ),
             )
             return {}
         append_jsonl_(
             vdyp_log_path,
-            {
-                "event": "vdyp_run",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "status": "start",
-                "phase": phase,
-                "feature_count": int(feature_count),
-                "cache_hits": int(cache_hits),
-                "context": base_context,
-            },
+            build_timestamped_event(
+                event="vdyp_run",
+                status="start",
+                phase=phase,
+                feature_count=int(feature_count),
+                cache_hits=int(cache_hits),
+                context=base_context,
+            ),
         )
         return execute_vdyp_batch_(
             feature_ids=feature_ids_list,
@@ -1363,14 +1361,13 @@ def execute_curve_smoothing_runs(
                 message_fn("  missing vdyp results for", sc, si_level)
                 append_jsonl_fn(
                     vdyp_curve_events_path,
-                    {
-                        "event": "vdyp_curve_fit",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "status": "warning",
-                        "stage": "curve_input",
-                        "reason": "missing_vdyp_output",
-                        "context": curve_context,
-                    },
+                    build_timestamped_event(
+                        event="vdyp_curve_fit",
+                        status="warning",
+                        stage="curve_input",
+                        reason="missing_vdyp_output",
+                        context=curve_context,
+                    ),
                 )
                 continue
             x, y = process_vdyp_out_fn(
