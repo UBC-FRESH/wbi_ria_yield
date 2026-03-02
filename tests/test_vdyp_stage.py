@@ -32,6 +32,7 @@ from femic.pipeline.vdyp_stage import (
     load_vdyp_input_tables,
     load_or_build_vdyp_results_tsa,
     plot_curve_overlays,
+    resolve_vdyp_batch_execution_dependencies,
     resolve_vdyp_batch_temp_artifacts,
     run_vdyp_for_stratum,
     run_vdyp_sampling,
@@ -126,6 +127,47 @@ def test_normalize_vdyp_run_event_counts_coerces_to_ints() -> None:
     assert counts.cache_hits == 1
     assert counts.ply_rows == 3
     assert counts.lyr_rows == 4
+
+
+def test_resolve_vdyp_batch_execution_dependencies_keeps_injected_callables() -> None:
+    def _write(*_args: object, **_kwargs: object) -> None:
+        return None
+
+    def _import(_path: str) -> dict[str, object]:
+        return {}
+
+    def _append_jsonl(_path: str | Path, _payload: object) -> None:
+        return None
+
+    def _append_text(_path: str | Path, _text: str) -> None:
+        return None
+
+    def _header(**_kwargs: object) -> str:
+        return "h"
+
+    def _block(**_kwargs: object) -> str:
+        return "b"
+
+    def _run(*_args: object, **_kwargs: object) -> _RunResult:
+        return _RunResult(stdout="", stderr="")
+
+    deps = resolve_vdyp_batch_execution_dependencies(
+        write_vdyp_infiles=_write,
+        import_vdyp_tables_fn=_import,
+        append_jsonl_fn=_append_jsonl,
+        append_text_fn=_append_text,
+        build_stream_header_fn=_header,
+        build_stream_log_block_fn=_block,
+        subprocess_run=_run,
+    )
+
+    assert deps.write_vdyp_infiles is _write
+    assert deps.import_vdyp_tables is _import
+    assert deps.append_jsonl is _append_jsonl
+    assert deps.append_text is _append_text
+    assert deps.build_stream_header is _header
+    assert deps.build_stream_log_block is _block
+    assert deps.subprocess_run is _run
 
 
 def test_build_vdyp_batch_command_preserves_legacy_string_shape() -> None:

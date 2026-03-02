@@ -82,6 +82,19 @@ class VdypRunEventCounts:
     lyr_rows: int
 
 
+@dataclass(frozen=True)
+class VdypBatchExecutionDependencies:
+    """Resolved callable dependencies used by `execute_vdyp_batch(...)`."""
+
+    write_vdyp_infiles: Callable[..., None]
+    import_vdyp_tables: Callable[[str], dict[Any, Any]]
+    append_jsonl: Callable[[str | Path, Any], None]
+    append_text: Callable[[str | Path, str], None]
+    build_stream_header: Callable[..., str]
+    build_stream_log_block: Callable[..., str]
+    subprocess_run: Callable[..., Any]
+
+
 def _curve_fit_skip_exception_types() -> tuple[type[Exception], ...]:
     """Curve-fit failures that should skip one species and continue."""
     return (
@@ -118,6 +131,56 @@ def _bootstrap_dispatch_exception_types() -> tuple[type[Exception], ...]:
 def _as_path(path: str | Path) -> Path:
     """Normalize path-like inputs to `Path`."""
     return path if isinstance(path, Path) else Path(path)
+
+
+def resolve_vdyp_batch_execution_dependencies(
+    *,
+    write_vdyp_infiles: Callable[..., None] | None,
+    import_vdyp_tables_fn: Callable[[str], dict[Any, Any]] | None,
+    append_jsonl_fn: Callable[[str | Path, Any], None] | None,
+    append_text_fn: Callable[[str | Path, str], None] | None,
+    build_stream_header_fn: Callable[..., str] | None,
+    build_stream_log_block_fn: Callable[..., str] | None,
+    subprocess_run: Callable[..., Any] | None,
+) -> VdypBatchExecutionDependencies:
+    """Resolve injected/default callable dependencies for VDYP batch execution."""
+    resolved_write = write_vdyp_infiles
+    if resolved_write is None:
+        from femic.pipeline.vdyp_io import (
+            write_vdyp_infiles_plylyr as resolved_write,
+        )
+    resolved_import = import_vdyp_tables_fn
+    if resolved_import is None:
+        from femic.pipeline.vdyp_io import import_vdyp_tables as resolved_import
+    resolved_append_jsonl = append_jsonl_fn
+    if resolved_append_jsonl is None:
+        from femic.pipeline.vdyp_logging import append_jsonl as resolved_append_jsonl
+    resolved_append_text = append_text_fn
+    if resolved_append_text is None:
+        from femic.pipeline.vdyp_logging import append_text as resolved_append_text
+    resolved_build_header = build_stream_header_fn
+    if resolved_build_header is None:
+        from femic.pipeline.vdyp_logging import (
+            build_vdyp_stream_header as resolved_build_header,
+        )
+    resolved_build_block = build_stream_log_block_fn
+    if resolved_build_block is None:
+        from femic.pipeline.vdyp_logging import (
+            build_vdyp_stream_log_block as resolved_build_block,
+        )
+    resolved_subprocess_run = subprocess_run or subprocess.run
+    return VdypBatchExecutionDependencies(
+        write_vdyp_infiles=cast(Callable[..., None], resolved_write),
+        import_vdyp_tables=cast(
+            Callable[[str], dict[Any, Any]],
+            resolved_import,
+        ),
+        append_jsonl=cast(Callable[[str | Path, Any], None], resolved_append_jsonl),
+        append_text=cast(Callable[[str | Path, str], None], resolved_append_text),
+        build_stream_header=cast(Callable[..., str], resolved_build_header),
+        build_stream_log_block=cast(Callable[..., str], resolved_build_block),
+        subprocess_run=cast(Callable[..., Any], resolved_subprocess_run),
+    )
 
 
 def build_vdyp_batch_command(
@@ -1306,34 +1369,15 @@ def execute_vdyp_batch(
     feature_ids_list = list(feature_ids)
     if not feature_ids_list:
         return {}
-    if write_vdyp_infiles is None:
-        from femic.pipeline.vdyp_io import (
-            write_vdyp_infiles_plylyr as write_vdyp_infiles,
-        )
-    if import_vdyp_tables_fn is None:
-        from femic.pipeline.vdyp_io import import_vdyp_tables as import_vdyp_tables_fn
-    if append_jsonl_fn is None:
-        from femic.pipeline.vdyp_logging import append_jsonl as append_jsonl_fn
-    if append_text_fn is None:
-        from femic.pipeline.vdyp_logging import append_text as append_text_fn
-    if build_stream_header_fn is None:
-        from femic.pipeline.vdyp_logging import (
-            build_vdyp_stream_header as build_stream_header_fn,
-        )
-    if build_stream_log_block_fn is None:
-        from femic.pipeline.vdyp_logging import (
-            build_vdyp_stream_log_block as build_stream_log_block_fn,
-        )
-    if subprocess_run is None:
-        subprocess_run = subprocess.run
-
-    write_vdyp_infiles_ = cast(Callable[..., None], write_vdyp_infiles)
-    import_vdyp_tables_ = cast(Callable[[str], dict[Any, Any]], import_vdyp_tables_fn)
-    append_jsonl_ = cast(Callable[[str | Path, Any], None], append_jsonl_fn)
-    append_text_ = cast(Callable[[str | Path, str], None], append_text_fn)
-    build_stream_header_ = cast(Callable[..., str], build_stream_header_fn)
-    build_stream_log_block_ = cast(Callable[..., str], build_stream_log_block_fn)
-    subprocess_run_ = cast(Callable[..., Any], subprocess_run)
+    deps = resolve_vdyp_batch_execution_dependencies(
+        write_vdyp_infiles=write_vdyp_infiles,
+        import_vdyp_tables_fn=import_vdyp_tables_fn,
+        append_jsonl_fn=append_jsonl_fn,
+        append_text_fn=append_text_fn,
+        build_stream_header_fn=build_stream_header_fn,
+        build_stream_log_block_fn=build_stream_log_block_fn,
+        subprocess_run=subprocess_run,
+    )
 
     feature_count = len(feature_ids_list)
     vdyp_ply_ = vdyp_ply[vdyp_ply.FEATURE_ID.isin(feature_ids_list)]
@@ -1352,7 +1396,7 @@ def execute_vdyp_batch(
     )
 
     def _emit_run_event(status: str, **extra_fields: Any) -> None:
-        append_jsonl_(
+        deps.append_jsonl(
             vdyp_log_path,
             build_vdyp_run_event(
                 status=status,
@@ -1400,7 +1444,7 @@ def execute_vdyp_batch(
             vdyp_err_name=vdyp_err_txt_.name,
         )
 
-        write_vdyp_infiles_(
+        deps.write_vdyp_infiles(
             vdyp_ply_,
             vdyp_lyr_,
             temp_artifacts.vdyp_ply_csv,
@@ -1418,7 +1462,7 @@ def execute_vdyp_batch(
             vdyp_err_txt=temp_artifacts.vdyp_err_txt,
         )
         try:
-            result = subprocess_run_(
+            result = deps.subprocess_run(
                 shlex.split(args),
                 timeout=timeout,
                 capture_output=True,
@@ -1439,24 +1483,24 @@ def execute_vdyp_batch(
             )
             return {}
 
-        stream_header = build_stream_header_(
+        stream_header = deps.build_stream_header(
             phase=phase,
             feature_count=counts.feature_count,
             cache_hits=counts.cache_hits,
             cmd=args,
         )
         if result.stdout:
-            append_text_(
+            deps.append_text(
                 vdyp_stdout_log_path,
-                build_stream_log_block_(
+                deps.build_stream_log_block(
                     stream_header=stream_header,
                     stream_text=result.stdout,
                 ),
             )
         if result.stderr:
-            append_text_(
+            deps.append_text(
                 vdyp_stderr_log_path,
-                build_stream_log_block_(
+                deps.build_stream_log_block(
                     stream_header=stream_header,
                     stream_text=result.stderr,
                 ),
@@ -1469,7 +1513,7 @@ def execute_vdyp_batch(
             run_started=run_started,
         )
         try:
-            vdyp_out = import_vdyp_tables_(
+            vdyp_out = deps.import_vdyp_tables(
                 str(vdyp_io_dir / temp_artifacts.vdyp_out_txt)
             )
         except _vdyp_parse_exception_types() as exc:

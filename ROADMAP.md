@@ -1460,3 +1460,18 @@
 - Queued next extraction slice: continue P2.2 by auditing repeated callable-cast setup in
   `execute_vdyp_batch(...)` and centralizing safe dependency-resolution/cast seams without changing
   runtime defaults or injection points.
+- Completed the queued callable-resolution/cast consolidation in
+  `src/femic/pipeline/vdyp_stage.py` by adding `VdypBatchExecutionDependencies` and
+  `resolve_vdyp_batch_execution_dependencies(...)`.
+- Rewired `execute_vdyp_batch(...)` to consume resolved dependency fields
+  (`write_vdyp_infiles`, `import_vdyp_tables`, `append_jsonl`, `append_text`,
+  `build_stream_header`, `build_stream_log_block`, `subprocess_run`) while preserving default
+  runtime imports and explicit injection override behavior.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` with an injection-preservation test
+  for `resolve_vdyp_batch_execution_dependencies(...)`.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (256 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing repeated ephemeral helper closures inside
+  `execute_vdyp_batch(...)` (`_emit_run_event`) and promoting reusable pieces where this improves
+  clarity without changing event emission semantics or order.
