@@ -29,6 +29,39 @@ class SmoothedCurveResult:
     vdyp_out: dict[Any, Any]
 
 
+@dataclass(frozen=True)
+class CurveSmoothingPlotConfig:
+    """Plot defaults for legacy VDYP curve-smoothing overlays."""
+
+    plot: bool
+    figsize: tuple[float, float]
+    palette: tuple[Any, ...]
+    palette_flavours: tuple[str, ...]
+    alphas: tuple[float, ...]
+
+
+def build_curve_smoothing_plot_config(
+    *,
+    sns_module: Any,
+    plot: bool = True,
+    figsize: tuple[float, float] = (8, 6),
+    palette_name: str = "Greens",
+    palette_size: int = 3,
+    palette_flavours: Sequence[str] = ("RdPu", "Blues", "Greens", "Greys"),
+    alphas: Sequence[float] = (1.0, 0.5, 0.1),
+) -> CurveSmoothingPlotConfig:
+    """Build and apply legacy curve-smoothing plot defaults."""
+    palette = tuple(sns_module.color_palette(palette_name, palette_size))
+    sns_module.set_palette(palette)
+    return CurveSmoothingPlotConfig(
+        plot=bool(plot),
+        figsize=figsize,
+        palette=palette,
+        palette_flavours=tuple(str(v) for v in palette_flavours),
+        alphas=tuple(float(v) for v in alphas),
+    )
+
+
 def build_curve_fit_adapter(
     *,
     curve_fit_impl: Callable[..., Any] | None = None,

@@ -221,6 +221,35 @@ def test_run01a_uses_build_bootstrap_vdyp_results_runner_helper_call() -> None:
     raise AssertionError("run_tsa should call build_bootstrap_vdyp_results_runner(...)")
 
 
+def test_run01a_uses_build_curve_smoothing_plot_config_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if (
+            isinstance(func, ast.Name)
+            and func.id == "build_curve_smoothing_plot_config"
+        ):
+            return
+    raise AssertionError("run_tsa should call build_curve_smoothing_plot_config(...)")
+
+
+def test_run01a_no_inline_smoothing_plot_constant_assignments() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    forbidden = {"palette_flavours", "alphas"}
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in forbidden:
+                raise AssertionError(
+                    "run_tsa should source smoothing plot defaults from stage helper"
+                )
+
+
 def test_run01a_no_inline_run_bootstrap_lambda() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

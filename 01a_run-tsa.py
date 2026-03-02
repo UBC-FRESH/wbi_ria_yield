@@ -56,6 +56,7 @@ def run_tsa(
     from femic.pipeline.vdyp_stage import (
         build_bootstrap_vdyp_results_runner,
         build_curve_fit_adapter,
+        build_curve_smoothing_plot_config,
         build_fit_stratum_curves_runner,
         build_run_vdyp_for_stratum_runner,
         build_smoothed_curve_table,
@@ -326,12 +327,7 @@ def run_tsa(
         tsa,
     )
     if not os.path.isfile(vdyp_curves_smooth_tsa_feather_path):
-        figsize = (8, 6)
-        plot = 1
-        palette_flavours = ["RdPu", "Blues", "Greens", "Greys"]
-        palette = sns.color_palette("Greens", 3)
-        sns.set_palette(palette)
-        alphas = [1.0, 0.5, 0.1]
+        smooth_plot_cfg = build_curve_smoothing_plot_config(sns_module=sns)
         smoothed_runs = execute_curve_smoothing_runs(
             tsa=tsa,
             run_id=femic_run_id,
@@ -353,9 +349,9 @@ def run_tsa(
             results_for_tsa=results[tsa],
             si_levels=si_levels,
             smoothed_runs=smoothed_runs,
-            plot=bool(plot),
-            figsize=figsize,
-            palette=palette,
+            plot=smooth_plot_cfg.plot,
+            figsize=smooth_plot_cfg.figsize,
+            palette=smooth_plot_cfg.palette,
             pd_module=pd,
             plt_module=plt,
             dataframe_type=pd.core.frame.DataFrame,

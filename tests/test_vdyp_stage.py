@@ -9,9 +9,11 @@ import pytest
 import numpy as np
 
 from femic.pipeline.vdyp_stage import (
+    CurveSmoothingPlotConfig,
     SmoothedCurveResult,
     build_bootstrap_vdyp_results_runner,
     build_curve_fit_adapter,
+    build_curve_smoothing_plot_config,
     build_fit_stratum_curves_runner,
     build_run_vdyp_for_stratum_runner,
     build_smoothed_curve_table,
@@ -741,6 +743,32 @@ def test_execute_curve_smoothing_runs_builds_output_and_logs_missing() -> None:
     assert len(events) == 1
     assert events[0]["status"] == "warning"
     assert events[0]["reason"] == "missing_vdyp_output"
+
+
+def test_build_curve_smoothing_plot_config_applies_defaults() -> None:
+    class _FakeSns:
+        def __init__(self) -> None:
+            self.palette_calls: list[tuple[str, int]] = []
+            self.set_palette_calls: list[tuple[object, ...]] = []
+
+        def color_palette(self, name: str, n: int) -> list[str]:
+            self.palette_calls.append((name, n))
+            return [f"{name}-{i}" for i in range(n)]
+
+        def set_palette(self, palette: tuple[object, ...]) -> None:
+            self.set_palette_calls.append(tuple(palette))
+
+    fake_sns = _FakeSns()
+    cfg = build_curve_smoothing_plot_config(sns_module=fake_sns)
+
+    assert isinstance(cfg, CurveSmoothingPlotConfig)
+    assert cfg.plot is True
+    assert cfg.figsize == (8, 6)
+    assert cfg.palette == ("Greens-0", "Greens-1", "Greens-2")
+    assert cfg.palette_flavours == ("RdPu", "Blues", "Greens", "Greys")
+    assert cfg.alphas == (1.0, 0.5, 0.1)
+    assert fake_sns.palette_calls == [("Greens", 3)]
+    assert fake_sns.set_palette_calls == [cfg.palette]
 
 
 def test_plot_curve_overlays_renders_expected_series() -> None:
