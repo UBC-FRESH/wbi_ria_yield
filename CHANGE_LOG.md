@@ -366,3 +366,12 @@
 - Extended `tests/test_vdyp_stage.py` with forwarding/binding coverage for the new runner-builder
   helper, and updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls the
   builder helper and no longer calls `run_vdyp_for_stratum(...)` directly.
+- Added `femic.pipeline.vdyp_stage.build_bootstrap_vdyp_results_runner(...)`, a reusable helper
+  that binds per-TSA bootstrap dispatch inputs into a zero-argument callback compatible with
+  `load_or_build_vdyp_results_tsa(...)`.
+- Rewired `01a_run-tsa.py` to pass `run_bootstrap_fn` produced by
+  `build_bootstrap_vdyp_results_runner(...)`, removing inline
+  `run_bootstrap_fn=lambda: execute_bootstrap_vdyp_runs(...)` closure assembly.
+- Extended `tests/test_vdyp_stage.py` with coverage for bootstrap-runner binding/forwarding and
+  updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a uses the builder helper
+  and does not pass an inline lambda to `run_bootstrap_fn`.

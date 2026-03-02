@@ -438,3 +438,17 @@
 - Queued next extraction slice: remove the remaining inline `run_bootstrap_fn=lambda: ...`
   assembly in `01a_run-tsa.py` by introducing a dedicated stage helper for per-TSA bootstrap
   callback construction.
+- Added `femic.pipeline.vdyp_stage.build_bootstrap_vdyp_results_runner(...)`, a reusable helper
+  that binds per-TSA bootstrap dispatch inputs (`tsa`, `run_id`, results payload, SI levels, log
+  sink, `run_vdyp_fn`, and cache map) into a zero-arg callback compatible with
+  `load_or_build_vdyp_results_tsa(...)`.
+- Rewired `01a_run-tsa.py` to pass `run_bootstrap_fn` built by
+  `build_bootstrap_vdyp_results_runner(...)`, removing the remaining inline
+  `run_bootstrap_fn=lambda: execute_bootstrap_vdyp_runs(...)` closure assembly.
+- Expanded `tests/test_vdyp_stage.py` with binding/forwarding coverage for
+  `build_bootstrap_vdyp_results_runner(...)`, and updated
+  `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls the builder helper and does
+  not pass an inline lambda to `run_bootstrap_fn`.
+- Queued next extraction slice: move the remaining inline `compile_one_fn=lambda: ...` assembly in
+  pre-VDYP stratum compilation into a dedicated stage helper so 01a no longer builds fit-call
+  closures inline.
