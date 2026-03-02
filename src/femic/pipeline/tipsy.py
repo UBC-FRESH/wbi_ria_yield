@@ -29,6 +29,11 @@ class TIPSYCandidateEvaluation:
     min_si: float | None
 
 
+def _tipsy_candidate_exception_types() -> tuple[type[Exception], ...]:
+    """Candidate-evaluation failures that preserve legacy debug+re-raise behavior."""
+    return (ValueError, KeyError, TypeError, AttributeError, RuntimeError, IndexError)
+
+
 def compute_vdyp_site_index(
     vdyp_out: Mapping[Any, Any],
     *,
@@ -344,7 +349,7 @@ def build_tipsy_params_for_tsa(
                     min_operable_years=min_operable_years,
                     si_iqrlo_quantile=si_iqrlo_quantile,
                 )
-            except Exception:
+            except _tipsy_candidate_exception_types():
                 message_fn(sc, si_level)
                 message_fn(result[si_level]["ss"])
                 raise

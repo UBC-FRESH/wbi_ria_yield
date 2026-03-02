@@ -350,3 +350,104 @@ def test_build_tipsy_params_for_tsa_logs_no_species_candidates_warning() -> None
     )
     assert len(events) == 1
     assert events[0]["reason"] == "no_species_candidates"
+
+
+def test_build_tipsy_params_for_tsa_candidate_value_error_logs_debug_then_raises() -> (
+    None
+):
+    messages: list[tuple[object, ...]] = []
+    results_for_tsa = [
+        (
+            0,
+            "BAD",
+            {
+                "L": {
+                    "ss": pd.DataFrame(
+                        {
+                            "SITE_INDEX": [18.0],
+                            "siteprod": [17.0],
+                            "BEC_ZONE_CODE": ["SBS"],
+                        }
+                    ),
+                    "species": {"SW": {"pct": 60.0}},
+                }
+            },
+        )
+    ]
+    vdyp_curves_smooth_tsa = pd.DataFrame(
+        {
+            "stratum_code": ["BAD", "BAD"],
+            "si_level": ["L", "L"],
+            "age": [30, 120],
+            "volume": [160.0, 220.0],
+        }
+    )
+    exclusion = {
+        "min_vol": lambda _code: 140.0,
+        "min_si": lambda _species: 10.0,
+        "excl_leading_species": [],
+        "excl_bec": [],
+    }
+
+    with pytest.raises(ValueError, match="invalid stratum code format"):
+        build_tipsy_params_for_tsa(
+            tsa="08",
+            results_for_tsa=results_for_tsa,
+            si_levels=["L"],
+            vdyp_curves_smooth_tsa=vdyp_curves_smooth_tsa,
+            vdyp_results_for_tsa={0: {"L": {"dummy": 1}}},
+            exclusion=exclusion,
+            tipsy_param_builder=lambda *_args: {"f": {}},
+            verbose=False,
+            message_fn=lambda *args: messages.append(args),
+        )
+
+    assert any(msg == ("BAD", "L") for msg in messages)
+
+
+def test_build_tipsy_params_for_tsa_unexpected_candidate_error_propagates() -> None:
+    results_for_tsa = [
+        (
+            0,
+            "SBS_7A",
+            {
+                "L": {
+                    "ss": pd.DataFrame(
+                        {
+                            "SITE_INDEX": [18.0],
+                            "siteprod": [17.0],
+                            "BEC_ZONE_CODE": ["SBS"],
+                        }
+                    ),
+                    "species": {"SW": {"pct": 60.0}},
+                }
+            },
+        )
+    ]
+    vdyp_curves_smooth_tsa = pd.DataFrame(
+        {
+            "stratum_code": ["SBS_7A", "SBS_7A"],
+            "si_level": ["L", "L"],
+            "age": [30, 120],
+            "volume": [160.0, 220.0],
+        }
+    )
+    exclusion = {
+        "min_vol": lambda _code: (_ for _ in ()).throw(ZeroDivisionError("unexpected")),
+        "min_si": lambda _species: 10.0,
+        "excl_leading_species": [],
+        "excl_bec": [],
+    }
+
+    with pytest.raises(ZeroDivisionError, match="unexpected"):
+        build_tipsy_params_for_tsa(
+            tsa="08",
+            results_for_tsa=results_for_tsa,
+            si_levels=["L"],
+            vdyp_curves_smooth_tsa=vdyp_curves_smooth_tsa,
+            vdyp_results_for_tsa={0: {"L": {"dummy": 1}}},
+            exclusion=exclusion,
+            tipsy_param_builder=lambda *_args: {"f": {}},
+            verbose=False,
+            message_fn=lambda *_args: None,
+        )

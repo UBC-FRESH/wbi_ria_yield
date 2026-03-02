@@ -981,3 +981,18 @@
   `build_tipsy_params_for_tsa(...)` (`src/femic/pipeline/tipsy.py`, around
   `evaluate_tipsy_candidate(...)`) to explicit candidate-evaluation data/runtime exception classes
   while preserving current debug message emission and re-raise behavior.
+- Narrowed the remaining broad candidate-evaluation wrapper in
+  `build_tipsy_params_for_tsa(...)` (`src/femic/pipeline/tipsy.py`) to explicit
+  `_tipsy_candidate_exception_types()` while preserving legacy debug message emission and re-raise
+  behavior for expected candidate-evaluation failures.
+- Expanded deterministic coverage in `tests/test_tipsy.py` to assert:
+  candidate `ValueError` paths still emit debug context then re-raise, and unexpected
+  candidate-evaluation failures (`ZeroDivisionError`) propagate.
+- Verified no `except Exception` handlers remain in tipsy adapter modules
+  (`src/femic/pipeline/tipsy.py`, `tipsy_config.py`, `tipsy_legacy.py`).
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (224 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing remaining broad exception handlers
+  outside tipsy/vdyp modules (current highest-priority target: `src/femic/pipeline/tsa.py`) and
+  narrowing operational fallback paths with explicit exception classes plus propagation tests.
