@@ -4,6 +4,7 @@ from pathlib import Path
 
 from femic.pipeline.io import (
     FALLBACK_DEFAULT_TSA_LIST,
+    build_legacy_data_artifact_paths,
     build_ria_vri_checkpoint_paths,
     build_legacy_execution_plan,
     build_pipeline_run_config,
@@ -70,6 +71,15 @@ def test_build_ria_vri_checkpoint_paths_defaults() -> None:
     paths = build_ria_vri_checkpoint_paths()
     assert paths[1] == Path("data/ria_vri_vclr1p_checkpoint1.feather")
     assert paths[8] == Path("data/ria_vri_vclr1p_checkpoint8.feather")
+
+
+def test_build_legacy_data_artifact_paths_defaults() -> None:
+    paths = build_legacy_data_artifact_paths()
+    assert paths.vdyp_input_pandl_path == Path(
+        "data/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"
+    )
+    assert paths.tipsy_params_columns_path == Path("data/tipsy_params_columns")
+    assert paths.stands_shp_dir == Path("data/shp")
 
 
 def test_tsa_target_nstrata_lookup() -> None:

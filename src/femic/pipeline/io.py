@@ -91,6 +91,62 @@ class LegacyExecutionPlan:
     cmd: list[str]
 
 
+@dataclass(frozen=True)
+class LegacyDataArtifactPaths:
+    """Legacy data artifact paths used by 00_data-prep orchestration."""
+
+    ria_stands_path: Path
+    vdyp_input_pandl_path: Path
+    site_prod_bc_gdb_path: Path
+    tsa_boundaries_feather_path: Path
+    vri_vclr1p_categorical_columns_path: Path
+    ria_vclr1p_feature_tif_path: Path
+    siteprod_gdb_path: Path
+    siteprod_tmpexport_tif_path_prefix: Path
+    siteprod_tif_path: Path
+    vdyp_ply_feather_path: Path
+    vdyp_lyr_feather_path: Path
+    vdyp_results_tsa_pickle_path_prefix: Path
+    vdyp_results_pickle_path: Path
+    vdyp_curves_smooth_tsa_feather_path_prefix: Path
+    vdyp_curves_smooth_feather_path: Path
+    tipsy_params_path_prefix: Path
+    tipsy_params_columns_path: Path
+    model_input_bundle_dir: Path
+    misc_thlb_tif_path: Path
+    stands_shp_dir: Path
+
+
+def build_legacy_data_artifact_paths(
+    *,
+    output_root: str | Path = "data",
+) -> LegacyDataArtifactPaths:
+    """Build legacy 00_data-prep artifact path payload under one data root."""
+    root = Path(output_root)
+    return LegacyDataArtifactPaths(
+        ria_stands_path=root / "veg_comp_lyr_r1_poly-ria.shp",
+        vdyp_input_pandl_path=root / "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb",
+        site_prod_bc_gdb_path=root / "Site_Prod_BC.gdb",
+        tsa_boundaries_feather_path=root / "tsa_boundaries.feather",
+        vri_vclr1p_categorical_columns_path=root / "vri_vclr1p_categorical_columns",
+        ria_vclr1p_feature_tif_path=root / "ria_vclr1p_feature_raster.tif",
+        siteprod_gdb_path=root / "Site_Prod_BC.gdb",
+        siteprod_tmpexport_tif_path_prefix=root / "site_prod_bc_",
+        siteprod_tif_path=root / "siteprod.tif",
+        vdyp_ply_feather_path=root / "vdyp_ply.feather",
+        vdyp_lyr_feather_path=root / "vdyp_lyr.feather",
+        vdyp_results_tsa_pickle_path_prefix=root / "vdyp_results-tsa",
+        vdyp_results_pickle_path=root / "vdyp_results.pkl",
+        vdyp_curves_smooth_tsa_feather_path_prefix=root / "vdyp_curves_smooth-tsa",
+        vdyp_curves_smooth_feather_path=root / "vdyp_curves_smooth.feather",
+        tipsy_params_path_prefix=root / "tipsy_params_tsa",
+        tipsy_params_columns_path=root / "tipsy_params_columns",
+        model_input_bundle_dir=root / "model_input_bundle",
+        misc_thlb_tif_path=root / "misc.thlb.tif",
+        stands_shp_dir=root / "shp",
+    )
+
+
 def resolve_run_paths(*, script_path: Path, log_dir: Path | None = None) -> RunPaths:
     repo_root = script_path.parent.resolve()
     return RunPaths(

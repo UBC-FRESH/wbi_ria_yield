@@ -5,7 +5,9 @@ from __future__ import annotations
 from femic.pipeline.io import (
     DEFAULT_DEV_CONFIG_PATH,
     FALLBACK_DEFAULT_TSA_LIST,
+    LegacyDataArtifactPaths,
     LegacyExecutionPlan,
+    build_legacy_data_artifact_paths,
     PipelineRunConfig,
     build_ria_vri_checkpoint_paths,
     build_legacy_execution_plan,
@@ -140,8 +142,10 @@ from femic.pipeline.vdyp_stage import (
 __all__ = [
     "DEFAULT_DEV_CONFIG_PATH",
     "FALLBACK_DEFAULT_TSA_LIST",
+    "LegacyDataArtifactPaths",
     "LegacyExecutionPlan",
     "PipelineRunConfig",
+    "build_legacy_data_artifact_paths",
     "build_ria_vri_checkpoint_paths",
     "StageResult",
     "Legacy01ARuntimeConfig",

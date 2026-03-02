@@ -775,3 +775,20 @@
 - Queued next extraction slice: continue P2.2 by centralizing remaining non-checkpoint
   `00_data-prep.py` `./data/...` path literals (VDYP input/output, TIPSY exports, and siteprod
   artifact prefixes) into reusable path builders so stage configuration is fully payload-driven.
+- Added `LegacyDataArtifactPaths` and `build_legacy_data_artifact_paths(...)` in
+  `src/femic/pipeline/io.py` to centralize non-checkpoint legacy `data/` artifact paths under a
+  single reusable payload.
+- Rewired `00_data-prep.py` to source non-checkpoint data artifact paths from
+  `build_legacy_data_artifact_paths(...)`, including VDYP input/output paths, TIPSY input-column
+  file path and prefix, siteprod artifacts, bundle root, THLB raster, and stands shapefile output
+  directory.
+- Exported new I/O path payload helpers via `femic.pipeline.__init__`, added deterministic coverage
+  in `tests/test_pipeline_helpers.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `build_legacy_data_artifact_paths(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (182 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by removing residual duplicated path-to-string
+  coercion and remaining ad-hoc path joins in `00_data-prep.py` (favor passing `Path` objects
+  through helper boundaries directly) so orchestration has a consistent typed path surface.

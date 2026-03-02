@@ -51,7 +51,10 @@ try:
         write_bundle_tables,
     )
     from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
-    from femic.pipeline.io import build_ria_vri_checkpoint_paths
+    from femic.pipeline.io import (
+        build_legacy_data_artifact_paths,
+        build_ria_vri_checkpoint_paths,
+    )
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -90,7 +93,10 @@ except ModuleNotFoundError:
         write_bundle_tables,
     )
     from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
-    from femic.pipeline.io import build_ria_vri_checkpoint_paths
+    from femic.pipeline.io import (
+        build_legacy_data_artifact_paths,
+        build_ria_vri_checkpoint_paths,
+    )
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -204,14 +210,17 @@ def _select_external_data_root():
 
 _external_data_root = _select_external_data_root()
 vri_vclr1p_path = str(_external_data_root / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb")
-ria_stands_path = "./data/veg_comp_lyr_r1_poly-ria.shp"
+_legacy_data_paths = build_legacy_data_artifact_paths()
+ria_stands_path = str(_legacy_data_paths.ria_stands_path)
 tsa_boundaries_path = str(_external_data_root / "bc/tsa/FADM_TSA.gdb/")
 ria_maptiles_path = "ria_maptiles.csv"
-vdyp_input_pandl_path = "./data/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"
+vdyp_input_pandl_path = str(_legacy_data_paths.vdyp_input_pandl_path)
 
-site_prod_bc_gdb_path = "./data/Site_Prod_BC.gdb/"  # ESRI File Geodatabase containing 22 species-wise site productivity raster layers
+site_prod_bc_gdb_path = str(
+    _legacy_data_paths.site_prod_bc_gdb_path
+)  # ESRI File Geodatabase containing 22 species-wise site productivity raster layers
 
-tsa_boundaries_feather_path = "./data/tsa_boundaries.feather"
+tsa_boundaries_feather_path = str(_legacy_data_paths.tsa_boundaries_feather_path)
 _ria_vri_checkpoint_paths = build_ria_vri_checkpoint_paths()
 ria_vri_vclr1p_checkpoint1_feather_path = str(_ria_vri_checkpoint_paths[1])
 ria_vri_vclr1p_checkpoint2_feather_path = str(_ria_vri_checkpoint_paths[2])
@@ -221,22 +230,26 @@ ria_vri_vclr1p_checkpoint5_feather_path = str(_ria_vri_checkpoint_paths[5])
 ria_vri_vclr1p_checkpoint6_feather_path = str(_ria_vri_checkpoint_paths[6])
 ria_vri_vclr1p_checkpoint7_feather_path = str(_ria_vri_checkpoint_paths[7])
 ria_vri_vclr1p_checkpoint8_feather_path = str(_ria_vri_checkpoint_paths[8])
-vri_vclr1p_categorical_columns_path = "./data/vri_vclr1p_categorical_columns"
-ria_vclr1p_feature_tif_path = "./data/ria_vclr1p_feature_raster.tif"
+vri_vclr1p_categorical_columns_path = str(
+    _legacy_data_paths.vri_vclr1p_categorical_columns_path
+)
+ria_vclr1p_feature_tif_path = str(_legacy_data_paths.ria_vclr1p_feature_tif_path)
 
 arc_raster_rescue_exe_path = "../ArcRasterRescue/build/arc_raster_rescue.exe"
-siteprod_gdb_path = "./data/Site_Prod_BC.gdb/"
-siteprod_tmpexport_tif_path_prefix = "./data/site_prod_bc_"
-siteprod_tif_path = "./data/siteprod.tif"
+siteprod_gdb_path = str(_legacy_data_paths.siteprod_gdb_path)
+siteprod_tmpexport_tif_path_prefix = str(_legacy_data_paths.siteprod_tmpexport_tif_path_prefix)
+siteprod_tif_path = str(_legacy_data_paths.siteprod_tif_path)
 
-vdyp_ply_feather_path = "./data/vdyp_ply.feather"
-vdyp_lyr_feather_path = "./data/vdyp_lyr.feather"
-vdyp_results_tsa_pickle_path_prefix = "./data/vdyp_results-tsa"
-vdyp_results_pickle_path = "./data/vdyp_results.pkl"
-vdyp_curves_smooth_tsa_feather_path_prefix = "./data/vdyp_curves_smooth-tsa"
-vdyp_curves_smooth_feather_path = "./data/vdyp_curves_smooth.feather"
+vdyp_ply_feather_path = str(_legacy_data_paths.vdyp_ply_feather_path)
+vdyp_lyr_feather_path = str(_legacy_data_paths.vdyp_lyr_feather_path)
+vdyp_results_tsa_pickle_path_prefix = str(_legacy_data_paths.vdyp_results_tsa_pickle_path_prefix)
+vdyp_results_pickle_path = str(_legacy_data_paths.vdyp_results_pickle_path)
+vdyp_curves_smooth_tsa_feather_path_prefix = str(
+    _legacy_data_paths.vdyp_curves_smooth_tsa_feather_path_prefix
+)
+vdyp_curves_smooth_feather_path = str(_legacy_data_paths.vdyp_curves_smooth_feather_path)
 
-tipsy_params_path_prefix = "./data/tipsy_params_tsa"
+tipsy_params_path_prefix = str(_legacy_data_paths.tipsy_params_path_prefix)
 
 _default_ria_tsas = ["08", "16", "24", "40", "41"]
 _femic_tsa_list = os.environ.get("FEMIC_TSA_LIST")
@@ -271,7 +284,7 @@ if _femic_no_cache:
 raster_pxw = raster_pxh = 100
 
 tipsy_params_columns = [
-    line.strip() for line in open("./data/tipsy_params_columns").readlines()
+    line.strip() for line in open(_legacy_data_paths.tipsy_params_columns_path).readlines()
 ]
 
 # --- cell 11 ---
@@ -794,7 +807,10 @@ def canfi_species(stratum_code):
 
 
 # --- cell 67 ---
-bundle_paths = resolve_bundle_paths(base_dir="./data/model_input_bundle", ensure_dir=True)
+bundle_paths = resolve_bundle_paths(
+    base_dir=_legacy_data_paths.model_input_bundle_dir,
+    ensure_dir=True,
+)
 _bundle_ready = bundle_tables_ready(paths=bundle_paths)
 
 
@@ -864,7 +880,7 @@ if not _femic_no_cache:
     f = _apply_debug_rows(f, "checkpoint1-reload")
 
 # --- cell 79 ---
-with rio.open("./data/misc.thlb.tif") as src:
+with rio.open(_legacy_data_paths.misc_thlb_tif_path) as src:
 
     def mean_thlb(r):
         try:
@@ -1062,7 +1078,7 @@ else:
         f_table=f,
         au_table=au_table,
         columns_map=columns,
-        output_root="./data/shp",
+        output_root=_legacy_data_paths.stands_shp_dir,
         pd_module=pd,
         message_fn=print,
     )
