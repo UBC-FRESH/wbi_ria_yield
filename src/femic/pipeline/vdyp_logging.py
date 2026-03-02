@@ -61,3 +61,19 @@ def append_text(path: str | Path, text: str) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("a", encoding="utf-8") as fh:
         fh.write(text)
+
+
+def build_vdyp_stream_header(
+    *,
+    phase: str,
+    feature_count: int,
+    cache_hits: int,
+    cmd: str,
+    timestamp: str | None = None,
+) -> str:
+    """Build a consistent VDYP stdout/stderr stream header block."""
+    ts = timestamp or datetime.now(UTC).isoformat()
+    return (
+        f"\n=== {ts} phase={phase} feature_count={feature_count} cache_hits={cache_hits} ===\n"
+        f"cmd: {cmd}\n"
+    )

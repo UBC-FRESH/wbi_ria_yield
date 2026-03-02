@@ -1280,3 +1280,19 @@
   quick repo-wide audit for remaining ad hoc `event` + `timestamp` payload construction in
   production code and either (a) rewire to shared diagnostics helpers or (b) document explicit
   exceptions where intentional.
+- Closed the queued event-consolidation audit by rewiring the final ad hoc structured event path in
+  `src/femic/pipeline/vdyp_curves.py` (`vdyp_curve_anchor`) to shared
+  `build_timestamped_event(...)` while preserving one-timestamp-per-run semantics.
+- Extended `build_timestamped_event(...)` (`src/femic/pipeline/diagnostics.py`) to support optional
+  `status` and explicit timestamp override, enabling both per-event and base-event reuse patterns.
+- Added `build_vdyp_stream_header(...)` in `src/femic/pipeline/vdyp_logging.py` and rewired
+  `execute_vdyp_batch(...)` (`src/femic/pipeline/vdyp_stage.py`) to consume it, removing the last
+  inline timestamped stream-header string assembly from execution flow.
+- Expanded deterministic coverage in `tests/test_diagnostics.py`, `tests/test_vdyp_curves.py`, and
+  `tests/test_vdyp_logging.py` for the rewired helpers and timestamp-semantics guard.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (242 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by reducing duplicated fallback-event assembly inside
+  `process_vdyp_out(...)` (`src/femic/pipeline/vdyp_curves.py`) via a small internal event-builder
+  seam that reuses shared diagnostics helpers without changing emitted fields.

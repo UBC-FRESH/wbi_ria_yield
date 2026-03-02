@@ -98,6 +98,8 @@ def test_process_vdyp_out_toe_failure_falls_back_to_quasi_origin() -> None:
     stages = {event["stage"] for event in events}
     assert "toe_fit" in stages
     assert "quasi_origin_anchor" in stages
+    timestamps = {event["timestamp"] for event in events}
+    assert len(timestamps) == 1
 
 
 def test_process_vdyp_out_body_fit_runtime_error_falls_back() -> None:

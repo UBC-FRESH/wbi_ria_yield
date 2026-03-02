@@ -6,6 +6,7 @@ from pathlib import Path
 from femic.pipeline.vdyp_logging import (
     append_jsonl,
     append_text,
+    build_vdyp_stream_header,
     build_tsa_vdyp_log_paths,
     resolve_run_id,
     vdyp_log_base,
@@ -44,3 +45,18 @@ def test_append_helpers_create_parent_and_write_payload(tmp_path: Path) -> None:
     line = jsonl_path.read_text(encoding="utf-8").strip()
     assert json.loads(line) == {"event": "ok", "count": 1}
     assert text_path.read_text(encoding="utf-8") == "hello\n"
+
+
+def test_build_vdyp_stream_header_uses_expected_format() -> None:
+    header = build_vdyp_stream_header(
+        phase="initial",
+        feature_count=12,
+        cache_hits=3,
+        cmd="wine VDYP7Console.exe",
+        timestamp="2026-03-02T00:00:00+00:00",
+    )
+    assert (
+        header
+        == "\n=== 2026-03-02T00:00:00+00:00 phase=initial feature_count=12 cache_hits=3 ===\n"
+        "cmd: wine VDYP7Console.exe\n"
+    )

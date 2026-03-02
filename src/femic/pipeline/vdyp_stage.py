@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
 import functools
 import importlib
 import pickle
@@ -1125,6 +1124,7 @@ def execute_vdyp_batch(
     import_vdyp_tables_fn: Callable[[str], dict[Any, Any]] | None = None,
     append_jsonl_fn: Callable[[str | Path, Any], None] | None = None,
     append_text_fn: Callable[[str | Path, str], None] | None = None,
+    build_stream_header_fn: Callable[..., str] | None = None,
     subprocess_run: Callable[..., Any] | None = None,
 ) -> dict[Any, Any]:
     """Run one VDYP batch and return parsed per-feature output tables."""
@@ -1141,6 +1141,10 @@ def execute_vdyp_batch(
         from femic.pipeline.vdyp_logging import append_jsonl as append_jsonl_fn
     if append_text_fn is None:
         from femic.pipeline.vdyp_logging import append_text as append_text_fn
+    if build_stream_header_fn is None:
+        from femic.pipeline.vdyp_logging import (
+            build_vdyp_stream_header as build_stream_header_fn,
+        )
     if subprocess_run is None:
         subprocess_run = subprocess.run
 
@@ -1148,6 +1152,7 @@ def execute_vdyp_batch(
     import_vdyp_tables_ = cast(Callable[[str], dict[Any, Any]], import_vdyp_tables_fn)
     append_jsonl_ = cast(Callable[[str | Path, Any], None], append_jsonl_fn)
     append_text_ = cast(Callable[[str | Path, str], None], append_text_fn)
+    build_stream_header_ = cast(Callable[..., str], build_stream_header_fn)
     subprocess_run_ = cast(Callable[..., Any], subprocess_run)
 
     feature_count = len(feature_ids_list)
@@ -1256,10 +1261,11 @@ def execute_vdyp_batch(
             )
             return {}
 
-        stream_header = (
-            f"\n=== {datetime.now(timezone.utc).isoformat()} "
-            f"phase={phase} feature_count={feature_count} cache_hits={cache_hits} ===\n"
-            f"cmd: {args}\n"
+        stream_header = build_stream_header_(
+            phase=phase,
+            feature_count=feature_count,
+            cache_hits=int(cache_hits),
+            cmd=args,
         )
         if result.stdout:
             append_text_(vdyp_stdout_log_path, stream_header + result.stdout + "\n")

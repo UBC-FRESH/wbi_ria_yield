@@ -126,6 +126,8 @@ def process_vdyp_out(
         event="vdyp_curve",
         context=dict(curve_context) if curve_context else {},
     )
+    base_timestamp = str(base_event["timestamp"])
+    base_context = dict(base_event.get("context", {}))
 
     def emit(msg: str) -> None:
         if message is not None:
@@ -302,13 +304,14 @@ def process_vdyp_out(
     )
     x, y = prepend_quasi_origin_point(x, y)
     log_event(
-        {
-            **base_event,
-            "event": "vdyp_curve_anchor",
-            "status": "warning",
-            "stage": "quasi_origin_anchor",
-            "first_age": float(x[0]),
-            "first_volume": float(y[0]),
-        }
+        build_timestamped_event(
+            event="vdyp_curve_anchor",
+            timestamp=base_timestamp,
+            context=base_context,
+            status="warning",
+            stage="quasi_origin_anchor",
+            first_age=float(x[0]),
+            first_volume=float(y[0]),
+        )
     )
     return x, y
