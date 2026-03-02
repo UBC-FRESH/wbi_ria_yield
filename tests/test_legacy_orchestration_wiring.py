@@ -112,6 +112,7 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "list_siteprod_layers": 1,
         "export_and_stack_siteprod_layers": 1,
         "normalize_and_filter_checkpoint2_records": 1,
+        "assign_stratum_codes_with_lexmatch": 2,
         "assign_siteprod_from_raster": 1,
         "assign_forest_type_from_species_pct": 1,
         "compile_species_volume_columns": 1,

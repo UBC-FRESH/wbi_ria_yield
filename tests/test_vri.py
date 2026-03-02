@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas as pd
 
 from femic.pipeline.vri import (
+    assign_stratum_codes_with_lexmatch,
     assign_forest_type_from_species_pct,
     classify_stand_cdm,
     classify_stand_forest_type,
@@ -11,6 +12,7 @@ from femic.pipeline.vri import (
     normalize_and_filter_checkpoint2_records,
     pconif,
     pdecid,
+    stratify_stand,
 )
 
 
@@ -154,3 +156,48 @@ def test_assign_forest_type_from_species_pct_assigns_column() -> None:
     )
     out = assign_forest_type_from_species_pct(f_table=frame)
     assert list(out["forest_type"]) == [1, 4]
+
+
+def test_stratify_stand_builds_expected_codes() -> None:
+    row = {
+        "BEC_ZONE_CODE": "SBS",
+        "BCLCS_LEVEL_4": "TM",
+        "SPECIES_CD_1": "SW",
+        "SPECIES_CD_2": "PL",
+        "BEC_ZONE_CODE_lexmatch": "SBSx",
+        "SPECIES_CD_1_lexmatch": "SSW",
+        "SPECIES_CD_2_lexmatch": "PPL",
+    }
+    assert stratify_stand(row) == "SBS_SW+PL"
+    assert stratify_stand(row, lexmatch=True) == "SBSxSBSxSBSx_SSWSSW+PPL"
+
+
+def test_assign_stratum_codes_with_lexmatch_assigns_both_columns() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "BEC_ZONE_CODE": "SBS",
+                "SPECIES_CD_1": "SW",
+                "SPECIES_CD_2": "PL",
+                "BCLCS_LEVEL_4": "TM",
+            },
+            {
+                "BEC_ZONE_CODE": "BWBS",
+                "SPECIES_CD_1": "AT",
+                "SPECIES_CD_2": "X",
+                "BCLCS_LEVEL_4": "XY",
+            },
+        ]
+    )
+
+    def _row_apply(table: pd.DataFrame, fn: object, axis: int) -> pd.Series:
+        assert axis == 1
+        return table.apply(fn, axis=axis)  # type: ignore[arg-type]
+
+    out = assign_stratum_codes_with_lexmatch(
+        f_table=frame,
+        row_apply_fn=_row_apply,
+    )
+    assert out.loc[0, "stratum"] == "SBS_SW+PL"
+    assert out.loc[1, "stratum"] == "BWBS_AT"
+    assert out.loc[0, "stratum_lexmatch"].startswith("SBSxSBSxSBSx_")

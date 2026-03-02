@@ -753,3 +753,17 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline stratum-code assembly
   logic (`stratify_stand` + `stratify_stand_lexmatch` partial wiring) from `00_data-prep.py` into
   reusable helper seams.
+- Expanded `src/femic/pipeline/vri.py` with reusable stratum-code helpers:
+  `stratify_stand(...)` and `assign_stratum_codes_with_lexmatch(...)`.
+- Rewired `00_data-prep.py` to remove inline `stratify_stand`/`stratify_stand_lexmatch` wiring and
+  call `assign_stratum_codes_with_lexmatch(...)` at both stratum derivation stages.
+- Exported new VRI stratum helpers via `femic.pipeline.__init__`, expanded
+  `tests/test_vri.py` with deterministic stratification coverage, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `assign_stratum_codes_with_lexmatch(...)` seam usage count.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (200 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting the remaining inline THLB sampling
+  closure (`mean_thlb`) into a reusable helper seam so raster masking logic is no longer defined
+  inline in `00_data-prep.py`.

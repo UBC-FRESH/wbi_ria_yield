@@ -111,6 +111,7 @@ from femic.pipeline.tipsy_legacy import (
 )
 from femic.pipeline.vdyp import build_vdyp_cache_paths, build_vdyp_log_paths
 from femic.pipeline.vri import (
+    assign_stratum_codes_with_lexmatch,
     assign_forest_type_from_species_pct,
     classify_stand_cdm,
     classify_stand_forest_type,
@@ -119,6 +120,7 @@ from femic.pipeline.vri import (
     normalize_and_filter_checkpoint2_records,
     pconif,
     pdecid,
+    stratify_stand,
 )
 from femic.pipeline.species_volume import (
     compile_species_volume_columns,
@@ -254,6 +256,8 @@ __all__ = [
     "build_vdyp_log_paths",
     "is_conifer_species_code",
     "is_deciduous_species_code",
+    "stratify_stand",
+    "assign_stratum_codes_with_lexmatch",
     "pconif",
     "pdecid",
     "classify_stand_cdm",

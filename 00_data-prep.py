@@ -55,6 +55,7 @@ try:
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.vri import (
+        assign_stratum_codes_with_lexmatch,
         assign_forest_type_from_species_pct,
         normalize_and_filter_checkpoint2_records,
     )
@@ -112,6 +113,7 @@ except ModuleNotFoundError:
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.vri import (
+        assign_stratum_codes_with_lexmatch,
         assign_forest_type_from_species_pct,
         normalize_and_filter_checkpoint2_records,
     )
@@ -457,41 +459,11 @@ else:
 
 
 # --- cell 29 ---
-# --- cell 31 ---
-def stratify_stand(r, lexmatch=False, lexmatch_fieldname_suffix="_lexmatch"):
-    result = ""
-    if lexmatch:
-        result += 3 * r["BEC_ZONE_CODE%s" % lexmatch_fieldname_suffix]
-        result += "_"
-        # result += r.BCLCS_LEVEL_5
-        # result += '_'
-        result += 2 * r["SPECIES_CD_1%s" % lexmatch_fieldname_suffix]
-        if r.BCLCS_LEVEL_4 == "TM" and r.SPECIES_CD_2 != None:
-            result += "+" + r["SPECIES_CD_2%s" % lexmatch_fieldname_suffix]
-    else:
-        result += r.BEC_ZONE_CODE
-        result += "_"
-        # result += r.BCLCS_LEVEL_5
-        # result += '_'
-        result += r.SPECIES_CD_1
-        if r.BCLCS_LEVEL_4 == "TM" and r.SPECIES_CD_2 != None:
-            result += "+" + r.SPECIES_CD_2
-    return result
-
-
 # --- cell 33 ---
-f["BEC_ZONE_CODE_lexmatch"] = f.BEC_ZONE_CODE.str.ljust(4, fillchar="x")
-for i in range(1, 3):
-    f["SPECIES_CD_%i_lexmatch" % i] = f["SPECIES_CD_%i" % i].str.ljust(4, "x")
-    f["SPECIES_CD_%i_lexmatch" % i] = (
-        f["SPECIES_CD_%i" % i].str[:1] + f["SPECIES_CD_%i" % i]
-    )
-
-stratify_stand = stratify_stand
-stratify_stand_lexmatch = partial(stratify_stand, lexmatch=True)
-
-f["stratum"] = _row_apply(f, stratify_stand, axis=1)
-f["stratum_lexmatch"] = _row_apply(f, stratify_stand_lexmatch, axis=1)
+f = assign_stratum_codes_with_lexmatch(
+    f_table=f,
+    row_apply_fn=_row_apply,
+)
 
 # --- cell 34 ---
 stratum_col = "stratum"
@@ -745,18 +717,10 @@ if 1:
 f.shape
 
 # --- cell 87 ---
-f["BEC_ZONE_CODE_lexmatch"] = f.BEC_ZONE_CODE.str.ljust(4, fillchar="x")
-for i in range(1, 3):
-    f["SPECIES_CD_%i_lexmatch" % i] = f["SPECIES_CD_%i" % i].str.ljust(4, "x")
-    f["SPECIES_CD_%i_lexmatch" % i] = (
-        f["SPECIES_CD_%i" % i].str[:1] + f["SPECIES_CD_%i" % i]
-    )
-
-stratify_stand = stratify_stand
-stratify_stand_lexmatch = partial(stratify_stand, lexmatch=True)
-
-f["stratum"] = _row_apply(f, stratify_stand, axis=1)
-f["stratum_lexmatch"] = _row_apply(f, stratify_stand_lexmatch, axis=1)
+f = assign_stratum_codes_with_lexmatch(
+    f_table=f,
+    row_apply_fn=_row_apply,
+)
 
 # --- cell 88 ---
 f.to_feather(ria_vri_vclr1p_checkpoint5_feather_path)

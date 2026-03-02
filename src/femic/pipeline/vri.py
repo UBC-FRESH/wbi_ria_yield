@@ -5,6 +5,66 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 
+def stratify_stand(
+    row: Any,
+    *,
+    lexmatch: bool = False,
+    lexmatch_fieldname_suffix: str = "_lexmatch",
+) -> str:
+    """Build stratum code from BEC + leading species with optional lexmatch fields."""
+
+    def _value(key: str) -> Any:
+        try:
+            return row[key]
+        except Exception:
+            return getattr(row, key)
+
+    if lexmatch:
+        result = 3 * _value(f"BEC_ZONE_CODE{lexmatch_fieldname_suffix}")
+        result += "_"
+        result += 2 * _value(f"SPECIES_CD_1{lexmatch_fieldname_suffix}")
+        if _value("BCLCS_LEVEL_4") == "TM" and _value("SPECIES_CD_2") is not None:
+            result += "+" + _value(f"SPECIES_CD_2{lexmatch_fieldname_suffix}")
+        return result
+    result = str(_value("BEC_ZONE_CODE")) + "_"
+    result += str(_value("SPECIES_CD_1"))
+    if _value("BCLCS_LEVEL_4") == "TM" and _value("SPECIES_CD_2") is not None:
+        result += "+" + str(_value("SPECIES_CD_2"))
+    return result
+
+
+def assign_stratum_codes_with_lexmatch(
+    *,
+    f_table: Any,
+    row_apply_fn: Any,
+    bec_col: str = "BEC_ZONE_CODE",
+    species_col_prefix: str = "SPECIES_CD_",
+    lexmatch_suffix: str = "_lexmatch",
+    stratum_col: str = "stratum",
+    stratum_lexmatch_col: str = "stratum_lexmatch",
+) -> Any:
+    """Populate legacy stratum and stratum_lexmatch fields from stand attributes."""
+    table = f_table.copy()
+    table[f"{bec_col}{lexmatch_suffix}"] = table[bec_col].str.ljust(4, fillchar="x")
+    for idx in range(1, 3):
+        species_col = f"{species_col_prefix}{idx}"
+        lex_col = f"{species_col}{lexmatch_suffix}"
+        table[lex_col] = table[species_col].str.ljust(4, "x")
+        table[lex_col] = table[species_col].str[:1] + table[species_col]
+
+    table[stratum_col] = row_apply_fn(table, stratify_stand, axis=1)
+    table[stratum_lexmatch_col] = row_apply_fn(
+        table,
+        lambda row: stratify_stand(
+            row,
+            lexmatch=True,
+            lexmatch_fieldname_suffix=lexmatch_suffix,
+        ),
+        axis=1,
+    )
+    return table
+
+
 def is_conifer_species_code(species_code: str) -> bool:
     """Return True if species code represents a conifer species."""
     return str(species_code)[:1] in ["B", "C", "F", "H", "J", "L", "P", "S", "T", "Y"]
