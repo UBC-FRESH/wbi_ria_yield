@@ -42,6 +42,20 @@ def normalize_tsa_list(
     return [str(tsa).zfill(2) for tsa in tsa_list]
 
 
+def build_ria_vri_checkpoint_paths(
+    *,
+    output_root: str | Path = "data",
+    count: int = 8,
+    stem_prefix: str = "ria_vri_vclr1p_checkpoint",
+    suffix: str = ".feather",
+) -> dict[int, Path]:
+    """Build ordered legacy VRI checkpoint artifact paths."""
+    root = Path(output_root)
+    return {
+        idx: root / f"{stem_prefix}{idx}{suffix}" for idx in range(1, int(count) + 1)
+    }
+
+
 @dataclass(frozen=True)
 class RunPaths:
     """Resolved filesystem roots used by the legacy workflow wrapper."""

@@ -105,6 +105,7 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
     tree = _load_legacy_orchestration_tree()
     required_calls = {
         "initialize_legacy_tsa_stage_state": 1,
+        "build_ria_vri_checkpoint_paths": 1,
         "prepare_tsa_index": 1,
         "build_legacy_01a_runtime_config": 1,
         "should_skip_if_outputs_exist": 2,

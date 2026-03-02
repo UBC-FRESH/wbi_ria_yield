@@ -51,6 +51,7 @@ try:
         write_bundle_tables,
     )
     from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
+    from femic.pipeline.io import build_ria_vri_checkpoint_paths
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -89,6 +90,7 @@ except ModuleNotFoundError:
         write_bundle_tables,
     )
     from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
+    from femic.pipeline.io import build_ria_vri_checkpoint_paths
     from femic.pipeline.stages import (
         initialize_legacy_tsa_stage_state,
         load_legacy_module,
@@ -210,14 +212,15 @@ vdyp_input_pandl_path = "./data/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"
 site_prod_bc_gdb_path = "./data/Site_Prod_BC.gdb/"  # ESRI File Geodatabase containing 22 species-wise site productivity raster layers
 
 tsa_boundaries_feather_path = "./data/tsa_boundaries.feather"
-ria_vri_vclr1p_checkpoint1_feather_path = "./data/ria_vri_vclr1p_checkpoint1.feather"
-ria_vri_vclr1p_checkpoint2_feather_path = "./data/ria_vri_vclr1p_checkpoint2.feather"
-ria_vri_vclr1p_checkpoint3_feather_path = "./data/ria_vri_vclr1p_checkpoint3.feather"
-ria_vri_vclr1p_checkpoint4_feather_path = "./data/ria_vri_vclr1p_checkpoint4.feather"
-ria_vri_vclr1p_checkpoint5_feather_path = "./data/ria_vri_vclr1p_checkpoint5.feather"
-ria_vri_vclr1p_checkpoint6_feather_path = "./data/ria_vri_vclr1p_checkpoint6.feather"
-ria_vri_vclr1p_checkpoint7_feather_path = "./data/ria_vri_vclr1p_checkpoint7.feather"
-ria_vri_vclr1p_checkpoint8_feather_path = "./data/ria_vri_vclr1p_checkpoint8.feather"
+_ria_vri_checkpoint_paths = build_ria_vri_checkpoint_paths()
+ria_vri_vclr1p_checkpoint1_feather_path = str(_ria_vri_checkpoint_paths[1])
+ria_vri_vclr1p_checkpoint2_feather_path = str(_ria_vri_checkpoint_paths[2])
+ria_vri_vclr1p_checkpoint3_feather_path = str(_ria_vri_checkpoint_paths[3])
+ria_vri_vclr1p_checkpoint4_feather_path = str(_ria_vri_checkpoint_paths[4])
+ria_vri_vclr1p_checkpoint5_feather_path = str(_ria_vri_checkpoint_paths[5])
+ria_vri_vclr1p_checkpoint6_feather_path = str(_ria_vri_checkpoint_paths[6])
+ria_vri_vclr1p_checkpoint7_feather_path = str(_ria_vri_checkpoint_paths[7])
+ria_vri_vclr1p_checkpoint8_feather_path = str(_ria_vri_checkpoint_paths[8])
 vri_vclr1p_categorical_columns_path = "./data/vri_vclr1p_categorical_columns"
 ria_vclr1p_feature_tif_path = "./data/ria_vclr1p_feature_raster.tif"
 

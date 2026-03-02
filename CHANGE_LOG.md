@@ -610,3 +610,16 @@
 - Queued next extraction slice: continue P2.2 by centralizing remaining `00_data-prep.py` hardcoded
   `./data/...` artifact path literals (checkpoints, intermediates, and exports) behind reusable path
   builders so stage orchestration uses structured path payloads instead of inline strings.
+- Added `build_ria_vri_checkpoint_paths(...)` in `src/femic/pipeline/io.py` to centralize legacy
+  VRI checkpoint artifact path construction (`ria_vri_vclr1p_checkpoint{1..8}.feather`).
+- Rewired `00_data-prep.py` to call `build_ria_vri_checkpoint_paths(...)` and source checkpoint path
+  variables from the returned path payload instead of embedding eight inline `./data/...` literals.
+- Exported the new path helper via `femic.pipeline.__init__`, added deterministic helper coverage in
+  `tests/test_pipeline_helpers.py`, and extended AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (181 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by centralizing remaining non-checkpoint
+  `00_data-prep.py` `./data/...` path literals (VDYP input/output, TIPSY exports, and siteprod
+  artifact prefixes) into reusable path builders so stage configuration is fully payload-driven.
