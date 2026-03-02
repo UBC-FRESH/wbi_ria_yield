@@ -459,3 +459,10 @@
 - Extended `tests/test_pipeline_helpers.py` with deterministic coverage for the new rendering helper
   and added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper
   and no longer performs direct `sns.barplot(...)`/`sns.violinplot(...)` calls in this stage.
+- Added `femic.pipeline.tipsy_config.resolve_tipsy_runtime_options(...)` to centralize
+  `FEMIC_TIPSY_CONFIG_DIR`/`FEMIC_TIPSY_USE_LEGACY` environment resolution.
+- Rewired `01a_run-tsa.py` to call `resolve_tipsy_runtime_options(...)` instead of reading
+  `os.environ` directly for TIPSY config/legacy flags.
+- Extended `tests/test_tipsy_config.py` with defaults/override coverage for the new helper and
+  added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a no longer reads
+  `os.environ` directly for this stage.

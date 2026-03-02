@@ -566,3 +566,14 @@
 - Queued next extraction slice: trim now-unused local imports from `01a_run-tsa.py` (notably early
   `seaborn` direct plotting dependencies that have moved behind helper seams) and lock with
   guardrails.
+- Added `femic.pipeline.tipsy_config.resolve_tipsy_runtime_options(...)` to centralize
+  `FEMIC_TIPSY_CONFIG_DIR`/`FEMIC_TIPSY_USE_LEGACY` environment resolution for TIPSY runtime
+  behavior.
+- Rewired `01a_run-tsa.py` to call `resolve_tipsy_runtime_options(...)` instead of reading
+  `os.environ` directly for TIPSY config/legacy flags.
+- Expanded `tests/test_tipsy_config.py` with defaults/override coverage for
+  `resolve_tipsy_runtime_options(...)` and added AST guardrails in
+  `tests/test_legacy_01a_structure.py` asserting 01a no longer reads `os.environ` directly for this
+  stage.
+- Queued next extraction slice: begin consolidating remaining inline 01a run-stage constants
+  (`fit_rawdata`, `min_age`, `agg_type`, `verbose`, `plot`) into dedicated stage/config helpers.
