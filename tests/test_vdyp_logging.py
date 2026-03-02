@@ -49,6 +49,13 @@ def test_append_helpers_create_parent_and_write_payload(tmp_path: Path) -> None:
     assert text_path.read_text(encoding="utf-8") == "hello\n"
 
 
+def test_append_text_appends_without_overwriting(tmp_path: Path) -> None:
+    text_path = tmp_path / "logs" / "stdout.log"
+    append_text(text_path, "hello")
+    append_text(text_path, " world")
+    assert text_path.read_text(encoding="utf-8") == "hello world"
+
+
 def test_serialize_jsonl_payload_uses_default_str_conversion() -> None:
     class _Obj:
         def __str__(self) -> str:

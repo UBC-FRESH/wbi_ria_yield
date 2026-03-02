@@ -1321,3 +1321,16 @@
 - Queued next extraction slice: continue P2.2 by auditing whether remaining specialized appenders
   (plain-text stream append and JSONL append callsites) can share a single file-append primitive
   end-to-end without reducing clarity or changing output contract.
+- Completed the queued append-primitive audit in `src/femic/pipeline/vdyp_logging.py` by adding a
+  shared internal file-append helper (`_append_text_fragment(...)`) and rewiring both
+  `append_line(...)` and `append_text(...)` to consume it.
+- Preserved output contracts: `append_line(...)` still appends newline-terminated records and
+  `append_text(...)` still appends exact text fragments.
+- Expanded deterministic coverage in `tests/test_vdyp_logging.py` with
+  `test_append_text_appends_without_overwriting` to guard append-vs-overwrite behavior.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (245 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing remaining direct append-file writes
+  outside `vdyp_logging`/`append_line` callsites and centralizing them only where behavior can
+  remain byte-for-byte unchanged.

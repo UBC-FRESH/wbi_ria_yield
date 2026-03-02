@@ -52,12 +52,17 @@ def serialize_jsonl_payload(payload: Mapping[str, Any]) -> str:
     return json.dumps(payload, default=str)
 
 
-def append_line(path: str | Path, line: str) -> None:
-    """Append one line of text with newline, creating parent directories as needed."""
+def _append_text_fragment(path: str | Path, text: str) -> None:
+    """Append text to a file, creating parent directories as needed."""
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("a", encoding="utf-8") as fh:
-        fh.write(line + "\n")
+        fh.write(text)
+
+
+def append_line(path: str | Path, line: str) -> None:
+    """Append one line of text with newline, creating parent directories as needed."""
+    _append_text_fragment(path, line + "\n")
 
 
 def append_jsonl(path: str | Path, payload: dict[str, Any]) -> None:
@@ -67,10 +72,7 @@ def append_jsonl(path: str | Path, payload: dict[str, Any]) -> None:
 
 def append_text(path: str | Path, text: str) -> None:
     """Append plain text, creating parent directories as needed."""
-    target = Path(path)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("a", encoding="utf-8") as fh:
-        fh.write(text)
+    _append_text_fragment(path, text)
 
 
 def build_vdyp_stream_header(
