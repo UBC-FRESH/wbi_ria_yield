@@ -1040,3 +1040,17 @@
 - Queued next extraction slice: continue P2.2 by replacing remaining `assert False` sentinels in
   `src/femic/pipeline/vdyp_stage.py` (unreachable load-balanced branch and invalid `nsamples`
   guard) with explicit typed errors plus regression tests.
+- Replaced remaining `assert False` sentinels in `src/femic/pipeline/vdyp_stage.py` with explicit
+  typed errors:
+  `NotImplementedError` for unsupported `ipp_mode='load_balanced'` branch in
+  `run_vdyp_sampling(...)`, and `ValueError` for invalid `nsamples` mode values.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` to assert these branches now raise
+  typed errors with informative messages.
+- Verified no `assert False` sentinels remain in production orchestration/pipeline modules
+  (`src/`, `00_data-prep.py`, `01a_run-tsa.py`).
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (232 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing remaining broad `assert`-style runtime
+  sentinels in production helper/orchestration paths (non-test) and replacing inappropriate
+  runtime assertions with explicit typed errors where behavior is user/input dependent.

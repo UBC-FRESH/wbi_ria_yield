@@ -397,7 +397,7 @@ def test_run_vdyp_sampling_auto_runs_gap_fill_phase() -> None:
 
 
 def test_run_vdyp_sampling_rejects_bad_nsamples_value() -> None:
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError, match="Unsupported nsamples mode"):
         run_vdyp_sampling(
             sample_table=pd.DataFrame({"FEATURE_ID": [1, 2]}),
             nsamples="bad-mode",
@@ -414,6 +414,31 @@ def test_run_vdyp_sampling_rejects_bad_nsamples_value() -> None:
             vdyp_out_cache=None,
             run_batch_fn=lambda *_a, **_k: {},
             nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
+        )
+
+
+def test_run_vdyp_sampling_load_balanced_mode_raises_not_implemented() -> None:
+    sample_table = pd.DataFrame({"FEATURE_ID": [1, 2, 3, 4]})
+
+    with pytest.raises(NotImplementedError, match="load_balanced"):
+        run_vdyp_sampling(
+            sample_table=sample_table,
+            nsamples="auto",
+            min_samples=1,
+            max_samples=10,
+            nsamples_c1=0.1,
+            nsamples_c2=1.0,
+            confidence=95,
+            half_rel_ci=0.05,
+            ipp_mode="load_balanced",
+            vdyp_timeout=2.0,
+            rc_len=1,
+            verbose=False,
+            vdyp_out_cache=None,
+            run_batch_fn=lambda feature_ids, **_kwargs: {
+                int(fid): {"ok": True} for fid in feature_ids
+            },
+            nsamples_from_curves_fn=lambda _vdyp_out, **_kwargs: (4, None),
         )
 
 

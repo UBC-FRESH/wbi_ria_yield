@@ -724,7 +724,9 @@ def run_vdyp_sampling(
                 if vdyp_out_cache is not None:
                     vdyp_out_cache.update(vdyp_out)
             elif ipp_mode == "load_balanced":
-                assert False  # not working... do not use this
+                raise NotImplementedError(
+                    "ipp_mode='load_balanced' is not supported in run_vdyp_sampling"
+                )
             ss.drop(samples.index, inplace=True)
             nsamples_target, _ = nsamples_from_curves_fn(
                 vdyp_out,
@@ -745,7 +747,10 @@ def run_vdyp_sampling(
     if isinstance(nsamples, int):
         samples = sample_table.sample(nsamples)
         return run_batch_fn(samples.FEATURE_ID.values, phase="fixed")
-    assert False  # bad nsamples value
+    raise ValueError(
+        "Unsupported nsamples mode in run_vdyp_sampling: "
+        f"{nsamples!r} (expected 'auto', 'all', or int)"
+    )
 
 
 def run_vdyp_for_stratum(
