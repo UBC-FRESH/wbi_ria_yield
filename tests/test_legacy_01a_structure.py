@@ -66,7 +66,19 @@ def test_run01a_uses_lexmatch_alias_helper_call() -> None:
     raise AssertionError("run_tsa should call build_stratum_lexmatch_alias_map(...)")
 
 
-def test_run01a_uses_fit_stratum_stage_helper_call() -> None:
+def test_run01a_uses_build_fit_stratum_curves_runner_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "build_fit_stratum_curves_runner":
+            return
+    raise AssertionError("run_tsa should call build_fit_stratum_curves_runner(...)")
+
+
+def test_run01a_no_direct_fit_stratum_curves_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
     for node in ast.walk(run_tsa):
@@ -74,8 +86,9 @@ def test_run01a_uses_fit_stratum_stage_helper_call() -> None:
             continue
         func = node.func
         if isinstance(func, ast.Name) and func.id == "fit_stratum_curves":
-            return
-    raise AssertionError("run_tsa should call fit_stratum_curves(...)")
+            raise AssertionError(
+                "run_tsa should use build_fit_stratum_curves_runner, not call fit_stratum_curves directly"
+            )
 
 
 def test_run01a_has_no_nested_fit_stratum_definition() -> None:
@@ -96,6 +109,24 @@ def test_run01a_uses_compile_strata_fit_results_helper_call() -> None:
         if isinstance(func, ast.Name) and func.id == "compile_strata_fit_results":
             return
     raise AssertionError("run_tsa should call compile_strata_fit_results(...)")
+
+
+def test_run01a_no_inline_compile_one_lambda() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not (isinstance(func, ast.Name) and func.id == "compile_strata_fit_results"):
+            continue
+        for keyword in node.keywords:
+            if keyword.arg == "compile_one_fn" and isinstance(
+                keyword.value, ast.Lambda
+            ):
+                raise AssertionError(
+                    "run_tsa should pass pre-built compile_one_fn, not inline lambda"
+                )
 
 
 def test_run01a_no_direct_run_vdyp_sampling_call() -> None:

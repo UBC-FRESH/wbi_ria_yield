@@ -443,6 +443,60 @@ def fit_stratum_curves(
     return result
 
 
+def build_fit_stratum_curves_runner(
+    *,
+    f_table: Any,
+    fit_func: Callable[..., Any],
+    fit_func_bounds_func: Callable[..., Any],
+    strata_df: Any,
+    stratum_si_stats: Any,
+    species_list: Sequence[str],
+    curve_fit_fn: Callable[..., Any],
+    fit_rawdata: bool,
+    min_age: int,
+    agg_type: str,
+    plot: bool,
+    figsize: tuple[int, int],
+    verbose: bool,
+    ylim: Sequence[float],
+    xlim: Sequence[float],
+    np_module: Any,
+    pd_module: Any,
+    sns_module: Any,
+    plt_module: Any,
+    message_fn: Callable[..., Any] = print,
+    fit_stratum_curves_fn: Callable[..., Any] = fit_stratum_curves,
+) -> Callable[[int, str], Any]:
+    """Build a compile-one callback that runs `fit_stratum_curves(...)` for one stratum."""
+
+    def _compile_one(stratumi: int, _sc: str) -> Any:
+        return fit_stratum_curves_fn(
+            f_table=f_table,
+            fit_func=fit_func,
+            fit_func_bounds_func=fit_func_bounds_func,
+            strata_df=strata_df,
+            stratum_si_stats=stratum_si_stats,
+            stratumi=stratumi,
+            species_list=species_list,
+            curve_fit_fn=curve_fit_fn,
+            np_module=np_module,
+            pd_module=pd_module,
+            sns_module=sns_module,
+            plt_module=plt_module,
+            fit_rawdata=fit_rawdata,
+            min_age=min_age,
+            agg_type=agg_type,
+            plot=plot,
+            figsize=figsize,
+            verbose=verbose,
+            ylim=ylim,
+            xlim=xlim,
+            message_fn=message_fn,
+        )
+
+    return _compile_one
+
+
 def compile_strata_fit_results(
     *,
     strata_df: Any,

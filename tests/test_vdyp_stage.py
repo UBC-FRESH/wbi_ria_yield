@@ -12,6 +12,7 @@ from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
     build_bootstrap_vdyp_results_runner,
     build_curve_fit_adapter,
+    build_fit_stratum_curves_runner,
     build_run_vdyp_for_stratum_runner,
     build_smoothed_curve_table,
     compile_strata_fit_results,
@@ -204,6 +205,55 @@ def test_fit_stratum_curves_skips_species_on_curve_fit_error() -> None:
 
     assert out["M"]["species"] == {}
     assert any(msg and msg[0] == "fit error" for msg in messages)
+
+
+def test_build_fit_stratum_curves_runner_binds_fit_context() -> None:
+    captured: dict[str, object] = {}
+
+    def fake_fit_stratum_curves(**kwargs: object) -> dict[str, str]:
+        captured.update(kwargs)
+        return {"status": "ok"}
+
+    compile_one = build_fit_stratum_curves_runner(
+        f_table="f_table",
+        fit_func=lambda *_a, **_k: None,
+        fit_func_bounds_func=lambda *_a, **_k: None,
+        strata_df="strata_df",
+        stratum_si_stats="si_stats",
+        species_list=["SW", "FD"],
+        curve_fit_fn=lambda *_a, **_k: None,
+        np_module="np",
+        pd_module="pd",
+        sns_module="sns",
+        plt_module="plt",
+        fit_rawdata=True,
+        min_age=25,
+        agg_type="min",
+        plot=False,
+        figsize=(8, 6),
+        verbose=True,
+        ylim=[0.0, 600.0],
+        xlim=[0.0, 400.0],
+        message_fn=lambda *_a, **_k: None,
+        fit_stratum_curves_fn=fake_fit_stratum_curves,
+    )
+
+    out = compile_one(7, "S7")
+
+    assert out == {"status": "ok"}
+    assert captured["stratumi"] == 7
+    assert captured["f_table"] == "f_table"
+    assert captured["strata_df"] == "strata_df"
+    assert captured["stratum_si_stats"] == "si_stats"
+    assert captured["species_list"] == ["SW", "FD"]
+    assert captured["fit_rawdata"] is True
+    assert captured["min_age"] == 25
+    assert captured["agg_type"] == "min"
+    assert captured["plot"] is False
+    assert captured["figsize"] == (8, 6)
+    assert captured["verbose"] is True
+    assert captured["ylim"] == [0.0, 600.0]
+    assert captured["xlim"] == [0.0, 400.0]
 
 
 def test_compile_strata_fit_results_calls_compile_fn_for_each_stratum() -> None:
