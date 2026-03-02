@@ -52,3 +52,15 @@ def test_run01a_no_local_si_levels_reassignment() -> None:
         for target in node.targets:
             if isinstance(target, ast.Name) and target.id == "si_levels":
                 raise AssertionError("run_tsa should not reassign si_levels locally")
+
+
+def test_run01a_uses_lexmatch_alias_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "build_stratum_lexmatch_alias_map":
+            return
+    raise AssertionError("run_tsa should call build_stratum_lexmatch_alias_map(...)")

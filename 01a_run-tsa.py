@@ -29,7 +29,6 @@ def run_tsa(
     vdyp_out_cache=None,
     curve_fit_impl=None,
 ):
-    import operator
     import os
 
     import distance
@@ -61,7 +60,10 @@ def run_tsa(
         load_or_build_vdyp_results_tsa,
         plot_curve_overlays,
     )
-    from femic.pipeline.tsa import build_strata_summary
+    from femic.pipeline.tsa import (
+        build_strata_summary,
+        build_stratum_lexmatch_alias_map,
+    )
     from femic.pipeline.vdyp_overrides import vdyp_kwarg_overrides_for_tsa
     from femic.pipeline.tipsy import (
         build_tipsy_params_for_tsa,
@@ -154,30 +156,13 @@ def run_tsa(
     plt.savefig("plots/strata-tsa%s.png" % tsa, facecolor="white", bbox_inches="tight")
 
     # --- cell 16 ---
-    names1 = set(f_.loc[strata_df.index.values].stratum_lexmatch.dropna().unique())
-    names2 = set(f_.stratum_lexmatch.dropna().unique()) - names1
-
-    stratum_key = (
-        f_.reset_index().groupby("%s_lexmatch" % stratum_col)[stratum_col].first()
+    selected_strata_codes = list(strata_df.index.values)
+    best_match = build_stratum_lexmatch_alias_map(
+        f_table=f_,
+        stratum_col=stratum_col,
+        selected_strata_codes=selected_strata_codes,
+        levenshtein_fn=distance.levenshtein,
     )
-    totalarea_p_sum__ = f_.groupby("%s_lexmatch" % stratum_col).totalarea_p.sum()
-    lev_dist = {
-        n2: {n1: distance.levenshtein(n1, n2) for n1 in names1} for n2 in names2
-    }
-    lev_dist_low = {
-        n2: {
-            n1: (lev_dist[n2][n1], totalarea_p_sum__.loc[n1])
-            for n1 in lev_dist[n2].keys()
-            if lev_dist[n2][n1] == min(lev_dist[n2].values())
-        }
-        for n2 in names2
-    }
-    best_match = {
-        stratum_key.loc[n2]: stratum_key[
-            max(lev_dist_low[n2].items(), key=operator.itemgetter(1))[0]
-        ]
-        for n2 in names2
-    }
 
     # --- cell 17 ---
     f_.reset_index(inplace=True)
@@ -185,7 +170,7 @@ def run_tsa(
     # --- cell 18 ---
     def match_stratum(r):
         key = r[stratum_col]
-        if key in strata_df.index.values:
+        if key in selected_strata_codes:
             return key
         return best_match.get(key, key)
 

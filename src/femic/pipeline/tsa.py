@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable, Sequence
 
 TARGET_NSTRATA_BY_TSA: dict[str, int] = {
     "08": 9,
@@ -58,3 +58,38 @@ def build_strata_summary(
         .SITE_INDEX.median()
     )
     return strata_df, largestn_strata_codes, float(site_index_iqr.mean())
+
+
+def build_stratum_lexmatch_alias_map(
+    *,
+    f_table: Any,
+    stratum_col: str,
+    selected_strata_codes: Sequence[str],
+    levenshtein_fn: Callable[[str, str], int],
+) -> dict[str, str]:
+    """Build best-match aliases from non-selected lexmatch strata to selected strata."""
+    selected_codes = list(selected_strata_codes)
+    names1 = set(f_table.loc[selected_codes].stratum_lexmatch.dropna().unique())
+    names2 = set(f_table.stratum_lexmatch.dropna().unique()) - names1
+    if not names1 or not names2:
+        return {}
+
+    stratum_key = (
+        f_table.reset_index().groupby(f"{stratum_col}_lexmatch")[stratum_col].first()
+    )
+    totalarea_p_sum = f_table.groupby(f"{stratum_col}_lexmatch").totalarea_p.sum()
+    lev_dist = {n2: {n1: levenshtein_fn(n1, n2) for n1 in names1} for n2 in names2}
+    lev_dist_low = {
+        n2: {
+            n1: (lev_dist[n2][n1], totalarea_p_sum.loc[n1])
+            for n1 in lev_dist[n2]
+            if lev_dist[n2][n1] == min(lev_dist[n2].values())
+        }
+        for n2 in names2
+    }
+    return {
+        stratum_key.loc[n2]: stratum_key[
+            max(lev_dist_low[n2].items(), key=lambda i: i[1])[0]
+        ]
+        for n2 in names2
+    }

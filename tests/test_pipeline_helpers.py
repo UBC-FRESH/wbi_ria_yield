@@ -14,7 +14,12 @@ from femic.pipeline.plots import strata_plot_paths, tipsy_vdyp_plot_path
 import pytest
 import pandas as pd
 
-from femic.pipeline.tsa import MIN_STANDCOUNT, build_strata_summary, target_nstrata_for
+from femic.pipeline.tsa import (
+    MIN_STANDCOUNT,
+    build_strata_summary,
+    build_stratum_lexmatch_alias_map,
+    target_nstrata_for,
+)
 
 
 def test_normalize_tsa_list_defaults_and_padding(tmp_path: Path) -> None:
@@ -92,6 +97,35 @@ def test_build_strata_summary_requires_target_or_tsa_code() -> None:
             stratum_col="stratum",
             pd_module=pd,
         )
+
+
+def test_build_stratum_lexmatch_alias_map_prefers_highest_area_on_distance_tie() -> (
+    None
+):
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["SAA", "SBB", "SAB"],
+            "stratum_lexmatch": ["AA", "BB", "AB"],
+            "totalarea_p": [0.3, 0.6, 0.1],
+        }
+    ).set_index("stratum")
+
+    distances = {
+        ("AA", "AB"): 1,
+        ("BB", "AB"): 1,
+    }
+
+    def fake_levenshtein(a: str, b: str) -> int:
+        return distances.get((a, b), distances.get((b, a), 9))
+
+    alias_map = build_stratum_lexmatch_alias_map(
+        f_table=f_table,
+        stratum_col="stratum",
+        selected_strata_codes=["SAA", "SBB"],
+        levenshtein_fn=fake_levenshtein,
+    )
+
+    assert alias_map == {"SAB": "SBB"}
 
 
 def test_plot_path_helpers() -> None:
