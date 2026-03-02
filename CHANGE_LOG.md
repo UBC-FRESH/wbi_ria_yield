@@ -357,3 +357,12 @@
 - Extended `tests/test_vdyp_stage.py` with `run_vdyp_for_stratum(...)` coverage and updated
   `tests/test_legacy_01a_structure.py` guardrails to assert 01a no longer calls
   `run_vdyp_sampling(...)` directly and no longer defines nested `run_vdyp`.
+- Added `femic.pipeline.vdyp_stage.build_run_vdyp_for_stratum_runner(...)`, a reusable helper that
+  binds per-TSA runtime context (`tsa`, `run_id`, VDYP tables, fit hooks, and run-log paths) into
+  a bootstrap-compatible `run_vdyp_fn(sample_table, **kwargs)` callable.
+- Rewired `01a_run-tsa.py` bootstrap flow to build `run_vdyp_fn` through
+  `build_run_vdyp_for_stratum_runner(...)`, removing inline lambda assembly of
+  `run_vdyp_for_stratum(...)` kwargs from `run_tsa(...)`.
+- Extended `tests/test_vdyp_stage.py` with forwarding/binding coverage for the new runner-builder
+  helper, and updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls the
+  builder helper and no longer calls `run_vdyp_for_stratum(...)` directly.

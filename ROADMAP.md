@@ -424,3 +424,17 @@
 - Queued next extraction slice: move the remaining 01a bootstrap-callable wiring lambda into a
   dedicated stage helper so `run_tsa(...)` only passes explicit orchestration inputs without
   inline closure assembly.
+- Added `femic.pipeline.vdyp_stage.build_run_vdyp_for_stratum_runner(...)`, a reusable helper that
+  binds per-TSA runtime context (`tsa`, `run_id`, VDYP tables, fit hooks, and run-log paths) into
+  a `run_vdyp_fn(sample_table, **kwargs)` callable compatible with
+  `execute_bootstrap_vdyp_runs(...)`.
+- Rewired `01a_run-tsa.py` bootstrap flow to build `run_vdyp_fn` via
+  `build_run_vdyp_for_stratum_runner(...)`, removing the remaining inline lambda that assembled
+  `run_vdyp_for_stratum(...)` kwargs inside `run_tsa(...)`.
+- Expanded `tests/test_vdyp_stage.py` with binding/forwarding coverage for
+  `build_run_vdyp_for_stratum_runner(...)`, and updated
+  `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls the builder helper and no
+  longer calls `run_vdyp_for_stratum(...)` directly.
+- Queued next extraction slice: remove the remaining inline `run_bootstrap_fn=lambda: ...`
+  assembly in `01a_run-tsa.py` by introducing a dedicated stage helper for per-TSA bootstrap
+  callback construction.
