@@ -77,6 +77,18 @@ def _vdyp_parse_exception_types() -> tuple[type[Exception], ...]:
     return (OSError, ValueError, TypeError, KeyError, UnicodeError)
 
 
+def _bootstrap_dispatch_exception_types() -> tuple[type[Exception], ...]:
+    """VDYP dispatch failures that should emit bootstrap dispatch_error events."""
+    return (
+        RuntimeError,
+        ValueError,
+        TypeError,
+        OSError,
+        KeyError,
+        subprocess.SubprocessError,
+    )
+
+
 def build_stratum_fit_run_config(
     *,
     fit_rawdata: bool = True,
@@ -1025,7 +1037,7 @@ def execute_bootstrap_vdyp_runs(
                     vdyp_out_cache=vdyp_out_cache,
                     log_context=run_context,
                 )
-            except Exception as exc:
+            except _bootstrap_dispatch_exception_types() as exc:
                 append_jsonl_fn(
                     vdyp_run_events_path,
                     {

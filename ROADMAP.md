@@ -1103,3 +1103,17 @@
 - Queued next extraction slice: continue P2.2 by narrowing the remaining broad exception handler in
   `execute_bootstrap_vdyp_runs(...)` (`dispatch_error` logging wrapper around `run_vdyp_fn`) into
   explicit run-stage exception classes while preserving JSONL diagnostics.
+- Narrowed the remaining broad dispatch wrapper in
+  `execute_bootstrap_vdyp_runs(...)` (`src/femic/pipeline/vdyp_stage.py`) to explicit
+  `_bootstrap_dispatch_exception_types()` while preserving `dispatch_error` JSONL emission for known
+  operational failures.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` to assert unexpected bootstrap
+  dispatch failures (`ZeroDivisionError`) now propagate without being converted into
+  `dispatch_error` records.
+- Verified `src/femic/pipeline/vdyp_stage.py` now contains no `except Exception` handlers.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (218 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing remaining broad exception handlers in
+  legacy-adapter modules (`src/femic/pipeline/tipsy.py`, `tipsy_config.py`, `tipsy_legacy.py`) and
+  narrowing first safe operational fallback paths with explicit exception classes.

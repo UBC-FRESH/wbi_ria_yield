@@ -800,6 +800,34 @@ def test_execute_bootstrap_vdyp_runs_logs_dispatch_error() -> None:
     assert events[1]["status"] == "dispatch_error"
 
 
+def test_execute_bootstrap_vdyp_runs_unexpected_error_propagates() -> None:
+    events: list[dict[str, object]] = []
+
+    def append_event(_path: str | Path, payload: object) -> None:
+        assert isinstance(payload, dict)
+        events.append(payload)
+
+    def failing_run_vdyp(
+        _sample: object, **_kwargs: object
+    ) -> dict[int, dict[str, str]]:
+        raise ZeroDivisionError("boom")
+
+    with pytest.raises(ZeroDivisionError, match="boom"):
+        execute_bootstrap_vdyp_runs(
+            tsa="08",
+            run_id="run-1",
+            results_for_tsa=[(5, "S2", {"L": {"ss": "sample-ss"}})],
+            si_levels=["L"],
+            vdyp_run_events_path="dummy.jsonl",
+            append_jsonl_fn=append_event,
+            run_vdyp_fn=failing_run_vdyp,
+            verbose=False,
+        )
+
+    assert len(events) == 1
+    assert events[0]["status"] == "dispatch"
+
+
 def test_execute_curve_smoothing_runs_builds_output_and_logs_missing() -> None:
     events: list[dict[str, object]] = []
 
