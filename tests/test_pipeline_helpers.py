@@ -390,6 +390,37 @@ def test_mean_thlb_for_geometry_and_assign_thlb_raw_from_raster() -> None:
     assert out["thlb_raw"].tolist() == [6.0, 6.0]
 
 
+def test_mean_thlb_for_geometry_fallback_scope() -> None:
+    def _runtime_error_mask(
+        _src: object, _shapes: list[object], crop: bool
+    ) -> tuple[np.ndarray, None]:
+        assert crop is True
+        raise RuntimeError("mask failed")
+
+    fallback_value = mean_thlb_for_geometry(
+        geometry=object(),
+        raster_src=object(),
+        mask_fn=_runtime_error_mask,
+        np_module=np,
+        default_on_error=11.0,
+    )
+    assert fallback_value == 11.0
+
+    def _unexpected_error_mask(
+        _src: object, _shapes: list[object], crop: bool
+    ) -> tuple[np.ndarray, None]:
+        assert crop is True
+        raise ZeroDivisionError("unexpected")
+
+    with pytest.raises(ZeroDivisionError):
+        mean_thlb_for_geometry(
+            geometry=object(),
+            raster_src=object(),
+            mask_fn=_unexpected_error_mask,
+            np_module=np,
+        )
+
+
 def test_plot_path_helpers() -> None:
     pdf_path, png_path = strata_plot_paths("8")
     tipsy_path = tipsy_vdyp_plot_path(23005, "08")

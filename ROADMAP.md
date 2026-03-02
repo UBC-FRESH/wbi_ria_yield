@@ -1058,3 +1058,18 @@
   THLB helper seams (`mean_thlb_for_geometry(...)` / `assign_thlb_raw_from_raster(...)` in
   `src/femic/pipeline/tsa.py`) into explicit raster/row-lookup exception paths while preserving
   legacy default-on-error behavior.
+- Narrowed broad THLB helper fallback scopes in `src/femic/pipeline/tsa.py`:
+  `mean_thlb_for_geometry(...)` now catches explicit raster/mask runtime classes
+  (`ValueError`, `TypeError`, `RuntimeError`, `OSError`) and
+  `assign_thlb_raw_from_raster(...)` row geometry fallback now catches explicit lookup errors
+  (`KeyError`, `TypeError`, `IndexError`).
+- Expanded deterministic coverage in `tests/test_pipeline_helpers.py` to assert
+  `mean_thlb_for_geometry(...)` still returns `default_on_error` for expected runtime failures while
+  unexpected exceptions propagate.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (211 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing remaining broad `except Exception`
+  handlers in pipeline helper modules that support legacy orchestration (next target:
+  `src/femic/pipeline/vdyp_curves.py`) and narrow them to explicit operational fallback classes
+  without changing emitted diagnostics.

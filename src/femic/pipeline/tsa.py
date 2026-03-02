@@ -398,7 +398,7 @@ def mean_thlb_for_geometry(
     """Compute mean THLB raster value for one geometry with legacy error fallback."""
     try:
         array, _ = mask_fn(raster_src, [geometry], crop=True)
-    except Exception:
+    except (ValueError, TypeError, RuntimeError, OSError):
         return float(default_on_error)
     return float(np_module.mean(array[array >= 0]))
 
@@ -422,7 +422,7 @@ def assign_thlb_raw_from_raster(
         def _mean(row: Any) -> float:
             try:
                 geometry = row[geometry_col]
-            except Exception:
+            except (KeyError, TypeError, IndexError):
                 geometry = getattr(row, geometry_col)
             return mean_thlb_for_geometry(
                 geometry=geometry,
