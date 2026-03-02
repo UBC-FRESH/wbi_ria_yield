@@ -47,12 +47,22 @@ def build_tsa_vdyp_log_paths(
     }
 
 
-def append_jsonl(path: str | Path, payload: dict[str, Any]) -> None:
-    """Append one JSON object line, creating parent directories as needed."""
+def serialize_jsonl_payload(payload: Mapping[str, Any]) -> str:
+    """Serialize one payload for JSONL output with legacy `default=str` conversion."""
+    return json.dumps(payload, default=str)
+
+
+def append_line(path: str | Path, line: str) -> None:
+    """Append one line of text with newline, creating parent directories as needed."""
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(payload, default=str) + "\n")
+        fh.write(line + "\n")
+
+
+def append_jsonl(path: str | Path, payload: dict[str, Any]) -> None:
+    """Append one JSON object line, creating parent directories as needed."""
+    append_line(path, serialize_jsonl_payload(payload))
 
 
 def append_text(path: str | Path, text: str) -> None:

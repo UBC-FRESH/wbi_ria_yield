@@ -1156,3 +1156,16 @@
 - Queued next extraction slice: continue P2.2 by auditing duplicate formatting/serialization logic in
   logging helpers (`append_jsonl`, stream-header and related callers) for additional safe
   centralization seams now that event payload assembly is consolidated.
+- Consolidated duplicate logging-format/serialization logic in `src/femic/pipeline/vdyp_logging.py`
+  by introducing `serialize_jsonl_payload(...)` and `append_line(...)`, then rewiring
+  `append_jsonl(...)` to use these shared seams.
+- Preserved existing external behavior (`default=str` JSON serialization and newline-terminated line
+  append semantics) while removing repeated parent-dir + line-write patterns.
+- Expanded deterministic coverage in `tests/test_vdyp_logging.py` for payload serialization and
+  generic line-appending helpers.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (244 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing whether remaining specialized appenders
+  (plain-text stream append and JSONL append callsites) can share a single file-append primitive
+  end-to-end without reducing clarity or changing output contract.

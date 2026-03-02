@@ -4,11 +4,13 @@ import json
 from pathlib import Path
 
 from femic.pipeline.vdyp_logging import (
+    append_line,
     append_jsonl,
     append_text,
     build_vdyp_stream_header,
     build_tsa_vdyp_log_paths,
     resolve_run_id,
+    serialize_jsonl_payload,
     vdyp_log_base,
 )
 
@@ -45,6 +47,22 @@ def test_append_helpers_create_parent_and_write_payload(tmp_path: Path) -> None:
     line = jsonl_path.read_text(encoding="utf-8").strip()
     assert json.loads(line) == {"event": "ok", "count": 1}
     assert text_path.read_text(encoding="utf-8") == "hello\n"
+
+
+def test_serialize_jsonl_payload_uses_default_str_conversion() -> None:
+    class _Obj:
+        def __str__(self) -> str:
+            return "obj-str"
+
+    line = serialize_jsonl_payload({"event": "ok", "obj": _Obj()})
+    assert json.loads(line) == {"event": "ok", "obj": "obj-str"}
+
+
+def test_append_line_creates_parent_and_appends_newline(tmp_path: Path) -> None:
+    line_path = tmp_path / "logs" / "line.log"
+    append_line(line_path, "first")
+    append_line(line_path, "second")
+    assert line_path.read_text(encoding="utf-8") == "first\nsecond\n"
 
 
 def test_build_vdyp_stream_header_uses_expected_format() -> None:
