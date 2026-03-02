@@ -147,6 +147,33 @@ def collect_vdyp_batch_run_metadata(
     }
 
 
+def build_vdyp_run_context(
+    *,
+    base_context: Mapping[str, Any] | None = None,
+    tsa: str | None = None,
+    run_id: str | None = None,
+    vdyp_stdout_log_path: str | Path | None = None,
+    vdyp_stderr_log_path: str | Path | None = None,
+    vdyp_binpath: str | Path | None = None,
+    vdyp_params: str | Path | None = None,
+) -> dict[str, Any]:
+    """Build VDYP run context payload while preserving caller-provided values."""
+    context = dict(base_context or {})
+    if tsa is not None:
+        context.setdefault("tsa", tsa)
+    if run_id is not None:
+        context.setdefault("run_id", run_id)
+    if vdyp_stdout_log_path is not None:
+        context.setdefault("vdyp_stdout_log", str(vdyp_stdout_log_path))
+    if vdyp_stderr_log_path is not None:
+        context.setdefault("vdyp_stderr_log", str(vdyp_stderr_log_path))
+    if vdyp_binpath is not None:
+        context.setdefault("vdyp_binpath", str(vdyp_binpath))
+    if vdyp_params is not None:
+        context.setdefault("vdyp_params", str(vdyp_params))
+    return context
+
+
 def build_stratum_fit_run_config(
     *,
     fit_rawdata: bool = True,
@@ -931,13 +958,15 @@ def run_vdyp_for_stratum(
     if vdyp_stderr_log_path is None:
         vdyp_stderr_log_path = tsa_paths["stderr"]
 
-    base_context = dict(log_context) if log_context else {}
-    base_context.setdefault("tsa", tsa)
-    base_context.setdefault("run_id", run_id)
-    base_context.setdefault("vdyp_stdout_log", str(vdyp_stdout_log_path))
-    base_context.setdefault("vdyp_stderr_log", str(vdyp_stderr_log_path))
-    base_context.setdefault("vdyp_binpath", str(vdyp_binpath_path))
-    base_context.setdefault("vdyp_params", str(vdyp_params_path))
+    base_context = build_vdyp_run_context(
+        base_context=log_context,
+        tsa=tsa,
+        run_id=run_id,
+        vdyp_stdout_log_path=vdyp_stdout_log_path,
+        vdyp_stderr_log_path=vdyp_stderr_log_path,
+        vdyp_binpath=vdyp_binpath_path,
+        vdyp_params=vdyp_params_path,
+    )
 
     def _run_batch(
         feature_ids: Sequence[Any],
@@ -1220,9 +1249,10 @@ def execute_vdyp_batch(
     vdyp_lyr_ = vdyp_lyr[vdyp_lyr.FEATURE_ID.isin(feature_ids_list)]
     ply_rows = vdyp_ply_.shape[0]
     lyr_rows = vdyp_lyr_.shape[0]
-    context = dict(base_context or {})
-    if run_id is not None:
-        context.setdefault("run_id", run_id)
+    context = build_vdyp_run_context(
+        base_context=base_context,
+        run_id=run_id,
+    )
 
     vdyp_io_dir = Path(vdyp_io_dirname)
     vdyp_io_dir.mkdir(parents=True, exist_ok=True)

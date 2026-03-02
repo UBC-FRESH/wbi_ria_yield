@@ -1376,3 +1376,17 @@
 - Queued next extraction slice: continue P2.2 by auditing duplicated base-context enrichment in
   VDYP run orchestration (`run_vdyp_for_stratum`, `execute_vdyp_batch`) and centralizing it via a
   helper seam without changing emitted context keys/values.
+- Completed the queued VDYP base-context consolidation by adding
+  `build_vdyp_run_context(...)` in `src/femic/pipeline/vdyp_stage.py`.
+- Rewired both `run_vdyp_for_stratum(...)` and `execute_vdyp_batch(...)` to consume the shared
+  context helper so run-id/log-path/bin/params context defaults are centralized while preserving
+  existing `setdefault(...)` semantics and emitted context fields.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` for
+  `build_vdyp_run_context(...)`, including default-key population and preservation of
+  caller-provided context values.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (251 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing repeated VDYP run-event payload fields
+  in `execute_vdyp_batch(...)` (timeout/error/parse_error/ok) and centralizing shared payload
+  assembly without changing emitted event keys/values.

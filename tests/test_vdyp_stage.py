@@ -14,6 +14,7 @@ from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
     build_bootstrap_vdyp_results_runner,
     build_vdyp_batch_command,
+    build_vdyp_run_context,
     build_curve_fit_adapter,
     build_curve_smoothing_plot_config,
     build_stratum_fit_run_config,
@@ -45,6 +46,43 @@ def _sample_vdyp_tables() -> tuple[pd.DataFrame, pd.DataFrame]:
     vdyp_ply = pd.DataFrame({"FEATURE_ID": [1, 2, 3], "A": [10, 20, 30]})
     vdyp_lyr = pd.DataFrame({"FEATURE_ID": [1, 2, 3], "B": [100, 200, 300]})
     return vdyp_ply, vdyp_lyr
+
+
+def test_build_vdyp_run_context_sets_expected_defaults() -> None:
+    context = build_vdyp_run_context(
+        base_context={"seed": 1},
+        tsa="08",
+        run_id="run-1",
+        vdyp_stdout_log_path=Path("logs/stdout.log"),
+        vdyp_stderr_log_path=Path("logs/stderr.log"),
+        vdyp_binpath=Path("VDYP7/VDYP7/VDYP7Console.exe"),
+        vdyp_params=Path("vdyp_params-landp"),
+    )
+    assert context == {
+        "seed": 1,
+        "tsa": "08",
+        "run_id": "run-1",
+        "vdyp_stdout_log": "logs/stdout.log",
+        "vdyp_stderr_log": "logs/stderr.log",
+        "vdyp_binpath": "VDYP7/VDYP7/VDYP7Console.exe",
+        "vdyp_params": "vdyp_params-landp",
+    }
+
+
+def test_build_vdyp_run_context_preserves_existing_values() -> None:
+    context = build_vdyp_run_context(
+        base_context={
+            "run_id": "existing",
+            "vdyp_stdout_log": "existing-stdout",
+            "vdyp_binpath": "existing-bin",
+        },
+        run_id="run-1",
+        vdyp_stdout_log_path=Path("logs/stdout.log"),
+        vdyp_binpath=Path("VDYP7/VDYP7/VDYP7Console.exe"),
+    )
+    assert context["run_id"] == "existing"
+    assert context["vdyp_stdout_log"] == "existing-stdout"
+    assert context["vdyp_binpath"] == "existing-bin"
 
 
 def test_build_vdyp_batch_command_preserves_legacy_string_shape() -> None:
