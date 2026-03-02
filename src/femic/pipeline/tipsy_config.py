@@ -77,7 +77,11 @@ def resolve_tipsy_param_builder(
     cfg = load_tipsy_tsa_config(tsa_code=tsa, config_dir=config_dir)
     if cfg is not None and not use_legacy:
         cfg_path = _resolve_tipsy_config_path(tsa_code=tsa, config_dir=config_dir)
-        assert cfg_path is not None
+        if cfg_path is None:
+            raise RuntimeError(
+                "Resolved TIPSY config payload but config path lookup returned None "
+                f"for TSA {tsa} in {config_dir}"
+            )
 
         def _tipsy_params_from_config(
             au_id: int,

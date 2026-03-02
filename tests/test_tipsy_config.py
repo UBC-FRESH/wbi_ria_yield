@@ -11,6 +11,7 @@ from femic.pipeline.tipsy_config import (
     resolve_tipsy_runtime_options,
     resolve_tipsy_param_builder,
 )
+import femic.pipeline.tipsy_config as tipsy_config_module
 
 
 def test_load_tipsy_tsa_config_returns_none_when_missing(tmp_path: Path) -> None:
@@ -133,6 +134,29 @@ def test_resolve_tipsy_param_builder_raises_when_config_missing_and_not_legacy(
             tsa_code="08",
             legacy_builder=_legacy_builder,
             config_dir=tmp_path,
+            use_legacy=False,
+        )
+
+
+def test_resolve_tipsy_param_builder_raises_when_cfg_path_lookup_inconsistent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        tipsy_config_module,
+        "load_tipsy_tsa_config",
+        lambda **_kwargs: {"schema_version": 1, "tsa_code": "08", "rules": []},
+    )
+    monkeypatch.setattr(
+        tipsy_config_module,
+        "_resolve_tipsy_config_path",
+        lambda **_kwargs: None,
+    )
+
+    with pytest.raises(RuntimeError, match="config path lookup returned None"):
+        resolve_tipsy_param_builder(
+            tsa_code="08",
+            legacy_builder=lambda *_a, **_k: {"e": {}, "f": {}},
+            config_dir="config/tipsy",
             use_legacy=False,
         )
 

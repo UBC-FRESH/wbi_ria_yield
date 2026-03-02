@@ -182,7 +182,8 @@ def run_legacy_subprocess(
         text=True,
         bufsize=1,
     )
-    assert process.stdout is not None
+    if process.stdout is None:
+        raise RuntimeError("Legacy subprocess stdout pipe was not created")
     for line in process.stdout:
         if line.strip() in drop_lines:
             continue

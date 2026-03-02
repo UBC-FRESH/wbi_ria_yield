@@ -54,8 +54,12 @@ def clean_stand_geometry(geometry: Any) -> Any:
     cleaned = geometry.buffer(0)
     shapely_geometry = __import__("shapely.geometry", fromlist=["MultiPolygon"])
     cleaned_mp = shapely_geometry.MultiPolygon([cleaned])
-    assert cleaned_mp.is_valid
-    assert cleaned_mp.geom_type == "MultiPolygon"
+    if not cleaned_mp.is_valid:
+        raise ValueError("Geometry remained invalid after stand-geometry cleaning")
+    if cleaned_mp.geom_type != "MultiPolygon":
+        raise ValueError(
+            f"Expected MultiPolygon from stand-geometry cleaning, got {cleaned_mp.geom_type!r}"
+        )
     return cleaned_mp
 
 

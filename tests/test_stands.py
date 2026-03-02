@@ -6,11 +6,13 @@ import pandas as pd
 
 from femic.pipeline.stands import (
     build_stands_column_map,
+    clean_stand_geometry,
     export_stands_shapefiles,
     extract_stand_features_for_tsa,
     prepare_stands_export_frame,
     should_skip_stands_export,
 )
+import pytest
 
 
 def test_should_skip_stands_export_defaults_and_overrides() -> None:
@@ -99,3 +101,81 @@ def test_export_stands_shapefiles_with_stubbed_frame(tmp_path: Path) -> None:
     assert calls[0][0] == "prepare"
     assert calls[1][0] == "to_file"
     assert calls[1][1].endswith("tsa08.shp/stands.shp")
+
+
+def test_clean_stand_geometry_raises_when_cleanup_still_invalid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _Geom:
+        is_valid = False
+
+        @staticmethod
+        def buffer(_distance: int) -> str:
+            return "buffered"
+
+    class _BadMultiPolygon:
+        def __init__(self, _parts: object) -> None:
+            self.is_valid = False
+            self.geom_type = "MultiPolygon"
+
+    class _FakeModule:
+        MultiPolygon = _BadMultiPolygon
+
+    import builtins
+
+    real_import = builtins.__import__
+
+    def _patched_import(
+        name: str,
+        globals: object = None,
+        locals: object = None,
+        fromlist: object = (),
+        level: int = 0,
+    ) -> object:
+        if name == "shapely.geometry":
+            return _FakeModule()
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", _patched_import)
+
+    with pytest.raises(ValueError, match="remained invalid"):
+        clean_stand_geometry(_Geom())
+
+
+def test_clean_stand_geometry_raises_when_cleanup_not_multipolygon(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _Geom:
+        is_valid = False
+
+        @staticmethod
+        def buffer(_distance: int) -> str:
+            return "buffered"
+
+    class _BadMultiPolygon:
+        def __init__(self, _parts: object) -> None:
+            self.is_valid = True
+            self.geom_type = "Polygon"
+
+    class _FakeModule:
+        MultiPolygon = _BadMultiPolygon
+
+    import builtins
+
+    real_import = builtins.__import__
+
+    def _patched_import(
+        name: str,
+        globals: object = None,
+        locals: object = None,
+        fromlist: object = (),
+        level: int = 0,
+    ) -> object:
+        if name == "shapely.geometry":
+            return _FakeModule()
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", _patched_import)
+
+    with pytest.raises(ValueError, match="Expected MultiPolygon"):
+        clean_stand_geometry(_Geom())

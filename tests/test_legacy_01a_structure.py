@@ -269,6 +269,14 @@ def test_run01a_no_broad_exception_handlers() -> None:
             raise AssertionError("run_tsa should not catch broad Exception")
 
 
+def test_run01a_no_runtime_assert_statements() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if isinstance(node, ast.Assert):
+            raise AssertionError("run_tsa should avoid runtime assert statements")
+
+
 def test_run01a_no_inline_strata_plot_output_path_literals() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

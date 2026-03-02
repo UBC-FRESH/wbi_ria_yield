@@ -16,6 +16,7 @@ from femic.pipeline.stages import (
     should_skip_if_outputs_exist,
 )
 import pandas as pd
+import pytest
 
 
 def test_run_legacy_subprocess_filters_known_noise(capsys, tmp_path: Path) -> None:
@@ -46,6 +47,46 @@ def test_run_legacy_subprocess_filters_known_noise(capsys, tmp_path: Path) -> No
     assert "done" in out
     assert "Error in sys.excepthook:" not in out
     assert "Original exception was:" not in out
+
+
+def test_run_legacy_subprocess_raises_when_stdout_pipe_missing(tmp_path: Path) -> None:
+    script_path = tmp_path / "00_data-prep.py"
+    script_path.write_text("print('hello')\n", encoding="utf-8")
+    cfg = build_pipeline_run_config(tsa_list=["08"], resume=True)
+    plan = build_legacy_execution_plan(
+        run_config=cfg,
+        script_path=script_path,
+        python_executable=sys.executable,
+        base_env={},
+    )
+
+    class _Proc:
+        stdout = None
+
+        @staticmethod
+        def wait() -> int:
+            return 0
+
+    class _Subprocess:
+        STDOUT = object()
+        PIPE = object()
+
+        @staticmethod
+        def Popen(*_args: object, **_kwargs: object) -> _Proc:
+            return _Proc()
+
+    import femic.pipeline.stages as stages_module
+
+    old_subprocess = stages_module.subprocess
+    try:
+        stages_module.subprocess = _Subprocess()  # type: ignore[assignment]
+        with pytest.raises(RuntimeError, match="stdout pipe was not created"):
+            run_legacy_subprocess(
+                execution_plan=plan,
+                drop_lines=set(),
+            )
+    finally:
+        stages_module.subprocess = old_subprocess
 
 
 def test_load_legacy_module_loads_run_tsa_symbol(tmp_path: Path) -> None:

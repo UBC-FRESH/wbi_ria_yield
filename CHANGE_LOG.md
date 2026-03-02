@@ -1054,3 +1054,21 @@
 - Queued next extraction slice: continue P2.2 by auditing remaining broad `assert`-style runtime
   sentinels in production helper/orchestration paths (non-test) and replacing inappropriate
   runtime assertions with explicit typed errors where behavior is user/input dependent.
+- Replaced remaining non-test runtime assertion control-flow checks with explicit typed errors in
+  production modules:
+  `resolve_tipsy_param_builder(...)` (`src/femic/pipeline/tipsy_config.py`),
+  `run_legacy_subprocess(...)` (`src/femic/pipeline/stages.py`),
+  `clean_stand_geometry(...)` (`src/femic/pipeline/stands.py`), and runtime config validation in
+  `run_tsa(...)` (`01a_run-tsa.py`).
+- Expanded deterministic coverage with new regression/guardrail tests in
+  `tests/test_tipsy_config.py`, `tests/test_pipeline_stages.py`, `tests/test_stands.py`, and
+  `tests/test_legacy_01a_structure.py` for new typed error branches and assertion-removal guards.
+- Completed runtime assertion hardening audit:
+  no `assert` statements remain in production orchestration/pipeline code
+  (`src/`, `00_data-prep.py`, `01a_run-tsa.py`).
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (237 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by consolidating repeated legacy rule-error
+  construction patterns (currently duplicated across TIPSY/VDYP helper seams) into shared diagnostic
+  helpers where practical, while preserving existing external behavior and messages.

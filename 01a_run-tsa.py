@@ -82,7 +82,11 @@ def run_tsa(
         resolve_tipsy_param_builder,
     )
 
-    assert isinstance(runtime_config, Legacy01ARuntimeConfig)
+    if not isinstance(runtime_config, Legacy01ARuntimeConfig):
+        raise TypeError(
+            "runtime_config must be Legacy01ARuntimeConfig, got "
+            f"{type(runtime_config).__name__}"
+        )
 
     curve_fit = build_curve_fit_adapter(
         curve_fit_impl=runtime_config.curve_fit_impl,
