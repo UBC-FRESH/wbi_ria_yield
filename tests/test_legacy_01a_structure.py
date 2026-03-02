@@ -135,6 +135,20 @@ def test_run01a_has_no_nested_legacy_fit_function_definitions() -> None:
             )
 
 
+def test_run01a_has_no_local_legacy_fit2_assignments() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    forbidden = {"fit_func2", "fit_func2_bounds_func"}
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in forbidden:
+                raise AssertionError(
+                    "run_tsa should not assign local legacy fit_func2 bindings"
+                )
+
+
 def test_run01a_uses_compile_strata_fit_results_helper_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

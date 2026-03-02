@@ -49,8 +49,6 @@ def run_tsa(
     from femic.pipeline.vdyp_curves import (
         legacy_fit_func1,
         legacy_fit_func1_bounds_func,
-        legacy_fit_func2,
-        legacy_fit_func2_bounds_func,
         process_vdyp_out,
     )
     from femic.pipeline.vdyp_stage import (
@@ -313,13 +311,6 @@ def run_tsa(
         run_bootstrap_fn=run_bootstrap_fn,
         print_fn=print,
     )
-
-    # --- cell 44 ---
-    # def toe_fit_func(x, a, b, c):
-    #    return a*pow(x, b)
-
-    fit_func2 = legacy_fit_func2
-    fit_func2_bounds_func = legacy_fit_func2_bounds_func
 
     # --- cell 45 ---
     vdyp_curves_smooth_tsa_feather_path = "%s%s.feather" % (
