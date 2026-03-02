@@ -963,3 +963,17 @@
 - Queued next extraction slice: continue P2.2 by extracting remaining inline post-bundle warning
   formatting for missing AU/curve mappings into a reusable diagnostics helper seam so 00_data-prep
   no longer assembles this warning text block inline.
+- Added `emit_missing_au_curve_mapping_warning(...)` in `src/femic/pipeline/bundle.py` to
+  centralize post-bundle missing AU/curve warning formatting and emission.
+- Rewired `00_data-prep.py` post-bundle diagnostics to call
+  `emit_missing_au_curve_mapping_warning(...)` instead of assembling warning text inline.
+- Exported the new bundle diagnostics helper via `femic.pipeline.__init__`, expanded deterministic
+  coverage in `tests/test_bundle.py`, and updated AST guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `emit_missing_au_curve_mapping_warning(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (204 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting residual inline `f.shape` diagnostic
+  notebook artifacts from `00_data-prep.py` into optional helper/log seams (or remove where dead)
+  so the script body remains pure orchestration.

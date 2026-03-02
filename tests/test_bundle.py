@@ -9,6 +9,7 @@ from femic.pipeline.bundle import (
     assign_curve_ids_from_au_table,
     build_bundle_tables_from_curves,
     bundle_tables_ready,
+    emit_missing_au_curve_mapping_warning,
     ensure_scsi_au_from_table,
     load_bundle_tables,
     resolve_bundle_paths,
@@ -131,6 +132,25 @@ def test_build_bundle_tables_from_curves_tracks_missing_mappings() -> None:
     assert out.au_table.empty
     assert len(out.missing_au_curve_mappings) == 1
     assert out.missing_au_curve_mappings.loc[0, "stratum_code"] == "BWBS_AT"
+
+
+def test_emit_missing_au_curve_mapping_warning_emits_expected_lines() -> None:
+    missing_df = pd.DataFrame(
+        [
+            {"tsa": "08", "stratum_code": "BWBS_AT", "si_level": "L"},
+            {"tsa": "08", "stratum_code": "BWBS_AT", "si_level": "L"},
+        ]
+    )
+    messages: list[str] = []
+    emit_missing_au_curve_mapping_warning(
+        missing_df=missing_df,
+        message_fn=messages.append,
+        top_n=1,
+    )
+    assert messages[0].startswith(
+        "Warning: skipped VDYP curve combos without AU mapping (2 rows). Top 1:"
+    )
+    assert "BWBS_AT" in messages[1]
 
 
 def test_assign_curve_ids_from_au_table_assigns_managed_and_unmanaged() -> None:

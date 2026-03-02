@@ -41,6 +41,7 @@ try:
         assign_curve_ids_from_au_table,
         build_bundle_tables_from_curves,
         bundle_tables_ready,
+        emit_missing_au_curve_mapping_warning,
         ensure_scsi_au_from_table,
         load_bundle_tables,
         resolve_bundle_paths,
@@ -102,6 +103,7 @@ except ModuleNotFoundError:
         assign_curve_ids_from_au_table,
         build_bundle_tables_from_curves,
         bundle_tables_ready,
+        emit_missing_au_curve_mapping_warning,
         ensure_scsi_au_from_table,
         load_bundle_tables,
         resolve_bundle_paths,
@@ -650,16 +652,7 @@ else:
         message_fn=print,
     )
     _missing_df = _bundle_assembly.missing_au_curve_mappings
-    if not _missing_df.empty:
-        print(
-            "Warning: skipped VDYP curve combos without AU mapping "
-            f"({len(_missing_df)} rows). Top 10:"
-        )
-        print(
-            _missing_df.value_counts(["tsa", "stratum_code", "si_level"])
-            .head(10)
-            .to_string()
-        )
+    emit_missing_au_curve_mapping_warning(missing_df=_missing_df, message_fn=print, top_n=10)
     au_table = _bundle_assembly.au_table
     curve_table = _bundle_assembly.curve_table
     curve_points_table = _bundle_assembly.curve_points_table

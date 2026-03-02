@@ -173,6 +173,26 @@ def build_bundle_tables_from_curves(
     )
 
 
+def emit_missing_au_curve_mapping_warning(
+    *,
+    missing_df: Any,
+    message_fn: Callable[[str], Any] = print,
+    top_n: int = 10,
+) -> None:
+    """Emit legacy warning text for missing AU/curve mapping diagnostics."""
+    if missing_df.empty:
+        return
+    message_fn(
+        "Warning: skipped VDYP curve combos without AU mapping "
+        f"({len(missing_df)} rows). Top {int(top_n)}:"
+    )
+    message_fn(
+        missing_df.value_counts(["tsa", "stratum_code", "si_level"])
+        .head(top_n)
+        .to_string()
+    )
+
+
 def assign_curve_ids_from_au_table(
     *,
     f_table: Any,
