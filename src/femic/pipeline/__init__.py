@@ -43,7 +43,13 @@ from femic.pipeline.vdyp_overrides import (
     DEFAULT_VDYP_KWARG_OVERRIDES,
     vdyp_kwarg_overrides_for_tsa,
 )
-from femic.pipeline.stages import StageResult, run_legacy_subprocess
+from femic.pipeline.stages import (
+    StageResult,
+    load_legacy_module,
+    run_legacy_subprocess,
+    run_legacy_tsa_loop,
+)
+from femic.pipeline.legacy_runtime import Legacy01ARuntimeConfig
 from femic.pipeline.vdyp_sampling import nsamples_from_curves
 from femic.pipeline.vdyp_io import import_vdyp_tables, write_vdyp_infiles_plylyr
 from femic.pipeline.tipsy import (
@@ -99,8 +105,11 @@ __all__ = [
     "LegacyExecutionPlan",
     "PipelineRunConfig",
     "StageResult",
+    "Legacy01ARuntimeConfig",
     "build_legacy_execution_plan",
+    "load_legacy_module",
     "run_legacy_subprocess",
+    "run_legacy_tsa_loop",
     "build_run_manifest_payload",
     "collect_runtime_versions",
     "load_vdyp_prep_checkpoint",

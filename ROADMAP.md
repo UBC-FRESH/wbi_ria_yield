@@ -29,8 +29,8 @@
 - [ ] P2.1b Remove global state and pass explicit parameters
   - [x] P2.1b.1 Centralize 01a per-TSA VDYP cache-path templates in shared helper
   - [x] P2.1b.2 Replace residual 01a `os.path` cache checks with `Path(...).is_file()`
-  - [ ] P2.1b.3 Collapse 00->01a cache-path handoff to one resolved payload
-  - [ ] P2.1b.4 Reduce 01a `run_tsa(...)` signature by bundling remaining path/runtime args
+  - [x] P2.1b.3 Collapse 00->01a cache-path handoff to one resolved payload
+  - [x] P2.1b.4 Reduce 01a `run_tsa(...)` signature by bundling remaining path/runtime args
 - [ ] P2.2 Convert notebook logic into functions
 - [ ] P2.2a Wrap major steps with clear inputs/outputs
 - [ ] P2.2b Add a small orchestration layer for sequencing
@@ -635,3 +635,23 @@
   2) reduce `run_tsa(...)` argument surface by grouping remaining path/runtime plumbing into a
   typed config payload,
   3) extract 00_data-prep 01a/01b module-loader/caller loops into shared orchestration helper(s).
+- Added `Legacy01ARuntimeConfig` (`femic.pipeline.legacy_runtime`) and rewired
+  `01a_run-tsa.run_tsa(...)` to consume this typed runtime payload instead of discrete
+  path/runtime args (`resume_effective`, `force_run_vdyp`, cache path prefixes, tipsy export paths,
+  and optional fit/cache hooks).
+- Collapsed 00->01a cache-path handoff to one resolved payload (`vdyp_cache_paths`) built in
+  `00_data-prep.py` and passed through `Legacy01ARuntimeConfig`.
+- Added shared orchestration helpers in `femic.pipeline.stages`:
+  `load_legacy_module(...)` and `run_legacy_tsa_loop(...)`.
+- Rewired 00_data-prep 01a/01b execution loops to use shared loader/loop helpers (instead of
+  inline `importlib.util` plumbing and duplicated loop scaffolding).
+- Added script-run fallback in `00_data-prep.py` to prepend `src/` on `ModuleNotFoundError` so
+  direct `python 00_data-prep.py` execution can still import `femic.pipeline` helpers.
+- Expanded guardrails/tests:
+  `tests/test_legacy_orchestration_wiring.py` now validates runtime-config handoff plus shared
+  loader/loop helper usage, `tests/test_pipeline_stages.py` now covers
+  `load_legacy_module(...)`/`run_legacy_tsa_loop(...)`, and
+  `tests/test_legacy_01a_structure.py` asserts 01a reads cache paths from `runtime_config`.
+- Queued next extraction slice: continue `P2.2` by moving remaining 00_data-prep orchestration
+  logic around stage setup/checkpoints into reusable stage helpers so the top-level script becomes a
+  thin workflow shell.

@@ -7,9 +7,6 @@ def run_tsa(
     stratum_col,
     f,
     si_levels,
-    resume_effective,
-    force_run_vdyp,
-    kwarg_overrides_for_tsa,
     results,
     vdyp_results,
     vdyp_curves_smooth,
@@ -18,16 +15,7 @@ def run_tsa(
     tipsy_params,
     si_levelquants,
     species_list,
-    vdyp_results_tsa_pickle_path_prefix,
-    vdyp_results_pickle_path,
-    vdyp_input_pandl_path,
-    vdyp_ply_feather_path,
-    vdyp_lyr_feather_path,
-    vdyp_curves_smooth_tsa_feather_path_prefix,
-    tipsy_params_columns,
-    tipsy_params_path_prefix,
-    vdyp_out_cache=None,
-    curve_fit_impl=None,
+    runtime_config,
 ):
     from pathlib import Path
 
@@ -42,12 +30,12 @@ def run_tsa(
         pre_vdyp_checkpoint_path,
         save_vdyp_prep_checkpoint,
     )
+    from femic.pipeline.legacy_runtime import Legacy01ARuntimeConfig
     from femic.pipeline.vdyp_logging import (
         append_jsonl,
         build_tsa_vdyp_log_paths,
         resolve_run_id,
     )
-    from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.vdyp_curves import (
         legacy_fit_func1,
         legacy_fit_func1_bounds_func,
@@ -93,7 +81,13 @@ def run_tsa(
         resolve_tipsy_param_builder,
     )
 
-    curve_fit = build_curve_fit_adapter(curve_fit_impl=curve_fit_impl, np_module=np)
+    assert isinstance(runtime_config, Legacy01ARuntimeConfig)
+
+    curve_fit = build_curve_fit_adapter(
+        curve_fit_impl=runtime_config.curve_fit_impl,
+        np_module=np,
+    )
+    kwarg_overrides_for_tsa = runtime_config.kwarg_overrides_for_tsa
     if kwarg_overrides_for_tsa is None:
         kwarg_overrides_for_tsa = vdyp_kwarg_overrides_for_tsa(tsa)
 
@@ -184,7 +178,7 @@ def run_tsa(
 
     vdyp_prep_checkpoint_path = pre_vdyp_checkpoint_path(tsa_code=tsa)
     prep_loaded = False
-    if resume_effective and Path(vdyp_prep_checkpoint_path).is_file():
+    if runtime_config.resume_effective and Path(vdyp_prep_checkpoint_path).is_file():
         try:
             results[tsa] = load_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path)
             prep_loaded = True
@@ -245,19 +239,16 @@ def run_tsa(
     # --- cell 38 ---
     # --- cell 40 ---
     vdyp_ply, vdyp_lyr = load_vdyp_input_tables(
-        vdyp_input_pandl_path=vdyp_input_pandl_path,
-        vdyp_ply_feather_path=vdyp_ply_feather_path,
-        vdyp_lyr_feather_path=vdyp_lyr_feather_path,
+        vdyp_input_pandl_path=runtime_config.vdyp_input_pandl_path,
+        vdyp_ply_feather_path=runtime_config.vdyp_ply_feather_path,
+        vdyp_lyr_feather_path=runtime_config.vdyp_lyr_feather_path,
         read_from_source=False,
     )
 
     # --- cell 42 ---
-    vdyp_cache_paths = build_vdyp_cache_paths(
-        tsa_code=tsa,
-        vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
-        vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
-    )
-    vdyp_results_tsa_pickle_path = vdyp_cache_paths["vdyp_results_tsa_pickle_path"]
+    vdyp_results_tsa_pickle_path = runtime_config.vdyp_cache_paths[
+        "vdyp_results_tsa_pickle_path"
+    ]
     run_vdyp_fn = build_run_vdyp_for_stratum_runner(
         tsa=tsa,
         run_id=femic_run_id,
@@ -280,19 +271,19 @@ def run_tsa(
         vdyp_run_events_path=vdyp_run_events_path,
         append_jsonl_fn=append_jsonl,
         run_vdyp_fn=run_vdyp_fn,
-        vdyp_out_cache=vdyp_out_cache,
+        vdyp_out_cache=runtime_config.vdyp_out_cache,
     )
     vdyp_results[tsa] = load_or_build_vdyp_results_tsa(
         tsa=tsa,
-        force_run_vdyp=bool(force_run_vdyp),
+        force_run_vdyp=bool(runtime_config.force_run_vdyp),
         vdyp_results_tsa_pickle_path=vdyp_results_tsa_pickle_path,
-        vdyp_results_pickle_path=vdyp_results_pickle_path,
+        vdyp_results_pickle_path=runtime_config.vdyp_results_pickle_path,
         run_bootstrap_fn=run_bootstrap_fn,
         print_fn=print,
     )
 
     # --- cell 45 ---
-    vdyp_curves_smooth_tsa_feather_path = vdyp_cache_paths[
+    vdyp_curves_smooth_tsa_feather_path = runtime_config.vdyp_cache_paths[
         "vdyp_curves_smooth_tsa_feather_path"
     ]
     if not Path(vdyp_curves_smooth_tsa_feather_path).is_file():
@@ -369,7 +360,7 @@ def run_tsa(
     try:
         df = build_tipsy_input_table(
             tipsy_params_for_tsa=tipsy_params[tsa],
-            tipsy_params_columns=tipsy_params_columns,
+            tipsy_params_columns=runtime_config.tipsy_params_columns,
             pd_module=pd,
         )
     except RuntimeError as exc:
@@ -380,7 +371,7 @@ def run_tsa(
     write_tipsy_input_exports(
         tipsy_table=df,
         tsa=tsa,
-        tipsy_params_path_prefix=tipsy_params_path_prefix,
+        tipsy_params_path_prefix=runtime_config.tipsy_params_path_prefix,
     )
 
 

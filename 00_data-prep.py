@@ -39,8 +39,20 @@ import distance
 from scipy.optimize import curve_fit as _curve_fit
 from functools import partial, wraps
 import itertools
-import importlib.util
 from pathlib import Path
+import sys
+
+try:
+    from femic.pipeline.legacy_runtime import Legacy01ARuntimeConfig
+    from femic.pipeline.stages import load_legacy_module, run_legacy_tsa_loop
+    from femic.pipeline.vdyp import build_vdyp_cache_paths
+except ModuleNotFoundError:
+    _src_dir = Path(__file__).resolve().parent / "src"
+    if _src_dir.is_dir():
+        sys.path.insert(0, str(_src_dir))
+    from femic.pipeline.legacy_runtime import Legacy01ARuntimeConfig
+    from femic.pipeline.stages import load_legacy_module, run_legacy_tsa_loop
+    from femic.pipeline.vdyp import build_vdyp_cache_paths
 
 # --- cell 5 ---
 pd.set_option(
@@ -601,7 +613,12 @@ f.set_index("tsa_code", inplace=True)
 # --- cell 54 ---
 if 1:
     force_run_vdyp = 0
-    for tsa in ria_tsas[:]:
+    _run01a_module = load_legacy_module(
+        script_path=Path(__file__).with_name("01a_run-tsa.py"),
+        module_name="run_tsa_01a",
+    )
+
+    def _should_skip_01a(tsa):
         if _femic_resume_effective:
             _tipsy_params_path = f"{tipsy_params_path_prefix}{tsa}.xlsx"
             _vdyp_curves_path = (
@@ -609,21 +626,35 @@ if 1:
             )
             if os.path.isfile(_tipsy_params_path) and os.path.isfile(_vdyp_curves_path):
                 print(f"resume: skipping 01a for tsa {tsa} (outputs exist)")
-                continue
+                return True
+        return False
+
+    def _run_one_01a(tsa):
         stratum_col = "stratum"
-        if "_run01a_module" not in globals():
-            _path = Path(__file__).with_name("01a_run-tsa.py")
-            _spec = importlib.util.spec_from_file_location("run_tsa_01a", _path)
-            _run01a_module = importlib.util.module_from_spec(_spec)
-            _spec.loader.exec_module(_run01a_module)
+        vdyp_cache_paths = build_vdyp_cache_paths(
+            tsa_code=tsa,
+            vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
+            vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
+        )
+        runtime_config = Legacy01ARuntimeConfig(
+            resume_effective=_femic_resume_effective,
+            force_run_vdyp=bool(force_run_vdyp),
+            kwarg_overrides_for_tsa=None,
+            vdyp_results_pickle_path=vdyp_results_pickle_path,
+            vdyp_input_pandl_path=vdyp_input_pandl_path,
+            vdyp_ply_feather_path=vdyp_ply_feather_path,
+            vdyp_lyr_feather_path=vdyp_lyr_feather_path,
+            tipsy_params_columns=tipsy_params_columns,
+            tipsy_params_path_prefix=tipsy_params_path_prefix,
+            vdyp_cache_paths=vdyp_cache_paths,
+            vdyp_out_cache=globals().get("vdyp_out_cache"),
+            curve_fit_impl=globals().get("_curve_fit"),
+        )
         _run01a_module.run_tsa(
             tsa=tsa,
             stratum_col=stratum_col,
             f=f,
             si_levels=si_levels,
-            resume_effective=_femic_resume_effective,
-            force_run_vdyp=force_run_vdyp,
-            kwarg_overrides_for_tsa=None,
             results=results,
             vdyp_results=vdyp_results,
             vdyp_curves_smooth=vdyp_curves_smooth,
@@ -632,32 +663,34 @@ if 1:
             tipsy_params=tipsy_params,
             si_levelquants=si_levelquants,
             species_list=species_list,
-            vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
-            vdyp_results_pickle_path=vdyp_results_pickle_path,
-            vdyp_input_pandl_path=vdyp_input_pandl_path,
-            vdyp_ply_feather_path=vdyp_ply_feather_path,
-            vdyp_lyr_feather_path=vdyp_lyr_feather_path,
-            vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
-            tipsy_params_columns=tipsy_params_columns,
-            tipsy_params_path_prefix=tipsy_params_path_prefix,
-            vdyp_out_cache=globals().get("vdyp_out_cache"),
-            curve_fit_impl=globals().get("_curve_fit"),
+            runtime_config=runtime_config,
         )
+
+    run_legacy_tsa_loop(
+        tsa_list=ria_tsas[:],
+        should_skip_fn=_should_skip_01a,
+        run_one_fn=_run_one_01a,
+    )
 
 # --- cell 58 ---
 # loop over tsas here and run notebook 01_run-tsa_step2
-for tsa in ria_tsas[:]:
+_run01b_module = load_legacy_module(
+    script_path=Path(__file__).with_name("01b_run-tsa.py"),
+    module_name="run_tsa_01b",
+)
+
+
+def _should_skip_01b(tsa):
     if _femic_resume_effective:
         _tipsy_curves_path = f"./data/tipsy_curves_tsa{tsa}.csv"
         _tipsy_spp_path = f"./data/tipsy_sppcomp_tsa{tsa}.csv"
         if os.path.isfile(_tipsy_curves_path) and os.path.isfile(_tipsy_spp_path):
             print(f"resume: skipping 01b for tsa {tsa} (outputs exist)")
-            continue
-    if "_run01b_module" not in globals():
-        _path = Path(__file__).with_name("01b_run-tsa.py")
-        _spec = importlib.util.spec_from_file_location("run_tsa_01b", _path)
-        _run01b_module = importlib.util.module_from_spec(_spec)
-        _spec.loader.exec_module(_run01b_module)
+            return True
+    return False
+
+
+def _run_one_01b(tsa):
     _run01b_module.run_tsa(
         tsa=tsa,
         results=results,
@@ -665,6 +698,13 @@ for tsa in ria_tsas[:]:
         tipsy_curves=tipsy_curves,
         vdyp_curves_smooth=vdyp_curves_smooth,
     )
+
+
+run_legacy_tsa_loop(
+    tsa_list=ria_tsas[:],
+    should_skip_fn=_should_skip_01b,
+    run_one_fn=_run_one_01b,
+)
 
 # --- cell 64 ---
 canfi_map = {

@@ -133,16 +133,22 @@ def test_run01a_no_inline_pre_vdyp_checkpoint_literal() -> None:
                 )
 
 
-def test_run01a_uses_build_vdyp_cache_paths_helper_call() -> None:
+def test_run01a_reads_vdyp_cache_paths_from_runtime_config() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
     for node in ast.walk(run_tsa):
-        if not isinstance(node, ast.Call):
+        if not isinstance(node, ast.Subscript):
             continue
-        func = node.func
-        if isinstance(func, ast.Name) and func.id == "build_vdyp_cache_paths":
-            return
-    raise AssertionError("run_tsa should call build_vdyp_cache_paths(...)")
+        if not isinstance(node.value, ast.Attribute):
+            continue
+        if not isinstance(node.value.value, ast.Name):
+            continue
+        if node.value.value.id != "runtime_config":
+            continue
+        if node.value.attr != "vdyp_cache_paths":
+            continue
+        return
+    raise AssertionError("run_tsa should read cache paths from runtime_config payload")
 
 
 def test_run01a_no_local_os_import() -> None:

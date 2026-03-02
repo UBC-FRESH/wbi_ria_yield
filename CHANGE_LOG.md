@@ -503,3 +503,18 @@
 - Queued the next execution batch in roadmap notes:
   `vdyp_cache_paths` payload handoff from 00->01a, `run_tsa(...)` argument surface reduction via
   typed config payload, and extraction of 00_data-prep 01a/01b module-load orchestration helpers.
+- Added `Legacy01ARuntimeConfig` in `src/femic/pipeline/legacy_runtime.py` and rewired
+  `01a_run-tsa.run_tsa(...)` to consume this typed runtime payload instead of a long list of
+  individual path/runtime parameters.
+- Collapsed 00->01a VDYP cache handoff to a single `vdyp_cache_paths` payload built in
+  `00_data-prep.py` via `build_vdyp_cache_paths(...)` and passed through runtime config.
+- Added shared legacy orchestration helpers in `src/femic/pipeline/stages.py`:
+  `load_legacy_module(...)` and `run_legacy_tsa_loop(...)`, and rewired 00_data-prep 01a/01b loops
+  to use them.
+- Added direct-script import fallback in `00_data-prep.py` that prepends `src/` when needed so
+  `python 00_data-prep.py` can resolve `femic.pipeline` helpers without requiring prior editable
+  install.
+- Expanded tests and guardrails:
+  `tests/test_pipeline_stages.py` now covers new stage helpers,
+  `tests/test_legacy_orchestration_wiring.py` validates runtime-config + shared helper wiring, and
+  `tests/test_legacy_01a_structure.py` checks cache-path reads from `runtime_config`.
