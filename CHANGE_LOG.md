@@ -546,3 +546,12 @@
   and missing AU-mapping diagnostics.
 - Extended `tests/test_legacy_orchestration_wiring.py` guardrails to assert
   `build_bundle_tables_from_curves(...)` seam usage in 00_data-prep.
+- Added residual post-bundle strata helpers in `src/femic/pipeline/tsa.py`:
+  `assign_stratum_matches_from_au_table(...)` and
+  `assign_si_levels_from_stratum_quantiles(...)`.
+- Rewired 00_data-prep to use these helpers for stratum matching against AU-table strata and SI
+  level assignment by quantile bands, replacing the corresponding inline loops.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic coverage for both new TSA helpers.
+- Extended `tests/test_legacy_orchestration_wiring.py` guardrails to assert
+  `assign_stratum_matches_from_au_table(...)` and
+  `assign_si_levels_from_stratum_quantiles(...)` seam usage in 00_data-prep.

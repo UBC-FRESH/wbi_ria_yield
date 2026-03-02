@@ -110,3 +110,90 @@ def apply_stratum_alias_map(
         for key in f_table[stratum_col].values
     ]
     return matched_col
+
+
+def assign_stratum_matches_from_au_table(
+    *,
+    f_table: Any,
+    au_table: Any,
+    tsa_list: Sequence[str],
+    stratum_col: str,
+    levenshtein_fn: Callable[[str, str], int] | None = None,
+    message_fn: Callable[[str], Any] = print,
+) -> Any:
+    """Assign `stratum_matched` values by TSA using AU-table strata as targets."""
+    matched_col = f"{stratum_col}_matched"
+    if levenshtein_fn is None:
+        distance_mod = __import__("distance")
+        levenshtein_fn = distance_mod.levenshtein
+    table = f_table.copy()
+    if "FEATURE_ID" not in table.columns:
+        table = table.reset_index()
+    if matched_col not in table.columns:
+        table[matched_col] = None
+
+    table = table.set_index("FEATURE_ID")
+    for tsa in tsa_list:
+        message_fn(f"matching tsa {tsa}")
+        strata_candidates = au_table.loc[
+            au_table["tsa"] == tsa, "stratum_code"
+        ].unique()
+        selected_strata_codes = [str(code) for code in strata_candidates]
+        if not selected_strata_codes:
+            continue
+
+        tsa_rows = table.loc[table["tsa_code"] == tsa].copy().reset_index()
+        if tsa_rows.empty:
+            continue
+        tsa_rows = tsa_rows.set_index(stratum_col)
+        totalarea = tsa_rows.FEATURE_AREA_SQM.sum()
+        if float(totalarea) <= 0.0:
+            continue
+        tsa_rows["totalarea_p"] = tsa_rows.FEATURE_AREA_SQM / totalarea
+        best_match = build_stratum_lexmatch_alias_map(
+            f_table=tsa_rows,
+            stratum_col=stratum_col,
+            selected_strata_codes=selected_strata_codes,
+            levenshtein_fn=levenshtein_fn,
+        )
+        tsa_rows = tsa_rows.reset_index()
+        apply_stratum_alias_map(
+            f_table=tsa_rows,
+            stratum_col=stratum_col,
+            selected_strata_codes=selected_strata_codes,
+            best_match=best_match,
+        )
+        matched = tsa_rows[["FEATURE_ID", matched_col]].set_index("FEATURE_ID")[
+            matched_col
+        ]
+        table[matched_col] = matched.where(~matched.isnull(), table[matched_col])
+    return table
+
+
+def assign_si_levels_from_stratum_quantiles(
+    *,
+    f_table: Any,
+    si_levelquants: Mapping[str, Sequence[int]],
+    stratum_matched_col: str = "stratum_matched",
+    site_index_col: str = "SITE_INDEX",
+    si_level_col: str = "si_level",
+    message_fn: Callable[[str], Any] = print,
+) -> tuple[Any, Any]:
+    """Assign SI-level labels within each matched stratum from configured quantile bands."""
+    table = f_table.copy()
+    stratum_si_stats = table.groupby(stratum_matched_col)[site_index_col].describe(
+        percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
+    )
+    for stratum_code in stratum_si_stats.index:
+        message_fn(str(stratum_code))
+        for si_level, quantiles in si_levelquants.items():
+            q_lo, _q_mid, q_hi = [int(v) for v in quantiles]
+            si_lo = stratum_si_stats.loc[stratum_code].loc[f"{q_lo}%"]
+            si_hi = stratum_si_stats.loc[stratum_code].loc[f"{q_hi}%"]
+            table.loc[
+                (table[stratum_matched_col] == stratum_code)
+                & (table[site_index_col] >= si_lo)
+                & (table[site_index_col] <= si_hi),
+                si_level_col,
+            ] = si_level
+    return table, stratum_si_stats

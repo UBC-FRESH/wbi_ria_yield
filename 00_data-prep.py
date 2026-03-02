@@ -34,8 +34,6 @@ import affine
 
 # from osgeo import gdal
 import glob
-import operator
-import distance
 from scipy.optimize import curve_fit as _curve_fit
 from functools import partial, wraps
 import itertools
@@ -59,6 +57,10 @@ try:
         run_legacy_tsa_loop,
         should_skip_if_outputs_exist,
     )
+    from femic.pipeline.tsa import (
+        assign_si_levels_from_stratum_quantiles,
+        assign_stratum_matches_from_au_table,
+    )
 except ModuleNotFoundError:
     _src_dir = Path(__file__).resolve().parent / "src"
     if _src_dir.is_dir():
@@ -78,6 +80,10 @@ except ModuleNotFoundError:
         prepare_tsa_index,
         run_legacy_tsa_loop,
         should_skip_if_outputs_exist,
+    )
+    from femic.pipeline.tsa import (
+        assign_si_levels_from_stratum_quantiles,
+        assign_stratum_matches_from_au_table,
     )
 
 # --- cell 5 ---
@@ -872,75 +878,27 @@ stratum_col = "stratum"
 f["%s_matched" % stratum_col] = None
 
 # --- cell 93 ---
-for tsa in ria_tsas:
-    print("matching tsa", tsa)
-    try:
-        f.reset_index(inplace=True)
-    except:
-        pass
-    stratum_codes = list(au_table.set_index("tsa").loc[tsa].stratum_code.unique())
-    f_ = f.set_index("tsa_code").loc[tsa].set_index("stratum")
-    totalarea = f_.FEATURE_AREA_SQM.sum()
-    f_["totalarea_p"] = f_.FEATURE_AREA_SQM / totalarea
-    names1 = set(f_.loc[stratum_codes].stratum_lexmatch.unique())
-    names2 = set(f_.stratum_lexmatch.unique()) - names1
-    stratum_key = (
-        f_.reset_index().groupby("%s_lexmatch" % stratum_col)[stratum_col].first()
-    )
-    totalarea_p_sum__ = f_.groupby("%s_lexmatch" % stratum_col).totalarea_p.sum()
-    lev_dist = {
-        n2: {n1: distance.levenshtein(n1, n2) for n1 in names1} for n2 in names2
-    }
-    lev_dist_low = {
-        n2: {
-            n1: (lev_dist[n2][n1], totalarea_p_sum__.loc[n1])
-            for n1 in lev_dist[n2].keys()
-            if lev_dist[n2][n1] == min(lev_dist[n2].values())
-        }
-        for n2 in names2
-    }
-    bm = {
-        stratum_key.loc[n2]: stratum_key[
-            max(lev_dist_low[n2].items(), key=operator.itemgetter(1))[0]
-        ]
-        for n2 in names2
-    }
-    f_.reset_index(inplace=True)
-    c, sc = stratum_col, stratum_codes
-    f_["%s_matched" % stratum_col] = _row_apply(
-        f_, lambda r: r[c] if r[c] in sc else bm[r[c]], axis=1
-    )
-
-    m = (
-        f[["FEATURE_ID"]]
-        .merge(f_[["FEATURE_ID", "stratum_matched"]], on="FEATURE_ID", how="left")
-        .set_index("FEATURE_ID")
-    )
-    f.set_index("FEATURE_ID", inplace=True)
-    f["stratum_matched"] = m.stratum_matched.where(
-        ~m.stratum_matched.isnull(), f.stratum_matched
-    )
+f = assign_stratum_matches_from_au_table(
+    f_table=f,
+    au_table=au_table,
+    tsa_list=ria_tsas,
+    stratum_col=stratum_col,
+    message_fn=print,
+)
 
 # --- cell 95 ---
-stratum_si_stats = f.groupby("stratum_matched").SITE_INDEX.describe(
-    percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
-)
 # si_levelquants={'L':[5, 20, 35], 'M':[35, 50, 65], 'H':[65, 80, 95]}
 si_levelquants = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
 
 # --- cell 96 ---
-for stratum_code in stratum_si_stats.index:
-    print(stratum_code)
-    for i, (si_level, Q) in enumerate(si_levelquants.items()):
-        si_lo = stratum_si_stats.loc[stratum_code].loc["%i%%" % Q[0]]
-        si_md = stratum_si_stats.loc[stratum_code].loc["%i%%" % Q[1]]
-        si_hi = stratum_si_stats.loc[stratum_code].loc["%i%%" % Q[2]]
-        f.loc[
-            (f.stratum_matched == stratum_code)
-            & (f.SITE_INDEX >= si_lo)
-            & (f.SITE_INDEX <= si_hi),
-            "si_level",
-        ] = si_level
+f, stratum_si_stats = assign_si_levels_from_stratum_quantiles(
+    f_table=f,
+    si_levelquants=si_levelquants,
+    stratum_matched_col="stratum_matched",
+    site_index_col="SITE_INDEX",
+    si_level_col="si_level",
+    message_fn=print,
+)
 
 
 # --- cell 98 ---

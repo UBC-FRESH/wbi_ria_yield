@@ -77,6 +77,10 @@ from femic.pipeline.tipsy import (
     evaluate_tipsy_candidate,
     write_tipsy_input_exports,
 )
+from femic.pipeline.tsa import (
+    assign_si_levels_from_stratum_quantiles,
+    assign_stratum_matches_from_au_table,
+)
 from femic.pipeline.tipsy_config import (
     build_tipsy_params_from_config,
     discover_tipsy_config_tsas,
@@ -165,6 +169,8 @@ __all__ = [
     "compute_vdyp_site_index",
     "build_tipsy_input_table",
     "write_tipsy_input_exports",
+    "assign_stratum_matches_from_au_table",
+    "assign_si_levels_from_stratum_quantiles",
     "build_tipsy_params_for_tsa",
     "build_tipsy_warning_event",
     "evaluate_tipsy_candidate",

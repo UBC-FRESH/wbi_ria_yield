@@ -687,3 +687,15 @@
   `build_bundle_tables_from_curves(...)` usage.
 - Queued next extraction slice: continue P2.2 by moving residual stratum-matching + SI-level
   assignment orchestration (post-bundle stage) into reusable helper seams.
+- Added residual post-bundle strata helpers in `femic.pipeline.tsa`:
+  `assign_stratum_matches_from_au_table(...)` and
+  `assign_si_levels_from_stratum_quantiles(...)`.
+- Rewired `00_data-prep.py` post-bundle stage to call these helpers instead of maintaining inline
+  stratum-matching and SI-level assignment loops.
+- Expanded helper/wiring tests:
+  `tests/test_pipeline_helpers.py` now covers both new TSA helpers, and
+  `tests/test_legacy_orchestration_wiring.py` guardrails now assert
+  `assign_stratum_matches_from_au_table(...)` and
+  `assign_si_levels_from_stratum_quantiles(...)` seam usage.
+- Queued next extraction slice: continue thinning 00_data-prep by extracting AU assignment + null
+  diagnostics (`_lookup_scsi_au`, `au_from_scsi`, missing/null summaries) into reusable helper(s).

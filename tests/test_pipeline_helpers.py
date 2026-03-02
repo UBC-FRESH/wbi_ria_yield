@@ -25,6 +25,8 @@ import pandas as pd
 
 from femic.pipeline.tsa import (
     MIN_STANDCOUNT,
+    assign_si_levels_from_stratum_quantiles,
+    assign_stratum_matches_from_au_table,
     apply_stratum_alias_map,
     build_strata_summary,
     build_stratum_lexmatch_alias_map,
@@ -154,6 +156,58 @@ def test_apply_stratum_alias_map_assigns_selected_or_best_match() -> None:
 
     assert matched_col == "stratum_matched"
     assert frame["stratum_matched"].tolist() == ["SAA", "SBB", "SXX"]
+
+
+def test_assign_stratum_matches_from_au_table_assigns_expected_aliases() -> None:
+    f_table = pd.DataFrame(
+        {
+            "FEATURE_ID": [1, 2, 3],
+            "tsa_code": ["08", "08", "08"],
+            "stratum": ["BWBS_AT", "BWBS_AA", "BWBS_SB"],
+            "stratum_lexmatch": ["AT", "AA", "SB"],
+            "FEATURE_AREA_SQM": [10.0, 20.0, 30.0],
+            "totalarea_p": [0.2, 0.3, 0.5],
+        }
+    )
+    au_table = pd.DataFrame(
+        {
+            "tsa": ["08", "08"],
+            "stratum_code": ["BWBS_AT", "BWBS_SB"],
+        }
+    )
+
+    matched = assign_stratum_matches_from_au_table(
+        f_table=f_table,
+        au_table=au_table,
+        tsa_list=["08"],
+        stratum_col="stratum",
+        levenshtein_fn=lambda a, b: 0 if a == b else 1,
+        message_fn=lambda _m: None,
+    )
+
+    assert matched.index.name == "FEATURE_ID"
+    assert matched.loc[1, "stratum_matched"] == "BWBS_AT"
+    assert matched.loc[2, "stratum_matched"] in {"BWBS_AT", "BWBS_SB"}
+    assert matched.loc[3, "stratum_matched"] == "BWBS_SB"
+
+
+def test_assign_si_levels_from_stratum_quantiles_assigns_levels() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum_matched": ["S1", "S1", "S1", "S1"],
+            "SITE_INDEX": [10.0, 20.0, 30.0, 40.0],
+        }
+    )
+    si_levelquants = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+
+    out, stats = assign_si_levels_from_stratum_quantiles(
+        f_table=f_table,
+        si_levelquants=si_levelquants,
+        message_fn=lambda _m: None,
+    )
+
+    assert "S1" in stats.index
+    assert set(out["si_level"].dropna().unique()) <= {"L", "M", "H"}
 
 
 def test_plot_path_helpers() -> None:
