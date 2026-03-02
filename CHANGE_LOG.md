@@ -419,3 +419,10 @@
 - Extended `tests/test_legacy_01a_structure.py` with guardrails asserting 01a no longer assigns
   these constants inline and does not override corresponding
   `build_tipsy_params_for_tsa(...)` keyword defaults.
+- Extended `CurveSmoothingPlotConfig` / `build_curve_smoothing_plot_config(...)` to include overlay
+  axis defaults (`xlim`, `ylim`) and rewired `01a_run-tsa.py` to pass
+  `smooth_plot_cfg.xlim`/`smooth_plot_cfg.ylim` to `plot_curve_overlays(...)` instead of inline
+  tuple literals.
+- Extended `tests/test_vdyp_stage.py` defaults coverage for new axis config fields and added
+  `tests/test_legacy_01a_structure.py` AST guardrails asserting overlay axes are sourced from
+  `smooth_plot_cfg`.

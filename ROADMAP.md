@@ -508,3 +508,14 @@
   `build_tipsy_params_for_tsa(...)` keyword defaults.
 - Queued next extraction slice: move overlay axis-bound constants (`xlim`, `ylim`) passed to
   `plot_curve_overlays(...)` out of `01a_run-tsa.py` into a shared stage/default helper.
+- Extended `CurveSmoothingPlotConfig` / `build_curve_smoothing_plot_config(...)` to include overlay
+  axis defaults (`xlim`, `ylim`) so smoothing overlay bounds are configured in one shared stage
+  seam.
+- Rewired `01a_run-tsa.py` `plot_curve_overlays(...)` call to consume
+  `smooth_plot_cfg.xlim`/`smooth_plot_cfg.ylim` instead of inline tuple literals.
+- Expanded `tests/test_vdyp_stage.py` defaults coverage for new axis config fields and added
+  `tests/test_legacy_01a_structure.py` AST guardrails asserting overlay axes are sourced from
+  `smooth_plot_cfg`.
+- Queued next extraction slice: move stratum-distribution plot constants (`bw`, `linewidth`,
+  `inner`, `width`, `cut`, `alpha`) from `01a_run-tsa.py` into a shared plotting helper/config
+  seam.
