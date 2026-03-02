@@ -207,6 +207,242 @@ def build_smoothed_curve_table(
     return curve_table
 
 
+def fit_stratum_curves(
+    *,
+    f_table: Any,
+    fit_func: Callable[..., Any],
+    fit_func_bounds_func: Callable[[Any], Any],
+    strata_df: Any,
+    stratum_si_stats: Any,
+    stratumi: int,
+    species_list: Sequence[str],
+    curve_fit_fn: Callable[..., Any],
+    np_module: Any,
+    pd_module: Any,
+    sns_module: Any,
+    plt_module: Any,
+    plot: bool = True,
+    figsize: tuple[float, float] = (6, 12),
+    verbose: bool = False,
+    xlim: tuple[float, float] = (0, 300),
+    ylim: tuple[float, float] = (0, 500),
+    si_levelquants: Mapping[str, Sequence[float]] | None = None,
+    linestyles: Sequence[str] | None = None,
+    markers: Sequence[str] | None = None,
+    palette_flavours: Sequence[str] | None = None,
+    maxfev: int = 100000,
+    min_age: int = 30,
+    max_age: int = 300,
+    max_records: int = 15000,
+    sigma_exponent: float = 1.0,
+    window: int = 10,
+    min_periods: int | None = None,
+    center: bool = False,
+    agg_type: str = "median",
+    sv_thresh: float = 0.10,
+    rawdata_alpha: float = 0.05,
+    fitattr_thresh: float = 1.0,
+    fit_rawdata: bool = True,
+    debug: bool = False,
+    message_fn: Callable[..., Any] = print,
+) -> dict[str, Any]:
+    """Fit per-SI species curves for one stratum using legacy notebook logic."""
+    del max_records, sigma_exponent, window, min_periods, center, debug
+    if si_levelquants is None:
+        si_levelquants = {
+            "L": [5, 20, 35],
+            "M": [35, 50, 65],
+            "H": [65, 80, 95],
+        }
+    if linestyles is None:
+        linestyles = ["-", "--", ":"]
+    if markers is None:
+        markers = ["x", "+", "*"]
+    if palette_flavours is None:
+        palette_flavours = ["RdPu", "Blues", "Greens"]
+
+    _palettes = [sns_module.color_palette(pf, 3) for pf in palette_flavours]
+    pd_module.options.mode.chained_assignment = None
+    sc = strata_df.iloc[stratumi].name
+    if verbose:
+        message_fn("processing stratum", sc)
+    if plot:
+        _fig, ax = plt_module.subplots(4, 1, figsize=figsize, sharex=True, sharey=True)
+        palette = sns_module.color_palette("RdPu", 3)
+        sns_module.set_palette(palette)
+        ax_ = {
+            "L": ax[1],
+            "M": ax[2],
+            "H": ax[3],
+        }
+        palette_ = {v: palette[i] for i, v in enumerate("LMH")}
+    result: dict[str, Any] = {}
+    for i, (si_level, q_values) in enumerate(si_levelquants.items()):
+        del i
+        result[si_level] = {}
+        ss = f_table.loc[[sc]].copy()
+        si_lo = stratum_si_stats.loc[sc].loc["%i%%" % q_values[0]]
+        si_md = stratum_si_stats.loc[sc].loc["%i%%" % q_values[1]]
+        si_hi = stratum_si_stats.loc[sc].loc["%i%%" % q_values[2]]
+        ss = ss[
+            (ss.SITE_INDEX >= si_lo)
+            & (ss.SITE_INDEX < si_hi)
+            & (ss.PROJ_AGE_1 >= min_age)
+            & (ss.PROJ_AGE_1 < max_age)
+        ]
+        ss = ss.sort_values("PROJ_AGE_1")
+        stand_volume_total = ss["LIVE_STAND_VOLUME_125"].sum()
+        if stand_volume_total <= 0:
+            sv = pd_module.Series(dtype=float)
+        else:
+            sv = pd_module.Series(
+                {
+                    species: (
+                        ss[f"live_vol_per_ha_125_{species}"].sum() / stand_volume_total
+                    )
+                    for species in species_list
+                }
+            ).sort_values(ascending=False)
+            sv = sv[sv > sv_thresh]
+        result[si_level]["ss"] = ss
+        if verbose:
+            message_fn("sv sum", sv.sum())
+        if plot:
+            x, y = [], []
+            for j, species in enumerate(sv.index.values):
+                fitattr = f"live_vol_per_ha_125_{species}"
+                sss = ss[ss[fitattr] >= 1]
+                x.append(sss.PROJ_AGE_1.values)
+                y.append(sss[fitattr].values / sv.sum())
+            x = np_module.concatenate(x)
+            y = np_module.concatenate(y)
+            ax_[si_level].scatter(
+                x,
+                y,
+                alpha=rawdata_alpha,
+                label="Raw data (%s SI, %s)" % (si_level, species),
+                color="grey",
+                marker=markers[j],
+            )
+        result[si_level]["species"] = {}
+        for j, species in enumerate(sv.index.values):
+            if verbose:
+                message_fn(
+                    "  fitting SI level %s (%2.1f), species %s"
+                    % (si_level, si_md, species)
+                )
+            fitattr = f"live_vol_per_ha_125_{species}"
+            sss = ss[ss[fitattr] >= fitattr_thresh]
+            if fit_rawdata:
+                x = sss.PROJ_AGE_1.values
+                y = sss[fitattr].values / sv.sum()
+                sigma = None
+            else:
+                agg = sss.groupby("PROJ_AGE_1")[fitattr].agg(
+                    ["mean", "median", "std", "count"]
+                )
+                agg = agg[agg["count"] > 2]
+                agg["sigma"] = ((agg["std"].mean() + agg["std"]) / agg["count"]) ** 0.5
+                x = agg.index.values
+                y = agg[agg_type].values / sv.sum()
+                sigma = agg["sigma"].values
+            bounds = fit_func_bounds_func(x)
+            try:
+                popt, pcov = curve_fit_fn(
+                    fit_func,
+                    x,
+                    y,
+                    bounds=bounds,
+                    maxfev=maxfev,
+                    sigma=sigma,
+                )
+            except Exception as exc:
+                message_fn(
+                    "fit error",
+                    exc,
+                    "stratum",
+                    sc,
+                    "si",
+                    si_level,
+                    "species",
+                    species,
+                    "n",
+                    len(x),
+                )
+                continue
+
+            if verbose:
+                message_fn("fitting N raw data points", sss.shape[0])
+                message_fn("popt", popt)
+            if plot:
+                if not fit_rawdata:
+                    ax_[si_level].scatter(
+                        x,
+                        y,
+                        alpha=0.8,
+                        label="Smoothed data (%s SI, %s)" % (si_level, species),
+                        color="black",
+                        marker=markers[j],
+                    )
+                x_ = np_module.linspace(popt[2], 300, 30)
+                y_ = fit_func(x_, *popt)
+                sns_module.lineplot(
+                    x_,
+                    y_,
+                    label="func fit (%s SI, %s)" % (si_level, species),
+                    ax=ax[0],
+                    color=palette_[si_level],
+                    linestyle=linestyles[j],
+                    linewidth=3,
+                )
+                sns_module.lineplot(
+                    x_,
+                    y_,
+                    label="func fit (%s SI, %s)" % (si_level, species),
+                    ax=ax_[si_level],
+                    color=palette_[si_level],
+                    linestyle=linestyles[j],
+                    linewidth=3,
+                )
+            result[si_level]["species"][species] = {}
+            result[si_level]["species"][species]["si"] = si_md
+            result[si_level]["species"][species]["pct"] = int(
+                round(100 * sv[species] / sv.sum())
+            )
+            age = int(round(np_module.min(x) * 1.0))
+            result[si_level]["species"][species]["age"] = (
+                age if not np_module.isnan(age) else None
+            )
+            jj = min(2, j + 1)
+            ssss = sss[
+                (sss[f"PROJ_AGE_{jj}"] >= age - 5) & (sss[f"PROJ_AGE_{jj}"] < age + 5)
+            ]
+            height = ssss[f"PROJ_HEIGHT_{jj}"].median()
+            result[si_level]["species"][species]["height"] = (
+                height if not np_module.isnan(height) else None
+            )
+            result[si_level]["species"][species]["fit_func"] = fit_func
+            result[si_level]["species"][species]["popt"] = popt
+            result[si_level]["species"][species]["pcov"] = pcov
+    if plot:
+        ax[0].set_title("Best-fit yield curves (stratum %s)" % sc)
+        plt_module.legend(loc="best")
+        plt_module.xlim(xlim)
+        plt_module.ylim(ylim)
+        plt_module.xlabel("Stand age (years)")
+        plt_module.ylabel("Merch. volume (m3/ha)")
+        plt_module.tight_layout()
+        plt_module.savefig(
+            "plots/yieldcurve_fit-%s-%s.png" % (str(stratumi).zfill(2), sc),
+            facecolor="white",
+        )
+        plt_module.savefig(
+            "plots/yieldcurve_fit-%s-%s.pdf" % (str(stratumi).zfill(2), sc),
+            facecolor="white",
+        )
+    return result
+
+
 def execute_bootstrap_vdyp_runs(
     *,
     tsa: str,

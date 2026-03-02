@@ -6,6 +6,7 @@ import subprocess
 
 import pandas as pd
 import pytest
+import numpy as np
 
 from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
@@ -14,6 +15,7 @@ from femic.pipeline.vdyp_stage import (
     execute_bootstrap_vdyp_runs,
     execute_curve_smoothing_runs,
     execute_vdyp_batch,
+    fit_stratum_curves,
     load_vdyp_input_tables,
     load_or_build_vdyp_results_tsa,
     plot_curve_overlays,
@@ -88,6 +90,115 @@ def test_build_curve_fit_adapter_keeps_existing_max_nfev() -> None:
 
     assert captured["max_nfev"] == 222
     assert captured["maxfev"] == 111
+
+
+def test_fit_stratum_curves_returns_species_fit_payload() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["S1", "S1", "S1"],
+            "SITE_INDEX": [20.0, 22.0, 24.0],
+            "PROJ_AGE_1": [40, 60, 80],
+            "LIVE_STAND_VOLUME_125": [100.0, 100.0, 100.0],
+            "live_vol_per_ha_125_SW": [50.0, 60.0, 70.0],
+            "PROJ_HEIGHT_1": [15.0, 20.0, 25.0],
+        }
+    ).set_index("stratum")
+    stratum_si_stats = f_table.groupby(level="stratum").SITE_INDEX.describe(
+        percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
+    )
+
+    class _FakeSns:
+        @staticmethod
+        def color_palette(_name: str, n: int) -> list[str]:
+            return ["#111"] * n
+
+        @staticmethod
+        def set_palette(_palette: object) -> None:
+            return None
+
+        @staticmethod
+        def lineplot(*_args: object, **_kwargs: object) -> None:
+            return None
+
+    class _FakePlt:
+        @staticmethod
+        def subplots(*_args: object, **_kwargs: object) -> tuple[None, list[None]]:
+            return None, [None, None, None, None]
+
+    def fake_curve_fit(
+        *_args: object, **_kwargs: object
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return np.array([1.0, 2.0, 3.0, 4.0]), np.eye(4)
+
+    out = fit_stratum_curves(
+        f_table=f_table,
+        fit_func=lambda x, a, b, c, s: s * (a * ((x - c) ** b)) * np.exp(-a * (x - c)),
+        fit_func_bounds_func=lambda _x: ([0, 0, 0, 0], [1, 50, 100, 10]),
+        strata_df=pd.DataFrame({"totalarea_p": [1.0]}, index=["S1"]),
+        stratum_si_stats=stratum_si_stats,
+        stratumi=0,
+        species_list=["SW"],
+        curve_fit_fn=fake_curve_fit,
+        np_module=np,
+        pd_module=pd,
+        sns_module=_FakeSns(),
+        plt_module=_FakePlt(),
+        si_levelquants={"M": [0, 50, 100]},
+        plot=False,
+    )
+
+    assert set(out) == {"M"}
+    assert out["M"]["species"]["SW"]["pct"] == 100
+    assert out["M"]["species"]["SW"]["age"] == 40
+    assert out["M"]["species"]["SW"]["height"] == 15.0
+    assert out["M"]["species"]["SW"]["si"] == 22.0
+
+
+def test_fit_stratum_curves_skips_species_on_curve_fit_error() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["S1", "S1"],
+            "SITE_INDEX": [20.0, 22.0],
+            "PROJ_AGE_1": [40, 60],
+            "LIVE_STAND_VOLUME_125": [100.0, 100.0],
+            "live_vol_per_ha_125_SW": [50.0, 60.0],
+            "PROJ_HEIGHT_1": [15.0, 20.0],
+        }
+    ).set_index("stratum")
+    stratum_si_stats = f_table.groupby(level="stratum").SITE_INDEX.describe(
+        percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
+    )
+
+    class _FakeSns:
+        @staticmethod
+        def color_palette(_name: str, n: int) -> list[str]:
+            return ["#111"] * n
+
+    class _FakePlt:
+        pass
+
+    messages: list[tuple[object, ...]] = []
+
+    out = fit_stratum_curves(
+        f_table=f_table,
+        fit_func=lambda x, a, b, c, s: s * (a * ((x - c) ** b)) * np.exp(-a * (x - c)),
+        fit_func_bounds_func=lambda _x: ([0, 0, 0, 0], [1, 50, 100, 10]),
+        strata_df=pd.DataFrame({"totalarea_p": [1.0]}, index=["S1"]),
+        stratum_si_stats=stratum_si_stats,
+        stratumi=0,
+        species_list=["SW"],
+        curve_fit_fn=lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("fit boom")),
+        np_module=np,
+        pd_module=pd,
+        sns_module=_FakeSns(),
+        plt_module=_FakePlt(),
+        si_levelquants={"M": [0, 50, 100]},
+        plot=False,
+        message_fn=lambda *args: messages.append(args),
+    )
+
+    assert out["M"]["species"] == {}
+    assert any(msg and msg[0] == "fit error" for msg in messages)
 
 
 def test_execute_vdyp_batch_logs_ok_and_returns_output(tmp_path: Path) -> None:

@@ -56,6 +56,7 @@ def run_tsa(
         execute_bootstrap_vdyp_runs,
         execute_curve_smoothing_runs,
         execute_vdyp_batch,
+        fit_stratum_curves,
         load_vdyp_input_tables,
         load_or_build_vdyp_results_tsa,
         plot_curve_overlays,
@@ -93,7 +94,7 @@ def run_tsa(
     f_["totalarea_p"] = f_.FEATURE_AREA_SQM / totalarea
 
     # --- cell 8 ---
-    strata_df, largestn_strata_codes, site_index_iqr_mean = build_strata_summary(
+    strata_df, _largestn_strata_codes, site_index_iqr_mean = build_strata_summary(
         f_table=f_,
         stratum_col=stratum_col,
         pd_module=pd,
@@ -199,231 +200,6 @@ def run_tsa(
         percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
     )
 
-    # --- cell 26 ---
-    def fit_stratum(
-        f_,
-        fit_func,
-        fit_func_bounds_func,
-        strata_df,
-        stratum_si_stats,
-        stratumi,
-        plot=True,
-        figsize=(6, 12),
-        verbose=False,
-        xlim=(0, 300),
-        ylim=(0, 500),
-        si_levelquants={"L": [5, 20, 35], "M": [35, 50, 65], "H": [65, 80, 95]},
-        linestyles=["-", "--", ":"],
-        markers=["x", "+", "*"],
-        palette_flavours=["RdPu", "Blues", "Greens"],
-        maxfev=100000,
-        min_age=30,
-        max_age=300,
-        max_records=15000,
-        sigma_exponent=1.0,
-        window=10,
-        min_periods=None,
-        center=False,
-        agg_type="median",
-        sv_thresh=0.10,
-        rawdata_alpha=0.05,
-        fitattr_thresh=1.0,
-        fit_rawdata=True,
-        debug=False,
-    ):
-        palettes = [sns.color_palette(pf, 3) for pf in palette_flavours]
-        pd.options.mode.chained_assignment = None  # default='warn'
-        sc = strata_df.iloc[stratumi].name
-        if verbose:
-            print("processing stratum", sc)
-        si_popt = {}
-        if plot:
-            fig, ax = plt.subplots(4, 1, figsize=figsize, sharex=True, sharey=True)
-            palette = sns.color_palette("RdPu", 3)
-            sns.set_palette(palette)
-            ax_ = {}
-            ax_["L"], ax_["M"], ax_["H"] = ax[1], ax[2], ax[3]
-            palette_ = {v: palette[i] for i, v in enumerate("LMH")}
-        result = {}
-        for i, (si_level, Q) in enumerate(si_levelquants.items()):
-            result[si_level] = {}
-            # Keep `ss` as a DataFrame even when only one record matches `sc`.
-            # With scalar `.loc[sc]`, pandas can return a Series, which then breaks
-            # downstream boolean row filtering.
-            ss = f_.loc[[sc]].copy()
-            si_lo = stratum_si_stats.loc[sc].loc["%i%%" % Q[0]]
-            si_md = stratum_si_stats.loc[sc].loc["%i%%" % Q[1]]
-            si_hi = stratum_si_stats.loc[sc].loc["%i%%" % Q[2]]
-            ss = ss[
-                (ss.SITE_INDEX >= si_lo)
-                & (ss.SITE_INDEX < si_hi)
-                & (ss.PROJ_AGE_1 >= min_age)
-                & (ss.PROJ_AGE_1 < max_age)
-            ]
-            #####################################################################################################################
-            # Originally, we were using the siteprod data to define SI quantiles and for input to TIPSY (because ???).
-            # Turns out that does not not work so well, but using VRI SI data for both VDYP and TIPSY seems to yield OK results.
-            # Needs further investigation to better understand why anyone is claiming the siteprod data is "better".
-            #
-            # ss = ss[(ss.siteprod >= si_lo) & (ss.siteprod < si_hi) & (ss.PROJ_AGE_1 >= min_age) & (ss.PROJ_AGE_1 < max_age)]
-            #####################################################################################################################
-            ss = ss.sort_values("PROJ_AGE_1")
-            stand_volume_total = ss["LIVE_STAND_VOLUME_125"].sum()
-            if stand_volume_total <= 0:
-                sv = pd.Series(dtype=float)
-            else:
-                sv = pd.Series(
-                    {
-                        species: (
-                            ss["live_vol_per_ha_125_%s" % species].sum()
-                            / stand_volume_total
-                        )
-                        for species in species_list
-                    }
-                ).sort_values(ascending=False)
-                sv = sv[sv > sv_thresh]
-            # print(type(ss))
-            # assert type(ss) == pd.DataFrame
-            result[si_level]["ss"] = ss
-            if verbose:
-                print("sv sum", sv.sum())
-            if plot:
-                x, y = [], []
-                for j, species in enumerate(sv.index.values):
-                    fitattr = "live_vol_per_ha_125_%s" % species
-                    sss = ss[ss[fitattr] >= 1]
-                    x.append(sss.PROJ_AGE_1.values)
-                    y.append(sss[fitattr].values / sv.sum())
-                x = np.concatenate(x)
-                y = np.concatenate(y)
-                ax_[si_level].scatter(
-                    x,
-                    y,
-                    alpha=rawdata_alpha,
-                    label="Raw data (%s SI, %s)" % (si_level, species),
-                    color="grey",
-                    marker=markers[j],
-                )
-            result[si_level]["species"] = {}
-            for j, species in enumerate(sv.index.values):
-                if verbose:
-                    print(
-                        "  fitting SI level %s (%2.1f), species %s"
-                        % (si_level, si_md, species)
-                    )
-                fitattr = "live_vol_per_ha_125_%s" % species
-                sss = ss[ss[fitattr] >= fitattr_thresh]
-                if fit_rawdata:
-                    x = sss.PROJ_AGE_1.values
-                    y = sss[fitattr].values / sv.sum()
-                    sigma = None
-                    agg = None
-                else:  # fit smoothed data
-                    agg = sss.groupby("PROJ_AGE_1")[fitattr].agg(
-                        ["mean", "median", "std", "count"]
-                    )
-                    agg = agg[agg["count"] > 2]
-                    agg["sigma"] = (
-                        (agg["std"].mean() + agg["std"]) / agg["count"]
-                    ) ** 0.5
-                    x = agg.index.values
-                    y = agg[agg_type].values / sv.sum()
-                    sigma = agg["sigma"].values
-                # fit_func_bounds = ([0.000, 0, 0, 0],
-                #                   [0.100, 3, min(np.min(x), 100), 1000])
-                bounds = fit_func_bounds_func(x)
-                try:
-                    popt, pcov = curve_fit(
-                        fit_func, x, y, bounds=bounds, maxfev=maxfev, sigma=sigma
-                    )
-                except Exception as exc:
-                    print(
-                        "fit error",
-                        exc,
-                        "stratum",
-                        sc,
-                        "si",
-                        si_level,
-                        "species",
-                        species,
-                        "n",
-                        len(x),
-                    )
-                    continue
-
-                if verbose:
-                    print("fitting N raw data points", sss.shape[0])
-                    print("popt", popt)
-                if plot:
-                    if not fit_rawdata:
-                        ax_[si_level].scatter(
-                            x,
-                            y,
-                            alpha=0.8,
-                            label="Smoothed data (%s SI, %s)" % (si_level, species),
-                            color="black",
-                            marker=markers[j],
-                        )
-                    x_ = np.linspace(popt[2], 300, 30)
-                    y_ = fit_func(x_, *popt)
-                    sns.lineplot(
-                        x_,
-                        y_,
-                        label="func fit (%s SI, %s)" % (si_level, species),
-                        ax=ax[0],
-                        color=palette_[si_level],
-                        linestyle=linestyles[j],
-                        linewidth=3,
-                    )
-                    sns.lineplot(
-                        x_,
-                        y_,
-                        label="func fit (%s SI, %s)" % (si_level, species),
-                        ax=ax_[si_level],
-                        color=palette_[si_level],
-                        linestyle=linestyles[j],
-                        linewidth=3,
-                    )
-                result[si_level]["species"][species] = {}
-                result[si_level]["species"][species]["si"] = si_md
-                result[si_level]["species"][species]["pct"] = int(
-                    round(100 * sv[species] / sv.sum())
-                )
-                age = int(round(np.min(x) * 1.0))
-                # age = 100
-                result[si_level]["species"][species]["age"] = (
-                    age if not np.isnan(age) else None
-                )
-                jj = min(2, j + 1)
-                ssss = sss[
-                    (sss["PROJ_AGE_%i" % jj] >= age - 5)
-                    & (sss["PROJ_AGE_%i" % jj] < age + 5)
-                ]
-                height = ssss["PROJ_HEIGHT_%i" % jj].median()
-                result[si_level]["species"][species]["height"] = (
-                    height if not np.isnan(height) else None
-                )
-                result[si_level]["species"][species]["fit_func"] = fit_func
-                result[si_level]["species"][species]["popt"] = popt
-                result[si_level]["species"][species]["pcov"] = pcov
-        if plot:
-            ax[0].set_title("Best-fit yield curves (stratum %s)" % sc)
-            plt.legend(loc="best")
-            plt.xlim(xlim)
-            plt.ylim(ylim)
-            plt.xlabel("Stand age (years)")
-            plt.ylabel("Merch. volume (m3/ha)")
-            plt.tight_layout()
-            plt.savefig(
-                "plots/yieldcurve_fit-%s-%s.png" % (str(stratumi).zfill(2), sc),
-                facecolor="white",
-            )
-            plt.savefig(
-                "plots/yieldcurve_fit-%s-%s.pdf" % (str(stratumi).zfill(2), sc),
-                facecolor="white",
-            )
-        return result
-
     # --- cell 28 ---
     N = 30
     figsize = (8, 16)
@@ -452,13 +228,19 @@ def run_tsa(
         results[tsa] = []
         for stratumi, sc in enumerate(strata_df.index.values[:]):
             print("compiling stratum %s" % sc)
-            fit_out = fit_stratum(
-                f__,
-                body_fit_func,
-                body_fit_func_bounds_func,
-                strata_df,
-                stratum_si_stats,
-                stratumi,
+            fit_out = fit_stratum_curves(
+                f_table=f__,
+                fit_func=body_fit_func,
+                fit_func_bounds_func=body_fit_func_bounds_func,
+                strata_df=strata_df,
+                stratum_si_stats=stratum_si_stats,
+                stratumi=stratumi,
+                species_list=species_list,
+                curve_fit_fn=curve_fit,
+                np_module=np,
+                pd_module=pd,
+                sns_module=sns,
+                plt_module=plt,
                 fit_rawdata=fit_rawdata,
                 min_age=min_age,
                 agg_type=agg_type,
@@ -467,6 +249,7 @@ def run_tsa(
                 verbose=verbose,
                 ylim=[0, 600],
                 xlim=[0, 400],
+                message_fn=print,
             )
             results[tsa].append([stratumi, sc, fit_out])
         saved_count = save_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path, results[tsa])

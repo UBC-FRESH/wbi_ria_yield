@@ -64,3 +64,23 @@ def test_run01a_uses_lexmatch_alias_helper_call() -> None:
         if isinstance(func, ast.Name) and func.id == "build_stratum_lexmatch_alias_map":
             return
     raise AssertionError("run_tsa should call build_stratum_lexmatch_alias_map(...)")
+
+
+def test_run01a_uses_fit_stratum_stage_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "fit_stratum_curves":
+            return
+    raise AssertionError("run_tsa should call fit_stratum_curves(...)")
+
+
+def test_run01a_has_no_nested_fit_stratum_definition() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in run_tsa.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "fit_stratum":
+            raise AssertionError("run_tsa should not define nested fit_stratum")
