@@ -368,3 +368,11 @@
 - Added `tests/test_legacy_01a_structure.py` AST guardrails that lock 01a structural cleanup:
   `run_tsa(...)` must call `target_nstrata_for(...)`, must not reintroduce an inline
   `target_nstrata` dict assignment, and must not locally reassign `si_levels`.
+- Extracted 01a strata summarization logic into `femic.pipeline.tsa.build_strata_summary(...)`
+  (target-strata selection, site-index/crown-closure/coverage aggregates, stand-count filtering,
+  and `median_si` enrichment), reducing notebook-era inline grouping logic in `run_tsa(...)`.
+- Rewired `01a_run-tsa.py` to consume `build_strata_summary(...)` for stratum candidate table
+  assembly and IQR reporting.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic `build_strata_summary(...)` coverage
+  (aggregate outputs + validation error path), and updated `tests/test_legacy_01a_structure.py`
+  guardrails to assert `run_tsa(...)` calls the extracted helper seam.
