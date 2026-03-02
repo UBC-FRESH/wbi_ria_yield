@@ -536,3 +536,13 @@
   `strata_plot_paths(...)` and no longer embeds inline strata plot output path literals.
 - Queued next extraction slice: move inline stratum-label ordering toggle (`sort_lex` branch) from
   `01a_run-tsa.py` into a reusable TSA/plot helper seam.
+- Added `femic.pipeline.plots.resolve_strata_plot_ordering(...)` to centralize abundance-vs-lexic
+  ordering for stratum distribution plots.
+- Rewired `01a_run-tsa.py` to call `resolve_strata_plot_ordering(...)` and removed the inline
+  `sort_lex` branch and local ordering assembly.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic ordering coverage for default
+  (abundance) and lexical modes, and added AST guardrails in
+  `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and no longer assigns local
+  `sort_lex`.
+- Queued next extraction slice: remove residual inline notebook-style diagnostic plot calls in early
+  01a flow (`site_index_median` histogram + scatter) into a reusable plotting helper.

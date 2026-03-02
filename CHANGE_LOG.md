@@ -438,3 +438,10 @@
   of inline `"plots/strata-tsa%s.*"` literals.
 - Added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls
   `strata_plot_paths(...)` and no longer embeds inline strata output path literals.
+- Added `femic.pipeline.plots.resolve_strata_plot_ordering(...)` to centralize
+  abundance-vs-lexical stratum ordering for distribution plots.
+- Rewired `01a_run-tsa.py` to call `resolve_strata_plot_ordering(...)`, removing the inline
+  `sort_lex` branch and local ordering assembly.
+- Extended `tests/test_pipeline_helpers.py` with deterministic ordering coverage for default and
+  lexical modes, and added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a
+  calls the helper and no longer assigns local `sort_lex`.
