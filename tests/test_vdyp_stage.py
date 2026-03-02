@@ -211,6 +211,52 @@ def test_fit_stratum_curves_skips_species_on_curve_fit_error() -> None:
     assert any(msg and msg[0] == "fit error" for msg in messages)
 
 
+def test_fit_stratum_curves_unexpected_curve_fit_error_propagates() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["S1", "S1", "S1", "S1"],
+            "SITE_INDEX": [20.0, 22.0, 24.0, 26.0],
+            "PROJ_AGE_1": [40, 50, 60, 70],
+            "LIVE_STAND_VOLUME_125": [100.0, 100.0, 100.0, 100.0],
+            "live_vol_per_ha_125_SW": [40.0, 60.0, 70.0, 80.0],
+            "PROJ_HEIGHT_1": [15.0, 18.0, 20.0, 23.0],
+        }
+    ).set_index("stratum")
+    stratum_si_stats = f_table.groupby(level="stratum").SITE_INDEX.describe(
+        percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
+    )
+
+    class _FakeSns:
+        @staticmethod
+        def color_palette(_name: str, n: int) -> list[str]:
+            return ["#111"] * n
+
+    class _FakePlt:
+        pass
+
+    with pytest.raises(ZeroDivisionError):
+        fit_stratum_curves(
+            f_table=f_table,
+            fit_func=lambda x, a, b, c, s: (
+                s * (a * ((x - c) ** b)) * np.exp(-a * (x - c))
+            ),
+            fit_func_bounds_func=lambda _x: ([0, 0, 0, 0], [1, 50, 100, 10]),
+            strata_df=pd.DataFrame({"totalarea_p": [1.0]}, index=["S1"]),
+            stratum_si_stats=stratum_si_stats,
+            stratumi=0,
+            species_list=["SW"],
+            curve_fit_fn=lambda *_a, **_k: (_ for _ in ()).throw(
+                ZeroDivisionError("unexpected")
+            ),
+            np_module=np,
+            pd_module=pd,
+            sns_module=_FakeSns(),
+            plt_module=_FakePlt(),
+            si_levelquants={"M": [0, 50, 100]},
+            plot=False,
+        )
+
+
 def test_build_fit_stratum_curves_runner_binds_fit_context() -> None:
     captured: dict[str, object] = {}
 
@@ -606,6 +652,60 @@ def test_execute_vdyp_batch_logs_timeout(tmp_path: Path) -> None:
     assert out == {}
     assert len(events) == 1
     assert events[0]["status"] == "timeout"
+
+
+def test_execute_vdyp_batch_unexpected_subprocess_error_propagates(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "vdyp_io").mkdir(parents=True)
+    vdyp_ply, vdyp_lyr = _sample_vdyp_tables()
+
+    with pytest.raises(ZeroDivisionError):
+        execute_vdyp_batch(
+            feature_ids=[1],
+            vdyp_ply=vdyp_ply,
+            vdyp_lyr=vdyp_lyr,
+            vdyp_binpath="VDYP7/VDYP7/VDYP7Console.exe",
+            vdyp_params_infile="vdyp_params-landp",
+            vdyp_io_dirname=str(tmp_path / "vdyp_io"),
+            vdyp_log_path=tmp_path / "vdyp_io" / "vdyp_runs.jsonl",
+            vdyp_stdout_log_path=tmp_path / "vdyp_io" / "vdyp_stdout.log",
+            vdyp_stderr_log_path=tmp_path / "vdyp_io" / "vdyp_stderr.log",
+            phase="initial",
+            write_vdyp_infiles=lambda *_args: None,
+            import_vdyp_tables_fn=lambda _path: {},
+            append_jsonl_fn=lambda *_args: None,
+            append_text_fn=lambda *_args: None,
+            subprocess_run=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                ZeroDivisionError("unexpected")
+            ),
+        )
+
+
+def test_execute_vdyp_batch_unexpected_parse_error_propagates(tmp_path: Path) -> None:
+    (tmp_path / "vdyp_io").mkdir(parents=True)
+    vdyp_ply, vdyp_lyr = _sample_vdyp_tables()
+
+    with pytest.raises(ZeroDivisionError):
+        execute_vdyp_batch(
+            feature_ids=[1],
+            vdyp_ply=vdyp_ply,
+            vdyp_lyr=vdyp_lyr,
+            vdyp_binpath="VDYP7/VDYP7/VDYP7Console.exe",
+            vdyp_params_infile="vdyp_params-landp",
+            vdyp_io_dirname=str(tmp_path / "vdyp_io"),
+            vdyp_log_path=tmp_path / "vdyp_io" / "vdyp_runs.jsonl",
+            vdyp_stdout_log_path=tmp_path / "vdyp_io" / "vdyp_stdout.log",
+            vdyp_stderr_log_path=tmp_path / "vdyp_io" / "vdyp_stderr.log",
+            phase="initial",
+            write_vdyp_infiles=lambda *_args: None,
+            import_vdyp_tables_fn=lambda _path: (_ for _ in ()).throw(
+                ZeroDivisionError("unexpected")
+            ),
+            append_jsonl_fn=lambda *_args: None,
+            append_text_fn=lambda *_args: None,
+            subprocess_run=lambda *_args, **_kwargs: _RunResult(stdout="", stderr=""),
+        )
 
 
 def test_execute_bootstrap_vdyp_runs_success() -> None:

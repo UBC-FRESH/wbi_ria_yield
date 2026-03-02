@@ -1088,3 +1088,18 @@
 - Queued next extraction slice: continue P2.2 by auditing broad fallback handlers in
   `src/femic/pipeline/vdyp_stage.py` and narrowing them to explicit subprocess/IO/parsing exception
   classes while preserving current logging semantics.
+- Narrowed a first safe subset of broad exception handlers in `src/femic/pipeline/vdyp_stage.py`:
+  `fit_stratum_curves(...)` now catches explicit curve-fit operational failures, and
+  `execute_vdyp_batch(...)` now catches explicit subprocess execution and parse/import failure
+  classes for `status=error` / `status=parse_error` logging paths.
+- Preserved existing logging semantics for expected operational failures while allowing unexpected
+  exceptions to propagate.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` to assert:
+  `RuntimeError` curve-fit failures still skip species with `fit error` messages, and unexpected
+  `ZeroDivisionError` failures in curve-fit, subprocess execution, and parse stages propagate.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (217 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by narrowing the remaining broad exception handler in
+  `execute_bootstrap_vdyp_runs(...)` (`dispatch_error` logging wrapper around `run_vdyp_fn`) into
+  explicit run-stage exception classes while preserving JSONL diagnostics.

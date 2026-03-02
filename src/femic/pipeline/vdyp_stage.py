@@ -56,6 +56,27 @@ class StratumFitRunConfig:
     xlim: tuple[float, float]
 
 
+def _curve_fit_skip_exception_types() -> tuple[type[Exception], ...]:
+    """Curve-fit failures that should skip one species and continue."""
+    return (
+        RuntimeError,
+        ValueError,
+        TypeError,
+        OverflowError,
+        FloatingPointError,
+    )
+
+
+def _subprocess_run_exception_types() -> tuple[type[Exception], ...]:
+    """Subprocess launch/exec failures that should emit VDYP run error records."""
+    return (OSError, ValueError, subprocess.SubprocessError)
+
+
+def _vdyp_parse_exception_types() -> tuple[type[Exception], ...]:
+    """VDYP output parse/import failures that should emit parse_error records."""
+    return (OSError, ValueError, TypeError, KeyError, UnicodeError)
+
+
 def build_stratum_fit_run_config(
     *,
     fit_rawdata: bool = True,
@@ -433,7 +454,7 @@ def fit_stratum_curves(
                     maxfev=maxfev,
                     sigma=sigma,
                 )
-            except Exception as exc:
+            except _curve_fit_skip_exception_types() as exc:
                 message_fn(
                     "fit error",
                     exc,
@@ -1190,7 +1211,7 @@ def execute_vdyp_batch(
                 },
             )
             return {}
-        except Exception as exc:
+        except _subprocess_run_exception_types() as exc:
             append_jsonl_(
                 vdyp_log_path,
                 {
@@ -1229,7 +1250,7 @@ def execute_vdyp_batch(
         proc_stderr_head = (result.stderr or "")[:500]
         try:
             vdyp_out = import_vdyp_tables_(str(vdyp_io_dir / vdyp_out_txt))
-        except Exception as exc:
+        except _vdyp_parse_exception_types() as exc:
             append_jsonl_(
                 vdyp_log_path,
                 {
