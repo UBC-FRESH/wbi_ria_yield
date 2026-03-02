@@ -1144,3 +1144,15 @@
 - Queued next extraction slice: continue P2.2 by reducing duplicated fallback-event assembly inside
   `process_vdyp_out(...)` (`src/femic/pipeline/vdyp_curves.py`) via a small internal event-builder
   seam that reuses shared diagnostics helpers without changing emitted fields.
+- Reduced duplicated fallback-event assembly in `process_vdyp_out(...)`
+  (`src/femic/pipeline/vdyp_curves.py`) by adding a small internal `emit_curve_event(...)` seam that
+  reuses shared diagnostics event helpers while preserving emitted field sets and timestamp/context
+  semantics.
+- Rewired all `process_vdyp_out(...)` event emissions (fallback, body-fit error, toe-fit success,
+  toe-fit warning, quasi-origin anchor) through the new internal seam; behavior remains unchanged.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (242 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing duplicate formatting/serialization logic in
+  logging helpers (`append_jsonl`, stream-header and related callers) for additional safe
+  centralization seams now that event payload assembly is consolidated.

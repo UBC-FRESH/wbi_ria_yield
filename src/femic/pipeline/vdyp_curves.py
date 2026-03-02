@@ -133,6 +133,24 @@ def process_vdyp_out(
         if message is not None:
             message(msg)
 
+    def emit_curve_event(
+        *,
+        status: str,
+        stage: str,
+        event: str = "vdyp_curve",
+        **fields: Any,
+    ) -> None:
+        log_event(
+            build_timestamped_event(
+                event=event,
+                timestamp=base_timestamp,
+                context=base_context,
+                status=status,
+                stage=stage,
+                **fields,
+            )
+        )
+
     def fallback_curve(
         *,
         stage: str,
@@ -156,9 +174,6 @@ def process_vdyp_out(
                 y_arr = y_arr[unique_idx]
         x_arr, y_arr = prepend_quasi_origin_point(x_arr, y_arr)
         payload: dict[str, Any] = {
-            **base_event,
-            "status": "warning",
-            "stage": stage,
             "reason": reason,
             "first_age": float(x_arr[0]),
             "first_volume": float(y_arr[0]),
@@ -167,7 +182,7 @@ def process_vdyp_out(
             payload["error"] = str(exc)
             payload["error_type"] = type(exc).__name__
             payload["traceback"] = traceback.format_exc()
-        log_event(payload)
+        emit_curve_event(status="warning", stage=stage, **payload)
         return x_arr, y_arr
 
     pd_mod = importlib.import_module("pandas")
@@ -220,18 +235,15 @@ def process_vdyp_out(
             sigma=sigma,
         )
     except _curve_fit_fallback_exception_types() as exc:
-        log_event(
-            {
-                **base_event,
-                "status": "error",
-                "stage": "body_fit",
-                "error": str(exc),
-                "traceback": traceback.format_exc(),
-                "vdyp_tables": int(len(vdyp_tables)),
-                "x_points": int(len(x)),
-                "skip1": int(skip1),
-                "skip2": int(skip2),
-            }
+        emit_curve_event(
+            status="error",
+            stage="body_fit",
+            error=str(exc),
+            traceback=traceback.format_exc(),
+            vdyp_tables=int(len(vdyp_tables)),
+            x_points=int(len(x)),
+            skip1=int(skip1),
+            skip2=int(skip2),
         )
         return fallback_curve(
             stage="body_fit_fallback",
@@ -264,54 +276,44 @@ def process_vdyp_out(
                 emit(f"vdyp toe fit: increased skip to {used_skip}")
             emit(str(popt_toe))
             x_, y_ = prepend_quasi_origin_point(x_, y_)
-            log_event(
-                {
-                    **base_event,
-                    "status": "ok",
-                    "stage": "toe_fit",
-                    "vdyp_tables": int(len(vdyp_tables)),
-                    "x_points": int(len(x)),
-                    "skip1": int(skip1),
-                    "skip2": int(skip2),
-                    "skip_used": int(used_skip),
-                    "dx": float(dx),
-                    "first_age": float(x_[0]),
-                    "first_volume": float(y_[0]),
-                }
+            emit_curve_event(
+                status="ok",
+                stage="toe_fit",
+                vdyp_tables=int(len(vdyp_tables)),
+                x_points=int(len(x)),
+                skip1=int(skip1),
+                skip2=int(skip2),
+                skip_used=int(used_skip),
+                dx=float(dx),
+                first_age=float(x_[0]),
+                first_volume=float(y_[0]),
             )
             return x_, y_
         except _curve_fit_fallback_exception_types() as exc:
             last_exc = exc
             continue
 
-    log_event(
-        {
-            **base_event,
-            "status": "warning",
-            "stage": "toe_fit",
-            "vdyp_tables": int(len(vdyp_tables)),
-            "x_points": int(len(x)),
-            "skip1": int(skip1),
-            "skip2": int(skip2),
-            "skip_max": int(skip2 + max_skip_increase),
-            "dx": float(dx),
-            "error": str(last_exc),
-        }
+    emit_curve_event(
+        status="warning",
+        stage="toe_fit",
+        vdyp_tables=int(len(vdyp_tables)),
+        x_points=int(len(x)),
+        skip1=int(skip1),
+        skip2=int(skip2),
+        skip_max=int(skip2 + max_skip_increase),
+        dx=float(dx),
+        error=str(last_exc),
     )
     emit(
         "vdyp toe fit failed; returning body fit curve with quasi-origin "
         "(1, epsilon) anchor"
     )
     x, y = prepend_quasi_origin_point(x, y)
-    log_event(
-        build_timestamped_event(
-            event="vdyp_curve_anchor",
-            timestamp=base_timestamp,
-            context=base_context,
-            status="warning",
-            stage="quasi_origin_anchor",
-            first_age=float(x[0]),
-            first_volume=float(y[0]),
-        )
+    emit_curve_event(
+        event="vdyp_curve_anchor",
+        status="warning",
+        stage="quasi_origin_anchor",
+        first_age=float(x[0]),
+        first_volume=float(y[0]),
     )
     return x, y
