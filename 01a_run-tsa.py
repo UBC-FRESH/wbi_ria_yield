@@ -49,6 +49,7 @@ def run_tsa(
     from femic.pipeline.vdyp_curves import process_vdyp_out
     from femic.pipeline.vdyp_stage import (
         build_curve_fit_adapter,
+        build_run_vdyp_for_stratum_runner,
         build_smoothed_curve_table,
         compile_strata_fit_results,
         execute_bootstrap_vdyp_runs,
@@ -57,7 +58,6 @@ def run_tsa(
         load_vdyp_input_tables,
         load_or_build_vdyp_results_tsa,
         plot_curve_overlays,
-        run_vdyp_for_stratum,
     )
     from femic.pipeline.tsa import (
         build_strata_summary,
@@ -283,6 +283,20 @@ def run_tsa(
         vdyp_results_tsa_pickle_path_prefix,
         tsa,
     )
+    run_vdyp_fn = build_run_vdyp_for_stratum_runner(
+        tsa=tsa,
+        run_id=femic_run_id,
+        vdyp_ply=vdyp_ply,
+        vdyp_lyr=vdyp_lyr,
+        rc_len=len(rc),
+        curve_fit_fn=curve_fit,
+        fit_func=body_fit_func,
+        fit_func_bounds_func=body_fit_func_bounds_func,
+        append_jsonl_fn=append_jsonl,
+        vdyp_log_path=vdyp_run_events_path,
+        vdyp_stdout_log_path=vdyp_stdout_log_path,
+        vdyp_stderr_log_path=vdyp_stderr_log_path,
+    )
     vdyp_results[tsa] = load_or_build_vdyp_results_tsa(
         tsa=tsa,
         force_run_vdyp=bool(force_run_vdyp),
@@ -295,22 +309,7 @@ def run_tsa(
             si_levels=si_levels,
             vdyp_run_events_path=vdyp_run_events_path,
             append_jsonl_fn=append_jsonl,
-            run_vdyp_fn=lambda s, **kwargs: run_vdyp_for_stratum(
-                sample_table=s,
-                tsa=tsa,
-                run_id=femic_run_id,
-                vdyp_ply=vdyp_ply,
-                vdyp_lyr=vdyp_lyr,
-                rc_len=len(rc),
-                curve_fit_fn=curve_fit,
-                fit_func=body_fit_func,
-                fit_func_bounds_func=body_fit_func_bounds_func,
-                append_jsonl_fn=append_jsonl,
-                vdyp_log_path=vdyp_run_events_path,
-                vdyp_stdout_log_path=vdyp_stdout_log_path,
-                vdyp_stderr_log_path=vdyp_stderr_log_path,
-                **kwargs,
-            ),
+            run_vdyp_fn=run_vdyp_fn,
             vdyp_out_cache=vdyp_out_cache,
         ),
         print_fn=print,

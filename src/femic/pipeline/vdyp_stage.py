@@ -785,6 +785,45 @@ def run_vdyp_for_stratum(
     )
 
 
+def build_run_vdyp_for_stratum_runner(
+    *,
+    tsa: str,
+    run_id: str,
+    vdyp_ply: Any,
+    vdyp_lyr: Any,
+    rc_len: int,
+    curve_fit_fn: Callable[..., Any],
+    fit_func: Callable[..., Any],
+    fit_func_bounds_func: Callable[..., Any],
+    append_jsonl_fn: Callable[[str | Path, Any], None] | None = None,
+    vdyp_log_path: str | Path | None = None,
+    vdyp_stdout_log_path: str | Path | None = None,
+    vdyp_stderr_log_path: str | Path | None = None,
+    run_vdyp_for_stratum_fn: Callable[..., dict[Any, Any]] = run_vdyp_for_stratum,
+) -> Callable[..., dict[Any, Any]]:
+    """Build a per-TSA VDYP runner callable for bootstrap dispatch helpers."""
+
+    def _run_vdyp(sample_table: Any, **kwargs: Any) -> dict[Any, Any]:
+        return run_vdyp_for_stratum_fn(
+            sample_table=sample_table,
+            tsa=tsa,
+            run_id=run_id,
+            vdyp_ply=vdyp_ply,
+            vdyp_lyr=vdyp_lyr,
+            rc_len=rc_len,
+            curve_fit_fn=curve_fit_fn,
+            fit_func=fit_func,
+            fit_func_bounds_func=fit_func_bounds_func,
+            append_jsonl_fn=append_jsonl_fn,
+            vdyp_log_path=vdyp_log_path,
+            vdyp_stdout_log_path=vdyp_stdout_log_path,
+            vdyp_stderr_log_path=vdyp_stderr_log_path,
+            **kwargs,
+        )
+
+    return _run_vdyp
+
+
 def execute_bootstrap_vdyp_runs(
     *,
     tsa: str,

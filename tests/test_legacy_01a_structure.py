@@ -111,7 +111,22 @@ def test_run01a_no_direct_run_vdyp_sampling_call() -> None:
             )
 
 
-def test_run01a_uses_run_vdyp_for_stratum_helper_call() -> None:
+def test_run01a_uses_build_run_vdyp_for_stratum_runner_helper_call() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if (
+            isinstance(func, ast.Name)
+            and func.id == "build_run_vdyp_for_stratum_runner"
+        ):
+            return
+    raise AssertionError("run_tsa should call build_run_vdyp_for_stratum_runner(...)")
+
+
+def test_run01a_no_direct_run_vdyp_for_stratum_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
     for node in ast.walk(run_tsa):
@@ -119,8 +134,9 @@ def test_run01a_uses_run_vdyp_for_stratum_helper_call() -> None:
             continue
         func = node.func
         if isinstance(func, ast.Name) and func.id == "run_vdyp_for_stratum":
-            return
-    raise AssertionError("run_tsa should call run_vdyp_for_stratum(...)")
+            raise AssertionError(
+                "run_tsa should use build_run_vdyp_for_stratum_runner, not call run_vdyp_for_stratum directly"
+            )
 
 
 def test_run01a_has_no_nested_run_vdyp_definition() -> None:

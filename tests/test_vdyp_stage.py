@@ -11,6 +11,7 @@ import numpy as np
 from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
     build_curve_fit_adapter,
+    build_run_vdyp_for_stratum_runner,
     build_smoothed_curve_table,
     compile_strata_fit_results,
     execute_bootstrap_vdyp_runs,
@@ -387,6 +388,45 @@ def test_run_vdyp_for_stratum_uses_default_log_paths_and_runs_batch(
     assert set(out) == {1, 2}
     assert events and events[0]["status"] == "start"
     assert events[0]["phase"] == "auto_small_sample"
+
+
+def test_build_run_vdyp_for_stratum_runner_binds_runtime_context() -> None:
+    sample_table = object()
+    captured: dict[str, object] = {}
+
+    def fake_run_vdyp_for_stratum(**kwargs: object) -> dict[int, str]:
+        captured.update(kwargs)
+        return {1: "ok"}
+
+    runner = build_run_vdyp_for_stratum_runner(
+        tsa="08",
+        run_id="run-1",
+        vdyp_ply="ply",
+        vdyp_lyr="lyr",
+        rc_len=42,
+        curve_fit_fn=lambda *_a, **_k: None,
+        fit_func=lambda *_a, **_k: None,
+        fit_func_bounds_func=lambda *_a, **_k: None,
+        append_jsonl_fn=lambda *_a, **_k: None,
+        vdyp_log_path="run.jsonl",
+        vdyp_stdout_log_path="stdout.log",
+        vdyp_stderr_log_path="stderr.log",
+        run_vdyp_for_stratum_fn=fake_run_vdyp_for_stratum,
+    )
+    out = runner(sample_table, verbose=True, nsamples="all")
+
+    assert out == {1: "ok"}
+    assert captured["sample_table"] is sample_table
+    assert captured["tsa"] == "08"
+    assert captured["run_id"] == "run-1"
+    assert captured["vdyp_ply"] == "ply"
+    assert captured["vdyp_lyr"] == "lyr"
+    assert captured["rc_len"] == 42
+    assert captured["vdyp_log_path"] == "run.jsonl"
+    assert captured["vdyp_stdout_log_path"] == "stdout.log"
+    assert captured["vdyp_stderr_log_path"] == "stderr.log"
+    assert captured["verbose"] is True
+    assert captured["nsamples"] == "all"
 
 
 def test_execute_vdyp_batch_logs_ok_and_returns_output(tmp_path: Path) -> None:
