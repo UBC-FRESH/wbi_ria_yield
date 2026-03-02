@@ -346,8 +346,8 @@ def run_tsa(
             pd_module=pd,
             plt_module=plt,
             dataframe_type=pd.core.frame.DataFrame,
-            xlim=(0, 300),
-            ylim=(0, 600),
+            xlim=smooth_plot_cfg.xlim,
+            ylim=smooth_plot_cfg.ylim,
             message_fn=print,
         )
         vdyp_curves_smooth[tsa] = build_smoothed_curve_table(

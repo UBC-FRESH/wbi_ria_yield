@@ -767,6 +767,8 @@ def test_build_curve_smoothing_plot_config_applies_defaults() -> None:
     assert cfg.palette == ("Greens-0", "Greens-1", "Greens-2")
     assert cfg.palette_flavours == ("RdPu", "Blues", "Greens", "Greys")
     assert cfg.alphas == (1.0, 0.5, 0.1)
+    assert cfg.xlim == (0, 300)
+    assert cfg.ylim == (0, 600)
     assert fake_sns.palette_calls == [("Greens", 3)]
     assert fake_sns.set_palette_calls == [cfg.palette]
 

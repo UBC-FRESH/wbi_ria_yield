@@ -38,6 +38,8 @@ class CurveSmoothingPlotConfig:
     palette: tuple[Any, ...]
     palette_flavours: tuple[str, ...]
     alphas: tuple[float, ...]
+    xlim: tuple[float, float]
+    ylim: tuple[float, float]
 
 
 def build_curve_smoothing_plot_config(
@@ -49,6 +51,8 @@ def build_curve_smoothing_plot_config(
     palette_size: int = 3,
     palette_flavours: Sequence[str] = ("RdPu", "Blues", "Greens", "Greys"),
     alphas: Sequence[float] = (1.0, 0.5, 0.1),
+    xlim: tuple[float, float] = (0, 300),
+    ylim: tuple[float, float] = (0, 600),
 ) -> CurveSmoothingPlotConfig:
     """Build and apply legacy curve-smoothing plot defaults."""
     palette = tuple(sns_module.color_palette(palette_name, palette_size))
@@ -59,6 +63,8 @@ def build_curve_smoothing_plot_config(
         palette=palette,
         palette_flavours=tuple(str(v) for v in palette_flavours),
         alphas=tuple(float(v) for v in alphas),
+        xlim=xlim,
+        ylim=ylim,
     )
 
 

@@ -250,6 +250,30 @@ def test_run01a_uses_build_curve_smoothing_plot_config_helper_call() -> None:
     raise AssertionError("run_tsa should call build_curve_smoothing_plot_config(...)")
 
 
+def test_run01a_uses_curve_smoothing_config_axes_for_overlay_plot() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not (isinstance(func, ast.Name) and func.id == "plot_curve_overlays"):
+            continue
+        kwargs = {kw.arg: kw.value for kw in node.keywords if kw.arg}
+        for key in ("xlim", "ylim"):
+            value = kwargs.get(key)
+            if not (
+                isinstance(value, ast.Attribute)
+                and isinstance(value.value, ast.Name)
+                and value.value.id == "smooth_plot_cfg"
+            ):
+                raise AssertionError(
+                    "plot_curve_overlays should consume xlim/ylim from smooth_plot_cfg"
+                )
+        return
+    raise AssertionError("run_tsa should call plot_curve_overlays(...)")
+
+
 def test_run01a_no_inline_smoothing_plot_constant_assignments() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
