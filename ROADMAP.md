@@ -452,3 +452,20 @@
 - Queued next extraction slice: move the remaining inline `compile_one_fn=lambda: ...` assembly in
   pre-VDYP stratum compilation into a dedicated stage helper so 01a no longer builds fit-call
   closures inline.
+- Added `femic.pipeline.vdyp_stage.build_fit_stratum_curves_runner(...)`, a reusable helper that
+  binds per-TSA stratum-fit context into `compile_one_fn(stratumi, sc)` callbacks for
+  `compile_strata_fit_results(...)`.
+- Rewired `01a_run-tsa.py` to build and pass `compile_one_fn` via
+  `build_fit_stratum_curves_runner(...)`, removing inline fit-call closure assembly in the pre-VDYP
+  compilation path.
+- Expanded `tests/test_vdyp_stage.py` with fit-runner binding coverage and updated
+  `tests/test_legacy_01a_structure.py` guardrails so 01a must call the builder helper and must not
+  pass inline lambdas to `compile_one_fn`.
+- Extracted legacy notebook fit functions (`fit_func1`, `fit_func1_bounds_func`, `fit_func2`,
+  `fit_func2_bounds_func`) from `01a_run-tsa.py` into `femic.pipeline.vdyp_curves`
+  (`legacy_fit_func1`, `legacy_fit_func1_bounds_func`, `legacy_fit_func2`,
+  `legacy_fit_func2_bounds_func`), and rewired 01a to consume these shared helpers.
+- Expanded `tests/test_vdyp_curves.py` with deterministic coverage for legacy fit-function outputs
+  and bounds, and added AST guardrails asserting 01a no longer defines nested legacy fit functions.
+- Queued next extraction slice: remove the final nested `match_stratum(...)` function definition in
+  `01a_run-tsa.py` by moving alias-application logic into a reusable TSA helper.

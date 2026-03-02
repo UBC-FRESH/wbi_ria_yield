@@ -375,3 +375,19 @@
 - Extended `tests/test_vdyp_stage.py` with coverage for bootstrap-runner binding/forwarding and
   updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a uses the builder helper
   and does not pass an inline lambda to `run_bootstrap_fn`.
+- Added `femic.pipeline.vdyp_stage.build_fit_stratum_curves_runner(...)`, a reusable helper that
+  binds stratum-fit context into `compile_one_fn(stratumi, sc)` callbacks for
+  `compile_strata_fit_results(...)`.
+- Rewired `01a_run-tsa.py` to build/pass `compile_one_fn` via
+  `build_fit_stratum_curves_runner(...)`, removing inline fit-call closure assembly in the pre-VDYP
+  compilation path.
+- Extended `tests/test_vdyp_stage.py` with fit-runner binding coverage and updated
+  `tests/test_legacy_01a_structure.py` guardrails so 01a must call the builder helper and must not
+  pass inline lambdas to `compile_one_fn`.
+- Extracted legacy notebook fit functions from `01a_run-tsa.py` into
+  `femic.pipeline.vdyp_curves` (`legacy_fit_func1`, `legacy_fit_func1_bounds_func`,
+  `legacy_fit_func2`, `legacy_fit_func2_bounds_func`) and rewired 01a to consume these shared
+  helpers.
+- Extended `tests/test_vdyp_curves.py` with deterministic checks for legacy fit-function outputs and
+  bounds, and updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a no longer
+  defines nested legacy fit functions.
