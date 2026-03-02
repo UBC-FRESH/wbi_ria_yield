@@ -1212,3 +1212,17 @@
 - Queued next extraction slice: continue P2.2 by auditing duplicated VDYP subprocess command-string
   assembly/metadata capture in `execute_vdyp_batch(...)` and centralizing it behind a helper seam
   without changing emitted command text or event fields.
+- Completed the queued `execute_vdyp_batch(...)` command/metadata consolidation slice with two
+  shared helper seams in `src/femic/pipeline/vdyp_stage.py`:
+  `build_vdyp_batch_command(...)` (legacy command-string assembly) and
+  `collect_vdyp_batch_run_metadata(...)` (shared returncode/duration/file-size/head capture).
+- Rewired `execute_vdyp_batch(...)` to consume these helpers for timeout/error/parse-error/ok
+  logging paths while preserving emitted command text and event field shape.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` for both new helpers, including
+  legacy command-string shape and metadata-field extraction behavior.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (249 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing duplicated base-context enrichment in
+  VDYP run orchestration (`run_vdyp_for_stratum`, `execute_vdyp_batch`) and centralizing it via a
+  helper seam without changing emitted context keys/values.

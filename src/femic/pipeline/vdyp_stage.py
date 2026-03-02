@@ -93,6 +93,60 @@ def _bootstrap_dispatch_exception_types() -> tuple[type[Exception], ...]:
     )
 
 
+def build_vdyp_batch_command(
+    *,
+    vdyp_binpath: str,
+    vdyp_params_infile: str,
+    vdyp_io_dir: str | Path,
+    vdyp_ply_csv: str,
+    vdyp_lyr_csv: str,
+    vdyp_out_txt: str,
+    vdyp_err_txt: str,
+) -> str:
+    """Build legacy VDYP command text used for execution and logging metadata."""
+    vdyp_io_dir_str = str(vdyp_io_dir)
+    args = "wine %s -p %s -ip .\\\\%s\\\\%s -il .\\\\%s\\\\%s" % (
+        vdyp_binpath,
+        vdyp_params_infile,
+        vdyp_io_dir_str,
+        vdyp_ply_csv,
+        vdyp_io_dir_str,
+        vdyp_lyr_csv,
+    )
+    args += " -o .\\\\%s\\\\%s -e .\\\\%s\\\\%s" % (
+        vdyp_io_dir_str,
+        vdyp_out_txt,
+        vdyp_io_dir_str,
+        vdyp_err_txt,
+    )
+    return args
+
+
+def collect_vdyp_batch_run_metadata(
+    *,
+    result: Any,
+    out_path: Path,
+    err_path: Path,
+    run_started: float,
+    time_fn: Callable[[], float] = time.time,
+) -> dict[str, Any]:
+    """Collect subprocess/file metadata shared by parse-error and success events."""
+    err_size = err_path.stat().st_size if err_path.exists() else 0
+    err_head = ""
+    if err_size:
+        err_head = err_path.read_text(encoding="utf-8", errors="ignore")[:500]
+    out_size = out_path.stat().st_size if out_path.exists() else 0
+    return {
+        "returncode": getattr(result, "returncode", None),
+        "duration_sec": round(time_fn() - run_started, 3),
+        "out_size": int(out_size),
+        "err_size": int(err_size),
+        "err_head": err_head,
+        "proc_stdout_head": (result.stdout or "")[:500],
+        "proc_stderr_head": (result.stderr or "")[:500],
+    }
+
+
 def build_stratum_fit_run_config(
     *,
     fit_rawdata: bool = True,
@@ -1209,19 +1263,14 @@ def execute_vdyp_batch(
         write_vdyp_infiles_(vdyp_ply_, vdyp_lyr_, vdyp_ply_csv, vdyp_lyr_csv)
 
         run_started = time.time()
-        args = "wine %s -p %s -ip .\\\\%s\\\\%s -il .\\\\%s\\\\%s" % (
-            vdyp_binpath,
-            vdyp_params_infile,
-            str(vdyp_io_dir),
-            vdyp_ply_csv,
-            str(vdyp_io_dir),
-            vdyp_lyr_csv,
-        )
-        args += " -o .\\\\%s\\\\%s -e .\\\\%s\\\\%s" % (
-            str(vdyp_io_dir),
-            vdyp_out_txt,
-            str(vdyp_io_dir),
-            vdyp_err_txt,
+        args = build_vdyp_batch_command(
+            vdyp_binpath=vdyp_binpath,
+            vdyp_params_infile=vdyp_params_infile,
+            vdyp_io_dir=vdyp_io_dir,
+            vdyp_ply_csv=vdyp_ply_csv,
+            vdyp_lyr_csv=vdyp_lyr_csv,
+            vdyp_out_txt=vdyp_out_txt,
+            vdyp_err_txt=vdyp_err_txt,
         )
         try:
             result = subprocess_run_(
@@ -1290,13 +1339,12 @@ def execute_vdyp_batch(
                 ),
             )
 
-        err_size = err_path.stat().st_size if err_path.exists() else 0
-        err_head = ""
-        if err_size:
-            err_head = err_path.read_text(encoding="utf-8", errors="ignore")[:500]
-        out_size = out_path.stat().st_size if out_path.exists() else 0
-        proc_stdout_head = (result.stdout or "")[:500]
-        proc_stderr_head = (result.stderr or "")[:500]
+        run_metadata = collect_vdyp_batch_run_metadata(
+            result=result,
+            out_path=out_path,
+            err_path=err_path,
+            run_started=run_started,
+        )
         try:
             vdyp_out = import_vdyp_tables_(str(vdyp_io_dir / vdyp_out_txt))
         except _vdyp_parse_exception_types() as exc:
@@ -1311,13 +1359,7 @@ def execute_vdyp_batch(
                     ply_rows=int(ply_rows),
                     lyr_rows=int(lyr_rows),
                     cmd=args,
-                    returncode=getattr(result, "returncode", None),
-                    duration_sec=round(time.time() - run_started, 3),
-                    out_size=int(out_size),
-                    err_size=int(err_size),
-                    err_head=err_head,
-                    proc_stdout_head=proc_stdout_head,
-                    proc_stderr_head=proc_stderr_head,
+                    **run_metadata,
                     error=str(exc),
                     traceback=traceback.format_exc(),
                     context=context,
@@ -1336,13 +1378,7 @@ def execute_vdyp_batch(
                 ply_rows=int(ply_rows),
                 lyr_rows=int(lyr_rows),
                 cmd=args,
-                returncode=getattr(result, "returncode", None),
-                duration_sec=round(time.time() - run_started, 3),
-                out_size=int(out_size),
-                err_size=int(err_size),
-                err_head=err_head,
-                proc_stdout_head=proc_stdout_head,
-                proc_stderr_head=proc_stderr_head,
+                **run_metadata,
                 vdyp_out_tables=int(len(vdyp_out)),
                 context=context,
             ),

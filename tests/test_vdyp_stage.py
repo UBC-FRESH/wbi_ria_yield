@@ -13,6 +13,7 @@ from femic.pipeline.vdyp_stage import (
     StratumFitRunConfig,
     SmoothedCurveResult,
     build_bootstrap_vdyp_results_runner,
+    build_vdyp_batch_command,
     build_curve_fit_adapter,
     build_curve_smoothing_plot_config,
     build_stratum_fit_run_config,
@@ -23,6 +24,7 @@ from femic.pipeline.vdyp_stage import (
     execute_bootstrap_vdyp_runs,
     execute_curve_smoothing_runs,
     execute_vdyp_batch,
+    collect_vdyp_batch_run_metadata,
     fit_stratum_curves,
     load_vdyp_input_tables,
     load_or_build_vdyp_results_tsa,
@@ -43,6 +45,52 @@ def _sample_vdyp_tables() -> tuple[pd.DataFrame, pd.DataFrame]:
     vdyp_ply = pd.DataFrame({"FEATURE_ID": [1, 2, 3], "A": [10, 20, 30]})
     vdyp_lyr = pd.DataFrame({"FEATURE_ID": [1, 2, 3], "B": [100, 200, 300]})
     return vdyp_ply, vdyp_lyr
+
+
+def test_build_vdyp_batch_command_preserves_legacy_string_shape() -> None:
+    cmd = build_vdyp_batch_command(
+        vdyp_binpath="VDYP7/VDYP7/VDYP7Console.exe",
+        vdyp_params_infile="vdyp_params-landp",
+        vdyp_io_dir=Path("tmp/vdyp_io"),
+        vdyp_ply_csv="vdyp_ply_123.csv",
+        vdyp_lyr_csv="vdyp_lyr_123.csv",
+        vdyp_out_txt="vdyp_out_123.out",
+        vdyp_err_txt="vdyp_err_123.err",
+    )
+    assert cmd == (
+        "wine VDYP7/VDYP7/VDYP7Console.exe -p vdyp_params-landp "
+        "-ip .\\\\tmp/vdyp_io\\\\vdyp_ply_123.csv "
+        "-il .\\\\tmp/vdyp_io\\\\vdyp_lyr_123.csv "
+        "-o .\\\\tmp/vdyp_io\\\\vdyp_out_123.out "
+        "-e .\\\\tmp/vdyp_io\\\\vdyp_err_123.err"
+    )
+
+
+def test_collect_vdyp_batch_run_metadata_captures_expected_fields(
+    tmp_path: Path,
+) -> None:
+    out_path = tmp_path / "out.out"
+    err_path = tmp_path / "err.err"
+    out_path.write_text("out-data", encoding="utf-8")
+    err_path.write_text("err-data", encoding="utf-8")
+
+    metadata = collect_vdyp_batch_run_metadata(
+        result=_RunResult(stdout="stdout-data", stderr="stderr-data", returncode=3),
+        out_path=out_path,
+        err_path=err_path,
+        run_started=10.0,
+        time_fn=lambda: 11.2345,
+    )
+
+    assert metadata == {
+        "returncode": 3,
+        "duration_sec": 1.235,
+        "out_size": 8,
+        "err_size": 8,
+        "err_head": "err-data",
+        "proc_stdout_head": "stdout-data",
+        "proc_stderr_head": "stderr-data",
+    }
 
 
 def test_build_curve_fit_adapter_converts_maxfev_to_max_nfev() -> None:
