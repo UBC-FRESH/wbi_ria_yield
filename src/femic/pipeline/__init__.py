@@ -68,6 +68,7 @@ from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
     build_curve_fit_adapter,
     build_smoothed_curve_table,
+    compile_strata_fit_results,
     execute_bootstrap_vdyp_runs,
     execute_curve_smoothing_runs,
     execute_vdyp_batch,
@@ -132,6 +133,7 @@ __all__ = [
     "fit_stratum_curves",
     "build_curve_fit_adapter",
     "build_smoothed_curve_table",
+    "compile_strata_fit_results",
     "load_vdyp_input_tables",
     "load_or_build_vdyp_results_tsa",
 ]

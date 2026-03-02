@@ -443,6 +443,21 @@ def fit_stratum_curves(
     return result
 
 
+def compile_strata_fit_results(
+    *,
+    strata_df: Any,
+    compile_one_fn: Callable[[int, str], Any],
+    message_fn: Callable[..., Any] = print,
+) -> list[list[Any]]:
+    """Compile fit payloads for each selected stratum index/code pair."""
+    compiled: list[list[Any]] = []
+    for stratumi, sc in enumerate(strata_df.index.values[:]):
+        message_fn("compiling stratum %s" % sc)
+        fit_out = compile_one_fn(stratumi, sc)
+        compiled.append([stratumi, sc, fit_out])
+    return compiled
+
+
 def execute_bootstrap_vdyp_runs(
     *,
     tsa: str,

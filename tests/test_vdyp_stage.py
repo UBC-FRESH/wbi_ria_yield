@@ -12,6 +12,7 @@ from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
     build_curve_fit_adapter,
     build_smoothed_curve_table,
+    compile_strata_fit_results,
     execute_bootstrap_vdyp_runs,
     execute_curve_smoothing_runs,
     execute_vdyp_batch,
@@ -199,6 +200,26 @@ def test_fit_stratum_curves_skips_species_on_curve_fit_error() -> None:
 
     assert out["M"]["species"] == {}
     assert any(msg and msg[0] == "fit error" for msg in messages)
+
+
+def test_compile_strata_fit_results_calls_compile_fn_for_each_stratum() -> None:
+    strata_df = pd.DataFrame({"totalarea_p": [0.6, 0.4]}, index=["S1", "S2"])
+    seen: list[tuple[int, str]] = []
+    messages: list[tuple[object, ...]] = []
+
+    def compile_one(stratumi: int, sc: str) -> dict[str, object]:
+        seen.append((stratumi, sc))
+        return {"sc": sc}
+
+    out = compile_strata_fit_results(
+        strata_df=strata_df,
+        compile_one_fn=compile_one,
+        message_fn=lambda *args: messages.append(args),
+    )
+
+    assert seen == [(0, "S1"), (1, "S2")]
+    assert out == [[0, "S1", {"sc": "S1"}], [1, "S2", {"sc": "S2"}]]
+    assert messages == [("compiling stratum S1",), ("compiling stratum S2",)]
 
 
 def test_execute_vdyp_batch_logs_ok_and_returns_output(tmp_path: Path) -> None:

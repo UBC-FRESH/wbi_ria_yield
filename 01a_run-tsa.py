@@ -53,6 +53,7 @@ def run_tsa(
     from femic.pipeline.vdyp_stage import (
         build_curve_fit_adapter,
         build_smoothed_curve_table,
+        compile_strata_fit_results,
         execute_bootstrap_vdyp_runs,
         execute_curve_smoothing_runs,
         execute_vdyp_batch,
@@ -225,10 +226,9 @@ def run_tsa(
             )
 
     if not prep_loaded:
-        results[tsa] = []
-        for stratumi, sc in enumerate(strata_df.index.values[:]):
-            print("compiling stratum %s" % sc)
-            fit_out = fit_stratum_curves(
+        results[tsa] = compile_strata_fit_results(
+            strata_df=strata_df,
+            compile_one_fn=lambda stratumi, _sc: fit_stratum_curves(
                 f_table=f__,
                 fit_func=body_fit_func,
                 fit_func_bounds_func=body_fit_func_bounds_func,
@@ -250,8 +250,9 @@ def run_tsa(
                 ylim=[0, 600],
                 xlim=[0, 400],
                 message_fn=print,
-            )
-            results[tsa].append([stratumi, sc, fit_out])
+            ),
+            message_fn=print,
+        )
         saved_count = save_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path, results[tsa])
         print(
             "saved pre-VDYP checkpoint with %s strata to %s"
