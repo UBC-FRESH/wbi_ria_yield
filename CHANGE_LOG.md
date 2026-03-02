@@ -408,3 +408,8 @@
 - Extended `tests/test_vdyp_stage.py` with deterministic defaults coverage for the new helper and
   updated `tests/test_legacy_01a_structure.py` guardrails to assert 01a calls this helper and no
   longer assigns inline smoothing `palette_flavours`/`alphas` constants.
+- Removed dead `legacy_fit_func2`/`legacy_fit_func2_bounds_func` imports and local
+  `fit_func2`/`fit_func2_bounds_func` assignments from `01a_run-tsa.py`; these values were no
+  longer consumed by active stage paths.
+- Added `tests/test_legacy_01a_structure.py` guardrails asserting `run_tsa(...)` no longer assigns
+  local legacy fit2 bindings.

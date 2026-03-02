@@ -492,3 +492,11 @@
   inline smoothing `palette_flavours`/`alphas` constants.
 - Queued next extraction slice: remove dead legacy `fit_func2`/`fit_func2_bounds_func` local
   bindings from `01a_run-tsa.py` now that these values are no longer consumed by any active stage.
+- Removed dead `legacy_fit_func2`/`legacy_fit_func2_bounds_func` imports and local
+  `fit_func2`/`fit_func2_bounds_func` assignments from `01a_run-tsa.py`; these values were no
+  longer used by any active stage path after prior smoothing-stage extraction.
+- Added `tests/test_legacy_01a_structure.py` guardrails asserting `run_tsa(...)` no longer assigns
+  local legacy fit2 bindings.
+- Queued next extraction slice: move inline TIPSY staging defaults
+  (`min_operable_years`, `si_iqrlo_quantile`, local `verbose`) into a shared helper seam so 01a no
+  longer embeds these constants directly.
