@@ -810,3 +810,18 @@
 - Queued next extraction slice: continue P2.2 by centralizing remaining inline external-data root
   resolution and path selection logic in `00_data-prep.py` (`_select_external_data_root`,
   candidate list assembly, VRI/TSA source roots) into reusable I/O helper seams.
+- Added `LegacyExternalDataPaths` + `resolve_legacy_external_data_paths(...)` in
+  `src/femic/pipeline/io.py` to centralize external data-root candidate resolution and canonical
+  VRI/TSA source path construction.
+- Rewired `00_data-prep.py` to consume `resolve_legacy_external_data_paths(...)`, removing inline
+  `_select_external_data_root` and candidate-list assembly logic from the script body.
+- Exported external-path helpers in `femic.pipeline.__init__`, added deterministic helper coverage
+  in `tests/test_pipeline_helpers.py`, and updated AST orchestration guardrails in
+  `tests/test_legacy_orchestration_wiring.py` to assert
+  `resolve_legacy_external_data_paths(...)` seam usage.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (184 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by extracting remaining inline siteprod raster
+  export/stack orchestration in `00_data-prep.py` (ArcRasterRescue command assembly, temporary
+  layer path enumeration, cleanup loop) into dedicated stage/helper seams.

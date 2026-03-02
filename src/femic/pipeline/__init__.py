@@ -6,6 +6,7 @@ from femic.pipeline.io import (
     DEFAULT_DEV_CONFIG_PATH,
     FALLBACK_DEFAULT_TSA_LIST,
     LegacyDataArtifactPaths,
+    LegacyExternalDataPaths,
     LegacyExecutionPlan,
     build_legacy_data_artifact_paths,
     PipelineRunConfig,
@@ -14,6 +15,7 @@ from femic.pipeline.io import (
     build_pipeline_run_config,
     load_default_tsa_list,
     normalize_tsa_list,
+    resolve_legacy_external_data_paths,
 )
 from femic.pipeline.manifest import (
     build_run_manifest_payload,
@@ -144,10 +146,12 @@ __all__ = [
     "DEFAULT_DEV_CONFIG_PATH",
     "FALLBACK_DEFAULT_TSA_LIST",
     "LegacyDataArtifactPaths",
+    "LegacyExternalDataPaths",
     "LegacyExecutionPlan",
     "PipelineRunConfig",
     "build_legacy_data_artifact_paths",
     "build_ria_vri_checkpoint_paths",
+    "resolve_legacy_external_data_paths",
     "StageResult",
     "Legacy01ARuntimeConfig",
     "LegacyTSAStageState",

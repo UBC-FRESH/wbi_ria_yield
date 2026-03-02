@@ -10,6 +10,7 @@ from femic.pipeline.io import (
     build_pipeline_run_config,
     load_default_tsa_list,
     normalize_tsa_list,
+    resolve_legacy_external_data_paths,
     resolve_run_paths,
 )
 from femic.pipeline.plots import (
@@ -80,6 +81,23 @@ def test_build_legacy_data_artifact_paths_defaults() -> None:
     )
     assert paths.tipsy_params_columns_path == Path("data/tipsy_params_columns")
     assert paths.stands_shp_dir == Path("data/shp")
+
+
+def test_resolve_legacy_external_data_paths_prefers_first_existing_vri_root(
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    fallback_data = (repo_root / ".." / "data").resolve()
+    (fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb").mkdir(parents=True)
+    (fallback_data / "bc/tsa/FADM_TSA.gdb").mkdir(parents=True)
+
+    resolved = resolve_legacy_external_data_paths(repo_root=repo_root)
+    assert resolved.external_data_root == fallback_data
+    assert resolved.vri_vclr1p_path == (
+        fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb"
+    )
+    assert resolved.tsa_boundaries_path == (fallback_data / "bc/tsa/FADM_TSA.gdb")
 
 
 def test_tsa_target_nstrata_lookup() -> None:

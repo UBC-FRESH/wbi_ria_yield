@@ -117,6 +117,46 @@ class LegacyDataArtifactPaths:
     stands_shp_dir: Path
 
 
+@dataclass(frozen=True)
+class LegacyExternalDataPaths:
+    """Resolved external source roots consumed by legacy 00_data-prep."""
+
+    external_data_root: Path
+    vri_vclr1p_path: Path
+    tsa_boundaries_path: Path
+
+
+def resolve_legacy_external_data_paths(
+    *,
+    repo_root: str | Path,
+    env_override: str | None = None,
+    required_vri_rel: str | Path = "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb",
+    tsa_boundaries_rel: str | Path = "bc/tsa/FADM_TSA.gdb",
+) -> LegacyExternalDataPaths:
+    """Resolve legacy external data root + canonical VRI/TSA source paths."""
+    root = Path(repo_root)
+    candidates = [
+        Path(env_override) if env_override else None,
+        root / "data",
+        root / ".." / "data",
+        Path.home() / "data",
+    ]
+    resolved_candidates = [candidate.resolve() for candidate in candidates if candidate]
+    required_vri_path = Path(required_vri_rel)
+
+    external_data_root = resolved_candidates[0]
+    for candidate in resolved_candidates:
+        if (candidate / required_vri_path).exists():
+            external_data_root = candidate
+            break
+
+    return LegacyExternalDataPaths(
+        external_data_root=external_data_root,
+        vri_vclr1p_path=external_data_root / required_vri_path,
+        tsa_boundaries_path=external_data_root / Path(tsa_boundaries_rel),
+    )
+
+
 def build_legacy_data_artifact_paths(
     *,
     output_root: str | Path = "data",

@@ -52,6 +52,7 @@ try:
     from femic.pipeline.io import (
         build_legacy_data_artifact_paths,
         build_ria_vri_checkpoint_paths,
+        resolve_legacy_external_data_paths,
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.stages import (
@@ -98,6 +99,7 @@ except ModuleNotFoundError:
     from femic.pipeline.io import (
         build_legacy_data_artifact_paths,
         build_ria_vri_checkpoint_paths,
+        resolve_legacy_external_data_paths,
     )
     from femic.pipeline.vdyp import build_vdyp_cache_paths
     from femic.pipeline.stages import (
@@ -195,30 +197,14 @@ if not _use_ipp:
 
 # --- cell 9 ---
 _repo_root = Path(__file__).resolve().parent
-_external_data_env = os.environ.get("FEMIC_EXTERNAL_DATA_ROOT")
-_external_data_candidates = [
-    Path(_external_data_env) if _external_data_env else None,
-    (_repo_root / "data"),
-    (_repo_root / ".." / "data"),
-    (Path.home() / "data"),
-]
-_external_data_candidates = [p for p in _external_data_candidates if p is not None]
-
-
-def _select_external_data_root():
-    vri_rel = Path("bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb")
-    for _candidate in _external_data_candidates:
-        _candidate = _candidate.resolve()
-        if (_candidate / vri_rel).exists():
-            return _candidate
-    return _external_data_candidates[0].resolve()
-
-
-_external_data_root = _select_external_data_root()
-vri_vclr1p_path = _external_data_root / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb"
+_external_paths = resolve_legacy_external_data_paths(
+    repo_root=_repo_root,
+    env_override=os.environ.get("FEMIC_EXTERNAL_DATA_ROOT"),
+)
+vri_vclr1p_path = _external_paths.vri_vclr1p_path
 _legacy_data_paths = build_legacy_data_artifact_paths()
 ria_stands_path = _legacy_data_paths.ria_stands_path
-tsa_boundaries_path = _external_data_root / "bc/tsa/FADM_TSA.gdb"
+tsa_boundaries_path = _external_paths.tsa_boundaries_path
 ria_maptiles_path = "ria_maptiles.csv"
 vdyp_input_pandl_path = _legacy_data_paths.vdyp_input_pandl_path
 
