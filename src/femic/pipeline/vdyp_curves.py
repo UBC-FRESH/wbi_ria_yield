@@ -16,6 +16,30 @@ EventLoggerFn = Callable[[dict[str, Any]], None]
 MessageFn = Callable[[str], None]
 
 
+def legacy_fit_func1(
+    x: np.ndarray, a: float, b: float, c: float, s: float
+) -> np.ndarray:
+    """Legacy body/toe fit function used in notebook-era curve smoothing."""
+    return s * (a * ((x - c) ** b)) * np.exp(-a * (x - c))
+
+
+def legacy_fit_func1_bounds_func(x: np.ndarray) -> tuple[list[float], list[float]]:
+    """Bounds function for legacy_fit_func1 with c capped by min(x) and 100."""
+    return ([0.000, 0, 0, 0], [1.00, 50, max(1, min(np.min(x), 100)), 10])
+
+
+def legacy_fit_func2(x: np.ndarray, a: float, b: float) -> np.ndarray:
+    """Legacy splice-fit function used for left-tail blending diagnostics."""
+    return a * np.power(x, b) * np.power(x, -a)
+
+
+def legacy_fit_func2_bounds_func(
+    _x: np.ndarray,
+) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Bounds function for legacy_fit_func2."""
+    return (0, 0), (10, 10)
+
+
 def prepend_quasi_origin_point(
     x: np.ndarray | list[float],
     y: np.ndarray | list[float],

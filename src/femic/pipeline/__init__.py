@@ -31,6 +31,10 @@ from femic.pipeline.vdyp_logging import (
 )
 from femic.pipeline.vdyp_curves import (
     fill_curve_left,
+    legacy_fit_func1,
+    legacy_fit_func1_bounds_func,
+    legacy_fit_func2,
+    legacy_fit_func2_bounds_func,
     prepend_quasi_origin_point,
     process_vdyp_out,
 )
@@ -102,6 +106,10 @@ __all__ = [
     "resolve_run_id",
     "vdyp_log_base",
     "fill_curve_left",
+    "legacy_fit_func1",
+    "legacy_fit_func1_bounds_func",
+    "legacy_fit_func2",
+    "legacy_fit_func2_bounds_func",
     "prepend_quasi_origin_point",
     "process_vdyp_out",
     "DEFAULT_VDYP_KWARG_OVERRIDES",

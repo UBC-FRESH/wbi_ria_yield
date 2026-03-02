@@ -46,7 +46,13 @@ def run_tsa(
         build_tsa_vdyp_log_paths,
         resolve_run_id,
     )
-    from femic.pipeline.vdyp_curves import process_vdyp_out
+    from femic.pipeline.vdyp_curves import (
+        legacy_fit_func1,
+        legacy_fit_func1_bounds_func,
+        legacy_fit_func2,
+        legacy_fit_func2_bounds_func,
+        process_vdyp_out,
+    )
     from femic.pipeline.vdyp_stage import (
         build_bootstrap_vdyp_results_runner,
         build_curve_fit_adapter,
@@ -182,16 +188,10 @@ def run_tsa(
     f__ = f_.set_index(stratum_col)
 
     # --- cell 22 ---
-    def fit_func1(x, a, b, c, s):
-        return s * (a * ((x - c) ** b)) * np.exp(-a * (x - c))
-
-    def fit_func1_bounds_func(x):
-        return ([0.000, 0, 0, 0], [1.00, 50, max(1, min(np.min(x), 100)), 10])
-
-    body_fit_func = fit_func1
-    body_fit_func_bounds_func = fit_func1_bounds_func
-    toe_fit_func = fit_func1
-    toe_fit_func_bounds_func = fit_func1_bounds_func
+    body_fit_func = legacy_fit_func1
+    body_fit_func_bounds_func = legacy_fit_func1_bounds_func
+    toe_fit_func = legacy_fit_func1
+    toe_fit_func_bounds_func = legacy_fit_func1_bounds_func
 
     # --- cell 24 ---
     stratum_si_stats = f__.groupby(stratum_col).SITE_INDEX.describe(
@@ -320,11 +320,8 @@ def run_tsa(
     # def toe_fit_func(x, a, b, c):
     #    return a*pow(x, b)
 
-    def fit_func2(x, a, b):
-        return a * pow(x, b) * pow(x, -a)
-
-    def fit_func2_bounds_func(x):
-        return (0, 0), (10, 10)
+    fit_func2 = legacy_fit_func2
+    fit_func2_bounds_func = legacy_fit_func2_bounds_func
 
     # --- cell 45 ---
     vdyp_curves_smooth_tsa_feather_path = "%s%s.feather" % (

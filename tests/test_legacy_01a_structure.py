@@ -99,6 +99,22 @@ def test_run01a_has_no_nested_fit_stratum_definition() -> None:
             raise AssertionError("run_tsa should not define nested fit_stratum")
 
 
+def test_run01a_has_no_nested_legacy_fit_function_definitions() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    forbidden = {
+        "fit_func1",
+        "fit_func1_bounds_func",
+        "fit_func2",
+        "fit_func2_bounds_func",
+    }
+    for node in run_tsa.body:
+        if isinstance(node, ast.FunctionDef) and node.name in forbidden:
+            raise AssertionError(
+                "run_tsa should source legacy fit functions from pipeline helpers"
+            )
+
+
 def test_run01a_uses_compile_strata_fit_results_helper_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)

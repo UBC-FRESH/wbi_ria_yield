@@ -5,7 +5,14 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 
-from femic.pipeline.vdyp_curves import prepend_quasi_origin_point, process_vdyp_out
+from femic.pipeline.vdyp_curves import (
+    legacy_fit_func1,
+    legacy_fit_func1_bounds_func,
+    legacy_fit_func2,
+    legacy_fit_func2_bounds_func,
+    prepend_quasi_origin_point,
+    process_vdyp_out,
+)
 
 
 def _fit_func1(x: np.ndarray, a: float, b: float, c: float, s: float) -> np.ndarray:
@@ -20,6 +27,20 @@ def test_prepend_quasi_origin_point_inserts_first_point() -> None:
     x, y = prepend_quasi_origin_point(np.array([10.0, 20.0]), np.array([5.0, 8.0]))
     assert x[0] == 1.0
     assert y[0] == 1e-6
+
+
+def test_legacy_fit_func1_bounds_caps_c_parameter() -> None:
+    values = legacy_fit_func1(np.array([5.0]), 0.5, 2.0, 1.0, 3.0)
+    assert values.shape == (1,)
+    lower, upper = legacy_fit_func1_bounds_func(np.array([25.0, 40.0]))
+    assert lower == [0.0, 0, 0, 0]
+    assert upper == [1.0, 50, 25.0, 10]
+
+
+def test_legacy_fit_func2_and_bounds_behavior() -> None:
+    out = legacy_fit_func2(np.array([2.0, 4.0]), 2.0, 3.0)
+    assert out.tolist() == [4.0, 8.0]
+    assert legacy_fit_func2_bounds_func(np.array([1.0])) == ((0, 0), (10, 10))
 
 
 def test_process_vdyp_out_empty_input_returns_quasi_anchor() -> None:
