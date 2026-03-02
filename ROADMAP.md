@@ -555,3 +555,14 @@
   calls the helper and no longer invokes direct `plt.scatter(...)` for this stage.
 - Queued next extraction slice: centralize stratum-distribution/ordering plotting orchestration
   (bar+violin block) into a dedicated shared helper to further shrink inline plotting in 01a.
+- Added `femic.pipeline.plots.render_strata_distribution_plot(...)` to encapsulate the stratum
+  distribution diagnostics rendering workflow (barplot + violinplot + labels + xlim + PDF/PNG
+  writes via helper-managed paths).
+- Rewired `01a_run-tsa.py` to call `render_strata_distribution_plot(...)`, removing direct inline
+  seaborn bar/violin calls and save-path plumbing from `run_tsa(...)`.
+- Expanded `tests/test_pipeline_helpers.py` with deterministic rendering-helper coverage and added
+  AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the rendering helper
+  and no longer performs direct `sns.barplot(...)`/`sns.violinplot(...)` calls in this stage.
+- Queued next extraction slice: trim now-unused local imports from `01a_run-tsa.py` (notably early
+  `seaborn` direct plotting dependencies that have moved behind helper seams) and lock with
+  guardrails.

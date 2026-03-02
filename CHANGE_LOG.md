@@ -452,3 +452,10 @@
 - Extended `tests/test_pipeline_helpers.py` with deterministic coverage for this helper and added
   AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper and no
   longer invokes direct `plt.scatter(...)` for this stage.
+- Added `femic.pipeline.plots.render_strata_distribution_plot(...)` to encapsulate 01a stratum
+  distribution rendering (barplot + violinplot + labels + xlim + PDF/PNG writes).
+- Rewired `01a_run-tsa.py` to call `render_strata_distribution_plot(...)`, removing direct inline
+  seaborn bar/violin calls and save-path plumbing from `run_tsa(...)`.
+- Extended `tests/test_pipeline_helpers.py` with deterministic coverage for the new rendering helper
+  and added AST guardrails in `tests/test_legacy_01a_structure.py` asserting 01a calls the helper
+  and no longer performs direct `sns.barplot(...)`/`sns.violinplot(...)` calls in this stage.
