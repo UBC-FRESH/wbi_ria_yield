@@ -458,6 +458,132 @@ def compile_strata_fit_results(
     return compiled
 
 
+def run_vdyp_sampling(
+    *,
+    sample_table: Any,
+    nsamples: str | int,
+    min_samples: int,
+    max_samples: int,
+    nsamples_c1: float,
+    nsamples_c2: float,
+    confidence: float,
+    half_rel_ci: float,
+    ipp_mode: str | None,
+    vdyp_timeout: float,
+    rc_len: int,
+    verbose: bool,
+    vdyp_out_cache: dict[Any, Any] | None,
+    run_batch_fn: Callable[..., dict[Any, Any]],
+    nsamples_from_curves_fn: Callable[..., tuple[int, Any]],
+    message_fn: Callable[..., Any] = print,
+) -> dict[Any, Any]:
+    """Run legacy VDYP sampling flow (auto/all/fixed) for one stratum sample table."""
+
+    def _take_cached(
+        feature_ids: Sequence[Any], vdyp_out: dict[Any, Any]
+    ) -> tuple[list[Any], int]:
+        if vdyp_out_cache is None:
+            return list(feature_ids), 0
+        uncached: list[Any] = []
+        for fid in feature_ids:
+            if fid in vdyp_out_cache:
+                vdyp_out[fid] = vdyp_out_cache[fid]
+            else:
+                uncached.append(fid)
+        cache_hits = len(feature_ids) - len(uncached)
+        return uncached, cache_hits
+
+    if nsamples == "auto" and sample_table.shape[0] < min_samples:
+        if sample_table.shape[0] == 0:
+            return {}
+        if verbose:
+            message_fn(
+                "auto mode: stratum has fewer than min_samples; "
+                f"running all {sample_table.shape[0]} records"
+            )
+        vdyp_out = run_batch_fn(
+            sample_table.FEATURE_ID.values, phase="auto_small_sample"
+        )
+        if vdyp_out_cache is not None:
+            vdyp_out_cache.update(vdyp_out)
+        return vdyp_out
+
+    if nsamples == "auto" and sample_table.shape[0] >= min_samples:
+        ss = sample_table.reset_index().set_index("index")
+        samples = ss.sample(min(min_samples, ss.shape[0]))
+        vdyp_out = {}
+        feature_ids, cache_hits = _take_cached(
+            samples.FEATURE_ID.values, vdyp_out=vdyp_out
+        )
+        vdyp_out_new = run_batch_fn(feature_ids, cache_hits=cache_hits, phase="initial")
+        vdyp_out.update(vdyp_out_new)
+        if vdyp_out_cache is not None:
+            vdyp_out_cache.update(vdyp_out)
+        ss.drop(samples.index, inplace=True)
+        nsamples_target, _ = nsamples_from_curves_fn(
+            vdyp_out,
+            confidence=confidence,
+            half_rel_ci=half_rel_ci,
+        )
+        nsamples_target = min(max(nsamples_target, min_samples), ss.shape[0])
+        nsamples_gap = nsamples_target - len(vdyp_out)
+        nsamples_gap_rel = nsamples_gap / nsamples_target
+        while nsamples_gap_rel > nsamples_c1 and ss.shape[0]:
+            if nsamples_gap_rel > nsamples_c2:
+                nsamples_new = int(nsamples_gap * (1 - nsamples_gap_rel))
+            else:
+                nsamples_new = nsamples_gap
+            nsamples_new = min(nsamples_new, max_samples, ss.shape[0])
+            if nsamples_new <= 0:
+                break
+            if verbose:
+                message_fn(
+                    "moe loop",
+                    nsamples_target,
+                    nsamples_new,
+                    "%0.2f" % nsamples_gap_rel,
+                    len(vdyp_out),
+                    ss.shape[0],
+                )
+            samples = ss.sample(nsamples_new)
+            feature_ids = samples.FEATURE_ID.values
+            timeout = 30 + (vdyp_timeout * feature_ids.shape[0] / rc_len)
+            if not ipp_mode or samples.shape[0] < min_samples:
+                feature_ids, cache_hits = _take_cached(feature_ids, vdyp_out=vdyp_out)
+                vdyp_out_ = run_batch_fn(
+                    feature_ids,
+                    timeout=timeout,
+                    cache_hits=cache_hits,
+                    phase="gap_fill",
+                )
+                vdyp_out.update(vdyp_out_)
+                if vdyp_out_cache is not None:
+                    vdyp_out_cache.update(vdyp_out)
+            elif ipp_mode == "load_balanced":
+                assert False  # not working... do not use this
+            ss.drop(samples.index, inplace=True)
+            nsamples_target, _ = nsamples_from_curves_fn(
+                vdyp_out,
+                confidence=confidence,
+                half_rel_ci=half_rel_ci,
+            )
+            nsamples_target = min(
+                max(nsamples_target, min_samples), sample_table.shape[0]
+            )
+            nsamples_gap = nsamples_target - len(vdyp_out)
+            nsamples_gap_rel = nsamples_gap / nsamples_target
+        if verbose:
+            message_fn("final gap", nsamples_gap_rel)
+        return vdyp_out
+
+    if nsamples == "all":
+        return run_batch_fn(sample_table.FEATURE_ID.values, phase="all")
+    if isinstance(nsamples, int):
+        samples = sample_table.sample(nsamples)
+        return run_batch_fn(samples.FEATURE_ID.values, phase="fixed")
+    assert False  # bad nsamples value
+
+
 def execute_bootstrap_vdyp_runs(
     *,
     tsa: str,

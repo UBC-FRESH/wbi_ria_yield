@@ -20,6 +20,7 @@ from femic.pipeline.vdyp_stage import (
     load_vdyp_input_tables,
     load_or_build_vdyp_results_tsa,
     plot_curve_overlays,
+    run_vdyp_sampling,
 )
 
 
@@ -220,6 +221,97 @@ def test_compile_strata_fit_results_calls_compile_fn_for_each_stratum() -> None:
     assert seen == [(0, "S1"), (1, "S2")]
     assert out == [[0, "S1", {"sc": "S1"}], [1, "S2", {"sc": "S2"}]]
     assert messages == [("compiling stratum S1",), ("compiling stratum S2",)]
+
+
+def test_run_vdyp_sampling_auto_small_sample_runs_all_records() -> None:
+    sample_table = pd.DataFrame({"FEATURE_ID": [101, 102]})
+    calls: list[tuple[list[int], dict[str, object]]] = []
+    cache: dict[int, dict[str, object]] = {}
+
+    def run_batch_fn(
+        feature_ids: object, **kwargs: object
+    ) -> dict[int, dict[str, object]]:
+        feature_ids_list = [int(fid) for fid in feature_ids]
+        calls.append((feature_ids_list, dict(kwargs)))
+        return {fid: {"ok": True} for fid in feature_ids_list}
+
+    out = run_vdyp_sampling(
+        sample_table=sample_table,
+        nsamples="auto",
+        min_samples=3,
+        max_samples=10,
+        nsamples_c1=0.1,
+        nsamples_c2=0.1,
+        confidence=95,
+        half_rel_ci=0.05,
+        ipp_mode=None,
+        vdyp_timeout=2.0,
+        rc_len=1,
+        verbose=False,
+        vdyp_out_cache=cache,
+        run_batch_fn=run_batch_fn,
+        nsamples_from_curves_fn=lambda *_a, **_k: (_ for _ in ()).throw(
+            AssertionError("nsamples_from_curves should not be called")
+        ),
+    )
+
+    assert calls == [([101, 102], {"phase": "auto_small_sample"})]
+    assert set(out) == {101, 102}
+    assert set(cache) == {101, 102}
+
+
+def test_run_vdyp_sampling_auto_runs_gap_fill_phase() -> None:
+    sample_table = pd.DataFrame({"FEATURE_ID": [1, 2, 3, 4]})
+    phases: list[str] = []
+
+    def run_batch_fn(
+        feature_ids: object, **kwargs: object
+    ) -> dict[int, dict[str, object]]:
+        phases.append(str(kwargs["phase"]))
+        return {int(fid): {"ok": True} for fid in feature_ids}
+
+    out = run_vdyp_sampling(
+        sample_table=sample_table,
+        nsamples="auto",
+        min_samples=1,
+        max_samples=10,
+        nsamples_c1=0.1,
+        nsamples_c2=1.0,
+        confidence=95,
+        half_rel_ci=0.05,
+        ipp_mode=None,
+        vdyp_timeout=2.0,
+        rc_len=1,
+        verbose=False,
+        vdyp_out_cache=None,
+        run_batch_fn=run_batch_fn,
+        nsamples_from_curves_fn=lambda _vdyp_out, **_kwargs: (4, None),
+    )
+
+    assert "initial" in phases
+    assert "gap_fill" in phases
+    assert len(out) >= 3
+
+
+def test_run_vdyp_sampling_rejects_bad_nsamples_value() -> None:
+    with pytest.raises(AssertionError):
+        run_vdyp_sampling(
+            sample_table=pd.DataFrame({"FEATURE_ID": [1, 2]}),
+            nsamples="bad-mode",
+            min_samples=2,
+            max_samples=10,
+            nsamples_c1=0.1,
+            nsamples_c2=0.1,
+            confidence=95,
+            half_rel_ci=0.05,
+            ipp_mode=None,
+            vdyp_timeout=2.0,
+            rc_len=1,
+            verbose=False,
+            vdyp_out_cache=None,
+            run_batch_fn=lambda *_a, **_k: {},
+            nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
+        )
 
 
 def test_execute_vdyp_batch_logs_ok_and_returns_output(tmp_path: Path) -> None:

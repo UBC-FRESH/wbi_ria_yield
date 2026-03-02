@@ -61,6 +61,7 @@ def run_tsa(
         load_vdyp_input_tables,
         load_or_build_vdyp_results_tsa,
         plot_curve_overlays,
+        run_vdyp_sampling,
     )
     from femic.pipeline.tsa import (
         build_strata_summary,
@@ -263,8 +264,6 @@ def run_tsa(
 
     from datetime import datetime, timezone
     from pathlib import Path
-    import time
-    import traceback
 
     femic_run_id = resolve_run_id()
 
@@ -392,131 +391,30 @@ def run_tsa(
                 append_text_fn=append_text,
             )
 
-        if nsamples == "auto" and s.shape[0] < min_samples:
-            if s.shape[0] == 0:
-                return {}
-            if verbose:
-                print(
-                    "auto mode: stratum has fewer than min_samples; "
-                    f"running all {s.shape[0]} records"
-                )
-            vdyp_out = _run_vdyp(s.FEATURE_ID.values, phase="auto_small_sample")
-            if vdyp_out_cache is not None:
-                vdyp_out_cache.update(vdyp_out)
-        elif (
-            nsamples == "auto" and s.shape[0] >= min_samples
-        ):  # automatically determine sample size
-            ss = s.reset_index().set_index("index")
-            samples = ss.sample(min(min_samples, ss.shape[0]))
-            feature_ids = samples.FEATURE_ID.values
-            vdyp_out = {}
-            cache_hits = 0
-            if vdyp_out_cache is not None:
-                feature_ids_ = []
-                for fid in feature_ids:
-                    if fid in vdyp_out_cache:
-                        vdyp_out[fid] = vdyp_out_cache[fid]
-                    else:
-                        feature_ids_.append(fid)
-                cache_hits = len(feature_ids) - len(feature_ids_)
-                feature_ids = feature_ids_
-            vdyp_out = _run_vdyp(feature_ids, cache_hits=cache_hits, phase="initial")
-            if vdyp_out_cache is not None:
-                vdyp_out_cache.update(vdyp_out)
-            ss.drop(samples.index, inplace=True)
-            nsamples_target, _ = nsamples_from_curves(
+        return run_vdyp_sampling(
+            sample_table=s,
+            nsamples=nsamples,
+            min_samples=min_samples,
+            max_samples=max_samples,
+            nsamples_c1=nsamples_c1,
+            nsamples_c2=nsamples_c2,
+            confidence=confidence,
+            half_rel_ci=half_rel_ci,
+            ipp_mode=ipp_mode,
+            vdyp_timeout=vdyp_timeout,
+            rc_len=len(rc),
+            verbose=bool(verbose),
+            vdyp_out_cache=vdyp_out_cache,
+            run_batch_fn=lambda feature_ids, **kwargs: _run_vdyp(feature_ids, **kwargs),
+            nsamples_from_curves_fn=lambda vdyp_out, **kwargs: nsamples_from_curves(
                 vdyp_out,
                 curve_fit_fn=curve_fit,
                 fit_func=body_fit_func,
                 fit_func_bounds_func=body_fit_func_bounds_func,
-                confidence=confidence,
-                half_rel_ci=half_rel_ci,
-            )
-            nsamples_target = min(max(nsamples_target, min_samples), ss.shape[0])
-            nsamples_gap = nsamples_target - len(vdyp_out)
-            nsamples_gap_rel = nsamples_gap / nsamples_target
-            while nsamples_gap_rel > nsamples_c1 and ss.shape[0]:
-                if nsamples_gap_rel > nsamples_c2:
-                    nsamples_new = int(nsamples_gap * (1 - nsamples_gap_rel))
-                else:
-                    nsamples_new = nsamples_gap
-                nsamples_new = min(nsamples_new, max_samples, ss.shape[0])
-                if nsamples_new <= 0:
-                    break
-                if verbose:
-                    print(
-                        "moe loop",
-                        nsamples_target,
-                        nsamples_new,
-                        "%0.2f" % nsamples_gap_rel,
-                        len(vdyp_out),
-                        ss.shape[0],
-                    )
-                samples = ss.sample(nsamples_new)
-                feature_ids = samples.FEATURE_ID.values
-                timeout = 30 + (vdyp_timeout * feature_ids.shape[0] / len(rc))
-                if not ipp_mode or samples.shape[0] < min_samples:
-                    cache_hits = 0
-                    if vdyp_out_cache is not None:
-                        feature_ids_ = []
-                        for fid in feature_ids:
-                            if fid in vdyp_out_cache:
-                                vdyp_out[fid] = vdyp_out_cache[fid]
-                            else:
-                                feature_ids_.append(fid)
-                        cache_hits = len(feature_ids) - len(feature_ids_)
-                        feature_ids = feature_ids_
-                    vdyp_out_ = _run_vdyp(
-                        feature_ids,
-                        timeout=timeout,
-                        cache_hits=cache_hits,
-                        phase="gap_fill",
-                    )
-                    vdyp_out.update(vdyp_out_)
-                    if vdyp_out_cache is not None:
-                        vdyp_out_cache.update(vdyp_out)
-                elif ipp_mode == "load_balanced":
-                    assert False  # not working... do not use this
-                    print(" ipp start", feature_ids.shape[0])
-                    amr = lv.map(
-                        _run_vdyp, np.array_split(feature_ids, len(rc)), ordered=False
-                    )
-                    print(" ipp done")
-                    try:
-                        amr.wait(timeout=timeout)
-                        for chunk in amr:
-                            vdyp_out.update(chunk)
-                    except:
-                        for msg_id in amr.msg_ids:
-                            try:
-                                chunk_amr = rc.get_result(msg_id)
-                                chunk = chunk_amr.get()
-                                vdyp_out.update(chunk)
-                            except:
-                                print("failed chunk", msg_id)
-                ss.drop(samples.index, inplace=True)
-                nsamples_target, _ = nsamples_from_curves(
-                    vdyp_out,
-                    curve_fit_fn=curve_fit,
-                    fit_func=body_fit_func,
-                    fit_func_bounds_func=body_fit_func_bounds_func,
-                    confidence=confidence,
-                    half_rel_ci=half_rel_ci,
-                )
-                nsamples_target = min(max(nsamples_target, min_samples), s.shape[0])
-                nsamples_gap = nsamples_target - len(vdyp_out)
-                nsamples_gap_rel = nsamples_gap / nsamples_target
-            if verbose:
-                print("final gap", nsamples_gap_rel)
-        elif nsamples == "all":
-            vdyp_out = _run_vdyp(s.FEATURE_ID.values, phase="all")
-        elif isinstance(nsamples, int):
-            samples = s.sample(nsamples)
-            feature_ids = samples.FEATURE_ID.values
-            vdyp_out = _run_vdyp(feature_ids, phase="fixed")
-        else:
-            assert False  # bad nsamples value
-        return vdyp_out
+                **kwargs,
+            ),
+            message_fn=print,
+        )
 
     vdyp_run_events_path = _tsa_log_path("run", "vdyp_io")
     vdyp_curve_events_path = _tsa_log_path("curve", "vdyp_io")
