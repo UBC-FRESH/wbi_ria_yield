@@ -14,6 +14,7 @@ from femic.pipeline.plots import (
     StrataDistributionPlotConfig,
     build_strata_distribution_plot_config,
     plot_strata_site_index_diagnostics,
+    render_strata_distribution_plot,
     resolve_strata_plot_ordering,
     strata_plot_paths,
     tipsy_vdyp_plot_path,
@@ -252,6 +253,69 @@ def test_plot_strata_site_index_diagnostics_calls_hist_and_scatter() -> None:
     assert strata.site_index_median.hist_bins == [[float(i) for i in range(25)]]
     assert strata.ax.xlim_calls == [[0, 25]]
     assert fake_plt.scatter_calls == [([0.4, 0.6], [12.0, 18.0])]
+
+
+def test_render_strata_distribution_plot_uses_helper_config_and_paths() -> None:
+    class _FakeAxis:
+        def __init__(self) -> None:
+            self.xlabel_calls: list[str] = []
+            self.xlim_calls: list[tuple[float, float]] = []
+
+        def twiny(self) -> "_FakeAxis":
+            return self
+
+        def set_xlabel(self, value: str) -> None:
+            self.xlabel_calls.append(value)
+
+        def set_xlim(self, value: tuple[float, float]) -> None:
+            self.xlim_calls.append(value)
+
+    class _FakePlt:
+        def __init__(self) -> None:
+            self.subplots_calls: list[tuple[float, float]] = []
+            self.savefig_calls: list[tuple[Path, dict[str, object]]] = []
+
+        def subplots(self, *, figsize: tuple[float, float]) -> tuple[None, _FakeAxis]:
+            self.subplots_calls.append(figsize)
+            return None, _FakeAxis()
+
+        def savefig(self, path: Path, **kwargs: object) -> None:
+            self.savefig_calls.append((path, dict(kwargs)))
+
+    class _FakeSns:
+        def __init__(self) -> None:
+            self.barplot_calls = 0
+            self.violinplot_calls = 0
+
+        def barplot(self, **_kwargs: object) -> None:
+            self.barplot_calls += 1
+
+        def violinplot(self, **_kwargs: object) -> None:
+            self.violinplot_calls += 1
+
+    cfg = build_strata_distribution_plot_config()
+    fake_plt = _FakePlt()
+    fake_sns = _FakeSns()
+    render_strata_distribution_plot(
+        tsa_code="08",
+        f_table=pd.DataFrame({"stratum": ["S1"], "SITE_INDEX": [20.0]}),
+        stratum_col="stratum",
+        labels=["S1"],
+        stratum_props=[1.0],
+        plot_config=cfg,
+        sns_module=fake_sns,
+        plt_module=fake_plt,
+        strata_plot_paths_fn=lambda _tsa: (
+            Path("plots/strata-tsa08.pdf"),
+            Path("plots/strata-tsa08.png"),
+        ),
+    )
+
+    assert fake_sns.barplot_calls == 1
+    assert fake_sns.violinplot_calls == 1
+    assert fake_plt.subplots_calls == [cfg.figsize]
+    assert fake_plt.savefig_calls[0][0] == Path("plots/strata-tsa08.pdf")
+    assert fake_plt.savefig_calls[1][0] == Path("plots/strata-tsa08.png")
 
 
 def test_build_pipeline_run_config_normalizes_tsa_values() -> None:

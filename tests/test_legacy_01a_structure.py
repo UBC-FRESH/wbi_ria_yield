@@ -153,16 +153,16 @@ def test_run01a_no_local_sort_lex_assignment() -> None:
                 )
 
 
-def test_run01a_uses_strata_plot_paths_helper_call() -> None:
+def test_run01a_uses_render_strata_distribution_plot_helper_call() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
     for node in ast.walk(run_tsa):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
-        if isinstance(func, ast.Name) and func.id == "strata_plot_paths":
+        if isinstance(func, ast.Name) and func.id == "render_strata_distribution_plot":
             return
-    raise AssertionError("run_tsa should call strata_plot_paths(...)")
+    raise AssertionError("run_tsa should call render_strata_distribution_plot(...)")
 
 
 def test_run01a_no_inline_strata_plot_output_path_literals() -> None:
@@ -176,6 +176,25 @@ def test_run01a_no_inline_strata_plot_output_path_literals() -> None:
         if "plots/strata-tsa" in node.value:
             raise AssertionError(
                 "run_tsa should source strata output paths from strata_plot_paths helper"
+            )
+
+
+def test_run01a_no_direct_strata_distribution_seaborn_calls() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    forbidden = {"barplot", "violinplot"}
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if (
+            isinstance(func, ast.Attribute)
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "sns"
+            and func.attr in forbidden
+        ):
+            raise AssertionError(
+                "run_tsa should delegate strata distribution seaborn calls via helper"
             )
 
 

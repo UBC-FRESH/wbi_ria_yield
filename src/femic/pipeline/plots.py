@@ -85,3 +85,44 @@ def plot_strata_site_index_diagnostics(
     )
     ax.set_xlim(list(hist_xlim))
     plt_module.scatter(strata_df.totalarea_p, strata_df.median_si)
+
+
+def render_strata_distribution_plot(
+    *,
+    tsa_code: str,
+    f_table: Any,
+    stratum_col: str,
+    labels: list[str],
+    stratum_props: list[float],
+    plot_config: StrataDistributionPlotConfig,
+    sns_module: Any,
+    plt_module: Any,
+    strata_plot_paths_fn: Any = strata_plot_paths,
+) -> None:
+    """Render and save the 01a stratum distribution bar+violin diagnostic plot."""
+    _fig, ax = plt_module.subplots(figsize=plot_config.figsize)
+    ax2 = ax.twiny()
+    sns_module.barplot(
+        y=labels,
+        x=stratum_props,
+        ax=ax,
+        alpha=plot_config.alpha,
+        label="Relative abundance of stratum (proportion of total area)",
+    )
+    sns_module.violinplot(
+        y=stratum_col,
+        x="SITE_INDEX",
+        data=f_table.reset_index(),
+        ax=ax2,
+        bw=plot_config.bw,
+        order=labels,
+        linewidth=plot_config.linewidth,
+        inner=plot_config.inner,
+        width=plot_config.width,
+        cut=plot_config.cut,
+    )
+    ax.set_xlabel("Relative abundance of stratum (proportion of total area)")
+    ax2.set_xlim(plot_config.site_index_xlim)
+    strata_pdf_path, strata_png_path = strata_plot_paths_fn(tsa_code)
+    plt_module.savefig(strata_pdf_path, bbox_inches="tight")
+    plt_module.savefig(strata_png_path, facecolor="white", bbox_inches="tight")

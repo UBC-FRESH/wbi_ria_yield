@@ -72,8 +72,8 @@ def run_tsa(
     from femic.pipeline.plots import (
         build_strata_distribution_plot_config,
         plot_strata_site_index_diagnostics,
+        render_strata_distribution_plot,
         resolve_strata_plot_ordering,
-        strata_plot_paths,
     )
     from femic.pipeline.vdyp_overrides import vdyp_kwarg_overrides_for_tsa
     from femic.pipeline.tipsy import (
@@ -129,33 +129,16 @@ def run_tsa(
         sort_lex=False,
     )
 
-    fig, ax = plt.subplots(figsize=strata_plot_cfg.figsize)
-    ax2 = ax.twiny()
-    sns.barplot(
-        y=labels,
-        x=stratum_props,
-        ax=ax,
-        alpha=strata_plot_cfg.alpha,
-        label="Relative abundance of stratum (proportion of total area)",
+    render_strata_distribution_plot(
+        tsa_code=tsa,
+        f_table=f_,
+        stratum_col=stratum_col,
+        labels=labels,
+        stratum_props=stratum_props,
+        plot_config=strata_plot_cfg,
+        sns_module=sns,
+        plt_module=plt,
     )
-    sns.violinplot(
-        y=stratum_col,
-        x="SITE_INDEX",
-        data=f_.reset_index(),
-        ax=ax2,
-        bw=strata_plot_cfg.bw,
-        order=labels,
-        linewidth=strata_plot_cfg.linewidth,
-        inner=strata_plot_cfg.inner,
-        width=strata_plot_cfg.width,
-        cut=strata_plot_cfg.cut,
-    )
-    # sns.violinplot(y=stratum_col, x='siteprod', data=f_.reset_index(), ax=ax2, bw=bw, order=labels, linewidth=linewidth, inner=inner, width=width, cut=cut)
-    ax.set_xlabel("Relative abundance of stratum (proportion of total area)")
-    ax2.set_xlim(strata_plot_cfg.site_index_xlim)
-    strata_pdf_path, strata_png_path = strata_plot_paths(tsa)
-    plt.savefig(strata_pdf_path, bbox_inches="tight")
-    plt.savefig(strata_png_path, facecolor="white", bbox_inches="tight")
 
     # --- cell 16 ---
     selected_strata_codes = list(strata_df.index.values)
