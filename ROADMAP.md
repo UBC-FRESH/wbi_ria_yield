@@ -1148,3 +1148,17 @@
 - Queued next extraction slice: continue P2.2 by auditing remaining broad exception handlers
   outside tipsy/vdyp modules (current highest-priority target: `src/femic/pipeline/tsa.py`) and
   narrowing operational fallback paths with explicit exception classes plus propagation tests.
+- Narrowed the broad pre-VDYP resume checkpoint load handler in `01a_run-tsa.py` from
+  `except Exception` to explicit pickle/IO/runtime classes
+  (`OSError`, `EOFError`, `pickle.UnpicklingError`, `TypeError`, `AttributeError`,
+  `ModuleNotFoundError`) while preserving existing failure message + non-fatal resume fallback
+  behavior.
+- Expanded AST guardrails in `tests/test_legacy_01a_structure.py` with
+  `test_run01a_no_broad_exception_handlers` to prevent reintroduction of bare/broad exception
+  handlers in `run_tsa(...)`.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (225 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by narrowing the remaining broad exception handler in
+  CLI entry wiring (`src/femic/cli/main.py`) with explicit command/runtime exception classes and
+  targeted CLI regression coverage.

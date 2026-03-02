@@ -23,6 +23,7 @@ def run_tsa(
     import matplotlib.pyplot as plt
     import numpy as np
     import pandas as pd
+    import pickle
     import seaborn as sns
 
     from femic.pipeline.pre_vdyp import (
@@ -183,7 +184,14 @@ def run_tsa(
             results[tsa] = load_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path)
             prep_loaded = True
             print("resume: loaded pre-VDYP checkpoint (%s strata)" % len(results[tsa]))
-        except Exception as exc:
+        except (
+            OSError,
+            EOFError,
+            pickle.UnpicklingError,
+            TypeError,
+            AttributeError,
+            ModuleNotFoundError,
+        ) as exc:
             print(
                 "resume: failed to load pre-VDYP checkpoint %s: %s"
                 % (vdyp_prep_checkpoint_path, exc)

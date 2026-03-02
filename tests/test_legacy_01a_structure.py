@@ -257,6 +257,18 @@ def test_run01a_uses_render_strata_distribution_plot_helper_call() -> None:
     raise AssertionError("run_tsa should call render_strata_distribution_plot(...)")
 
 
+def test_run01a_no_broad_exception_handlers() -> None:
+    tree = _load_run01a_tree()
+    run_tsa = _run_tsa_function(tree)
+    for node in ast.walk(run_tsa):
+        if not isinstance(node, ast.ExceptHandler):
+            continue
+        if node.type is None:
+            raise AssertionError("run_tsa should not use bare except handlers")
+        if isinstance(node.type, ast.Name) and node.type.id == "Exception":
+            raise AssertionError("run_tsa should not catch broad Exception")
+
+
 def test_run01a_no_inline_strata_plot_output_path_literals() -> None:
     tree = _load_run01a_tree()
     run_tsa = _run_tsa_function(tree)
