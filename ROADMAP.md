@@ -45,9 +45,9 @@
   - [x] P3.1a Add `docs/conf.py` with `sphinx_rtd_theme`, `nbsphinx`, `autosummary`
   - [x] P3.1b Add `docs/index.rst` + `docs/reference/cli.rst` mirroring CLI help
   - [x] P3.1c Add GitHub Pages workflow to build + publish `docs/_build/html`
-- [ ] P3.2 Nemora alignment prep
+- [x] P3.2 Nemora alignment prep
   - [x] P3.2a Map femic CLI commands to nemora task taxonomy
-  - [ ] P3.2b Identify shared utilities to upstream into nemora later
+  - [x] P3.2b Identify shared utilities to upstream into nemora later
 - [ ] P3.3 Add config-driven runs
   - [ ] P3.3a YAML/JSON config to select TSA, strata, and modes
   - [ ] P3.3b Store run metadata and versioned outputs
@@ -1586,3 +1586,9 @@
   `tipsy validate`) to draft Nemora task keys.
 - Queued next extraction slice (ASAP closure path): close `P3.2b` by inventorying extracted shared
   utilities and tagging top upstream candidates (diagnostics/logging/path/runtime helpers).
+- Closed `P3.2b` by adding `docs/reference/nemora-upstream-candidates.rst` and wiring it into docs
+  index with a prioritized inventory of extracted helper modules suitable for Nemora upstreaming.
+- Marked `P3.2` complete now that CLI taxonomy mapping and upstream-candidate inventory are both in
+  place.
+- Queued next extraction slice (ASAP closure path): start `P3.3a` by adding a first config file
+  schema for selecting TSA/mode flags and mapping it into existing run option parsing.

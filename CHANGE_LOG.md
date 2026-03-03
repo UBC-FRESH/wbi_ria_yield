@@ -1457,3 +1457,12 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): close `P3.2b` by inventorying extracted shared
   utilities and tagging top upstream candidates (diagnostics/logging/path/runtime helpers).
+- Closed `P3.2b` by adding `docs/reference/nemora-upstream-candidates.rst` and wiring it into docs
+  index with a prioritized inventory of extracted helper modules suitable for Nemora upstreaming.
+- Marked `P3.2` complete in `ROADMAP.md` now that CLI taxonomy mapping and upstream-candidate
+  inventory are both in place.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): start `P3.3a` by adding a first config file
+  schema for selecting TSA/mode flags and mapping it into existing run option parsing.
