@@ -43,7 +43,7 @@
 ## Phase 3: Workflow Hardening
 - [ ] P3.1 Sphinx docs + GitHub Pages (FHOPS-style)
   - [x] P3.1a Add `docs/conf.py` with `sphinx_rtd_theme`, `nbsphinx`, `autosummary`
-  - [ ] P3.1b Add `docs/index.rst` + `docs/reference/cli.rst` mirroring CLI help
+  - [x] P3.1b Add `docs/index.rst` + `docs/reference/cli.rst` mirroring CLI help
   - [ ] P3.1c Add GitHub Pages workflow to build + publish `docs/_build/html`
 - [ ] P3.2 Nemora alignment prep
   - [ ] P3.2a Map femic CLI commands to nemora task taxonomy
@@ -1570,3 +1570,8 @@
   settings so docs builds stay warning-clean under `-W` even when optional packages are absent.
 - Queued next extraction slice (ASAP closure path): continue `P3.1` with `P3.1b` by adding
   `docs/reference/cli.rst` and wiring `docs/index.rst` to mirror current CLI help surface.
+- Closed `P3.1b` by replacing the docs placeholder index with a real reference toctree and adding
+  `docs/reference/cli.rst` containing the current `python -m femic --help` command/option surface
+  (top-level plus `run`, `prep`, `vdyp`, `tsa`, and `tipsy` subcommand entries).
+- Queued next extraction slice (ASAP closure path): close `P3.1c` with a GitHub Pages docs build
+  workflow that runs Sphinx in CI and publishes `_build/html`.

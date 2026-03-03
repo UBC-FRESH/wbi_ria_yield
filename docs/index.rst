@@ -1,5 +1,10 @@
 WBI RIA Yield
 =============
 
-Placeholder Sphinx index used for strict warning-free doc builds during
-refactor milestones.
+Forest Estate Model Input Compiler (FEMIC) documentation.
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Reference
+
+   reference/cli

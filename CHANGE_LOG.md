@@ -1432,3 +1432,11 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): continue `P3.1` with `P3.1b` by adding
   `docs/reference/cli.rst` and wiring `docs/index.rst` to mirror current CLI help surface.
+- Closed `P3.1b` by replacing the docs placeholder index with a real reference toctree and adding
+  `docs/reference/cli.rst` containing the current `python -m femic --help` command/option surface
+  (top-level plus `run`, `prep`, `vdyp`, `tsa`, and `tipsy` subcommand entries).
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): close `P3.1c` with a GitHub Pages docs build
+  workflow that runs Sphinx in CI and publishes `_build/html`.
