@@ -582,6 +582,7 @@ def test_run_vdyp_sampling_auto_small_sample_runs_all_records() -> None:
         rc_len=1,
         verbose=False,
         vdyp_out_cache=cache,
+        random_seed=None,
         run_batch_fn=run_batch_fn,
         nsamples_from_curves_fn=lambda *_a, **_k: (_ for _ in ()).throw(
             AssertionError("nsamples_from_curves should not be called")
@@ -617,6 +618,7 @@ def test_run_vdyp_sampling_auto_runs_gap_fill_phase() -> None:
         rc_len=1,
         verbose=False,
         vdyp_out_cache=None,
+        random_seed=None,
         run_batch_fn=run_batch_fn,
         nsamples_from_curves_fn=lambda _vdyp_out, **_kwargs: (4, None),
     )
@@ -642,6 +644,7 @@ def test_run_vdyp_sampling_rejects_bad_nsamples_value() -> None:
             rc_len=1,
             verbose=False,
             vdyp_out_cache=None,
+            random_seed=None,
             run_batch_fn=lambda *_a, **_k: {},
             nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
         )
@@ -665,11 +668,47 @@ def test_run_vdyp_sampling_load_balanced_mode_raises_not_implemented() -> None:
             rc_len=1,
             verbose=False,
             vdyp_out_cache=None,
+            random_seed=None,
             run_batch_fn=lambda feature_ids, **_kwargs: {
                 int(fid): {"ok": True} for fid in feature_ids
             },
             nsamples_from_curves_fn=lambda _vdyp_out, **_kwargs: (4, None),
         )
+
+
+def test_run_vdyp_sampling_fixed_mode_honors_random_seed() -> None:
+    sample_table = pd.DataFrame({"FEATURE_ID": list(range(1, 11))})
+
+    def _run_once() -> list[int]:
+        sampled_ids: list[int] = []
+
+        def run_batch_fn(
+            feature_ids: object, **_kwargs: object
+        ) -> dict[int, dict[str, object]]:
+            sampled_ids.extend(int(fid) for fid in feature_ids)
+            return {int(fid): {"ok": True} for fid in feature_ids}
+
+        run_vdyp_sampling(
+            sample_table=sample_table,
+            nsamples=3,
+            min_samples=1,
+            max_samples=10,
+            nsamples_c1=0.1,
+            nsamples_c2=0.1,
+            confidence=95,
+            half_rel_ci=0.05,
+            ipp_mode=None,
+            vdyp_timeout=2.0,
+            rc_len=1,
+            verbose=False,
+            vdyp_out_cache=None,
+            random_seed=7,
+            run_batch_fn=run_batch_fn,
+            nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
+        )
+        return sampled_ids
+
+    assert _run_once() == _run_once()
 
 
 def test_run_vdyp_for_stratum_requires_wine_binary(tmp_path: Path) -> None:
@@ -989,6 +1028,31 @@ def test_execute_bootstrap_vdyp_runs_success() -> None:
     assert len(events) == 1
     assert events[0]["status"] == "dispatch"
     assert events[0]["phase"] == "bootstrap"
+
+
+def test_execute_bootstrap_vdyp_runs_derives_sampling_seed_per_stratum_and_si() -> None:
+    seen_seeds: list[int | None] = []
+
+    def append_event(_path: str | Path, _payload: object) -> None:
+        return None
+
+    def fake_run_vdyp(_sample: object, **kwargs: object) -> dict[int, dict[str, str]]:
+        seen_seeds.append(kwargs.get("sampling_seed"))
+        return {1: {"curve": "ok"}}
+
+    execute_bootstrap_vdyp_runs(
+        tsa="08",
+        run_id="run-1",
+        results_for_tsa=[(3, "S1", {"L": {"ss": "sample-l"}, "M": {"ss": "sample-m"}})],
+        si_levels=["L", "M"],
+        vdyp_run_events_path="dummy.jsonl",
+        append_jsonl_fn=append_event,
+        run_vdyp_fn=fake_run_vdyp,
+        verbose=False,
+        sampling_seed_base=100,
+    )
+
+    assert seen_seeds == [400, 401]
 
 
 def test_build_bootstrap_vdyp_results_runner_binds_dispatch_inputs() -> None:

@@ -6,6 +6,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 import functools
 import importlib
+import os
 import pickle
 import shlex
 import subprocess
@@ -131,6 +132,22 @@ def _bootstrap_dispatch_exception_types() -> tuple[type[Exception], ...]:
 def _as_path(path: str | Path) -> Path:
     """Normalize path-like inputs to `Path`."""
     return path if isinstance(path, Path) else Path(path)
+
+
+def _sampling_seed_from_env(env_key: str = "FEMIC_SAMPLING_SEED") -> int | None:
+    """Resolve optional sampling seed from env for deterministic bootstrap sampling."""
+    raw = os.environ.get(env_key)
+    if raw is None or raw == "":
+        return None
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise ValueError(
+            build_contextual_error_message(
+                prefix="Invalid FEMIC sampling seed",
+                context={env_key: raw, "expected": "integer"},
+            )
+        ) from exc
 
 
 def resolve_vdyp_batch_execution_dependencies(
@@ -901,11 +918,22 @@ def run_vdyp_sampling(
     rc_len: int,
     verbose: bool,
     vdyp_out_cache: dict[Any, Any] | None,
+    random_seed: int | None,
     run_batch_fn: Callable[..., dict[Any, Any]],
     nsamples_from_curves_fn: Callable[..., tuple[int, Any]],
     message_fn: Callable[..., Any] = print,
 ) -> dict[Any, Any]:
     """Run legacy VDYP sampling flow (auto/all/fixed) for one stratum sample table."""
+
+    random_draw_index = 0
+
+    def _next_random_state() -> int | None:
+        nonlocal random_draw_index
+        if random_seed is None:
+            return None
+        state = int(random_seed) + random_draw_index
+        random_draw_index += 1
+        return state
 
     def _take_cached(
         feature_ids: Sequence[Any], vdyp_out: dict[Any, Any]
@@ -938,7 +966,9 @@ def run_vdyp_sampling(
 
     if nsamples == "auto" and sample_table.shape[0] >= min_samples:
         ss = sample_table.reset_index().set_index("index")
-        samples = ss.sample(min(min_samples, ss.shape[0]))
+        samples = ss.sample(
+            min(min_samples, ss.shape[0]), random_state=_next_random_state()
+        )
         vdyp_out = {}
         feature_ids, cache_hits = _take_cached(
             samples.FEATURE_ID.values, vdyp_out=vdyp_out
@@ -973,7 +1003,7 @@ def run_vdyp_sampling(
                     len(vdyp_out),
                     ss.shape[0],
                 )
-            samples = ss.sample(nsamples_new)
+            samples = ss.sample(nsamples_new, random_state=_next_random_state())
             feature_ids = samples.FEATURE_ID.values
             timeout = 30 + (vdyp_timeout * feature_ids.shape[0] / rc_len)
             if not ipp_mode or samples.shape[0] < min_samples:
@@ -1012,7 +1042,7 @@ def run_vdyp_sampling(
     if nsamples == "all":
         return run_batch_fn(sample_table.FEATURE_ID.values, phase="all")
     if isinstance(nsamples, int):
-        samples = sample_table.sample(nsamples)
+        samples = sample_table.sample(nsamples, random_state=_next_random_state())
         return run_batch_fn(samples.FEATURE_ID.values, phase="fixed")
     raise ValueError(
         build_contextual_error_message(
@@ -1051,6 +1081,7 @@ def run_vdyp_for_stratum(
     ipp_mode: str | None = None,
     vdyp_timeout: float = 2.0,
     vdyp_out_cache: dict[Any, Any] | None = None,
+    sampling_seed: int | None = None,
     vdyp_log_path: str | Path | None = None,
     vdyp_stdout_log_path: str | Path | None = None,
     vdyp_stderr_log_path: str | Path | None = None,
@@ -1147,6 +1178,10 @@ def run_vdyp_for_stratum(
         vdyp_params=vdyp_params_path,
     )
 
+    resolved_sampling_seed = (
+        sampling_seed if sampling_seed is not None else _sampling_seed_from_env()
+    )
+
     def _run_batch(
         feature_ids: Sequence[Any],
         *,
@@ -1215,6 +1250,7 @@ def run_vdyp_for_stratum(
         rc_len=rc_len,
         verbose=verbose,
         vdyp_out_cache=vdyp_out_cache,
+        random_seed=resolved_sampling_seed,
         run_batch_fn=lambda feature_ids, **kwargs: _run_batch(feature_ids, **kwargs),
         nsamples_from_curves_fn=lambda vdyp_out, **kwargs: nsamples_from_curves_(
             vdyp_out,
@@ -1241,6 +1277,7 @@ def build_run_vdyp_for_stratum_runner(
     vdyp_log_path: str | Path | None = None,
     vdyp_stdout_log_path: str | Path | None = None,
     vdyp_stderr_log_path: str | Path | None = None,
+    sampling_seed_base: int | None = None,
     run_vdyp_for_stratum_fn: Callable[..., dict[Any, Any]] = run_vdyp_for_stratum,
 ) -> Callable[..., dict[Any, Any]]:
     """Build a per-TSA VDYP runner callable for bootstrap dispatch helpers."""
@@ -1260,6 +1297,7 @@ def build_run_vdyp_for_stratum_runner(
             vdyp_log_path=vdyp_log_path,
             vdyp_stdout_log_path=vdyp_stdout_log_path,
             vdyp_stderr_log_path=vdyp_stderr_log_path,
+            sampling_seed=sampling_seed_base,
             **kwargs,
         )
 
@@ -1280,12 +1318,18 @@ def execute_bootstrap_vdyp_runs(
     half_rel_ci: float = 0.01,
     ipp_mode: str | None = None,
     nsamples_c1: float = 0.05,
+    sampling_seed_base: int | None = None,
 ) -> dict[int, dict[str, dict[Any, Any]]]:
     """Execute bootstrap VDYP runs across stratum/SI combinations."""
     vdyp_results_tsa: dict[int, dict[str, dict[Any, Any]]] = {}
+    resolved_sampling_seed_base = (
+        sampling_seed_base
+        if sampling_seed_base is not None
+        else _sampling_seed_from_env()
+    )
     for stratumi, sc, result in results_for_tsa:
         vdyp_results_tsa[stratumi] = {}
-        for si_level in si_levels:
+        for si_index, si_level in enumerate(si_levels):
             if verbose:
                 print(f"running VDYP in bootstrap sample mode ({sc}, {si_level})")
             run_context = {
@@ -1305,6 +1349,13 @@ def execute_bootstrap_vdyp_runs(
                 ),
             )
             try:
+                sampling_seed = None
+                if resolved_sampling_seed_base is not None:
+                    sampling_seed = (
+                        int(resolved_sampling_seed_base)
+                        + int(stratumi) * 100
+                        + int(si_index)
+                    )
                 vdyp_out = run_vdyp_fn(
                     result[si_level]["ss"],
                     verbose=verbose,
@@ -1312,6 +1363,7 @@ def execute_bootstrap_vdyp_runs(
                     ipp_mode=ipp_mode,
                     nsamples_c1=nsamples_c1,
                     vdyp_out_cache=vdyp_out_cache,
+                    sampling_seed=sampling_seed,
                     log_context=run_context,
                 )
             except _bootstrap_dispatch_exception_types() as exc:
@@ -1345,6 +1397,7 @@ def build_bootstrap_vdyp_results_runner(
     append_jsonl_fn: Callable[[str | Path, Any], None],
     run_vdyp_fn: Callable[..., dict[Any, Any]],
     vdyp_out_cache: dict[Any, Any] | None = None,
+    sampling_seed_base: int | None = None,
     execute_bootstrap_vdyp_runs_fn: Callable[
         ..., dict[int, dict[str, dict[Any, Any]]]
     ] = execute_bootstrap_vdyp_runs,
@@ -1361,6 +1414,7 @@ def build_bootstrap_vdyp_results_runner(
             append_jsonl_fn=append_jsonl_fn,
             run_vdyp_fn=run_vdyp_fn,
             vdyp_out_cache=vdyp_out_cache,
+            sampling_seed_base=sampling_seed_base,
         )
 
     return _run_bootstrap

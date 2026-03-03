@@ -1491,3 +1491,13 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): start `P3.4a` by auditing bootstrap/sample
   randomness seams and introducing explicit seed controls where stochastic behavior still exists.
+- Closed `P3.4a` by adding explicit deterministic seed controls across VDYP sampling helpers:
+  `run_vdyp_sampling(...)`, `run_vdyp_for_stratum(...)`, and bootstrap dispatch sequencing with
+  per-stratum/SI derived seeds.
+- Added `FEMIC_SAMPLING_SEED` env support for deterministic bootstrap/sample draws and coverage in
+  `tests/test_vdyp_stage.py` for fixed-seed sampling stability and per-dispatch seed derivation.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): close `P3.4b` by ensuring run manifests capture
+  full runtime/tool version metadata consistently for config-driven and non-config runs.
