@@ -1402,3 +1402,12 @@
 - Queued next extraction slice (ASAP closure path): start `P2.3a` with smoke tests for extracted
   core helpers (path/validation and key deterministic transforms) to lock in current behavior before
   Phase 3 workflow hardening.
+- Started and closed `P2.3a` by extending smoke coverage with CLI preflight file-validation tests
+  (`tests/test_cli_main.py`) and lightweight transform smoke checks for TSA normalization/checkpoint
+  path building (`tests/test_smoke.py`).
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): start `P2.3b` by adding deterministic,
+  small-sample assertions for one or two extracted core helpers where behavior contracts are
+  currently implicit (without expanding runtime-heavy legacy integration scope).

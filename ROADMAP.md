@@ -37,7 +37,7 @@
   - [x] P2.2b Add a small orchestration layer for sequencing
   - [x] P2.2c Move 00_data-prep 01a/01b module-load + call loops behind shared stage helpers
 - [ ] P2.3 Add minimal tests for core helpers
-  - [ ] P2.3a Smoke tests for file validation and key transforms
+  - [x] P2.3a Smoke tests for file validation and key transforms
   - [ ] P2.3b Deterministic checks for small sample data
 
 ## Phase 3: Workflow Hardening
@@ -1549,3 +1549,9 @@
 - Queued next extraction slice (ASAP closure path): start `P2.3a` with smoke tests for extracted
   core helpers (path/validation and key deterministic transforms) to lock in current behavior before
   Phase 3 workflow hardening.
+- Started and closed `P2.3a` by extending smoke coverage with CLI preflight file-validation tests
+  (`tests/test_cli_main.py`) and lightweight transform smoke checks for TSA normalization/checkpoint
+  path building (`tests/test_smoke.py`).
+- Queued next extraction slice (ASAP closure path): start `P2.3b` by adding deterministic,
+  small-sample assertions for one or two extracted core helpers where behavior contracts are
+  currently implicit (without expanding runtime-heavy legacy integration scope).
