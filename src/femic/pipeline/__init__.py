@@ -61,8 +61,12 @@ from femic.pipeline.stages import (
     run_legacy_tsa_loop,
     should_skip_if_outputs_exist,
 )
-from femic.pipeline.legacy_runtime import Legacy01ARuntimeConfig
-from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
+from femic.pipeline.legacy_runtime import (
+    Legacy01ARuntimeConfig,
+    Legacy01BRuntimeConfig,
+    build_legacy_01a_runtime_config,
+    build_legacy_01b_runtime_config,
+)
 from femic.pipeline.bundle import (
     BundleAssemblyResult,
     BundlePaths,
@@ -191,6 +195,7 @@ __all__ = [
     "resolve_legacy_external_data_paths",
     "StageResult",
     "Legacy01ARuntimeConfig",
+    "Legacy01BRuntimeConfig",
     "LegacyTSAStageState",
     "ParallelExecutionBackend",
     "BundlePaths",
@@ -198,6 +203,7 @@ __all__ = [
     "assign_curve_ids_from_au_table",
     "build_legacy_execution_plan",
     "build_legacy_01a_runtime_config",
+    "build_legacy_01b_runtime_config",
     "execute_legacy_tsa_stage",
     "initialize_parallel_execution_backend",
     "initialize_legacy_tsa_stage_state",

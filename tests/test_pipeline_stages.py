@@ -4,7 +4,10 @@ from pathlib import Path
 import sys
 
 from femic.pipeline.io import build_legacy_execution_plan, build_pipeline_run_config
-from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
+from femic.pipeline.legacy_runtime import (
+    build_legacy_01a_runtime_config,
+    build_legacy_01b_runtime_config,
+)
 from femic.pipeline.stages import (
     ParallelExecutionBackend,
     execute_legacy_tsa_stage,
@@ -265,3 +268,14 @@ def test_build_legacy_01a_runtime_config_builds_cache_paths() -> None:
     assert runtime_cfg.vdyp_cache_paths["vdyp_curves_smooth_tsa_feather_path"] == Path(
         "./data/vdyp_curves_smooth-tsa08.feather"
     )
+
+
+def test_build_legacy_01b_runtime_config_builds_output_paths() -> None:
+    runtime_cfg = build_legacy_01b_runtime_config(
+        tipsy_params_path_prefix="./data/tipsy_params_tsa",
+        tipsy_output_root="./data",
+        tipsy_output_filename_template="04_output-tsa{tsa}.out",
+    )
+    assert runtime_cfg.tipsy_params_path_prefix == "./data/tipsy_params_tsa"
+    assert runtime_cfg.tipsy_output_root == "./data"
+    assert runtime_cfg.tipsy_output_filename_template == "04_output-tsa{tsa}.out"

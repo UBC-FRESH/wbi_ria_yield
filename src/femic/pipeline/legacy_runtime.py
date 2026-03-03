@@ -27,6 +27,15 @@ class Legacy01ARuntimeConfig:
     curve_fit_impl: Any = None
 
 
+@dataclass(frozen=True)
+class Legacy01BRuntimeConfig:
+    """Runtime payload passed from `00_data-prep.py` into `01b_run-tsa.py`."""
+
+    tipsy_params_path_prefix: str | Path
+    tipsy_output_root: str | Path
+    tipsy_output_filename_template: str = "04_output-tsa{tsa}.out"
+
+
 def build_legacy_01a_runtime_config(
     *,
     tsa_code: str,
@@ -63,4 +72,18 @@ def build_legacy_01a_runtime_config(
         vdyp_cache_paths=vdyp_cache_paths,
         vdyp_out_cache=vdyp_out_cache,
         curve_fit_impl=curve_fit_impl,
+    )
+
+
+def build_legacy_01b_runtime_config(
+    *,
+    tipsy_params_path_prefix: str | Path,
+    tipsy_output_root: str | Path = "data",
+    tipsy_output_filename_template: str = "04_output-tsa{tsa}.out",
+) -> Legacy01BRuntimeConfig:
+    """Build typed runtime config payload for a single 01b TSA run."""
+    return Legacy01BRuntimeConfig(
+        tipsy_params_path_prefix=tipsy_params_path_prefix,
+        tipsy_output_root=tipsy_output_root,
+        tipsy_output_filename_template=tipsy_output_filename_template,
     )

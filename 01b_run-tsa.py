@@ -8,7 +8,9 @@ def run_tsa(
     au_scsi,
     tipsy_curves,
     vdyp_curves_smooth,
+    runtime_config,
 ):
+    from pathlib import Path
 
     # --- cell 1 ---
     #!mv ./data/04_output.out ./data/tipsy_output_tsa08.out
@@ -27,17 +29,34 @@ def run_tsa(
     import time
     from matplotlib import pyplot as plt
     import seaborn as sns
+    from femic.pipeline.legacy_runtime import Legacy01BRuntimeConfig
+    from femic.pipeline.tipsy import tipsy_params_excel_path, tipsy_stage_output_paths
+
+    if not isinstance(runtime_config, Legacy01BRuntimeConfig):
+        raise TypeError(
+            "runtime_config must be Legacy01BRuntimeConfig, got "
+            f"{type(runtime_config).__name__}"
+        )
 
     Start = time.time()
     
-    #change line below
-    loc = r'.'
-    
     #############no need to change the code below
-    tipsy_excel = './data/tipsy_params_tsa%s.xlsx' % tsa
-    tipsyout = './data/04_output-tsa%s.out' % tsa
-    outYield = './data/tipsy_curves_tsa%s.csv' % tsa
-    outSPP = './data/tipsy_sppcomp_tsa%s.csv' % tsa
+    tipsy_excel = str(
+        tipsy_params_excel_path(
+            tsa=tsa,
+            tipsy_params_path_prefix=runtime_config.tipsy_params_path_prefix,
+        )
+    )
+    tipsy_output_root = Path(runtime_config.tipsy_output_root)
+    tipsyout = str(
+        tipsy_output_root
+        / runtime_config.tipsy_output_filename_template.format(tsa=tsa)
+    )
+    outYield_path, outSPP_path = tipsy_stage_output_paths(
+        tsa=tsa, output_root=runtime_config.tipsy_output_root
+    )
+    outYield = str(outYield_path)
+    outSPP = str(outSPP_path)
     
     
     def conditions(s):
@@ -111,7 +130,7 @@ def run_tsa(
     dyf.to_csv(outYield, header=True, index=False)
     
     # --- cell 4 ---
-    df = pd.read_csv('./data/tipsy_curves_tsa%s.csv' % tsa)
+    df = pd.read_csv(outYield)
     df['AU'] = df['AU'].astype('int')
     df.set_index(['AU', 'Age'], inplace=True)
     tipsy_curves[tsa] = df

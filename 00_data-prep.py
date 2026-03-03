@@ -48,7 +48,10 @@ try:
         resolve_bundle_paths,
         write_bundle_tables,
     )
-    from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
+    from femic.pipeline.legacy_runtime import (
+        build_legacy_01a_runtime_config,
+        build_legacy_01b_runtime_config,
+    )
     from femic.pipeline.io import (
         build_legacy_data_artifact_paths,
         build_ria_vri_checkpoint_paths,
@@ -111,7 +114,10 @@ except ModuleNotFoundError:
         resolve_bundle_paths,
         write_bundle_tables,
     )
-    from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
+    from femic.pipeline.legacy_runtime import (
+        build_legacy_01a_runtime_config,
+        build_legacy_01b_runtime_config,
+    )
     from femic.pipeline.io import (
         build_legacy_data_artifact_paths,
         build_ria_vri_checkpoint_paths,
@@ -566,12 +572,16 @@ def _should_skip_01b(tsa):
 
 
 def _build_01b_run_kwargs(tsa):
+    runtime_config = build_legacy_01b_runtime_config(
+        tipsy_params_path_prefix=tipsy_params_path_prefix,
+    )
     return dict(
         tsa=tsa,
         results=results,
         au_scsi=au_scsi,
         tipsy_curves=tipsy_curves,
         vdyp_curves_smooth=vdyp_curves_smooth,
+        runtime_config=runtime_config,
     )
 
 

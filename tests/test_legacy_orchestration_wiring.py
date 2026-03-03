@@ -89,7 +89,14 @@ def test_run01b_call_uses_explicit_keyword_handoff() -> None:
     tree = _load_legacy_orchestration_tree()
     func_def = _find_function_def(tree, "_build_01b_run_kwargs")
     kwargs = _find_return_dict_keys(func_def)
-    assert kwargs == {"tsa", "results", "au_scsi", "tipsy_curves", "vdyp_curves_smooth"}
+    assert kwargs == {
+        "tsa",
+        "results",
+        "au_scsi",
+        "tipsy_curves",
+        "vdyp_curves_smooth",
+        "runtime_config",
+    }
 
 
 def test_no_context_binder_call_remains_in_legacy_orchestration() -> None:
@@ -161,6 +168,7 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "compile_species_volume_columns": 1,
         "prepare_tsa_index": 1,
         "build_legacy_01a_runtime_config": 1,
+        "build_legacy_01b_runtime_config": 1,
         "execute_legacy_tsa_stage": 2,
         "should_skip_if_outputs_exist": 2,
         "resolve_bundle_paths": 1,

@@ -26,11 +26,12 @@
 ## Phase 2: Modularize Pipeline Steps
 - [ ] P2.1 Extract reusable modules from `00_data-prep.py`
   - [x] P2.1a Split into `io.py`, `vdyp.py`, `tsa.py`, `plots.py`
-  - [ ] P2.1b Remove global state and pass explicit parameters
+  - [x] P2.1b Remove global state and pass explicit parameters
     - [x] P2.1b.1 Centralize 01a per-TSA VDYP cache-path templates in shared helper
     - [x] P2.1b.2 Replace residual 01a `os.path` cache checks with `Path(...).is_file()`
     - [x] P2.1b.3 Collapse 00->01a cache-path handoff to one resolved payload
     - [x] P2.1b.4 Reduce 01a `run_tsa(...)` signature by bundling remaining path/runtime args
+    - [x] P2.1b.5 Introduce typed 01b runtime payload and explicit 00->01b path handoff
 - [ ] P2.2 Convert notebook logic into functions
   - [ ] P2.2a Wrap major steps with clear inputs/outputs
   - [ ] P2.2b Add a small orchestration layer for sequencing
@@ -1512,3 +1513,19 @@
 - Queued next extraction slice (ASAP closure path): continue `P2.1b` by auditing remaining 01b
   hard-coded runtime paths and introducing explicit runtime config handoff (mirroring 01a-style
   typed runtime payload) to eliminate residual implicit file-path globals at stage boundaries.
+- Closed remaining `P2.1b` boundary implicitness by introducing `Legacy01BRuntimeConfig` +
+  `build_legacy_01b_runtime_config(...)` in `src/femic/pipeline/legacy_runtime.py` and wiring
+  explicit runtime handoff from `00_data-prep.py` into `01b_run-tsa.py`.
+- Refactored `01b_run-tsa.py` to require typed `runtime_config` and consume shared TIPSY path
+  helpers (`tipsy_params_excel_path`, `tipsy_stage_output_paths`) plus runtime output-root/template
+  settings instead of hard-coded stage-path literals.
+- Extended orchestration/runtime guardrails in `tests/test_legacy_orchestration_wiring.py` and
+  `tests/test_pipeline_stages.py` for 01b runtime config builder usage and explicit handoff.
+- Marked `P2.1b` complete: 00->01a/01b stage boundaries now pass typed runtime payloads and no
+  longer rely on implicit `globals().get(...)` runtime injection.
+- Completed validation gate after this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (261 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): close `P2.2a` by wrapping the largest remaining
+  major orchestration block in `00_data-prep.py` (post-01b bundle + AU/curve assignment segment)
+  behind a shared helper with explicit inputs/outputs, then sequence it under `P2.2b`.
