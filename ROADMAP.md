@@ -46,7 +46,7 @@
   - [x] P3.1b Add `docs/index.rst` + `docs/reference/cli.rst` mirroring CLI help
   - [x] P3.1c Add GitHub Pages workflow to build + publish `docs/_build/html`
 - [ ] P3.2 Nemora alignment prep
-  - [ ] P3.2a Map femic CLI commands to nemora task taxonomy
+  - [x] P3.2a Map femic CLI commands to nemora task taxonomy
   - [ ] P3.2b Identify shared utilities to upstream into nemora later
 - [ ] P3.3 Add config-driven runs
   - [ ] P3.3a YAML/JSON config to select TSA, strata, and modes
@@ -1581,3 +1581,8 @@
   in place.
 - Queued next extraction slice (ASAP closure path): start `P3.2a` by mapping current `femic` CLI
   commands/subcommands to a draft Nemora task taxonomy table in docs.
+- Closed `P3.2a` by adding `docs/reference/nemora-task-map.rst` and wiring it into docs index
+  to map current CLI entries (`run`, `prep run`, `vdyp run/report`, `tsa run`,
+  `tipsy validate`) to draft Nemora task keys.
+- Queued next extraction slice (ASAP closure path): close `P3.2b` by inventorying extracted shared
+  utilities and tagging top upstream candidates (diagnostics/logging/path/runtime helpers).

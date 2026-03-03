@@ -1449,3 +1449,11 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): start `P3.2a` by mapping current `femic` CLI
   commands/subcommands to a draft Nemora task taxonomy table in docs.
+- Closed `P3.2a` by adding `docs/reference/nemora-task-map.rst` and wiring it into docs index
+  to map current CLI entries (`run`, `prep run`, `vdyp run/report`, `tsa run`,
+  `tipsy validate`) to draft Nemora task keys.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): close `P3.2b` by inventorying extracted shared
+  utilities and tagging top upstream candidates (diagnostics/logging/path/runtime helpers).

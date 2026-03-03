@@ -8,3 +8,4 @@ Forest Estate Model Input Compiler (FEMIC) documentation.
    :caption: Reference
 
    reference/cli
+   reference/nemora-task-map
