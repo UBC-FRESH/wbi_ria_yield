@@ -42,7 +42,7 @@
 
 ## Phase 3: Workflow Hardening
 - [ ] P3.1 Sphinx docs + GitHub Pages (FHOPS-style)
-  - [ ] P3.1a Add `docs/conf.py` with `sphinx_rtd_theme`, `nbsphinx`, `autosummary`
+  - [x] P3.1a Add `docs/conf.py` with `sphinx_rtd_theme`, `nbsphinx`, `autosummary`
   - [ ] P3.1b Add `docs/index.rst` + `docs/reference/cli.rst` mirroring CLI help
   - [ ] P3.1c Add GitHub Pages workflow to build + publish `docs/_build/html`
 - [ ] P3.2 Nemora alignment prep
@@ -1562,3 +1562,11 @@
 - Queued next extraction slice (ASAP closure path): begin Phase 3 (`P3.1a`) by validating and
   tightening Sphinx config/package surface (theme/extensions/autosummary defaults) now that Phase 2
   modularization + minimal helper test coverage are complete.
+- Closed `P3.1a` by upgrading `docs/conf.py` with explicit extension defaults
+  (`sphinx.ext.autodoc`, `sphinx.ext.autosummary`, `sphinx.ext.napoleon`,
+  `sphinx.ext.viewcode`) plus optional enablement for `nbsphinx` and
+  `sphinx_rtd_theme` when installed in the environment.
+- Added `autosummary_generate = True`, notebook-checkpoint exclusions, and resilient theme/static
+  settings so docs builds stay warning-clean under `-W` even when optional packages are absent.
+- Queued next extraction slice (ASAP closure path): continue `P3.1` with `P3.1b` by adding
+  `docs/reference/cli.rst` and wiring `docs/index.rst` to mirror current CLI help surface.

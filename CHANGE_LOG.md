@@ -1421,3 +1421,14 @@
 - Queued next extraction slice (ASAP closure path): begin Phase 3 (`P3.1a`) by validating and
   tightening Sphinx config/package surface (theme/extensions/autosummary defaults) now that Phase 2
   modularization + minimal helper test coverage are complete.
+- Closed `P3.1a` by upgrading `docs/conf.py` with explicit extension defaults
+  (`sphinx.ext.autodoc`, `sphinx.ext.autosummary`, `sphinx.ext.napoleon`,
+  `sphinx.ext.viewcode`) plus optional enablement for `nbsphinx` and
+  `sphinx_rtd_theme` when installed in the environment.
+- Added `autosummary_generate = True`, notebook-checkpoint exclusions, and resilient theme/static
+  settings so docs builds stay warning-clean under `-W` even when optional packages are absent.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): continue `P3.1` with `P3.1b` by adding
+  `docs/reference/cli.rst` and wiring `docs/index.rst` to mirror current CLI help surface.
