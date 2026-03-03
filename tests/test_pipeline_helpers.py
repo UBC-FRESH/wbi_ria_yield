@@ -8,6 +8,7 @@ from femic.pipeline.io import (
     build_ria_vri_checkpoint_paths,
     build_legacy_execution_plan,
     build_pipeline_run_config,
+    file_sha256,
     load_pipeline_run_profile,
     load_default_tsa_list,
     normalize_tsa_list,
@@ -689,6 +690,9 @@ def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> N
         debug_rows=100,
         run_id="runabc",
         log_dir=tmp_path / "logs",
+        output_root=tmp_path / "outputs",
+        run_config_path=tmp_path / "config" / "run_profile.yaml",
+        run_config_sha256="abc123",
     )
 
     plan = build_legacy_execution_plan(
@@ -707,4 +711,18 @@ def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> N
     assert plan.env["FEMIC_RESUME"] == "0"
     assert plan.env["FEMIC_DEBUG_ROWS"] == "100"
     assert plan.env["FEMIC_RUN_ID"] == "runabc"
+    assert plan.env["FEMIC_OUTPUT_ROOT"] == str(tmp_path / "outputs")
+    assert plan.env["FEMIC_RUN_CONFIG_PATH"] == str(
+        tmp_path / "config" / "run_profile.yaml"
+    )
+    assert plan.env["FEMIC_RUN_CONFIG_SHA256"] == "abc123"
     assert plan.cmd == ["/usr/bin/python3", str(script_path)]
+
+
+def test_file_sha256_is_deterministic(tmp_path: Path) -> None:
+    path = tmp_path / "a.txt"
+    path.write_text("abc", encoding="utf-8")
+    assert (
+        file_sha256(path)
+        == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    )

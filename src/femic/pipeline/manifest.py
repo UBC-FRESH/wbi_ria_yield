@@ -61,6 +61,8 @@ def build_run_manifest_payload(
         execution_plan.tsa_list,
         execution_plan.run_id,
     )
+    output_root = execution_plan.output_root.resolve()
+    versioned_output_dir = (output_root / execution_plan.output_version_tag).resolve()
     return {
         "run_id": execution_plan.run_id,
         "run_uuid": execution_plan.run_uuid,
@@ -81,6 +83,20 @@ def build_run_manifest_payload(
                 if "FEMIC_DEBUG_ROWS" in execution_plan.env
                 else None
             ),
+            "output_root": str(execution_plan.output_root),
+        },
+        "config_provenance": {
+            "run_config_path": (
+                str(execution_plan.run_config_path)
+                if execution_plan.run_config_path is not None
+                else None
+            ),
+            "run_config_sha256": execution_plan.run_config_sha256,
+        },
+        "outputs": {
+            "output_root": str(output_root),
+            "version_tag": execution_plan.output_version_tag,
+            "versioned_output_dir": str(versioned_output_dir),
         },
         "env_flags": {
             "FEMIC_DISABLE_IPP": execution_plan.env.get("FEMIC_DISABLE_IPP"),
@@ -94,6 +110,7 @@ def build_run_manifest_payload(
         "paths": {
             "repo_root": str(execution_plan.script_path.parent),
             "data_dir": str((execution_plan.script_path.parent / "data").resolve()),
+            "output_dir": str(output_root),
             "vdyp_cfg_dir": str(
                 (execution_plan.script_path.parent / "vdyp_io" / "VDYP_CFG").resolve()
             ),

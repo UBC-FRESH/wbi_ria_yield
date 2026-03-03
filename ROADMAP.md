@@ -48,9 +48,9 @@
 - [x] P3.2 Nemora alignment prep
   - [x] P3.2a Map femic CLI commands to nemora task taxonomy
   - [x] P3.2b Identify shared utilities to upstream into nemora later
-- [ ] P3.3 Add config-driven runs
+- [x] P3.3 Add config-driven runs
   - [x] P3.3a YAML/JSON config to select TSA, strata, and modes
-  - [ ] P3.3b Store run metadata and versioned outputs
+  - [x] P3.3b Store run metadata and versioned outputs
 - [ ] P3.4 Make outputs reproducible
   - [ ] P3.4a Seed randomness in bootstrap/sample paths
   - [ ] P3.4b Record tool versions and runtime parameters
@@ -1602,3 +1602,12 @@
   `tests/test_pipeline_helpers.py` and `tests/test_cli_main.py`.
 - Queued next extraction slice (ASAP closure path): close `P3.3b` by extending run manifest payload
   metadata with profile/config provenance and versioned output-root annotations.
+- Closed `P3.3b` by extending run metadata through `PipelineRunConfig`/`LegacyExecutionPlan` with
+  output-root + config provenance fields and surfacing them in manifest payload sections
+  (`config_provenance`, `outputs`, and output-root option/path annotations).
+- Added manifest/run-config coverage updates in `tests/test_pipeline_helpers.py` and
+  `tests/test_legacy_manifest.py` plus SHA256 helper coverage for profile provenance digests.
+- Marked `P3.3` complete now that config selection/mode wiring and manifest/version metadata are
+  both in place.
+- Queued next extraction slice (ASAP closure path): start `P3.4a` by auditing bootstrap/sample
+  randomness seams and introducing explicit seed controls where stochastic behavior still exists.

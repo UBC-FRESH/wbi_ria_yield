@@ -13,6 +13,7 @@ from rich.console import Console
 from femic import __version__
 from femic.pipeline.io import (
     build_pipeline_run_config,
+    file_sha256,
     load_pipeline_run_profile,
     resolve_effective_run_options,
 )
@@ -286,9 +287,11 @@ def run_all(
     run_config: Path | None = RUN_CONFIG_OPTION,
 ) -> None:
     run_profile = None
+    run_config_sha256: str | None = None
     if run_config is not None:
         try:
             run_profile = load_pipeline_run_profile(run_config)
+            run_config_sha256 = file_sha256(run_config)
         except (
             FileNotFoundError,
             ValueError,
@@ -337,6 +340,9 @@ def run_all(
         debug_rows=effective.debug_rows,
         run_id=effective.run_id,
         log_dir=effective.log_dir,
+        output_root=output_root,
+        run_config_path=run_config,
+        run_config_sha256=run_config_sha256,
     )
     manifest_path = run_data_prep(pipeline_run_config)
     console.print(f"Run manifest: {manifest_path}")

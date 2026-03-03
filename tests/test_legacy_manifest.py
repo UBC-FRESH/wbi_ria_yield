@@ -33,6 +33,9 @@ def test_build_manifest_payload_contains_runtime_and_artifact_sections(
         debug_rows=50,
         run_id="run123",
         log_dir=tmp_path / "logs",
+        output_root=tmp_path / "outputs",
+        run_config_path=tmp_path / "config" / "run_profile.yaml",
+        run_config_sha256="deadbeef",
     )
     plan = build_legacy_execution_plan(
         run_config=cfg,
@@ -55,3 +58,6 @@ def test_build_manifest_payload_contains_runtime_and_artifact_sections(
     assert payload["run_uuid"] == "uuid-1"
     assert payload["artifacts"]["vdyp_stdout"][0]["exists"] is False
     assert "pre_vdyp" in payload["checkpoints"]
+    assert payload["config_provenance"]["run_config_sha256"] == "deadbeef"
+    assert payload["outputs"]["version_tag"] == "run123"
+    assert payload["options"]["output_root"] == str(tmp_path / "outputs")

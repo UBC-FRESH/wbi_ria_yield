@@ -1479,3 +1479,15 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): close `P3.3b` by extending run manifest payload
   metadata with profile/config provenance and versioned output-root annotations.
+- Closed `P3.3b` by extending run metadata through `PipelineRunConfig`/`LegacyExecutionPlan` with
+  output-root + config provenance fields and surfacing them in manifest payload sections
+  (`config_provenance`, `outputs`, and output-root option/path annotations).
+- Added manifest/run-config coverage updates in `tests/test_pipeline_helpers.py` and
+  `tests/test_legacy_manifest.py` plus SHA256 helper coverage for profile provenance digests.
+- Marked `P3.3` complete in `ROADMAP.md` now that config selection/mode wiring and
+  manifest/version metadata are both in place.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): start `P3.4a` by auditing bootstrap/sample
+  randomness seams and introducing explicit seed controls where stochastic behavior still exists.

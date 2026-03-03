@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import hashlib
 import json
 from pathlib import Path
 import tomllib
@@ -78,6 +79,9 @@ class PipelineRunConfig:
     debug_rows: int | None = None
     run_id: str | None = None
     log_dir: Path | None = None
+    output_root: Path = Path("outputs")
+    run_config_path: Path | None = None
+    run_config_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -121,6 +125,10 @@ class LegacyExecutionPlan:
     tsa_list: list[str]
     manifest_path: Path
     checkpoint_paths: list[Path]
+    output_root: Path
+    output_version_tag: str
+    run_config_path: Path | None
+    run_config_sha256: str | None
     env: dict[str, str]
     cmd: list[str]
 
@@ -321,6 +329,11 @@ def load_pipeline_run_profile(config_path: Path) -> PipelineRunProfile:
     )
 
 
+def file_sha256(path: Path) -> str:
+    """Return SHA256 hex digest for file contents."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def resolve_effective_run_options(
     *,
     tsa_list: list[str] | None,
@@ -374,6 +387,9 @@ def build_pipeline_run_config(
     debug_rows: int | None = None,
     run_id: str | None = None,
     log_dir: Path | None = None,
+    output_root: Path = Path("outputs"),
+    run_config_path: Path | None = None,
+    run_config_sha256: str | None = None,
 ) -> PipelineRunConfig:
     """Create normalized pipeline run configuration from CLI inputs."""
     normalized_tsas = normalize_tsa_list(tsa_list)
@@ -383,6 +399,9 @@ def build_pipeline_run_config(
         debug_rows=debug_rows,
         run_id=run_id,
         log_dir=log_dir,
+        output_root=Path(output_root),
+        run_config_path=Path(run_config_path) if run_config_path is not None else None,
+        run_config_sha256=run_config_sha256,
     )
 
 
@@ -410,6 +429,11 @@ def build_legacy_execution_plan(
         env.pop("FEMIC_DEBUG_ROWS", None)
     env["FEMIC_RUN_ID"] = run_id
     env["FEMIC_LOG_DIR"] = str(run_paths.log_dir)
+    env["FEMIC_OUTPUT_ROOT"] = str(Path(run_config.output_root))
+    if run_config.run_config_path is not None:
+        env["FEMIC_RUN_CONFIG_PATH"] = str(run_config.run_config_path)
+    if run_config.run_config_sha256 is not None:
+        env["FEMIC_RUN_CONFIG_SHA256"] = run_config.run_config_sha256
     env.setdefault("FEMIC_RUN_UUID", str(uuid.uuid4()))
     run_uuid = env["FEMIC_RUN_UUID"]
 
@@ -422,6 +446,10 @@ def build_legacy_execution_plan(
         tsa_list=run_config.tsa_list,
         manifest_path=manifest_path,
         checkpoint_paths=checkpoint_paths,
+        output_root=Path(run_config.output_root),
+        output_version_tag=run_id,
+        run_config_path=run_config.run_config_path,
+        run_config_sha256=run_config.run_config_sha256,
         env=env,
         cmd=cmd,
     )
