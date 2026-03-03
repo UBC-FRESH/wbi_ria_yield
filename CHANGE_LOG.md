@@ -1378,3 +1378,15 @@
 - Queued next extraction slice (ASAP closure path): close `P2.2a` by wrapping the largest remaining
   major orchestration block in `00_data-prep.py` (post-01b bundle + AU/curve assignment segment)
   behind a shared helper with explicit inputs/outputs, then sequence it under `P2.2b`.
+- Closed `P2.2a` by wrapping the largest remaining post-01b orchestration block in
+  `00_data-prep.py` behind explicit input/output helper
+  `_run_post_01b_bundle_and_curve_assignment_stage(...)`, including bundle load/build,
+  stratum/AU assignment, curve-id mapping, and checkpoint writes.
+- Stage output handoff is now explicit (`f`, `au_table`, `curve_table`, `curve_points_table`),
+  removing the last large inline notebook-style block from top-level execution flow.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (261 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): close `P2.2b` by adding one thin
+  top-level orchestration function in `00_data-prep.py` that sequences the extracted stage calls
+  with explicit intermediate payload handoff and minimal side effects.

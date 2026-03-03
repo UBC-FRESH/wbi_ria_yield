@@ -619,169 +619,175 @@ def canfi_species(stratum_code):
 
 
 # --- cell 67 ---
+def _run_post_01b_bundle_and_curve_assignment_stage(
+    *,
+    f_table,
+    bundle_paths,
+    femic_resume_effective,
+    femic_no_cache,
+    normalize_tsa_code_fn,
+    apply_debug_rows_fn,
+    checkpoint1_path,
+    checkpoint5_path,
+    checkpoint6_path,
+    checkpoint7_path,
+    legacy_data_paths,
+    scsi_au,
+    vdyp_curves_smooth,
+    tipsy_curves,
+    ria_tsas,
+    canfi_species_fn,
+):
+    _bundle_ready = bundle_tables_ready(paths=bundle_paths)
+    if femic_resume_effective and _bundle_ready:
+        au_table, curve_table, curve_points_table = load_bundle_tables(
+            paths=bundle_paths,
+            pd_module=pd,
+            normalize_tsa_code_fn=normalize_tsa_code_fn,
+        )
+        ensure_scsi_au_from_table(
+            au_table=au_table,
+            scsi_au=scsi_au,
+            normalize_tsa_code_fn=normalize_tsa_code_fn,
+        )
+    else:
+        _bundle_assembly = build_bundle_tables_from_curves(
+            tsa_list=ria_tsas,
+            vdyp_curves_smooth=vdyp_curves_smooth,
+            tipsy_curves=tipsy_curves,
+            scsi_au=scsi_au,
+            canfi_species_fn=canfi_species_fn,
+            pd_module=pd,
+            message_fn=print,
+        )
+        _missing_df = _bundle_assembly.missing_au_curve_mappings
+        emit_missing_au_curve_mapping_warning(
+            missing_df=_missing_df, message_fn=print, top_n=10
+        )
+        au_table = _bundle_assembly.au_table
+        curve_table = _bundle_assembly.curve_table
+        curve_points_table = _bundle_assembly.curve_points_table
+        if "tsa" in au_table.columns:
+            au_table["tsa"] = au_table["tsa"].apply(normalize_tsa_code_fn)
+        ensure_scsi_au_from_table(
+            au_table=au_table,
+            scsi_au=scsi_au,
+            normalize_tsa_code_fn=normalize_tsa_code_fn,
+        )
+        write_bundle_tables(
+            paths=bundle_paths,
+            au_table=au_table,
+            curve_table=curve_table,
+            curve_points_table=curve_points_table,
+        )
+
+    f_ = f_table
+    if not femic_no_cache:
+        f_ = gpd.read_feather(checkpoint1_path)
+        f_ = apply_debug_rows_fn(f_, "checkpoint1-reload")
+
+    f_ = assign_thlb_raw_from_raster(
+        f_table=f_,
+        thlb_raster_path=legacy_data_paths.misc_thlb_tif_path,
+        rio_module=rio,
+        mask_fn=mask,
+        np_module=np,
+        row_apply_fn=_row_apply,
+        out_col="thlb_raw",
+    )
+    f_ = filter_post_thlb_stands(f_table=f_)
+    f_ = assign_stratum_codes_with_lexmatch(
+        f_table=f_,
+        row_apply_fn=_row_apply,
+    )
+    f_.to_feather(checkpoint5_path)
+
+    stratum_col = "stratum"
+    f_[f"{stratum_col}_matched"] = None
+    f_ = assign_stratum_matches_from_au_table(
+        f_table=f_,
+        au_table=au_table,
+        tsa_list=ria_tsas,
+        stratum_col=stratum_col,
+        message_fn=print,
+    )
+    si_levelquants_local = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+    f_, _stratum_si_stats = assign_si_levels_from_stratum_quantiles(
+        f_table=f_,
+        si_levelquants=si_levelquants_local,
+        stratum_matched_col="stratum_matched",
+        site_index_col="SITE_INDEX",
+        si_level_col="si_level",
+        message_fn=print,
+    )
+    f_ = assign_au_ids_from_scsi(
+        f_table=f_,
+        scsi_au=scsi_au,
+        tsa_col="tsa_code",
+        stratum_matched_col="stratum_matched",
+        si_level_col="si_level",
+        au_col="au",
+    )
+    if f_["au"].isnull().any():
+        _missing = summarize_missing_au_mappings(
+            f_table=f_,
+            au_col="au",
+            tsa_col="tsa_code",
+            stratum_matched_col="stratum_matched",
+            si_level_col="si_level",
+            top_n=10,
+        )
+        emit_missing_au_mapping_warning(summary=_missing, message_fn=print)
+    validate_nonempty_au_assignment(
+        f_table=f_,
+        au_col="au",
+        site_index_col="SITE_INDEX",
+        stratum_matched_col="stratum_matched",
+        si_level_col="si_level",
+    )
+    f_ = f_[~f_.au.isnull()]
+    f_.to_feather(checkpoint6_path)
+
+    au_table = ensure_au_table_index(au_table=au_table, au_id_col="au_id")
+    f_ = assign_curve_ids_from_au_table(
+        f_table=f_,
+        au_table=au_table,
+        pd_module=pd,
+        np_module=np,
+        au_col="au",
+        proj_age_col="PROJ_AGE_1",
+        managed_curve_col="managed_curve_id",
+        unmanaged_curve_col="unmanaged_curve_id",
+        curve1_col="curve1",
+        curve2_col="curve2",
+        managed_age_cutoff=60,
+    )
+    f_.to_feather(checkpoint7_path)
+    return f_, au_table, curve_table, curve_points_table
+
+
 bundle_paths = resolve_bundle_paths(
     base_dir=_legacy_data_paths.model_input_bundle_dir,
     ensure_dir=True,
 )
-_bundle_ready = bundle_tables_ready(paths=bundle_paths)
-
-
-if _femic_resume_effective and _bundle_ready:
-    au_table, curve_table, curve_points_table = load_bundle_tables(
-        paths=bundle_paths,
-        pd_module=pd,
-        normalize_tsa_code_fn=_normalize_tsa_code,
-    )
-    ensure_scsi_au_from_table(
-        au_table=au_table,
-        scsi_au=scsi_au,
-        normalize_tsa_code_fn=_normalize_tsa_code,
-    )
-else:
-    _bundle_assembly = build_bundle_tables_from_curves(
-        tsa_list=ria_tsas,
-        vdyp_curves_smooth=vdyp_curves_smooth,
-        tipsy_curves=tipsy_curves,
-        scsi_au=scsi_au,
-        canfi_species_fn=canfi_species,
-        pd_module=pd,
-        message_fn=print,
-    )
-    _missing_df = _bundle_assembly.missing_au_curve_mappings
-    emit_missing_au_curve_mapping_warning(missing_df=_missing_df, message_fn=print, top_n=10)
-    au_table = _bundle_assembly.au_table
-    curve_table = _bundle_assembly.curve_table
-    curve_points_table = _bundle_assembly.curve_points_table
-    if "tsa" in au_table.columns:
-        au_table["tsa"] = au_table["tsa"].apply(_normalize_tsa_code)
-    ensure_scsi_au_from_table(
-        au_table=au_table,
-        scsi_au=scsi_au,
-        normalize_tsa_code_fn=_normalize_tsa_code,
-    )
-
-    # --- cell 73 ---
-    write_bundle_tables(
-        paths=bundle_paths,
-        au_table=au_table,
-        curve_table=curve_table,
-        curve_points_table=curve_points_table,
-    )
-
-# --- cell 77 ---
-if not _femic_no_cache:
-    f = gpd.read_feather(ria_vri_vclr1p_checkpoint1_feather_path)
-    f = _apply_debug_rows(f, "checkpoint1-reload")
-
-# --- cell 79 ---
-f = assign_thlb_raw_from_raster(
+f, au_table, curve_table, curve_points_table = _run_post_01b_bundle_and_curve_assignment_stage(
     f_table=f,
-    thlb_raster_path=_legacy_data_paths.misc_thlb_tif_path,
-    rio_module=rio,
-    mask_fn=mask,
-    np_module=np,
-    row_apply_fn=_row_apply,
-    out_col="thlb_raw",
-)
-
-# --- cell 83 ---
-f = filter_post_thlb_stands(f_table=f)
-# implies f.BCLCS_LEVEL_1 == 'V'
-# f = f[f.NON_PRODUCTIVE_CD != None]
-
-# --- cell 87 ---
-f = assign_stratum_codes_with_lexmatch(
-    f_table=f,
-    row_apply_fn=_row_apply,
-)
-
-# --- cell 88 ---
-f.to_feather(ria_vri_vclr1p_checkpoint5_feather_path)
-
-# --- cell 90 ---
-stratum_col = "stratum"
-f["%s_matched" % stratum_col] = None
-
-# --- cell 93 ---
-f = assign_stratum_matches_from_au_table(
-    f_table=f,
-    au_table=au_table,
-    tsa_list=ria_tsas,
-    stratum_col=stratum_col,
-    message_fn=print,
-)
-
-# --- cell 95 ---
-# si_levelquants={'L':[5, 20, 35], 'M':[35, 50, 65], 'H':[65, 80, 95]}
-si_levelquants = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
-
-# --- cell 96 ---
-f, stratum_si_stats = assign_si_levels_from_stratum_quantiles(
-    f_table=f,
-    si_levelquants=si_levelquants,
-    stratum_matched_col="stratum_matched",
-    site_index_col="SITE_INDEX",
-    si_level_col="si_level",
-    message_fn=print,
-)
-
-
-# --- cell 98/99 ---
-f = assign_au_ids_from_scsi(
-    f_table=f,
+    bundle_paths=bundle_paths,
+    femic_resume_effective=_femic_resume_effective,
+    femic_no_cache=_femic_no_cache,
+    normalize_tsa_code_fn=_normalize_tsa_code,
+    apply_debug_rows_fn=_apply_debug_rows,
+    checkpoint1_path=ria_vri_vclr1p_checkpoint1_feather_path,
+    checkpoint5_path=ria_vri_vclr1p_checkpoint5_feather_path,
+    checkpoint6_path=ria_vri_vclr1p_checkpoint6_feather_path,
+    checkpoint7_path=ria_vri_vclr1p_checkpoint7_feather_path,
+    legacy_data_paths=_legacy_data_paths,
     scsi_au=scsi_au,
-    tsa_col="tsa_code",
-    stratum_matched_col="stratum_matched",
-    si_level_col="si_level",
-    au_col="au",
+    vdyp_curves_smooth=vdyp_curves_smooth,
+    tipsy_curves=tipsy_curves,
+    ria_tsas=ria_tsas,
+    canfi_species_fn=canfi_species,
 )
-
-if f["au"].isnull().any():
-    _missing = summarize_missing_au_mappings(
-        f_table=f,
-        au_col="au",
-        tsa_col="tsa_code",
-        stratum_matched_col="stratum_matched",
-        si_level_col="si_level",
-        top_n=10,
-    )
-    emit_missing_au_mapping_warning(summary=_missing, message_fn=print)
-
-validate_nonempty_au_assignment(
-    f_table=f,
-    au_col="au",
-    site_index_col="SITE_INDEX",
-    stratum_matched_col="stratum_matched",
-    si_level_col="si_level",
-)
-
-# --- cell 103 ---
-f = f[~f.au.isnull()]
-
-# --- cell 107 ---
-f.to_feather(ria_vri_vclr1p_checkpoint6_feather_path)
-
-# --- cell 108 ---
-au_table = ensure_au_table_index(au_table=au_table, au_id_col="au_id")
-
-
-# --- cell 110 ---
-f = assign_curve_ids_from_au_table(
-    f_table=f,
-    au_table=au_table,
-    pd_module=pd,
-    np_module=np,
-    au_col="au",
-    proj_age_col="PROJ_AGE_1",
-    managed_curve_col="managed_curve_id",
-    unmanaged_curve_col="unmanaged_curve_id",
-    curve1_col="curve1",
-    curve2_col="curve2",
-    managed_age_cutoff=60,
-)
-
-# --- cell 114 ---
-f.to_feather(ria_vri_vclr1p_checkpoint7_feather_path)
 
 # --- cell 115 ---
 if not _femic_no_cache:
