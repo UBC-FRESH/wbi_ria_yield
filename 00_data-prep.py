@@ -485,6 +485,8 @@ f = prepare_tsa_index(f_table=f, tsa_column="tsa_code")
 
 # --- cell 54 ---
 force_run_vdyp = 0
+vdyp_out_cache = None
+curve_fit_impl = _curve_fit
 
 
 def _should_skip_01a(tsa):
@@ -521,8 +523,8 @@ def _build_01a_run_kwargs(tsa):
         tipsy_params_path_prefix=tipsy_params_path_prefix,
         vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
         vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
-        vdyp_out_cache=globals().get("vdyp_out_cache"),
-        curve_fit_impl=globals().get("_curve_fit"),
+        vdyp_out_cache=vdyp_out_cache,
+        curve_fit_impl=curve_fit_impl,
     )
     return dict(
         tsa=tsa,

@@ -104,6 +104,22 @@ def test_no_context_binder_call_remains_in_legacy_orchestration() -> None:
             )
 
 
+def test_no_globals_get_handoff_in_legacy_orchestration() -> None:
+    tree = _load_legacy_orchestration_tree()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not isinstance(func, ast.Attribute):
+            continue
+        if func.attr != "get":
+            continue
+        if isinstance(func.value, ast.Call):
+            inner = func.value.func
+            if isinstance(inner, ast.Name) and inner.id == "globals":
+                raise AssertionError("globals().get(...) handoff should not be present")
+
+
 def test_legacy_orchestration_uses_shared_stage_loop_and_loader_helpers() -> None:
     tree = _load_legacy_orchestration_tree()
     execute_stage_calls = 0

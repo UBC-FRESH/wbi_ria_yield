@@ -1351,3 +1351,14 @@
 - Queued next extraction slice (ASAP closure path): finish `P2.1b` by eliminating remaining
   implicit/global state handoff at 00->01a/01b boundaries, then close `P2.2a`/`P2.2b` with
   explicit major-step wrappers and thin orchestration sequencing.
+- Reduced remaining `P2.1b` implicit-state handoff by removing `globals().get(...)` runtime
+  injection in `00_data-prep.py` for 01a runtime config (`vdyp_out_cache`, `curve_fit_impl`) and
+  replacing it with explicit stage-level variables passed through `_build_01a_run_kwargs(...)`.
+- Added AST guardrail coverage in `tests/test_legacy_orchestration_wiring.py` to assert no
+  `globals().get(...)` orchestration handoff remains.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (260 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): continue `P2.1b` by auditing remaining 01b
+  hard-coded runtime paths and introducing explicit runtime config handoff (mirroring 01a-style
+  typed runtime payload) to eliminate residual implicit file-path globals at stage boundaries.
