@@ -290,6 +290,31 @@ def build_vdyp_run_event(
     )
 
 
+def emit_vdyp_run_event(
+    *,
+    append_jsonl_fn: Callable[[str | Path, Any], None],
+    vdyp_log_path: str | Path,
+    status: str,
+    phase: str,
+    counts: VdypRunEventCounts,
+    cmd: str,
+    context: Mapping[str, Any],
+    **extra_fields: Any,
+) -> None:
+    """Emit one VDYP run event record through the provided append sink."""
+    append_jsonl_fn(
+        vdyp_log_path,
+        build_vdyp_run_event(
+            status=status,
+            phase=phase,
+            counts=counts,
+            cmd=cmd,
+            context=context,
+            **extra_fields,
+        ),
+    )
+
+
 def normalize_vdyp_run_event_counts(
     *,
     feature_count: Any,
@@ -1395,19 +1420,6 @@ def execute_vdyp_batch(
         run_id=run_id,
     )
 
-    def _emit_run_event(status: str, **extra_fields: Any) -> None:
-        deps.append_jsonl(
-            vdyp_log_path,
-            build_vdyp_run_event(
-                status=status,
-                phase=phase,
-                counts=counts,
-                cmd=args,
-                context=context,
-                **extra_fields,
-            ),
-        )
-
     vdyp_io_dir = Path(vdyp_io_dirname)
     vdyp_io_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1469,15 +1481,27 @@ def execute_vdyp_batch(
                 text=True,
             )
         except subprocess.TimeoutExpired as exc:
-            _emit_run_event(
-                "timeout",
+            emit_vdyp_run_event(
+                append_jsonl_fn=deps.append_jsonl,
+                vdyp_log_path=vdyp_log_path,
+                status="timeout",
+                phase=phase,
+                counts=counts,
+                cmd=args,
+                context=context,
                 timeout_sec=timeout,
                 error=str(exc),
             )
             return {}
         except _subprocess_run_exception_types() as exc:
-            _emit_run_event(
-                "error",
+            emit_vdyp_run_event(
+                append_jsonl_fn=deps.append_jsonl,
+                vdyp_log_path=vdyp_log_path,
+                status="error",
+                phase=phase,
+                counts=counts,
+                cmd=args,
+                context=context,
                 error=str(exc),
                 traceback=traceback.format_exc(),
             )
@@ -1517,16 +1541,28 @@ def execute_vdyp_batch(
                 str(vdyp_io_dir / temp_artifacts.vdyp_out_txt)
             )
         except _vdyp_parse_exception_types() as exc:
-            _emit_run_event(
-                "parse_error",
+            emit_vdyp_run_event(
+                append_jsonl_fn=deps.append_jsonl,
+                vdyp_log_path=vdyp_log_path,
+                status="parse_error",
+                phase=phase,
+                counts=counts,
+                cmd=args,
+                context=context,
                 **run_metadata,
                 error=str(exc),
                 traceback=traceback.format_exc(),
             )
             return {}
 
-        _emit_run_event(
-            "ok" if vdyp_out else "empty_output",
+        emit_vdyp_run_event(
+            append_jsonl_fn=deps.append_jsonl,
+            vdyp_log_path=vdyp_log_path,
+            status="ok" if vdyp_out else "empty_output",
+            phase=phase,
+            counts=counts,
+            cmd=args,
+            context=context,
             **run_metadata,
             vdyp_out_tables=int(len(vdyp_out)),
         )

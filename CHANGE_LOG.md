@@ -1325,3 +1325,15 @@
 - Queued next extraction slice: continue P2.2 by auditing repeated ephemeral helper closures inside
   `execute_vdyp_batch(...)` (`_emit_run_event`) and promoting reusable pieces where this improves
   clarity without changing event emission semantics or order.
+- Completed the queued closure-promotion slice in `src/femic/pipeline/vdyp_stage.py` by replacing
+  the local `_emit_run_event` closure with reusable module helper `emit_vdyp_run_event(...)`.
+- Rewired `execute_vdyp_batch(...)` timeout/error/parse_error/ok|empty_output branches to call
+  `emit_vdyp_run_event(...)`, preserving event payload shape, write order, and log sink behavior.
+- Expanded deterministic coverage in `tests/test_vdyp_stage.py` with
+  `test_emit_vdyp_run_event_appends_payload` to assert helper emission semantics.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (257 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice: continue P2.2 by auditing repeated `dict(...)` defensive copies in
+  VDYP helper seams (`build_vdyp_run_context`, `build_vdyp_run_event`) and centralizing copy policy
+  where clarity improves without mutability regressions.

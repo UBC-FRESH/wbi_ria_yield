@@ -14,6 +14,7 @@ from femic.pipeline.vdyp_stage import (
     SmoothedCurveResult,
     build_bootstrap_vdyp_results_runner,
     build_vdyp_batch_command,
+    emit_vdyp_run_event,
     build_vdyp_run_event,
     normalize_vdyp_run_event_counts,
     build_vdyp_run_context,
@@ -114,6 +115,33 @@ def test_build_vdyp_run_event_builds_shared_payload() -> None:
     assert payload["cmd"] == "wine VDYP7Console.exe"
     assert payload["returncode"] == 0
     assert payload["context"] == {"tsa": "08"}
+
+
+def test_emit_vdyp_run_event_appends_payload() -> None:
+    counts = normalize_vdyp_run_event_counts(
+        feature_count=2,
+        cache_hits=1,
+        ply_rows=3,
+        lyr_rows=4,
+    )
+    captured: list[tuple[str | Path, object]] = []
+    emit_vdyp_run_event(
+        append_jsonl_fn=lambda path, payload: captured.append((path, payload)),
+        vdyp_log_path="vdyp_runs.jsonl",
+        status="ok",
+        phase="initial",
+        counts=counts,
+        cmd="wine VDYP7Console.exe",
+        context={"tsa": "08"},
+        returncode=0,
+    )
+    assert len(captured) == 1
+    assert captured[0][0] == "vdyp_runs.jsonl"
+    payload = captured[0][1]
+    assert isinstance(payload, dict)
+    assert payload["event"] == "vdyp_run"
+    assert payload["status"] == "ok"
+    assert payload["feature_count"] == 2
 
 
 def test_normalize_vdyp_run_event_counts_coerces_to_ints() -> None:
