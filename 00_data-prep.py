@@ -549,14 +549,6 @@ def _build_01a_run_kwargs(tsa):
     )
 
 
-execute_legacy_tsa_stage(
-    script_path=Path(__file__).with_name("01a_run-tsa.py"),
-    module_name="run_tsa_01a",
-    tsa_list=ria_tsas[:],
-    should_skip_fn=_should_skip_01a,
-    build_run_kwargs_fn=_build_01a_run_kwargs,
-)
-
 # --- cell 58 ---
 # loop over tsas here and run notebook 01_run-tsa_step2
 def _should_skip_01b(tsa):
@@ -584,14 +576,6 @@ def _build_01b_run_kwargs(tsa):
         runtime_config=runtime_config,
     )
 
-
-execute_legacy_tsa_stage(
-    script_path=Path(__file__).with_name("01b_run-tsa.py"),
-    module_name="run_tsa_01b",
-    tsa_list=ria_tsas[:],
-    should_skip_fn=_should_skip_01b,
-    build_run_kwargs_fn=_build_01b_run_kwargs,
-)
 
 # --- cell 64 ---
 canfi_map = {
@@ -766,27 +750,62 @@ def _run_post_01b_bundle_and_curve_assignment_stage(
     return f_, au_table, curve_table, curve_points_table
 
 
-bundle_paths = resolve_bundle_paths(
-    base_dir=_legacy_data_paths.model_input_bundle_dir,
-    ensure_dir=True,
-)
-f, au_table, curve_table, curve_points_table = _run_post_01b_bundle_and_curve_assignment_stage(
+def _run_legacy_tsa_orchestration_stage(
+    *,
+    f_table,
+    ria_tsas,
+    legacy_data_paths,
+    scsi_au,
+    vdyp_curves_smooth,
+    tipsy_curves,
+):
+    execute_legacy_tsa_stage(
+        script_path=Path(__file__).with_name("01a_run-tsa.py"),
+        module_name="run_tsa_01a",
+        tsa_list=ria_tsas[:],
+        should_skip_fn=_should_skip_01a,
+        build_run_kwargs_fn=_build_01a_run_kwargs,
+    )
+
+    execute_legacy_tsa_stage(
+        script_path=Path(__file__).with_name("01b_run-tsa.py"),
+        module_name="run_tsa_01b",
+        tsa_list=ria_tsas[:],
+        should_skip_fn=_should_skip_01b,
+        build_run_kwargs_fn=_build_01b_run_kwargs,
+    )
+
+    bundle_paths = resolve_bundle_paths(
+        base_dir=legacy_data_paths.model_input_bundle_dir,
+        ensure_dir=True,
+    )
+    return _run_post_01b_bundle_and_curve_assignment_stage(
+        f_table=f_table,
+        bundle_paths=bundle_paths,
+        femic_resume_effective=_femic_resume_effective,
+        femic_no_cache=_femic_no_cache,
+        normalize_tsa_code_fn=_normalize_tsa_code,
+        apply_debug_rows_fn=_apply_debug_rows,
+        checkpoint1_path=ria_vri_vclr1p_checkpoint1_feather_path,
+        checkpoint5_path=ria_vri_vclr1p_checkpoint5_feather_path,
+        checkpoint6_path=ria_vri_vclr1p_checkpoint6_feather_path,
+        checkpoint7_path=ria_vri_vclr1p_checkpoint7_feather_path,
+        legacy_data_paths=legacy_data_paths,
+        scsi_au=scsi_au,
+        vdyp_curves_smooth=vdyp_curves_smooth,
+        tipsy_curves=tipsy_curves,
+        ria_tsas=ria_tsas,
+        canfi_species_fn=canfi_species,
+    )
+
+
+f, au_table, curve_table, curve_points_table = _run_legacy_tsa_orchestration_stage(
     f_table=f,
-    bundle_paths=bundle_paths,
-    femic_resume_effective=_femic_resume_effective,
-    femic_no_cache=_femic_no_cache,
-    normalize_tsa_code_fn=_normalize_tsa_code,
-    apply_debug_rows_fn=_apply_debug_rows,
-    checkpoint1_path=ria_vri_vclr1p_checkpoint1_feather_path,
-    checkpoint5_path=ria_vri_vclr1p_checkpoint5_feather_path,
-    checkpoint6_path=ria_vri_vclr1p_checkpoint6_feather_path,
-    checkpoint7_path=ria_vri_vclr1p_checkpoint7_feather_path,
+    ria_tsas=ria_tsas,
     legacy_data_paths=_legacy_data_paths,
     scsi_au=scsi_au,
     vdyp_curves_smooth=vdyp_curves_smooth,
     tipsy_curves=tipsy_curves,
-    ria_tsas=ria_tsas,
-    canfi_species_fn=canfi_species,
 )
 
 # --- cell 115 ---

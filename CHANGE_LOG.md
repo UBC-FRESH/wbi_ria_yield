@@ -1390,3 +1390,15 @@
 - Queued next extraction slice (ASAP closure path): close `P2.2b` by adding one thin
   top-level orchestration function in `00_data-prep.py` that sequences the extracted stage calls
   with explicit intermediate payload handoff and minimal side effects.
+- Closed `P2.2b` by adding `_run_legacy_tsa_orchestration_stage(...)` in `00_data-prep.py` to
+  sequence 01a stage execution, 01b stage execution, and post-01b bundle/AU/curve assignment under
+  one explicit handoff seam.
+- Removed remaining inline top-level sequencing calls for 01a/01b and bundle-path stage dispatch;
+  stage outputs now flow through the orchestration helper return payload.
+- Marked `P2.2` complete in `ROADMAP.md` now that `P2.2a`/`P2.2b`/`P2.2c` are all closed.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): start `P2.3a` with smoke tests for extracted
+  core helpers (path/validation and key deterministic transforms) to lock in current behavior before
+  Phase 3 workflow hardening.

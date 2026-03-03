@@ -32,9 +32,9 @@
     - [x] P2.1b.3 Collapse 00->01a cache-path handoff to one resolved payload
     - [x] P2.1b.4 Reduce 01a `run_tsa(...)` signature by bundling remaining path/runtime args
     - [x] P2.1b.5 Introduce typed 01b runtime payload and explicit 00->01b path handoff
-- [ ] P2.2 Convert notebook logic into functions
+- [x] P2.2 Convert notebook logic into functions
   - [x] P2.2a Wrap major steps with clear inputs/outputs
-  - [ ] P2.2b Add a small orchestration layer for sequencing
+  - [x] P2.2b Add a small orchestration layer for sequencing
   - [x] P2.2c Move 00_data-prep 01a/01b module-load + call loops behind shared stage helpers
 - [ ] P2.3 Add minimal tests for core helpers
   - [ ] P2.3a Smoke tests for file validation and key transforms
@@ -1541,3 +1541,11 @@
 - Queued next extraction slice (ASAP closure path): close `P2.2b` by adding one thin
   top-level orchestration function in `00_data-prep.py` that sequences the extracted stage calls
   with explicit intermediate payload handoff and minimal side effects.
+- Closed `P2.2b` by adding `_run_legacy_tsa_orchestration_stage(...)` in `00_data-prep.py` to
+  sequence 01a stage execution, 01b stage execution, and post-01b bundle/AU/curve assignment under
+  one explicit handoff seam.
+- Removed remaining inline top-level sequencing calls for 01a/01b and bundle-path stage dispatch;
+  stage outputs now flow through the orchestration helper return payload.
+- Queued next extraction slice (ASAP closure path): start `P2.3a` with smoke tests for extracted
+  core helpers (path/validation and key deterministic transforms) to lock in current behavior before
+  Phase 3 workflow hardening.
