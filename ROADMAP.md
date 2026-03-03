@@ -54,9 +54,9 @@
 - [x] P3.4 Make outputs reproducible
   - [x] P3.4a Seed randomness in bootstrap/sample paths
   - [x] P3.4b Record tool versions and runtime parameters
-- [ ] P3.5 Documentation + handoff
-  - [ ] P3.5a Update README with new workflow
-  - [ ] P3.5b Add a quickstart for running end-to-end
+- [x] P3.5 Documentation + handoff
+  - [x] P3.5a Update README with new workflow
+  - [x] P3.5b Add a quickstart for running end-to-end
 
 ## Detailed Next Steps Notes
 - `PYTHONPATH=src python -m femic --help` now works in the venv.
@@ -1627,3 +1627,11 @@
   capture are both implemented.
 - Queued next extraction slice (ASAP closure path): start `P3.5a` by updating README workflow docs
   to reflect run-config profiles, manifest provenance fields, and deterministic sampling controls.
+- Closed `P3.5a` by updating `README.md` workflow documentation for config-driven runs
+  (`--run-config`), deterministic sampling control (`FEMIC_SAMPLING_SEED`), and manifest metadata
+  sections used for reproducibility/audit.
+- Closed `P3.5b` by adding a concise end-to-end quickstart flow in `README.md` covering
+  CLI help check, TIPSY config validation, single-TSA run, and VDYP diagnostics reporting.
+- Marked `P3.5` complete now that workflow handoff docs and quickstart are both in place.
+- Queued next extraction slice (ASAP closure path): run a final roadmap consistency pass and
+  prepare branch for merge/deployment handoff.

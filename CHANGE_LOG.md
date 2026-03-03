@@ -1513,3 +1513,15 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): start `P3.5a` by updating README workflow docs
   to reflect run-config profiles, manifest provenance fields, and deterministic sampling controls.
+- Closed `P3.5a` by updating `README.md` workflow documentation for config-driven runs
+  (`--run-config`), deterministic sampling control (`FEMIC_SAMPLING_SEED`), and manifest metadata
+  sections used for reproducibility/audit.
+- Closed `P3.5b` by adding a concise end-to-end quickstart flow in `README.md` covering
+  CLI help check, TIPSY config validation, single-TSA run, and VDYP diagnostics reporting.
+- Marked `P3.5` complete in `ROADMAP.md` now that workflow handoff docs and quickstart are in
+  place.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): run a final roadmap consistency pass and
+  prepare branch for merge/deployment handoff.

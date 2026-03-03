@@ -18,6 +18,59 @@ For each TSA, raw VDYP process streams are also captured to:
 `vdyp_io/logs/vdyp_stdout-tsa<tsa>-<run_id>.log` and
 `vdyp_io/logs/vdyp_stderr-tsa<tsa>-<run_id>.log`.
 
+### Quickstart (End-to-End)
+
+1. Validate base install:
+
+```bash
+PYTHONPATH=src python -m femic --help
+```
+
+2. Validate TIPSY config handoff files:
+
+```bash
+PYTHONPATH=src python -m femic tipsy validate --config-dir config/tipsy --tsa 08
+```
+
+3. Run one TSA with resume enabled:
+
+```bash
+PYTHONPATH=src python -m femic run --tsa 08 --resume
+```
+
+4. Summarize VDYP diagnostics:
+
+```bash
+PYTHONPATH=src python -m femic vdyp report
+```
+
+### Config-Driven Runs
+
+Use a YAML/JSON profile to seed TSA selection and run modes:
+
+```bash
+PYTHONPATH=src python -m femic run --run-config config/run_profile.example.yaml
+```
+
+Profile schema and precedence are documented at `docs/reference/run-config.rst`.
+`--run-config` values are merged with CLI options; explicit CLI values still win
+for `--tsa`, `--debug-rows`, and `--run-id`.
+
+### Reproducibility Controls
+
+Set deterministic VDYP sampling with:
+
+```bash
+export FEMIC_SAMPLING_SEED=42
+```
+
+Run manifests include:
+
+- `runtime_versions` (tool/package versions)
+- `runtime_parameters` (effective FEMIC env/runtime settings)
+- `config_provenance` (`run_config_path`, `run_config_sha256`)
+- `outputs` (`output_root`, `version_tag`, `versioned_output_dir`)
+
 For faster debugging, limit the number of VRI rows processed (this disables cached checkpoints
 and output reuse):
 
