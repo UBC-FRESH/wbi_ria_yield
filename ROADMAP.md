@@ -24,7 +24,7 @@
   - [x] P1.5d Add ramp-splice diagnostics and iterative left-point trimming with warnings
 
 ## Phase 2: Modularize Pipeline Steps
-- [ ] P2.1 Extract reusable modules from `00_data-prep.py`
+- [x] P2.1 Extract reusable modules from `00_data-prep.py`
   - [x] P2.1a Split into `io.py`, `vdyp.py`, `tsa.py`, `plots.py`
   - [x] P2.1b Remove global state and pass explicit parameters
     - [x] P2.1b.1 Centralize 01a per-TSA VDYP cache-path templates in shared helper
@@ -1635,3 +1635,6 @@
 - Marked `P3.5` complete now that workflow handoff docs and quickstart are both in place.
 - Queued next extraction slice (ASAP closure path): run a final roadmap consistency pass and
   prepare branch for merge/deployment handoff.
+- Completed final roadmap consistency pass: all Phase 1/2/3 checklist items are now checked,
+  including parent closeout for `P2.1` (its sub-items were already complete).
+- Branch is ready for merge/deployment handoff.
