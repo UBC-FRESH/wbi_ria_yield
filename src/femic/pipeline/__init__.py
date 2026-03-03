@@ -49,6 +49,7 @@ from femic.pipeline.vdyp_overrides import (
     vdyp_kwarg_overrides_for_tsa,
 )
 from femic.pipeline.stages import (
+    execute_legacy_tsa_stage,
     LegacyTSAStageState,
     ParallelExecutionBackend,
     StageResult,
@@ -197,6 +198,7 @@ __all__ = [
     "assign_curve_ids_from_au_table",
     "build_legacy_execution_plan",
     "build_legacy_01a_runtime_config",
+    "execute_legacy_tsa_stage",
     "initialize_parallel_execution_backend",
     "initialize_legacy_tsa_stage_state",
     "load_legacy_module",

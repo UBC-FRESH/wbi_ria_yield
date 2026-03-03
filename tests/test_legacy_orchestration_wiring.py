@@ -26,13 +26,34 @@ def _find_method_calls(
     return calls
 
 
+def _find_function_def(tree: ast.AST, name: str) -> ast.FunctionDef:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            return node
+    raise AssertionError(f"Function {name!r} not found")
+
+
+def _find_return_dict_keys(func_def: ast.FunctionDef) -> set[str]:
+    keys: set[str] = set()
+    for node in ast.walk(func_def):
+        if not isinstance(node, ast.Return):
+            continue
+        if not isinstance(node.value, ast.Call):
+            continue
+        if not isinstance(node.value.func, ast.Name) or node.value.func.id != "dict":
+            continue
+        for kw in node.value.keywords:
+            if kw.arg is not None:
+                keys.add(kw.arg)
+    if not keys:
+        raise AssertionError(f"No dict(...) return found in {func_def.name!r}")
+    return keys
+
+
 def test_run01a_call_uses_explicit_keyword_handoff() -> None:
     tree = _load_legacy_orchestration_tree()
-    calls = _find_method_calls(
-        tree, module_name="_run01a_module", method_name="run_tsa"
-    )
-    assert len(calls) == 1
-    kwargs = {kw.arg for kw in calls[0].keywords if kw.arg is not None}
+    func_def = _find_function_def(tree, "_build_01a_run_kwargs")
+    kwargs = _find_return_dict_keys(func_def)
     expected = {
         "tsa",
         "stratum_col",
@@ -53,23 +74,21 @@ def test_run01a_call_uses_explicit_keyword_handoff() -> None:
 
 def test_run01a_call_passes_runtime_config_variable() -> None:
     tree = _load_legacy_orchestration_tree()
-    calls = _find_method_calls(
-        tree, module_name="_run01a_module", method_name="run_tsa"
-    )
-    assert len(calls) == 1
-    kwarg_nodes = {kw.arg: kw.value for kw in calls[0].keywords if kw.arg is not None}
-    runtime_value = kwarg_nodes["runtime_config"]
-    assert isinstance(runtime_value, ast.Name)
-    assert runtime_value.id == "runtime_config"
+    func_def = _find_function_def(tree, "_build_01a_run_kwargs")
+    assign_targets = {
+        target.id
+        for node in ast.walk(func_def)
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+    assert "runtime_config" in assign_targets
 
 
 def test_run01b_call_uses_explicit_keyword_handoff() -> None:
     tree = _load_legacy_orchestration_tree()
-    calls = _find_method_calls(
-        tree, module_name="_run01b_module", method_name="run_tsa"
-    )
-    assert len(calls) == 1
-    kwargs = {kw.arg for kw in calls[0].keywords if kw.arg is not None}
+    func_def = _find_function_def(tree, "_build_01b_run_kwargs")
+    kwargs = _find_return_dict_keys(func_def)
     assert kwargs == {"tsa", "results", "au_scsi", "tipsy_curves", "vdyp_curves_smooth"}
 
 
@@ -87,18 +106,22 @@ def test_no_context_binder_call_remains_in_legacy_orchestration() -> None:
 
 def test_legacy_orchestration_uses_shared_stage_loop_and_loader_helpers() -> None:
     tree = _load_legacy_orchestration_tree()
+    execute_stage_calls = 0
     loader_calls = 0
     loop_calls = 0
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
+        if isinstance(func, ast.Name) and func.id == "execute_legacy_tsa_stage":
+            execute_stage_calls += 1
         if isinstance(func, ast.Name) and func.id == "load_legacy_module":
             loader_calls += 1
         if isinstance(func, ast.Name) and func.id == "run_legacy_tsa_loop":
             loop_calls += 1
-    assert loader_calls == 2
-    assert loop_calls == 2
+    assert execute_stage_calls == 2
+    assert loader_calls == 0
+    assert loop_calls == 0
 
 
 def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
@@ -122,6 +145,7 @@ def test_legacy_orchestration_uses_runtime_and_stage_setup_helpers() -> None:
         "compile_species_volume_columns": 1,
         "prepare_tsa_index": 1,
         "build_legacy_01a_runtime_config": 1,
+        "execute_legacy_tsa_stage": 2,
         "should_skip_if_outputs_exist": 2,
         "resolve_bundle_paths": 1,
         "bundle_tables_ready": 1,

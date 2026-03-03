@@ -69,11 +69,10 @@ try:
     )
     from femic.pipeline.species_volume import compile_species_volume_columns
     from femic.pipeline.stages import (
+        execute_legacy_tsa_stage,
         initialize_parallel_execution_backend,
         initialize_legacy_tsa_stage_state,
-        load_legacy_module,
         prepare_tsa_index,
-        run_legacy_tsa_loop,
         should_skip_if_outputs_exist,
     )
     from femic.pipeline.tsa import (
@@ -133,11 +132,10 @@ except ModuleNotFoundError:
     )
     from femic.pipeline.species_volume import compile_species_volume_columns
     from femic.pipeline.stages import (
+        execute_legacy_tsa_stage,
         initialize_parallel_execution_backend,
         initialize_legacy_tsa_stage_state,
-        load_legacy_module,
         prepare_tsa_index,
-        run_legacy_tsa_loop,
         should_skip_if_outputs_exist,
     )
     from femic.pipeline.tsa import (
@@ -487,10 +485,6 @@ f = prepare_tsa_index(f_table=f, tsa_column="tsa_code")
 
 # --- cell 54 ---
 force_run_vdyp = 0
-_run01a_module = load_legacy_module(
-    script_path=Path(__file__).with_name("01a_run-tsa.py"),
-    module_name="run_tsa_01a",
-)
 
 
 def _should_skip_01a(tsa):
@@ -512,7 +506,7 @@ def _should_skip_01a(tsa):
     )
 
 
-def _run_one_01a(tsa):
+def _build_01a_run_kwargs(tsa):
     stratum_col = "stratum"
     runtime_config = build_legacy_01a_runtime_config(
         tsa_code=tsa,
@@ -530,7 +524,7 @@ def _run_one_01a(tsa):
         vdyp_out_cache=globals().get("vdyp_out_cache"),
         curve_fit_impl=globals().get("_curve_fit"),
     )
-    _run01a_module.run_tsa(
+    return dict(
         tsa=tsa,
         stratum_col=stratum_col,
         f=f,
@@ -547,20 +541,16 @@ def _run_one_01a(tsa):
     )
 
 
-run_legacy_tsa_loop(
+execute_legacy_tsa_stage(
+    script_path=Path(__file__).with_name("01a_run-tsa.py"),
+    module_name="run_tsa_01a",
     tsa_list=ria_tsas[:],
     should_skip_fn=_should_skip_01a,
-    run_one_fn=_run_one_01a,
+    build_run_kwargs_fn=_build_01a_run_kwargs,
 )
 
 # --- cell 58 ---
 # loop over tsas here and run notebook 01_run-tsa_step2
-_run01b_module = load_legacy_module(
-    script_path=Path(__file__).with_name("01b_run-tsa.py"),
-    module_name="run_tsa_01b",
-)
-
-
 def _should_skip_01b(tsa):
     tipsy_curves_path, tipsy_sppcomp_path = tipsy_stage_output_paths(tsa=tsa)
     return should_skip_if_outputs_exist(
@@ -573,8 +563,8 @@ def _should_skip_01b(tsa):
     )
 
 
-def _run_one_01b(tsa):
-    _run01b_module.run_tsa(
+def _build_01b_run_kwargs(tsa):
+    return dict(
         tsa=tsa,
         results=results,
         au_scsi=au_scsi,
@@ -583,10 +573,12 @@ def _run_one_01b(tsa):
     )
 
 
-run_legacy_tsa_loop(
+execute_legacy_tsa_stage(
+    script_path=Path(__file__).with_name("01b_run-tsa.py"),
+    module_name="run_tsa_01b",
     tsa_list=ria_tsas[:],
     should_skip_fn=_should_skip_01b,
-    run_one_fn=_run_one_01b,
+    build_run_kwargs_fn=_build_01b_run_kwargs,
 )
 
 # --- cell 64 ---

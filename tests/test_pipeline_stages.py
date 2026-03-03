@@ -7,6 +7,7 @@ from femic.pipeline.io import build_legacy_execution_plan, build_pipeline_run_co
 from femic.pipeline.legacy_runtime import build_legacy_01a_runtime_config
 from femic.pipeline.stages import (
     ParallelExecutionBackend,
+    execute_legacy_tsa_stage,
     initialize_parallel_execution_backend,
     initialize_legacy_tsa_stage_state,
     load_legacy_module,
@@ -111,6 +112,35 @@ def test_load_legacy_module_loads_run_tsa_symbol(tmp_path: Path) -> None:
 
     assert hasattr(module, "run_tsa")
     assert module.run_tsa(tsa="08") == "ran 08"
+
+
+def test_execute_legacy_tsa_stage_loads_and_runs_with_skip(tmp_path: Path) -> None:
+    script_path = tmp_path / "legacy_stage.py"
+    script_path.write_text(
+        "seen = []\ndef run_tsa(*, tsa, marker):\n    seen.append((tsa, marker))\n",
+        encoding="utf-8",
+    )
+    module = execute_legacy_tsa_stage(
+        script_path=script_path,
+        module_name="legacy_stage_test",
+        tsa_list=["08", "16", "24"],
+        should_skip_fn=lambda tsa: tsa == "16",
+        build_run_kwargs_fn=lambda tsa: {"tsa": tsa, "marker": "x"},
+    )
+    assert module.seen == [("08", "x"), ("24", "x")]
+
+
+def test_execute_legacy_tsa_stage_raises_on_missing_run_symbol(tmp_path: Path) -> None:
+    script_path = tmp_path / "legacy_stage_missing.py"
+    script_path.write_text("VALUE = 1\n", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="does not define callable"):
+        execute_legacy_tsa_stage(
+            script_path=script_path,
+            module_name="legacy_stage_missing_test",
+            tsa_list=["08"],
+            should_skip_fn=lambda _tsa: False,
+            build_run_kwargs_fn=lambda tsa: {"tsa": tsa},
+        )
 
 
 def test_run_legacy_tsa_loop_applies_skip_logic() -> None:

@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 from types import ModuleType
-from typing import Any, Callable, Iterable, Sequence
+from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from femic.pipeline.io import LegacyExecutionPlan
 
@@ -165,6 +165,36 @@ def run_legacy_tsa_loop(
         if should_skip_fn(tsa):
             continue
         run_one_fn(tsa)
+
+
+def execute_legacy_tsa_stage(
+    *,
+    script_path: str | Path,
+    module_name: str,
+    tsa_list: Sequence[str],
+    should_skip_fn: Callable[[str], bool],
+    build_run_kwargs_fn: Callable[[str], Mapping[str, Any]],
+    run_symbol: str = "run_tsa",
+    load_module_fn: Callable[..., ModuleType] = load_legacy_module,
+    run_loop_fn: Callable[..., None] = run_legacy_tsa_loop,
+) -> ModuleType:
+    """Load one legacy TSA stage module and execute its `run_tsa` loop."""
+    module = load_module_fn(script_path=script_path, module_name=module_name)
+    run_callable = getattr(module, run_symbol, None)
+    if not callable(run_callable):
+        raise RuntimeError(
+            f"Legacy module {module_name!r} does not define callable {run_symbol!r}"
+        )
+
+    def _run_one(tsa: str) -> None:
+        run_callable(**dict(build_run_kwargs_fn(tsa)))
+
+    run_loop_fn(
+        tsa_list=tsa_list,
+        should_skip_fn=should_skip_fn,
+        run_one_fn=_run_one,
+    )
+    return module
 
 
 def run_legacy_subprocess(

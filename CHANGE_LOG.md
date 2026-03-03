@@ -1337,3 +1337,17 @@
 - Queued next extraction slice: continue P2.2 by auditing repeated `dict(...)` defensive copies in
   VDYP helper seams (`build_vdyp_run_context`, `build_vdyp_run_event`) and centralizing copy policy
   where clarity improves without mutability regressions.
+- Closed P2.2c by adding shared stage executor `execute_legacy_tsa_stage(...)` in
+  `src/femic/pipeline/stages.py` and rewiring `00_data-prep.py` 01a/01b orchestration to use
+  explicit kwargs builders (`_build_01a_run_kwargs`, `_build_01b_run_kwargs`) instead of inline
+  module-load + per-TSA run-loop plumbing.
+- Updated orchestration wiring guardrails in `tests/test_legacy_orchestration_wiring.py` to assert
+  helper-driven 01a/01b dispatch and preserved explicit keyword handoff payloads.
+- Added stage-helper regression coverage in `tests/test_pipeline_stages.py` for
+  `execute_legacy_tsa_stage(...)` success and missing-symbol failure behavior.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest` (259 passed),
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): finish `P2.1b` by eliminating remaining
+  implicit/global state handoff at 00->01a/01b boundaries, then close `P2.2a`/`P2.2b` with
+  explicit major-step wrappers and thin orchestration sequencing.
