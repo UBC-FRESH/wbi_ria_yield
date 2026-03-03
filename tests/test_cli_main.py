@@ -108,3 +108,25 @@ def test_preflight_checks_resume_warns_when_wine_missing(
 
     assert any("wine not found on PATH" in msg for msg in messages)
     assert not any("[red]Error:" in msg for msg in messages)
+
+
+def test_preflight_checks_fails_for_specific_missing_required_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    repo_root = _set_cli_repo_root(monkeypatch, tmp_path)
+    _create_preflight_required_layout(repo_root)
+    missing_required = repo_root / "data" / "tipsy_params_columns"
+    missing_required.unlink()
+
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(cli_main.shutil, "which", lambda _: "/usr/bin/wine")
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main._preflight_checks(resume=False)
+
+    assert exc_info.value.exit_code == 1
+    error_messages = [msg for msg in messages if "[red]Error:" in msg]
+    assert len(error_messages) == 1
+    assert "Missing required file" in error_messages[0]
+    assert str(missing_required) in error_messages[0]

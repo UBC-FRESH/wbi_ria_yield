@@ -36,9 +36,9 @@
   - [x] P2.2a Wrap major steps with clear inputs/outputs
   - [x] P2.2b Add a small orchestration layer for sequencing
   - [x] P2.2c Move 00_data-prep 01a/01b module-load + call loops behind shared stage helpers
-- [ ] P2.3 Add minimal tests for core helpers
+- [x] P2.3 Add minimal tests for core helpers
   - [x] P2.3a Smoke tests for file validation and key transforms
-  - [ ] P2.3b Deterministic checks for small sample data
+  - [x] P2.3b Deterministic checks for small sample data
 
 ## Phase 3: Workflow Hardening
 - [ ] P3.1 Sphinx docs + GitHub Pages (FHOPS-style)
@@ -1555,3 +1555,10 @@
 - Queued next extraction slice (ASAP closure path): start `P2.3b` by adding deterministic,
   small-sample assertions for one or two extracted core helpers where behavior contracts are
   currently implicit (without expanding runtime-heavy legacy integration scope).
+- Closed `P2.3b` with deterministic, small-sample CLI preflight assertions in
+  `tests/test_cli_main.py`, including exact missing-required-file failure behavior and stable error
+  classification under controlled repo layouts.
+- Marked `P2.3` complete now that both `P2.3a` and `P2.3b` are closed.
+- Queued next extraction slice (ASAP closure path): begin Phase 3 (`P3.1a`) by validating and
+  tightening Sphinx config/package surface (theme/extensions/autosummary defaults) now that Phase 2
+  modularization + minimal helper test coverage are complete.

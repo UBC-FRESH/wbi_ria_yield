@@ -1411,3 +1411,13 @@
 - Queued next extraction slice (ASAP closure path): start `P2.3b` by adding deterministic,
   small-sample assertions for one or two extracted core helpers where behavior contracts are
   currently implicit (without expanding runtime-heavy legacy integration scope).
+- Closed `P2.3b` with deterministic, small-sample CLI preflight assertions in
+  `tests/test_cli_main.py`, including exact missing-required-file failure behavior and stable error
+  classification under controlled repo layouts.
+- Marked `P2.3` complete in `ROADMAP.md` now that both `P2.3a` and `P2.3b` are closed.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): begin Phase 3 (`P3.1a`) by validating and
+  tightening Sphinx config/package surface (theme/extensions/autosummary defaults) now that Phase 2
+  modularization + minimal helper test coverage are complete.
