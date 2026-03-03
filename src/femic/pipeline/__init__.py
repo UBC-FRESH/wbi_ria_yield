@@ -4,17 +4,22 @@ from __future__ import annotations
 
 from femic.pipeline.io import (
     DEFAULT_DEV_CONFIG_PATH,
+    DEFAULT_RUN_CONFIG_PATH,
+    EffectiveRunOptions,
     FALLBACK_DEFAULT_TSA_LIST,
     LegacyDataArtifactPaths,
     LegacyExternalDataPaths,
     LegacyExecutionPlan,
+    PipelineRunProfile,
     build_legacy_data_artifact_paths,
     PipelineRunConfig,
     build_ria_vri_checkpoint_paths,
     build_legacy_execution_plan,
     build_pipeline_run_config,
+    load_pipeline_run_profile,
     load_default_tsa_list,
     normalize_tsa_list,
+    resolve_effective_run_options,
     resolve_legacy_external_data_paths,
 )
 from femic.pipeline.manifest import (
@@ -185,10 +190,13 @@ from femic.pipeline.vdyp_stage import (
 
 __all__ = [
     "DEFAULT_DEV_CONFIG_PATH",
+    "DEFAULT_RUN_CONFIG_PATH",
+    "EffectiveRunOptions",
     "FALLBACK_DEFAULT_TSA_LIST",
     "LegacyDataArtifactPaths",
     "LegacyExternalDataPaths",
     "LegacyExecutionPlan",
+    "PipelineRunProfile",
     "PipelineRunConfig",
     "build_legacy_data_artifact_paths",
     "build_ria_vri_checkpoint_paths",
@@ -308,8 +316,10 @@ __all__ = [
     "prepare_stands_export_frame",
     "should_skip_stands_export",
     "build_pipeline_run_config",
+    "load_pipeline_run_profile",
     "load_default_tsa_list",
     "normalize_tsa_list",
+    "resolve_effective_run_options",
     "execute_vdyp_batch",
     "execute_bootstrap_vdyp_runs",
     "build_bootstrap_vdyp_results_runner",

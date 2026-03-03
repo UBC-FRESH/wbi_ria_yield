@@ -130,3 +130,77 @@ def test_preflight_checks_fails_for_specific_missing_required_file(
     assert len(error_messages) == 1
     assert "Missing required file" in error_messages[0]
     assert str(missing_required) in error_messages[0]
+
+
+def test_run_all_exits_on_invalid_run_config(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    cfg_path = tmp_path / "bad.json"
+    cfg_path.write_text("[]", encoding="utf-8")
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.run_all(
+            data_root=Path("data"),
+            output_root=Path("outputs"),
+            tsa=None,
+            resume=False,
+            dry_run=False,
+            verbose=False,
+            skip_checks=False,
+            debug_rows=None,
+            run_id=None,
+            log_dir=Path("vdyp_io/logs"),
+            run_config=cfg_path,
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert any("Invalid run config" in msg for msg in messages)
+
+
+def test_run_all_uses_profile_dry_run_and_profile_defaults(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    cfg_path = tmp_path / "run_profile.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "selection:",
+                "  tsa: ['16']",
+                "modes:",
+                "  resume: true",
+                "  dry_run: true",
+                "  debug_rows: 12",
+                "run:",
+                "  run_id: cfg-run",
+                "  log_dir: vdyp_io/custom_logs",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.run_all(
+            data_root=Path("data"),
+            output_root=Path("outputs"),
+            tsa=None,
+            resume=False,
+            dry_run=False,
+            verbose=False,
+            skip_checks=False,
+            debug_rows=None,
+            run_id=None,
+            log_dir=Path("vdyp_io/logs"),
+            run_config=cfg_path,
+        )
+
+    assert exc_info.value.exit_code == 0
+    assert any("Dry run" in msg for msg in messages)
+    assert any("tsa=['16']" in msg for msg in messages)
+    assert any("resume=True" in msg for msg in messages)
+    assert any("debug_rows=12" in msg for msg in messages)
+    assert any("run_id=cfg-run" in msg for msg in messages)

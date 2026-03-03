@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import shutil
 
 import typer
+import yaml
 from rich.console import Console
 
 from femic import __version__
-from femic.pipeline.io import build_pipeline_run_config
+from femic.pipeline.io import (
+    build_pipeline_run_config,
+    load_pipeline_run_profile,
+    resolve_effective_run_options,
+)
 from femic.pipeline.tipsy_config import (
     discover_tipsy_config_tsas,
     load_tipsy_tsa_config,
@@ -105,6 +111,12 @@ LOG_DIR_OPTION = typer.Option(
     Path("vdyp_io/logs"),
     "--log-dir",
     help="Directory for run manifests and run-scoped VDYP JSONL logs.",
+)
+RUN_CONFIG_OPTION = typer.Option(
+    None,
+    "--run-config",
+    help="YAML/JSON run profile used to seed TSA/strata and mode defaults.",
+    show_default=False,
 )
 VDYP_CURVE_LOG_OPTION = typer.Option(
     Path("vdyp_io/logs/vdyp_curve_events.jsonl"),
@@ -271,32 +283,62 @@ def run_all(
     debug_rows: int | None = DEBUG_ROWS_OPTION,
     run_id: str | None = RUN_ID_OPTION,
     log_dir: Path = LOG_DIR_OPTION,
+    run_config: Path | None = RUN_CONFIG_OPTION,
 ) -> None:
-    if data_root != Path("data") or output_root != Path("outputs"):
-        console.print("[red]data-root/output-root overrides are not wired yet.[/red]")
-        raise typer.Exit(code=1)
-    if dry_run:
-        console.print(
-            f"[yellow]Dry run:[/yellow] femic run tsa={tsa or 'ALL'} "
-            f"resume={resume} debug_rows={debug_rows} run_id={run_id or 'AUTO'} "
-            f"log_dir={log_dir}"
-        )
-        raise typer.Exit()
-    if not skip_checks:
-        _preflight_checks(resume=resume)
-    if verbose:
-        console.print(
-            f"Running legacy pipeline for tsa={tsa or 'ALL'} (resume={resume}, "
-            f"debug_rows={debug_rows}, run_id={run_id or 'AUTO'})"
-        )
-    run_config = build_pipeline_run_config(
+    run_profile = None
+    if run_config is not None:
+        try:
+            run_profile = load_pipeline_run_profile(run_config)
+        except (
+            FileNotFoundError,
+            ValueError,
+            json.JSONDecodeError,
+            yaml.YAMLError,
+        ) as exc:
+            console.print(f"[red]Invalid run config:[/red] {exc}")
+            raise typer.Exit(code=1) from exc
+    effective = resolve_effective_run_options(
         tsa_list=tsa,
         resume=resume,
+        dry_run=dry_run,
+        verbose=verbose,
+        skip_checks=skip_checks,
         debug_rows=debug_rows,
         run_id=run_id,
         log_dir=log_dir,
+        profile=run_profile,
     )
-    manifest_path = run_data_prep(run_config)
+    if effective.strata_list:
+        console.print(
+            "[yellow]Warning:[/yellow] run config strata selection is recorded but not "
+            "yet wired into legacy execution filtering."
+        )
+    if data_root != Path("data") or output_root != Path("outputs"):
+        console.print("[red]data-root/output-root overrides are not wired yet.[/red]")
+        raise typer.Exit(code=1)
+    if effective.dry_run:
+        console.print(
+            f"[yellow]Dry run:[/yellow] femic run tsa={effective.tsa_list or 'ALL'} "
+            f"resume={effective.resume} debug_rows={effective.debug_rows} "
+            f"run_id={effective.run_id or 'AUTO'} log_dir={effective.log_dir}"
+        )
+        raise typer.Exit()
+    if not effective.skip_checks:
+        _preflight_checks(resume=effective.resume)
+    if effective.verbose:
+        console.print(
+            f"Running legacy pipeline for tsa={effective.tsa_list or 'ALL'} "
+            f"(resume={effective.resume}, debug_rows={effective.debug_rows}, "
+            f"run_id={effective.run_id or 'AUTO'})"
+        )
+    pipeline_run_config = build_pipeline_run_config(
+        tsa_list=effective.tsa_list,
+        resume=effective.resume,
+        debug_rows=effective.debug_rows,
+        run_id=effective.run_id,
+        log_dir=effective.log_dir,
+    )
+    manifest_path = run_data_prep(pipeline_run_config)
     console.print(f"Run manifest: {manifest_path}")
 
 

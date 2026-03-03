@@ -1466,3 +1466,16 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): start `P3.3a` by adding a first config file
   schema for selecting TSA/mode flags and mapping it into existing run option parsing.
+- Closed `P3.3a` by adding YAML/JSON run-profile loading
+  (`load_pipeline_run_profile(...)`) and explicit CLI/profile merge logic
+  (`resolve_effective_run_options(...)`) for `femic run` TSA/strata/mode selection.
+- Added `--run-config` support in `femic run`, a template profile at
+  `config/run_profile.example.yaml`, and reference docs for schema/precedence in
+  `docs/reference/run-config.rst`.
+- Added deterministic coverage for run-profile loading/validation and CLI integration in
+  `tests/test_pipeline_helpers.py` and `tests/test_cli_main.py`.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): close `P3.3b` by extending run manifest payload
+  metadata with profile/config provenance and versioned output-root annotations.

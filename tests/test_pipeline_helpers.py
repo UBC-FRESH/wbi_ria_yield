@@ -8,8 +8,10 @@ from femic.pipeline.io import (
     build_ria_vri_checkpoint_paths,
     build_legacy_execution_plan,
     build_pipeline_run_config,
+    load_pipeline_run_profile,
     load_default_tsa_list,
     normalize_tsa_list,
+    resolve_effective_run_options,
     resolve_legacy_external_data_paths,
     resolve_run_paths,
 )
@@ -611,6 +613,71 @@ def test_build_pipeline_run_config_normalizes_tsa_values() -> None:
     assert cfg.resume is True
     assert cfg.debug_rows == 25
     assert cfg.run_id == "test123"
+
+
+def test_load_pipeline_run_profile_from_yaml(tmp_path: Path) -> None:
+    profile_path = tmp_path / "run_profile.yaml"
+    profile_path.write_text(
+        "\n".join(
+            [
+                "selection:",
+                "  tsa: ['8', '16']",
+                "  strata: ['SBSdk', 'IDF']",
+                "modes:",
+                "  resume: true",
+                "  dry_run: false",
+                "  verbose: true",
+                "  skip_checks: true",
+                "  debug_rows: 25",
+                "run:",
+                "  run_id: cfg001",
+                "  log_dir: vdyp_io/custom_logs",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    profile = load_pipeline_run_profile(profile_path)
+    assert profile.tsa_list == ["8", "16"]
+    assert profile.strata_list == ["SBSdk", "IDF"]
+    assert profile.resume is True
+    assert profile.verbose is True
+    assert profile.skip_checks is True
+    assert profile.debug_rows == 25
+    assert profile.run_id == "cfg001"
+    assert profile.log_dir == Path("vdyp_io/custom_logs")
+
+
+def test_resolve_effective_run_options_merges_profile_and_cli() -> None:
+    profile = load_pipeline_run_profile(Path("config/run_profile.example.yaml"))
+    resolved = resolve_effective_run_options(
+        tsa_list=["24"],
+        resume=False,
+        dry_run=False,
+        verbose=False,
+        skip_checks=False,
+        debug_rows=None,
+        run_id=None,
+        log_dir=Path("vdyp_io/logs"),
+        profile=profile,
+    )
+
+    assert resolved.tsa_list == ["24"]
+    assert resolved.strata_list == ["SBSdk", "IDFdk"]
+    assert resolved.resume is True
+    assert resolved.verbose is True
+    assert resolved.skip_checks is True
+    assert resolved.debug_rows == 250
+    assert resolved.run_id == "dev-profile"
+    assert resolved.log_dir == Path("vdyp_io/profile_logs")
+
+
+def test_load_pipeline_run_profile_rejects_invalid_root_type(tmp_path: Path) -> None:
+    profile_path = tmp_path / "bad.json"
+    profile_path.write_text("[]", encoding="utf-8")
+    with pytest.raises(ValueError, match="Run config root must be a mapping"):
+        load_pipeline_run_profile(profile_path)
 
 
 def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> None:

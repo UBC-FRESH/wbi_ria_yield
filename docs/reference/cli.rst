@@ -41,6 +41,7 @@ Run
 - ``--debug-rows INTEGER``
 - ``--run-id TEXT``
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
+- ``--run-config PATH`` (YAML/JSON run profile)
 
 Prep
 ----

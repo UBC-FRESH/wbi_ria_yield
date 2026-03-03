@@ -4,14 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import json
 from pathlib import Path
 import tomllib
 from typing import Iterable, Mapping
 import uuid
 
+import yaml
+
 
 DEFAULT_DEV_CONFIG_PATH = Path("config/dev.toml")
 FALLBACK_DEFAULT_TSA_LIST = ["08"]
+DEFAULT_RUN_CONFIG_PATH = Path("config/run_profile.yaml")
 
 
 def load_default_tsa_list(config_path: Path = DEFAULT_DEV_CONFIG_PATH) -> list[str]:
@@ -74,6 +78,36 @@ class PipelineRunConfig:
     debug_rows: int | None = None
     run_id: str | None = None
     log_dir: Path | None = None
+
+
+@dataclass(frozen=True)
+class PipelineRunProfile:
+    """Config-file driven run profile for selecting TSAs/strata and mode flags."""
+
+    tsa_list: list[str] | None = None
+    strata_list: list[str] | None = None
+    resume: bool = False
+    dry_run: bool = False
+    verbose: bool = False
+    skip_checks: bool = False
+    debug_rows: int | None = None
+    run_id: str | None = None
+    log_dir: Path | None = None
+
+
+@dataclass(frozen=True)
+class EffectiveRunOptions:
+    """Resolved run options after merging CLI values with optional profile config."""
+
+    tsa_list: list[str]
+    strata_list: list[str]
+    resume: bool
+    dry_run: bool
+    verbose: bool
+    skip_checks: bool
+    debug_rows: int | None
+    run_id: str | None
+    log_dir: Path
 
 
 @dataclass(frozen=True)
@@ -184,6 +218,143 @@ def build_legacy_data_artifact_paths(
         model_input_bundle_dir=root / "model_input_bundle",
         misc_thlb_tif_path=root / "misc.thlb.tif",
         stands_shp_dir=root / "shp",
+    )
+
+
+def _normalize_optional_str_list(value: object, *, field_name: str) -> list[str] | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError(f"{field_name} must be a list")
+    return [str(item) for item in value]
+
+
+def _normalize_optional_bool(value: object, *, field_name: str) -> bool:
+    if value is None:
+        return False
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean")
+    return value
+
+
+def _normalize_optional_int(value: object, *, field_name: str) -> int | None:
+    if value is None:
+        return None
+    if not isinstance(value, int):
+        raise ValueError(f"{field_name} must be an integer")
+    return value
+
+
+def _normalize_optional_path(value: object, *, field_name: str) -> Path | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string path")
+    return Path(value)
+
+
+def _normalize_optional_str(value: object, *, field_name: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    return value
+
+
+def load_pipeline_run_profile(config_path: Path) -> PipelineRunProfile:
+    """Load YAML/JSON run profile used to seed CLI options."""
+    if not config_path.exists():
+        raise FileNotFoundError(f"Run config not found: {config_path}")
+    suffix = config_path.suffix.lower()
+    raw_text = config_path.read_text(encoding="utf-8")
+    if suffix == ".json":
+        parsed = json.loads(raw_text)
+    elif suffix in {".yaml", ".yml"}:
+        parsed = yaml.safe_load(raw_text)
+    else:
+        raise ValueError(f"Unsupported run config format: {config_path}")
+    if parsed is None:
+        parsed = {}
+    if not isinstance(parsed, dict):
+        raise ValueError("Run config root must be a mapping")
+
+    selection = parsed.get("selection", {})
+    if selection is None:
+        selection = {}
+    if not isinstance(selection, dict):
+        raise ValueError("selection must be a mapping")
+
+    modes = parsed.get("modes", {})
+    if modes is None:
+        modes = {}
+    if not isinstance(modes, dict):
+        raise ValueError("modes must be a mapping")
+
+    run = parsed.get("run", {})
+    if run is None:
+        run = {}
+    if not isinstance(run, dict):
+        raise ValueError("run must be a mapping")
+
+    return PipelineRunProfile(
+        tsa_list=_normalize_optional_str_list(
+            selection.get("tsa"), field_name="selection.tsa"
+        ),
+        strata_list=_normalize_optional_str_list(
+            selection.get("strata"), field_name="selection.strata"
+        ),
+        resume=_normalize_optional_bool(modes.get("resume"), field_name="modes.resume"),
+        dry_run=_normalize_optional_bool(
+            modes.get("dry_run"), field_name="modes.dry_run"
+        ),
+        verbose=_normalize_optional_bool(
+            modes.get("verbose"), field_name="modes.verbose"
+        ),
+        skip_checks=_normalize_optional_bool(
+            modes.get("skip_checks"), field_name="modes.skip_checks"
+        ),
+        debug_rows=_normalize_optional_int(
+            modes.get("debug_rows"), field_name="modes.debug_rows"
+        ),
+        run_id=_normalize_optional_str(run.get("run_id"), field_name="run.run_id"),
+        log_dir=_normalize_optional_path(run.get("log_dir"), field_name="run.log_dir"),
+    )
+
+
+def resolve_effective_run_options(
+    *,
+    tsa_list: list[str] | None,
+    resume: bool,
+    dry_run: bool,
+    verbose: bool,
+    skip_checks: bool,
+    debug_rows: int | None,
+    run_id: str | None,
+    log_dir: Path,
+    profile: PipelineRunProfile | None,
+) -> EffectiveRunOptions:
+    """Merge CLI run values with profile defaults and normalize for execution."""
+    active_profile = profile or PipelineRunProfile()
+    merged_tsa = tsa_list if tsa_list else active_profile.tsa_list
+    merged_debug_rows = (
+        debug_rows if debug_rows is not None else active_profile.debug_rows
+    )
+    merged_run_id = run_id if run_id is not None else active_profile.run_id
+    merged_log_dir = (
+        active_profile.log_dir
+        if log_dir == Path("vdyp_io/logs") and active_profile.log_dir is not None
+        else log_dir
+    )
+    return EffectiveRunOptions(
+        tsa_list=normalize_tsa_list(merged_tsa),
+        strata_list=active_profile.strata_list or [],
+        resume=resume or active_profile.resume,
+        dry_run=dry_run or active_profile.dry_run,
+        verbose=verbose or active_profile.verbose,
+        skip_checks=skip_checks or active_profile.skip_checks,
+        debug_rows=merged_debug_rows,
+        run_id=merged_run_id,
+        log_dir=Path(merged_log_dir),
     )
 
 

@@ -1,0 +1,16 @@
+selection:
+  tsa:
+    - "08"
+    - "16"
+  strata:
+    - "SBSdk"
+    - "IDFdk"
+modes:
+  resume: true
+  dry_run: false
+  verbose: true
+  skip_checks: true
+  debug_rows: 250
+run:
+  run_id: "dev-profile"
+  log_dir: "vdyp_io/profile_logs"
