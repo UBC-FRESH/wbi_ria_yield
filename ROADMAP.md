@@ -41,10 +41,10 @@
   - [x] P2.3b Deterministic checks for small sample data
 
 ## Phase 3: Workflow Hardening
-- [ ] P3.1 Sphinx docs + GitHub Pages (FHOPS-style)
+- [x] P3.1 Sphinx docs + GitHub Pages (FHOPS-style)
   - [x] P3.1a Add `docs/conf.py` with `sphinx_rtd_theme`, `nbsphinx`, `autosummary`
   - [x] P3.1b Add `docs/index.rst` + `docs/reference/cli.rst` mirroring CLI help
-  - [ ] P3.1c Add GitHub Pages workflow to build + publish `docs/_build/html`
+  - [x] P3.1c Add GitHub Pages workflow to build + publish `docs/_build/html`
 - [ ] P3.2 Nemora alignment prep
   - [ ] P3.2a Map femic CLI commands to nemora task taxonomy
   - [ ] P3.2b Identify shared utilities to upstream into nemora later
@@ -1575,3 +1575,9 @@
   (top-level plus `run`, `prep`, `vdyp`, `tsa`, and `tipsy` subcommand entries).
 - Queued next extraction slice (ASAP closure path): close `P3.1c` with a GitHub Pages docs build
   workflow that runs Sphinx in CI and publishes `_build/html`.
+- Closed `P3.1c` by adding `.github/workflows/docs-pages.yml` with PR/push docs build, strict
+  `sphinx-build -W` gating, artifact upload, and deploy-to-Pages on pushes to `main`.
+- Marked `P3.1` complete now that docs config, reference content, and Pages CI publishing are all
+  in place.
+- Queued next extraction slice (ASAP closure path): start `P3.2a` by mapping current `femic` CLI
+  commands/subcommands to a draft Nemora task taxonomy table in docs.

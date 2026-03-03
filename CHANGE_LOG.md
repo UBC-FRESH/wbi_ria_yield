@@ -1440,3 +1440,12 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): close `P3.1c` with a GitHub Pages docs build
   workflow that runs Sphinx in CI and publishes `_build/html`.
+- Closed `P3.1c` by adding `.github/workflows/docs-pages.yml` with PR/push docs build, strict
+  `sphinx-build -W` gating, artifact upload, and deploy-to-Pages on pushes to `main`.
+- Marked `P3.1` complete in `ROADMAP.md` now that docs config, reference content, and Pages CI
+  publishing are all in place.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): start `P3.2a` by mapping current `femic` CLI
+  commands/subcommands to a draft Nemora task taxonomy table in docs.
