@@ -105,6 +105,20 @@ def build_run_manifest_payload(
             "FEMIC_EXTERNAL_DATA_ROOT": execution_plan.env.get(
                 "FEMIC_EXTERNAL_DATA_ROOT"
             ),
+            "FEMIC_SAMPLING_SEED": execution_plan.env.get("FEMIC_SAMPLING_SEED"),
+        },
+        "runtime_parameters": {
+            "femic_tsa_list": execution_plan.env.get("FEMIC_TSA_LIST"),
+            "femic_resume": execution_plan.env.get("FEMIC_RESUME"),
+            "femic_debug_rows": execution_plan.env.get("FEMIC_DEBUG_ROWS"),
+            "femic_run_id": execution_plan.env.get("FEMIC_RUN_ID"),
+            "femic_log_dir": execution_plan.env.get("FEMIC_LOG_DIR"),
+            "femic_output_root": execution_plan.env.get("FEMIC_OUTPUT_ROOT"),
+            "femic_run_config_path": execution_plan.env.get("FEMIC_RUN_CONFIG_PATH"),
+            "femic_run_config_sha256": execution_plan.env.get(
+                "FEMIC_RUN_CONFIG_SHA256"
+            ),
+            "femic_sampling_seed": execution_plan.env.get("FEMIC_SAMPLING_SEED"),
         },
         "runtime_versions": collect_runtime_versions(),
         "paths": {

@@ -51,9 +51,9 @@
 - [x] P3.3 Add config-driven runs
   - [x] P3.3a YAML/JSON config to select TSA, strata, and modes
   - [x] P3.3b Store run metadata and versioned outputs
-- [ ] P3.4 Make outputs reproducible
+- [x] P3.4 Make outputs reproducible
   - [x] P3.4a Seed randomness in bootstrap/sample paths
-  - [ ] P3.4b Record tool versions and runtime parameters
+  - [x] P3.4b Record tool versions and runtime parameters
 - [ ] P3.5 Documentation + handoff
   - [ ] P3.5a Update README with new workflow
   - [ ] P3.5b Add a quickstart for running end-to-end
@@ -1618,3 +1618,12 @@
   `tests/test_vdyp_stage.py` for fixed-seed sampling stability and per-dispatch seed derivation.
 - Queued next extraction slice (ASAP closure path): close `P3.4b` by ensuring run manifests capture
   full runtime/tool version metadata consistently for config-driven and non-config runs.
+- Closed `P3.4b` by extending manifest payload runtime metadata capture with an explicit
+  `runtime_parameters` block and seed/config provenance fields (`FEMIC_SAMPLING_SEED`,
+  `FEMIC_RUN_CONFIG_*`, output-root metadata).
+- Added regression assertions in `tests/test_legacy_manifest.py` for runtime-parameter sections and
+  seed/config provenance values.
+- Marked `P3.4` complete now that deterministic seed control and runtime parameter/version metadata
+  capture are both implemented.
+- Queued next extraction slice (ASAP closure path): start `P3.5a` by updating README workflow docs
+  to reflect run-config profiles, manifest provenance fields, and deterministic sampling controls.

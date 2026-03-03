@@ -38,3 +38,5 @@ When provided, run manifests also record ``run_config_path`` and
 ``run_config_sha256`` provenance metadata plus output version annotations.
 For deterministic VDYP bootstrap sampling, set ``FEMIC_SAMPLING_SEED`` to an
 integer value.
+Run manifests include a ``runtime_parameters`` section to capture the effective
+FEMIC execution settings used for each run.

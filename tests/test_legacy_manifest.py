@@ -41,7 +41,7 @@ def test_build_manifest_payload_contains_runtime_and_artifact_sections(
         run_config=cfg,
         script_path=script_path,
         python_executable="python",
-        base_env={"FEMIC_RUN_UUID": "uuid-1"},
+        base_env={"FEMIC_RUN_UUID": "uuid-1", "FEMIC_SAMPLING_SEED": "99"},
     )
     payload = build_run_manifest_payload(
         execution_plan=plan,
@@ -61,3 +61,9 @@ def test_build_manifest_payload_contains_runtime_and_artifact_sections(
     assert payload["config_provenance"]["run_config_sha256"] == "deadbeef"
     assert payload["outputs"]["version_tag"] == "run123"
     assert payload["options"]["output_root"] == str(tmp_path / "outputs")
+    assert "runtime_parameters" in payload
+    assert payload["runtime_parameters"]["femic_output_root"] == str(
+        tmp_path / "outputs"
+    )
+    assert payload["runtime_parameters"]["femic_run_config_sha256"] == "deadbeef"
+    assert payload["env_flags"]["FEMIC_SAMPLING_SEED"] == "99"

@@ -1501,3 +1501,15 @@
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
 - Queued next extraction slice (ASAP closure path): close `P3.4b` by ensuring run manifests capture
   full runtime/tool version metadata consistently for config-driven and non-config runs.
+- Closed `P3.4b` by extending manifest payload runtime metadata capture with an explicit
+  `runtime_parameters` block and seed/config provenance fields (`FEMIC_SAMPLING_SEED`,
+  `FEMIC_RUN_CONFIG_*`, output-root metadata).
+- Added regression assertions in `tests/test_legacy_manifest.py` for runtime-parameter sections and
+  seed/config provenance values.
+- Marked `P3.4` complete in `ROADMAP.md` now that deterministic seed control and runtime
+  parameter/version metadata capture are both implemented.
+- Completed validation gate for this slice:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W`.
+- Queued next extraction slice (ASAP closure path): start `P3.5a` by updating README workflow docs
+  to reflect run-config profiles, manifest provenance fields, and deterministic sampling controls.
