@@ -6,10 +6,10 @@ metadata:
     - title: "Provisional generic TSA29 scaffold"
       year: 2026
       url: ""
-      notes: "Functional catch-all for pipeline bring-up; replace with TSA-specific TSR logic."
+      notes: "Provisional silviculture-oriented tuning for TSA29 bring-up; replace with TSR rules."
   author: "codex-provisional"
   created_utc: "2026-03-03T00:00:00Z"
-  notes: "Catch-all rule ensures full AU coverage; species set from VRI leading species."
+  notes: "Ordered BEC/species-group rules with final catch-all to retain full AU coverage."
 
 defaults:
   e:
@@ -60,6 +60,136 @@ defaults:
     GW_age_5: null
 
 rules:
+  - id: "tsa29_pine_ms_sbps_idf"
+    when:
+      bec_in: ["MS", "SBPS", "IDF"]
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1600
+        SPP_1: "PLI"
+        PCT_1: 85
+        SPP_2: "SW"
+        PCT_2: 15
+        GW_1: 6
+        GW_age_1: 12
+        Util_DBH_cm: 12.5
+      f:
+        Regen_Delay: 1
+        Density: 1500
+        SPP_1: "PLI"
+        PCT_1: 85
+        SPP_2: "SW"
+        PCT_2: 15
+        GW_1: 6
+        GW_age_1: 12
+        Util_DBH_cm: 12.5
+
+  - id: "tsa29_pine_essf"
+    when:
+      bec_in: ["ESSF"]
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1550
+        SPP_1: "PLI"
+        PCT_1: 75
+        SPP_2: "SE"
+        PCT_2: 25
+        GW_1: 8
+        GW_age_1: 12
+        Util_DBH_cm: 12.5
+      f:
+        Regen_Delay: 1
+        Density: 1450
+        SPP_1: "PLI"
+        PCT_1: 75
+        SPP_2: "SE"
+        PCT_2: 25
+        GW_1: 8
+        GW_age_1: 12
+        Util_DBH_cm: 12.5
+
+  - id: "tsa29_fir_idf"
+    when:
+      bec_in: ["IDF"]
+      leading_species_in: ["F", "FD", "FDC", "FDI"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1450
+        SPP_1: "FD"
+        PCT_1: 70
+        SPP_2: "PLI"
+        PCT_2: 30
+        GW_1: 4
+        GW_age_1: 12
+        Util_DBH_cm: 17.5
+      f:
+        Regen_Delay: 1
+        Density: 1350
+        SPP_1: "FD"
+        PCT_1: 70
+        SPP_2: "PLI"
+        PCT_2: 30
+        GW_1: 4
+        GW_age_1: 12
+        Util_DBH_cm: 17.5
+
+  - id: "tsa29_spruce_essf"
+    when:
+      bec_in: ["ESSF"]
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1500
+        SPP_1: "SE"
+        PCT_1: 80
+        SPP_2: "BL"
+        PCT_2: 20
+        GW_1: 10
+        GW_age_1: 12
+        Util_DBH_cm: 17.5
+      f:
+        Regen_Delay: 1
+        Density: 1400
+        SPP_1: "SE"
+        PCT_1: 80
+        SPP_2: "BL"
+        PCT_2: 20
+        GW_1: 10
+        GW_age_1: 12
+        Util_DBH_cm: 17.5
+
+  - id: "tsa29_balsam_essf"
+    when:
+      bec_in: ["ESSF"]
+      leading_species_in: ["B", "BA", "BB", "BG", "BL", "BM", "BP"]
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1450
+        SPP_1: "BL"
+        PCT_1: 70
+        SPP_2: "SE"
+        PCT_2: 30
+        GW_1: 8
+        GW_age_1: 12
+        Util_DBH_cm: 17.5
+      f:
+        Regen_Delay: 1
+        Density: 1350
+        SPP_1: "BL"
+        PCT_1: 70
+        SPP_2: "SE"
+        PCT_2: 30
+        GW_1: 8
+        GW_age_1: 12
+        Util_DBH_cm: 17.5
+
   - id: "tsa29_all_aus_catchall"
     when: {}
     assign:

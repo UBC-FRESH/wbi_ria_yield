@@ -1674,5 +1674,13 @@
 - Closed queued run-manifest/audit logging for `femic tsa post-tipsy`:
   added workflow-level manifest emission (`started`/`ok`/`failed`) with runtime metadata + output
   artifact checks, and wired CLI `--run-id`/`--log-dir` through the command.
-- Remaining immediate queue: begin TSA29 TIPSY rule quality tuning and add managed-vs-unmanaged
-  regression assertions.
+- Started TSA29 TIPSY rule quality tuning: replaced single-species catch-all behavior with ordered
+  provisional BEC/species-group rules (pine, fir, spruce, balsam pathways) including species mixes,
+  adjusted density/utilization, and modest GW settings while preserving final catch-all coverage.
+- Added regression coverage in `tests/test_tipsy_config.py` for key TSA29 rule matches
+  (MS pine pathway and IDF fir pathway).
+- Regenerated `data/tipsy_params_tsa29.xlsx` + `data/02_input-tsa29.dat` from cached TSA29
+  artifacts using the tuned ruleset so next BatchTIPSY run can proceed immediately.
+- Remaining immediate queue: run BatchTIPSY with the new TSA29 input, re-run
+  `femic tsa post-tipsy --tsa 29`, then add managed-vs-unmanaged curve-dominance regression
+  assertions from the refreshed outputs.

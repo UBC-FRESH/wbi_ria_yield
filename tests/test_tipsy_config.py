@@ -335,6 +335,49 @@ def test_repo_tsa41_config_matches_forest_type_rule() -> None:
     assert out["e"]["Density"] == 1219
 
 
+def test_repo_tsa29_config_matches_pine_ms_rule() -> None:
+    cfg = load_tipsy_tsa_config(tsa_code="29", config_dir="config/tipsy")
+    assert cfg is not None
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [12.0], "BEC_ZONE_CODE": ["MS"]}),
+        "species": {"PL": {"pct": 70.0}, "SX": {"pct": 30.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [12.0], "% Stk": [90.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=7001,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["Density"] == 1600
+    assert out["e"]["SPP_1"] == "PLI"
+    assert out["e"]["PCT_1"] == 85
+    assert out["e"]["SPP_2"] == "SW"
+    assert out["e"]["GW_1"] == 6
+    assert out["f"]["Util_DBH_cm"] == 12.5
+
+
+def test_repo_tsa29_config_matches_idf_fir_rule() -> None:
+    cfg = load_tipsy_tsa_config(tsa_code="29", config_dir="config/tipsy")
+    assert cfg is not None
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [15.0], "BEC_ZONE_CODE": ["IDF"]}),
+        "species": {"FDI": {"pct": 100.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [15.0], "% Stk": [88.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=7002,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["SPP_1"] == "FD"
+    assert out["e"]["PCT_1"] == 70
+    assert out["e"]["SPP_2"] == "PLI"
+    assert out["e"]["GW_1"] == 4
+    assert out["f"]["Density"] == 1350
+
+
 def test_repo_all_legacy_tsa_configs_present() -> None:
     for tsa in ("08", "16", "24", "40", "41"):
         payload = load_tipsy_tsa_config(tsa_code=tsa, config_dir="config/tipsy")

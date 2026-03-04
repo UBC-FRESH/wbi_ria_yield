@@ -1566,3 +1566,10 @@
 - Extended `femic tsa post-tipsy` with `--run-id` and `--log-dir`, and now prints the generated
   manifest path (e.g., `vdyp_io/logs/run_manifest-<run_id>.json`).
 - Added regression coverage for post-tipsy manifest emission and updated CLI/docs references.
+- Tuned `config/tipsy/tsa29.yaml` from a single catch-all rule to ordered provisional
+  BEC/species-group pathways (pine/fir/spruce/balsam) with explicit species mixes, density, DBH
+  utility thresholds, and modest GW settings; retained a final catch-all for full AU coverage.
+- Added TSA29-specific regression checks in `tests/test_tipsy_config.py` for representative
+  MS-pine and IDF-fir rule matching behavior.
+- Regenerated TSA29 TIPSY input artifacts (`data/tipsy_params_tsa29.xlsx`,
+  `data/02_input-tsa29.dat`) from cached pipeline outputs using the tuned ruleset.
