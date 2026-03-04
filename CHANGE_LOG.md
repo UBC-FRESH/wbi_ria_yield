@@ -1528,3 +1528,28 @@
 - Completed final roadmap consistency pass: all Phase 1/2/3 checklist items are now checked,
   including parent closeout for `P2.1` (its sub-items were already complete).
 - Branch is ready for merge/deployment handoff.
+- Added `planning/TSA29_dataset_compile_plan.md` with an explicit runbook for compiling TSA 29,
+  including the required `config/tipsy/tsa29.yaml` gate, config-driven run steps, diagnostics, and
+  completion criteria.
+- Debugged TSA29 TIPSY config mismatch and rebuilt ruleset for functional AU coverage:
+  `config/tipsy/tsa29.yaml` now uses a catch-all matching rule (`when: {}`) with
+  `Density=1400` and `SPP_1=$leading_species_tipsy`.
+- Added null defaults for optional TIPSY schema fields (`SPP_2..5`, `PCT_2..5`, `GW_*`,
+  `GW_age_*`) so table projection to `data/tipsy_params_columns` succeeds for every AU.
+- Re-ran the TSA29 TIPSY stage directly from cached outputs and regenerated
+  `data/tipsy_params_tsa29.xlsx` and `data/02_input-tsa29.dat` (30 AU rows).
+- Current blocker moved downstream to manual BatchTIPSY handoff (`04_output-tsa29.out`) before 01b
+  and final bundle assembly can be validated.
+- Added `femic tsa post-tipsy` command to run downstream stages only (01b + bundle assembly)
+  after manual BatchTIPSY output is uploaded.
+- Implemented `run_post_tipsy_bundle(...)` in `src/femic/workflows/legacy.py` to:
+  load cached TSA prep/smoothed-curve artifacts, execute 01b per TSA, and rebuild
+  `data/model_input_bundle/{au_table,curve_table,curve_points_table}.csv`.
+- Added regression tests:
+  `tests/test_workflows_post_tipsy.py` (workflow output assembly) and
+  `tests/test_cli_main.py` (CLI command behavior and wiring).
+- Updated user docs for the new downstream recovery command in `README.md` and
+  `docs/reference/cli.rst`.
+- Added `.gitignore` coverage for generated `vdyp_io` scratch files:
+  `vdyp_err_*.err`, `vdyp_out_*.out`, `vdyp_ply_*.csv`, `vdyp_lyr_*.csv`, and `tmp*`.
+  This removes hundreds of transient artifacts from normal `git status` output.

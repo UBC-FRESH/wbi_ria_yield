@@ -1638,3 +1638,29 @@
 - Completed final roadmap consistency pass: all Phase 1/2/3 checklist items are now checked,
   including parent closeout for `P2.1` (its sub-items were already complete).
 - Branch is ready for merge/deployment handoff.
+- Added `planning/TSA29_dataset_compile_plan.md` with an explicit runbook for compiling TSA 29,
+  including the required `config/tipsy/tsa29.yaml` gate, config-driven run steps, diagnostics, and
+  completion criteria.
+- Debugged TSA29 TIPSY config bring-up blocker: replaced species-whitelist rule with a catch-all
+  rule (`when: {}`) and added null defaults for optional schema columns (`SPP_2..5`, `PCT_2..5`,
+  `GW_*`, `GW_age_*`) so `tipsy_params_columns` projection succeeds.
+- Re-ran TIPSY stage directly from cached TSA29 artifacts (`vdyp_prep-tsa29.pkl`,
+  `vdyp_results-tsa29.pkl`, `vdyp_curves_smooth-tsa29.feather`) and regenerated
+  `data/tipsy_params_tsa29.xlsx` + `data/02_input-tsa29.dat` with 30 AU rows (10 strata x 3 SI).
+- Immediate next queue: have user run BatchTIPSY against `data/02_input-tsa29.dat`, upload
+  `data/04_output-tsa29.out`, then execute 01b/post-01b assembly to validate full end-to-end TSA29
+  compile.
+- Added a dedicated downstream CLI recovery path for manual BatchTIPSY handoff:
+  `python -m femic tsa post-tipsy --tsa <code> [-v]`.
+- Implemented `run_post_tipsy_bundle(...)` in `src/femic/workflows/legacy.py` to run 01b from
+  cached TSA artifacts (`vdyp_prep-tsaXX.pkl`, `vdyp_curves_smooth-tsaXX.feather`) and rebuild
+  `data/model_input_bundle/{au_table,curve_table,curve_points_table}.csv` without re-running the
+  full 00/01a front-half.
+- Added regression coverage for command wiring and downstream assembly in
+  `tests/test_cli_main.py` and `tests/test_workflows_post_tipsy.py`.
+- Immediate next queue: polish 01b runtime warnings (deprecated
+  `delim_whitespace`, figure-close loop, lexsort warnings) and add a run manifest entry for the
+  new `tsa post-tipsy` command.
+- Added targeted `vdyp_io` ignore rules in `.gitignore` for generated scratch artifacts
+  (`vdyp_err_*`, `vdyp_out_*`, `vdyp_ply_*`, `vdyp_lyr_*`, and tmp dirs/files) so `git status`
+  stays clean while retaining tracked `vdyp_io/VDYP_CFG` assets.

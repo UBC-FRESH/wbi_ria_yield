@@ -10,6 +10,12 @@ __pycache__/
 *.egg-info/
 vdyp_io/tmp*
 vdyp_io/logs/
+vdyp_io/vdyp_err_*.err
+vdyp_io/vdyp_out_*.out
+vdyp_io/vdyp_ply_*.csv
+vdyp_io/vdyp_lyr_*.csv
+vdyp_io/tmp*/
+vdyp_io/tmp*
 .vscode
 tmp/
 _build/
