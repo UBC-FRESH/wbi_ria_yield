@@ -597,8 +597,21 @@ def load_vdyp_input_tables(
             vdyp_lyr = gpd_mod.read_file(vdyp_input_pandl_path, layer=1, **lyr_kwargs)
         vdyp_lyr.to_feather(vdyp_lyr_feather_path)
         return vdyp_ply, vdyp_lyr
-    vdyp_ply = gpd_mod.read_feather(vdyp_ply_feather_path)
-    vdyp_lyr = gpd_mod.read_feather(vdyp_lyr_feather_path)
+    pd_mod = importlib.import_module("pandas")
+    try:
+        vdyp_ply = gpd_mod.read_feather(vdyp_ply_feather_path)
+    except ValueError as exc:
+        # Some historical caches were written as plain Feather tables without
+        # GeoPandas metadata; fall back to pandas in that case.
+        if "Missing geo metadata" not in str(exc):
+            raise
+        vdyp_ply = pd_mod.read_feather(vdyp_ply_feather_path)
+    try:
+        vdyp_lyr = gpd_mod.read_feather(vdyp_lyr_feather_path)
+    except ValueError as exc:
+        if "Missing geo metadata" not in str(exc):
+            raise
+        vdyp_lyr = pd_mod.read_feather(vdyp_lyr_feather_path)
     return vdyp_ply, vdyp_lyr
 
 

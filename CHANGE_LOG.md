@@ -1573,3 +1573,16 @@
   MS-pine and IDF-fir rule matching behavior.
 - Regenerated TSA29 TIPSY input artifacts (`data/tipsy_params_tsa29.xlsx`,
   `data/02_input-tsa29.dat`) from cached pipeline outputs using the tuned ruleset.
+- Upgraded TSA29 parameterization from provisional tuning to TSR-anchored assumptions by extracting
+  guidance from Williams Lake TSA data packages:
+  `docs/reference/29ts_dpkg_2024-2.pdf` (Section 8.5) and
+  `docs/reference/williams_lake_tsa_data_package-2.pdf` (Section 6.3 Tables 23–25).
+- Reworked `config/tipsy/tsa29.yaml` rule assignments for pine/fir/spruce/balsam pathways with
+  explicit planted-vs-natural proportions, regen delays, species mixes, densities, and GW values
+  tied to TSR assumptions; retained fallback coverage.
+- Updated TSA29 expectations in `tests/test_tipsy_config.py` to match the new rules.
+- Fixed a resumed-run bug in `src/femic/pipeline/vdyp_stage.py` where
+  `geopandas.read_feather(...)` crashed on plain Feather caches lacking geo metadata by adding a
+  pandas fallback for both polygon/layer cache loads.
+- Forced TSA29 01a rerun and regenerated `data/02_input-tsa29.dat` under the new ruleset
+  (same 30 AU rows, materially updated per-AU parameters).

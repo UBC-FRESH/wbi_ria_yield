@@ -349,11 +349,11 @@ def test_repo_tsa29_config_matches_pine_ms_rule() -> None:
         vdyp_out=vdyp_out,
         config=cfg,
     )
-    assert out["e"]["Density"] == 1600
-    assert out["e"]["SPP_1"] == "PLI"
-    assert out["e"]["PCT_1"] == 85
-    assert out["e"]["SPP_2"] == "SW"
-    assert out["e"]["GW_1"] == 6
+    assert out["e"]["Density"] == 1133
+    assert out["e"]["SPP_1"] == "PL"
+    assert out["e"]["PCT_1"] == 62
+    assert out["e"]["SPP_2"] == "AT"
+    assert out["f"]["GW_1"] == 3.0
     assert out["f"]["Util_DBH_cm"] == 12.5
 
 
@@ -371,11 +371,11 @@ def test_repo_tsa29_config_matches_idf_fir_rule() -> None:
         vdyp_out=vdyp_out,
         config=cfg,
     )
-    assert out["e"]["SPP_1"] == "FD"
-    assert out["e"]["PCT_1"] == 70
-    assert out["e"]["SPP_2"] == "PLI"
-    assert out["e"]["GW_1"] == 4
-    assert out["f"]["Density"] == 1350
+    assert out["e"]["SPP_1"] == "PL"
+    assert out["e"]["PCT_1"] == 42
+    assert out["f"]["SPP_1"] == "FD"
+    assert out["f"]["GW_1"] == 9.0
+    assert out["f"]["Density"] == 1139
 
 
 def test_repo_all_legacy_tsa_configs_present() -> None:

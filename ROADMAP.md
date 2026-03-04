@@ -1684,3 +1684,20 @@
 - Remaining immediate queue: run BatchTIPSY with the new TSA29 input, re-run
   `femic tsa post-tipsy --tsa 29`, then add managed-vs-unmanaged curve-dominance regression
   assertions from the refreshed outputs.
+- Upgraded TSA29 TIPSY parameter rules to TSR-anchored assumptions using Williams Lake data
+  package references:
+  `docs/reference/29ts_dpkg_2024-2.pdf` (Section 8.5) and
+  `docs/reference/williams_lake_tsa_data_package-2.pdf` (Section 6.3 Tables 23–25).
+- Updated `config/tipsy/tsa29.yaml` from provisional heuristics to ordered BEC/species pathways
+  with explicit planted/natural proportions, regeneration delays, species mixes, densities, and
+  genetic-worth values aligned to TSR assumptions, while preserving catch-all coverage.
+- Synced TSA29 config tests in `tests/test_tipsy_config.py` to the new rule expectations.
+- Fixed a TSA29 resume-path loader defect in `src/femic/pipeline/vdyp_stage.py` by adding
+  fallback reads for plain Feather caches lacking GeoPandas metadata.
+- Forced 01a rerun for TSA29 and regenerated `data/02_input-tsa29.dat` from cached artifacts
+  under the new ruleset (30 AU rows retained; values changed materially).
+- Immediate next queue:
+  user runs BatchTIPSY with regenerated `data/02_input-tsa29.dat`, uploads refreshed
+  `data/04_output-tsa29.out`, then we run
+  `python -m femic tsa post-tipsy --tsa 29 --run-id <id> -v`
+  and validate refreshed `tipsy_vdyp_tsa29-*.png` behavior.

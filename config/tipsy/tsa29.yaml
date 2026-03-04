@@ -3,13 +3,17 @@ tsa_code: "29"
 
 metadata:
   source_tsr:
-    - title: "Provisional generic TSA29 scaffold"
-      year: 2026
-      url: ""
-      notes: "Provisional silviculture-oriented tuning for TSA29 bring-up; replace with TSR rules."
+    - title: "Williams Lake TSA TSR Data Package"
+      year: 2024
+      url: "docs/reference/29ts_dpkg_2024-2.pdf"
+      notes: "Section 8.5 TIPSY inputs: planting density, tree improvement, planting delay."
+    - title: "Williams Lake TSA TSR Data Package"
+      year: 2013
+      url: "docs/reference/williams_lake_tsa_data_package-2.pdf"
+      notes: "Section 6.3/Table 23 + Tables 24/25 regeneration and genetic gain assumptions."
   author: "codex-provisional"
   created_utc: "2026-03-03T00:00:00Z"
-  notes: "Ordered BEC/species-group rules with final catch-all to retain full AU coverage."
+  notes: "TSR-informed provisional rules; final calibration should be RESULTS/SPAR opening-level."
 
 defaults:
   e:
@@ -60,133 +64,204 @@ defaults:
     GW_age_5: null
 
 rules:
+  # TSR 2013 Table 23 proxy: PL poor sites (30% planted / 70% natural).
+  - id: "tsa29_pine_poor_sbps"
+    when:
+      bec_in: ["SBPS"]
+      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
+    assign:
+      e:
+        Proportion: 0.70
+        Regen_Method: "N"
+        Regen_Delay: 4
+        Density: 1001
+        SPP_1: "PL"
+        PCT_1: 87
+        SPP_2: "AT"
+        PCT_2: 10
+        SPP_3: "FD"
+        PCT_3: 1
+        SPP_4: "SX"
+        PCT_4: 1
+        Util_DBH_cm: 12.5
+      f:
+        Proportion: 0.30
+        Regen_Method: "P"
+        Regen_Delay: 4
+        Density: 1001
+        SPP_1: "PL"
+        PCT_1: 87
+        SPP_2: "AT"
+        PCT_2: 10
+        SPP_3: "FD"
+        PCT_3: 1
+        SPP_4: "SX"
+        PCT_4: 1
+        GW_1: 3.0
+        GW_age_1: 12
+        Util_DBH_cm: 12.5
+
+  # TSR 2013 Table 23 proxy: PL medium/good sites (85% planted / 15% natural).
   - id: "tsa29_pine_ms_sbps_idf"
     when:
-      bec_in: ["MS", "SBPS", "IDF"]
+      bec_in: ["MS", "IDF"]
       leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
     assign:
       e:
+        Proportion: 0.15
+        Regen_Method: "N"
         Regen_Delay: 2
-        Density: 1600
-        SPP_1: "PLI"
-        PCT_1: 85
-        SPP_2: "SW"
-        PCT_2: 15
-        GW_1: 6
-        GW_age_1: 12
+        Density: 1133
+        SPP_1: "PL"
+        PCT_1: 62
+        SPP_2: "AT"
+        PCT_2: 17
+        SPP_3: "SX"
+        PCT_3: 10
+        SPP_4: "FD"
+        PCT_4: 8
+        SPP_5: "BL"
+        PCT_5: 3
         Util_DBH_cm: 12.5
       f:
-        Regen_Delay: 1
-        Density: 1500
-        SPP_1: "PLI"
-        PCT_1: 85
-        SPP_2: "SW"
-        PCT_2: 15
-        GW_1: 6
+        Proportion: 0.85
+        Regen_Method: "P"
+        Regen_Delay: 2
+        Density: 1133
+        SPP_1: "PL"
+        PCT_1: 62
+        SPP_2: "AT"
+        PCT_2: 17
+        SPP_3: "SX"
+        PCT_3: 10
+        SPP_4: "FD"
+        PCT_4: 8
+        SPP_5: "BL"
+        PCT_5: 3
+        GW_1: 3.0
         GW_age_1: 12
         Util_DBH_cm: 12.5
 
-  - id: "tsa29_pine_essf"
-    when:
-      bec_in: ["ESSF"]
-      leading_species_in: ["P", "PA", "PJ", "PL", "PLC", "PLI", "PM"]
-    assign:
-      e:
-        Regen_Delay: 2
-        Density: 1550
-        SPP_1: "PLI"
-        PCT_1: 75
-        SPP_2: "SE"
-        PCT_2: 25
-        GW_1: 8
-        GW_age_1: 12
-        Util_DBH_cm: 12.5
-      f:
-        Regen_Delay: 1
-        Density: 1450
-        SPP_1: "PLI"
-        PCT_1: 75
-        SPP_2: "SE"
-        PCT_2: 25
-        GW_1: 8
-        GW_age_1: 12
-        Util_DBH_cm: 12.5
-
+  # TSR 2013 Table 23 proxy: FD medium/good sites (90% planted / 10% natural).
   - id: "tsa29_fir_idf"
     when:
       bec_in: ["IDF"]
       leading_species_in: ["F", "FD", "FDC", "FDI"]
     assign:
       e:
-        Regen_Delay: 2
-        Density: 1450
-        SPP_1: "FD"
-        PCT_1: 70
-        SPP_2: "PLI"
-        PCT_2: 30
-        GW_1: 4
-        GW_age_1: 12
+        Proportion: 0.10
+        Regen_Method: "N"
+        Regen_Delay: 3
+        Density: 1139
+        SPP_1: "PL"
+        PCT_1: 42
+        SPP_2: "FD"
+        PCT_2: 24
+        SPP_3: "AT"
+        PCT_3: 17
+        SPP_4: "SX"
+        PCT_4: 15
+        SPP_5: "BL"
+        PCT_5: 3
         Util_DBH_cm: 17.5
       f:
-        Regen_Delay: 1
-        Density: 1350
+        Proportion: 0.90
+        Regen_Method: "P"
+        Regen_Delay: 2
+        Density: 1139
         SPP_1: "FD"
-        PCT_1: 70
+        PCT_1: 24
         SPP_2: "PLI"
-        PCT_2: 30
-        GW_1: 4
+        PCT_2: 42
+        SPP_3: "AT"
+        PCT_3: 17
+        SPP_4: "SX"
+        PCT_4: 15
+        SPP_5: "BL"
+        PCT_5: 3
+        GW_1: 9.0
         GW_age_1: 12
         Util_DBH_cm: 17.5
 
+  # TSR 2013 Table 23 proxy: SX medium/good sites (planted distribution, full planted).
   - id: "tsa29_spruce_essf"
     when:
       bec_in: ["ESSF"]
       leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX", "SXE", "SXL", "SXW"]
     assign:
       e:
+        Proportion: 0.00
+        Regen_Method: "N"
         Regen_Delay: 2
-        Density: 1500
-        SPP_1: "SE"
-        PCT_1: 80
-        SPP_2: "BL"
-        PCT_2: 20
-        GW_1: 10
-        GW_age_1: 12
+        Density: 1255
+        SPP_1: "SX"
+        PCT_1: 49
+        SPP_2: "PL"
+        PCT_2: 28
+        SPP_3: "AT"
+        PCT_3: 9
+        SPP_4: "BL"
+        PCT_4: 8
+        SPP_5: "FD"
+        PCT_5: 6
         Util_DBH_cm: 17.5
       f:
-        Regen_Delay: 1
-        Density: 1400
+        Proportion: 1.00
+        Regen_Method: "P"
+        Regen_Delay: 2
+        Density: 1255
         SPP_1: "SE"
-        PCT_1: 80
-        SPP_2: "BL"
-        PCT_2: 20
-        GW_1: 10
+        PCT_1: 49
+        SPP_2: "PL"
+        PCT_2: 28
+        SPP_3: "AT"
+        PCT_3: 9
+        SPP_4: "BL"
+        PCT_4: 8
+        SPP_5: "FD"
+        PCT_5: 6
+        GW_1: 12.8
         GW_age_1: 12
         Util_DBH_cm: 17.5
 
+  # Supplemental ESSF balsam proxy when leading species is balsam.
   - id: "tsa29_balsam_essf"
     when:
       bec_in: ["ESSF"]
       leading_species_in: ["B", "BA", "BB", "BG", "BL", "BM", "BP"]
     assign:
       e:
+        Proportion: 0.00
+        Regen_Method: "N"
         Regen_Delay: 2
-        Density: 1450
+        Density: 1173
         SPP_1: "BL"
-        PCT_1: 70
+        PCT_1: 53
         SPP_2: "SE"
-        PCT_2: 30
-        GW_1: 8
-        GW_age_1: 12
+        PCT_2: 32
+        SPP_3: "SX"
+        PCT_3: 9
+        SPP_4: "AT"
+        PCT_4: 4
+        SPP_5: "FD"
+        PCT_5: 1
         Util_DBH_cm: 17.5
       f:
-        Regen_Delay: 1
-        Density: 1350
+        Proportion: 1.00
+        Regen_Method: "P"
+        Regen_Delay: 2
+        Density: 1173
         SPP_1: "BL"
-        PCT_1: 70
+        PCT_1: 53
         SPP_2: "SE"
-        PCT_2: 30
-        GW_1: 8
+        PCT_2: 32
+        SPP_3: "SX"
+        PCT_3: 9
+        SPP_4: "AT"
+        PCT_4: 4
+        SPP_5: "FD"
+        PCT_5: 1
+        GW_1: 6.6
         GW_age_1: 12
         Util_DBH_cm: 17.5
 
