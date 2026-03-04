@@ -12,6 +12,9 @@ Schema
    selection:
      tsa: ["08", "16"]      # optional list[str]
      strata: ["SBSdk"]      # optional list[str], currently informational only
+     boundary_path: "data/bc/cfa/k3z/CFA K3Z Tenure.shp"  # optional custom boundary path
+     boundary_layer: null   # optional layer name/index for multi-layer GIS sources
+     boundary_code: "k3z"   # optional label used as FEMIC TSA code for boundary mode
    modes:
      resume: true           # optional bool
      dry_run: false         # optional bool
@@ -29,6 +32,9 @@ Precedence
 - Boolean flags use additive behavior (CLI or config can enable).
 - ``--run-id`` overrides ``run.run_id`` when provided.
 - ``--log-dir`` overrides config unless left at the default ``vdyp_io/logs``.
+- Boundary fields are profile-driven only (no dedicated CLI flags yet). When
+  ``selection.boundary_path`` is set, legacy extraction runs in custom-boundary mode
+  and bypasses checkpoint reuse.
 
 Example
 -------

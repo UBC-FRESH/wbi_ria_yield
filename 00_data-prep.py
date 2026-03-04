@@ -268,6 +268,9 @@ _femic_resume = os.environ.get("FEMIC_RESUME", "0") == "1"
 _femic_debug_rows_raw = os.environ.get("FEMIC_DEBUG_ROWS")
 _femic_no_cache_raw = os.environ.get("FEMIC_NO_CACHE", "0")
 _femic_thlb_diag_raw = os.environ.get("FEMIC_THLB_DIAGNOSTICS", "0")
+_femic_boundary_path_raw = os.environ.get("FEMIC_BOUNDARY_PATH")
+_femic_boundary_layer = os.environ.get("FEMIC_BOUNDARY_LAYER")
+_femic_boundary_code = os.environ.get("FEMIC_BOUNDARY_CODE")
 _femic_thlb_diagnostics = _femic_thlb_diag_raw.strip().lower() in (
     "1",
     "true",
@@ -278,7 +281,10 @@ try:
 except ValueError:
     _femic_debug_rows = None
 _femic_no_cache_env = _femic_no_cache_raw.strip().lower() in ("1", "true", "yes")
-_femic_no_cache = _femic_no_cache_env or _femic_debug_rows is not None
+_femic_custom_boundary = bool(_femic_boundary_path_raw)
+_femic_no_cache = (
+    _femic_no_cache_env or _femic_debug_rows is not None or _femic_custom_boundary
+)
 _femic_resume_effective = _femic_resume and not _femic_no_cache
 si_levels = ["L", "M", "H"]
 
@@ -295,6 +301,11 @@ def _apply_debug_rows(_df, _label=None):
 
 if _femic_no_cache:
     print("debug: disabling cached checkpoint reuse")
+if _femic_custom_boundary:
+    print(
+        "custom boundary mode: %s (layer=%s)"
+        % (_femic_boundary_path_raw, _femic_boundary_layer or "<default>")
+    )
 
 raster_pxw = raster_pxh = 100
 
@@ -328,15 +339,45 @@ if not arc_raster_rescue_exe_path.is_file():
 # --- cell 15 ---
 import_tsa_boundaries_data = 1 if _femic_no_cache else 0
 if import_tsa_boundaries_data:
-    tsa_boundaries = gpd.read_file(tsa_boundaries_path)
-    tsa_boundaries = (
-        tsa_boundaries[["TSA_NUMBER", "geometry"]]
-        .loc[tsa_boundaries.TSA_NUMBER.isin(ria_tsas)]
-        .dissolve(by="TSA_NUMBER")
-    )
-    tsa_boundaries["geometry"] = tsa_boundaries.geometry.simplify(
-        tolerance=1000, preserve_topology=True
-    )
+    if _femic_custom_boundary:
+        read_kwargs = {}
+        if _femic_boundary_layer:
+            read_kwargs["layer"] = _femic_boundary_layer
+        custom_boundary = gpd.read_file(_femic_boundary_path_raw, **read_kwargs)
+        if custom_boundary.empty:
+            raise ValueError(
+                "Custom boundary file returned zero features: %s"
+                % _femic_boundary_path_raw
+            )
+        boundary_code = _femic_boundary_code
+        if not boundary_code:
+            if len(ria_tsas) != 1:
+                raise ValueError(
+                    "Set FEMIC_BOUNDARY_CODE when running custom boundary mode with "
+                    "multiple tsa codes."
+                )
+            boundary_code = ria_tsas[0]
+        custom_geom = unary_union(list(custom_boundary.geometry.values))
+        tsa_boundaries = gpd.GeoDataFrame(
+            {"TSA_NUMBER": [boundary_code], "geometry": [custom_geom]},
+            crs=custom_boundary.crs,
+        ).set_index("TSA_NUMBER")
+    else:
+        tsa_boundaries = gpd.read_file(tsa_boundaries_path)
+        tsa_boundaries = (
+            tsa_boundaries[["TSA_NUMBER", "geometry"]]
+            .loc[tsa_boundaries.TSA_NUMBER.isin(ria_tsas)]
+            .dissolve(by="TSA_NUMBER")
+        )
+        tsa_boundaries["geometry"] = tsa_boundaries.geometry.simplify(
+            tolerance=1000, preserve_topology=True
+        )
+    _missing_tsas = [tsa for tsa in ria_tsas if tsa not in tsa_boundaries.index]
+    if _missing_tsas:
+        raise ValueError(
+            "Boundary geometry missing requested tsa codes: %s (available=%s)"
+            % (_missing_tsas, list(tsa_boundaries.index))
+        )
     tsa_boundaries.to_feather(tsa_boundaries_feather_path)
 else:
     tsa_boundaries = gpd.read_feather(tsa_boundaries_feather_path)
@@ -586,23 +627,34 @@ canfi_map = {
     "AC": 1211,
     "AT": 1201,
     "BL": 304,
+    "CW": 301,
     "EP": 1303,
+    "FD": 500,
     "FDI": 500,
+    "FDC": 500,
     "HW": 402,
     "PL": 204,
     "PLI": 204,
     "SB": 101,
+    "SS": 103,
     "SE": 104,
     "SW": 105,
     "SX": 100,
     "S": 100,
+    "YC": 302,
 }
 
 
 # --- cell 65 ---
 def canfi_species(stratum_code):
     s = stratum_code.split("_")[-1].split("+")[0]
-    result = canfi_map[s]
+    result = canfi_map.get(s)
+    if result is None:
+        result = canfi_map.get(s[:2], 100)
+        print(
+            "warning: missing CANFI mapping for species %s (stratum=%s); using %s"
+            % (s, stratum_code, result)
+        )
     return result
 
 
@@ -670,6 +722,8 @@ def _run_post_01b_bundle_and_curve_assignment_stage(
         )
 
     f_ = f_table
+    if "tsa_code" not in f_.columns and "tsa_code" in list(getattr(f_.index, "names", [])):
+        f_ = f_.reset_index("tsa_code")
     if not femic_no_cache:
         f_ = gpd.read_feather(checkpoint1_path)
         f_ = apply_debug_rows_fn(f_, "checkpoint1-reload")

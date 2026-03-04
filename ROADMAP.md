@@ -1701,3 +1701,24 @@
   `data/04_output-tsa29.out`, then we run
   `python -m femic tsa post-tipsy --tsa 29 --run-id <id> -v`
   and validate refreshed `tipsy_vdyp_tsa29-*.png` behavior.
+- Added custom management-unit boundary mode for `femic run` profiles:
+  `selection.boundary_path`, `selection.boundary_layer`, and `selection.boundary_code`
+  now flow from run profile to legacy execution env (`FEMIC_BOUNDARY_*`).
+- Implemented boundary-mode extraction in `00_data-prep.py`:
+  when `FEMIC_BOUNDARY_PATH` is set, FEMIC unions that layer geometry and uses it as the
+  VRI mask for the selected run code (e.g., `k3z`), forcing no-cache execution.
+- Added a complete K3Z test-case scaffold:
+  `config/run_profile.k3z.yaml`, `config/tipsy/tsak3z.yaml`, and
+  `planning/K3Z_dataset_compile_plan.md`.
+- Extended TIPSY config discovery/validation to support non-numeric case codes
+  (`tsak3z.yaml`) in addition to numeric TSA configs.
+- Removed numeric-TSA assumptions in downstream ID assembly by introducing a deterministic
+  named-code AU prefix path in `src/femic/pipeline/bundle.py` and `src/femic/pipeline/tsa.py`.
+- Ran smoke execution for K3Z (`--debug-rows 20`, no BatchTIPSY output yet):
+  run completed and emitted manifest
+  `vdyp_io/logs/run_manifest-k3z_smoke5_20260304_221317.json`,
+  generating `data/02_input-tsak3z.dat` and `data/tipsy_params_tsak3z.xlsx`.
+- Immediate next queue:
+  run full K3Z step 1a without debug-row truncation, then user runs BatchTIPSY on
+  `data/02_input-tsak3z.dat`, uploads `data/04_output-tsak3z.out`, and we execute
+  `python -m femic tsa post-tipsy --tsa k3z --run-id <id> -v`.

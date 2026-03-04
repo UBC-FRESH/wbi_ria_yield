@@ -691,6 +691,9 @@ def test_load_pipeline_run_profile_from_yaml(tmp_path: Path) -> None:
                 "selection:",
                 "  tsa: ['8', '16']",
                 "  strata: ['SBSdk', 'IDF']",
+                "  boundary_path: data/bc/cfa/k3z/CFA K3Z Tenure.shp",
+                "  boundary_layer: tenure",
+                "  boundary_code: k3z",
                 "modes:",
                 "  resume: true",
                 "  dry_run: false",
@@ -715,6 +718,9 @@ def test_load_pipeline_run_profile_from_yaml(tmp_path: Path) -> None:
     assert profile.debug_rows == 25
     assert profile.run_id == "cfg001"
     assert profile.log_dir == Path("vdyp_io/custom_logs")
+    assert profile.boundary_path == Path("data/bc/cfa/k3z/CFA K3Z Tenure.shp")
+    assert profile.boundary_layer == "tenure"
+    assert profile.boundary_code == "k3z"
 
 
 def test_resolve_effective_run_options_merges_profile_and_cli() -> None:
@@ -739,6 +745,9 @@ def test_resolve_effective_run_options_merges_profile_and_cli() -> None:
     assert resolved.debug_rows == 250
     assert resolved.run_id == "dev-profile"
     assert resolved.log_dir == Path("vdyp_io/profile_logs")
+    assert resolved.boundary_path is None
+    assert resolved.boundary_layer is None
+    assert resolved.boundary_code is None
 
 
 def test_load_pipeline_run_profile_rejects_invalid_root_type(tmp_path: Path) -> None:
@@ -760,6 +769,9 @@ def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> N
         output_root=tmp_path / "outputs",
         run_config_path=tmp_path / "config" / "run_profile.yaml",
         run_config_sha256="abc123",
+        boundary_path=Path("data/bc/cfa/k3z/CFA K3Z Tenure.shp"),
+        boundary_layer="tenure",
+        boundary_code="k3z",
     )
 
     plan = build_legacy_execution_plan(
@@ -783,6 +795,9 @@ def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> N
         tmp_path / "config" / "run_profile.yaml"
     )
     assert plan.env["FEMIC_RUN_CONFIG_SHA256"] == "abc123"
+    assert plan.env["FEMIC_BOUNDARY_PATH"] == "data/bc/cfa/k3z/CFA K3Z Tenure.shp"
+    assert plan.env["FEMIC_BOUNDARY_LAYER"] == "tenure"
+    assert plan.env["FEMIC_BOUNDARY_CODE"] == "k3z"
     assert plan.cmd == ["/usr/bin/python3", str(script_path)]
 
 

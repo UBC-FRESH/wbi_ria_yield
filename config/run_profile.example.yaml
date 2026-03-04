@@ -5,6 +5,10 @@ selection:
   strata:
     - "SBSdk"
     - "IDFdk"
+  # Optional custom management-unit boundary; when provided, FEMIC clips VRI to this geometry.
+  # boundary_path: "data/bc/cfa/k3z/CFA K3Z Tenure.shp"
+  # boundary_layer: null
+  # boundary_code: "k3z"
 modes:
   resume: true
   dry_run: false

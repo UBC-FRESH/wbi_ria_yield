@@ -1586,3 +1586,23 @@
   pandas fallback for both polygon/layer cache loads.
 - Forced TSA29 01a rerun and regenerated `data/02_input-tsa29.dat` under the new ruleset
   (same 30 AU rows, materially updated per-AU parameters).
+- Added custom management-unit boundary support to run profiles:
+  `selection.boundary_path`, `selection.boundary_layer`, `selection.boundary_code` now parse
+  through `PipelineRunProfile`/`PipelineRunConfig` and are exported as `FEMIC_BOUNDARY_*`.
+- Updated `00_data-prep.py` boundary ingestion to support custom geometry masks:
+  in boundary mode FEMIC reads the provided layer, unions geometry, validates requested run code
+  coverage, and clips VRI extraction to that geometry.
+- Added K3Z case scaffolding:
+  `config/run_profile.k3z.yaml`, `config/tipsy/tsak3z.yaml`, and
+  `planning/K3Z_dataset_compile_plan.md`.
+- Extended TIPSY config discovery and validation to support named case codes
+  (for example `tsak3z.yaml`) in addition to numeric TSA files.
+- Removed numeric-only TSA assumptions in AU/curve ID paths by adding deterministic named-code
+  prefixing in `src/femic/pipeline/bundle.py` and `src/femic/pipeline/tsa.py`.
+- Added/updated coverage in `tests/test_pipeline_helpers.py`, `tests/test_tipsy_config_cli.py`,
+  and `tests/test_bundle.py` for profile boundary fields, named TIPSY configs, and named-case
+  bundle ID behavior.
+- Executed K3Z smoke run (`--debug-rows 20`) successfully through full legacy workflow with
+  missing-BatchTIPSY fallback, producing manifest
+  `vdyp_io/logs/run_manifest-k3z_smoke5_20260304_221317.json` and K3Z step-1a artifacts
+  (`data/02_input-tsak3z.dat`, `data/tipsy_params_tsak3z.xlsx`).

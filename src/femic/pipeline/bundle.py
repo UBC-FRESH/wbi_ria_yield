@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 from pathlib import Path
 from typing import Any, Callable
 
@@ -25,6 +26,17 @@ class BundleAssemblyResult:
     curve_table: Any
     curve_points_table: Any
     missing_au_curve_mappings: Any
+
+
+def tsa_curve_id_prefix(tsa_code: str) -> int:
+    """Return deterministic AU/curve id prefix for numeric and named TSA codes."""
+    normalized = str(tsa_code)
+    if normalized.isdigit():
+        return int(normalized)
+    digest = hashlib.sha1(normalized.encode("utf-8")).hexdigest()
+    # Keep named-unit prefixes in a dedicated numeric range to avoid collision with
+    # canonical 2-digit TSA codes.
+    return 900 + (int(digest[:6], 16) % 9000)
 
 
 def resolve_bundle_paths(
@@ -94,7 +106,7 @@ def ensure_scsi_au_from_table(
         scsi_key = (str(row.stratum_code), str(row.si_level))
         if scsi_key in tsa_map:
             continue
-        au_base = int(row.au_id) - 100000 * int(tsa_code)
+        au_base = int(row.au_id) - 100000 * tsa_curve_id_prefix(tsa_code)
         tsa_map[scsi_key] = au_base
 
 
@@ -152,7 +164,7 @@ def build_bundle_tables_from_curves(
                 continue
             tipsy_curve_id = 20000 + au_id_
             is_managed_au = tipsy_curve_id in tipsy_curve_ids
-            au_id = 100000 * int(tsa) + au_id_
+            au_id = 100000 * tsa_curve_id_prefix(tsa) + au_id_
             unmanaged_curve_id = au_id
             managed_curve_id = au_id + 20000 if is_managed_au else unmanaged_curve_id
             au_table_data["au_id"].append(au_id)

@@ -65,6 +65,11 @@ Profile schema and precedence are documented at `docs/reference/run-config.rst`.
 `--run-config` values are merged with CLI options; explicit CLI values still win
 for `--tsa`, `--debug-rows`, and `--run-id`.
 
+Custom management-unit runs are also supported via run profile fields:
+`selection.boundary_path`, `selection.boundary_layer`, and
+`selection.boundary_code`. Example profile:
+`config/run_profile.k3z.yaml` (North Island Community Forest test case).
+
 ### Reproducibility Controls
 
 Set deterministic VDYP sampling with:

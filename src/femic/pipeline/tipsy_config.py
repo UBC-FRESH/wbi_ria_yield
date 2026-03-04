@@ -119,10 +119,12 @@ def discover_tipsy_config_tsas(
     if not base.exists():
         return found
     for path in sorted(base.glob("tsa*.y*ml")):
-        match = re.fullmatch(r"tsa(\d+)\.ya?ml", path.name)
+        match = re.fullmatch(r"tsa([A-Za-z0-9_-]+)\.ya?ml", path.name)
         if not match:
             continue
-        found[match.group(1).zfill(2)] = path
+        code = match.group(1)
+        normalized = code.zfill(2) if code.isdigit() else code
+        found[normalized] = path
     return found
 
 

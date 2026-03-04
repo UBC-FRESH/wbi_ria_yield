@@ -1,0 +1,77 @@
+schema_version: 1
+tsa_code: "k3z"
+
+metadata:
+  source_tsr:
+    - title: "North Island Community Forest FSP context"
+      year: 2020
+      url: "data/bc/cfa/k3z/NICF-Forest-Stewardship-Plan-2020.pdf"
+      notes: "Initial placeholder defaults for K3Z test-case bring-up; refine with formal stocking standards."
+  author: "codex-provisional"
+  created_utc: "2026-03-04T00:00:00Z"
+  notes: "Functional K3Z starter config with full AU coverage."
+
+defaults:
+  e:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    SPP_2: null
+    SPP_3: null
+    SPP_4: null
+    SPP_5: null
+    PCT_2: null
+    PCT_3: null
+    PCT_4: null
+    PCT_5: null
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+  f:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    SPP_2: null
+    SPP_3: null
+    SPP_4: null
+    SPP_5: null
+    PCT_2: null
+    PCT_3: null
+    PCT_4: null
+    PCT_5: null
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+
+rules:
+  - id: "k3z_all_aus_fsp_starter"
+    when: {}
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1400
+        Util_DBH_cm: 12.5
+        SPP_1: "$leading_species_tipsy"
+        PCT_1: 100
+      f:
+        Regen_Delay: 2
+        Density: 1400
+        Util_DBH_cm: 12.5
+        SPP_1: "$leading_species_tipsy"
+        PCT_1: 100

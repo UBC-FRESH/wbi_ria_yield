@@ -1,0 +1,15 @@
+selection:
+  tsa:
+    - "k3z"
+  boundary_path: "data/bc/cfa/k3z/CFA K3Z Tenure.shp"
+  boundary_layer: null
+  boundary_code: "k3z"
+  strata: []
+modes:
+  resume: false
+  dry_run: false
+  verbose: true
+  skip_checks: false
+run:
+  run_id: "k3z_20260304"
+  log_dir: "vdyp_io/logs"

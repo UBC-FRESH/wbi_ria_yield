@@ -82,6 +82,9 @@ class PipelineRunConfig:
     output_root: Path = Path("outputs")
     run_config_path: Path | None = None
     run_config_sha256: str | None = None
+    boundary_path: Path | None = None
+    boundary_layer: str | None = None
+    boundary_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -97,6 +100,9 @@ class PipelineRunProfile:
     debug_rows: int | None = None
     run_id: str | None = None
     log_dir: Path | None = None
+    boundary_path: Path | None = None
+    boundary_layer: str | None = None
+    boundary_code: str | None = None
 
 
 @dataclass(frozen=True)
@@ -112,6 +118,9 @@ class EffectiveRunOptions:
     debug_rows: int | None
     run_id: str | None
     log_dir: Path
+    boundary_path: Path | None
+    boundary_layer: str | None
+    boundary_code: str | None
 
 
 @dataclass(frozen=True)
@@ -319,6 +328,15 @@ def load_pipeline_run_profile(config_path: Path) -> PipelineRunProfile:
         strata_list=_normalize_optional_str_list(
             selection.get("strata"), field_name="selection.strata"
         ),
+        boundary_path=_normalize_optional_path(
+            selection.get("boundary_path"), field_name="selection.boundary_path"
+        ),
+        boundary_layer=_normalize_optional_str(
+            selection.get("boundary_layer"), field_name="selection.boundary_layer"
+        ),
+        boundary_code=_normalize_optional_str(
+            selection.get("boundary_code"), field_name="selection.boundary_code"
+        ),
         resume=_normalize_optional_bool(modes.get("resume"), field_name="modes.resume"),
         dry_run=_normalize_optional_bool(
             modes.get("dry_run"), field_name="modes.dry_run"
@@ -376,6 +394,9 @@ def resolve_effective_run_options(
         debug_rows=merged_debug_rows,
         run_id=merged_run_id,
         log_dir=Path(merged_log_dir),
+        boundary_path=active_profile.boundary_path,
+        boundary_layer=active_profile.boundary_layer,
+        boundary_code=active_profile.boundary_code,
     )
 
 
@@ -398,6 +419,9 @@ def build_pipeline_run_config(
     output_root: Path = Path("outputs"),
     run_config_path: Path | None = None,
     run_config_sha256: str | None = None,
+    boundary_path: Path | None = None,
+    boundary_layer: str | None = None,
+    boundary_code: str | None = None,
 ) -> PipelineRunConfig:
     """Create normalized pipeline run configuration from CLI inputs."""
     normalized_tsas = normalize_tsa_list(tsa_list)
@@ -410,6 +434,9 @@ def build_pipeline_run_config(
         output_root=Path(output_root),
         run_config_path=Path(run_config_path) if run_config_path is not None else None,
         run_config_sha256=run_config_sha256,
+        boundary_path=Path(boundary_path) if boundary_path is not None else None,
+        boundary_layer=boundary_layer,
+        boundary_code=boundary_code,
     )
 
 
@@ -442,6 +469,12 @@ def build_legacy_execution_plan(
         env["FEMIC_RUN_CONFIG_PATH"] = str(run_config.run_config_path)
     if run_config.run_config_sha256 is not None:
         env["FEMIC_RUN_CONFIG_SHA256"] = run_config.run_config_sha256
+    if run_config.boundary_path is not None:
+        env["FEMIC_BOUNDARY_PATH"] = str(run_config.boundary_path)
+    if run_config.boundary_layer:
+        env["FEMIC_BOUNDARY_LAYER"] = run_config.boundary_layer
+    if run_config.boundary_code:
+        env["FEMIC_BOUNDARY_CODE"] = run_config.boundary_code
     env.setdefault("FEMIC_RUN_UUID", str(uuid.uuid4()))
     run_uuid = env["FEMIC_RUN_UUID"]
 

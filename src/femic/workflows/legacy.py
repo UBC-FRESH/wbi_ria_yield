@@ -35,17 +35,21 @@ _CANFI_MAP = {
     "AC": 1211,
     "AT": 1201,
     "BL": 304,
+    "CW": 301,
     "EP": 1303,
     "FD": 500,
     "FDI": 500,
+    "FDC": 500,
     "HW": 402,
     "PL": 204,
     "PLI": 204,
     "SB": 101,
+    "SS": 103,
     "SE": 104,
     "SW": 105,
     "SX": 100,
     "S": 100,
+    "YC": 302,
 }
 
 
@@ -74,13 +78,9 @@ class PostTipsyBundleRunResult:
 
 def _default_canfi_species(stratum_code: str) -> int:
     species = str(stratum_code).split("_")[-1].split("+")[0]
-    try:
+    if species in _CANFI_MAP:
         return _CANFI_MAP[species]
-    except KeyError as exc:
-        raise ValueError(
-            f"Unsupported stratum species for CANFI mapping: {species!r} "
-            f"(stratum_code={stratum_code!r})"
-        ) from exc
+    return _CANFI_MAP.get(species[:2], 100)
 
 
 def _build_au_maps_from_results(

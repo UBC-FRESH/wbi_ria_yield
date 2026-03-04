@@ -343,6 +343,9 @@ def run_all(
         output_root=output_root,
         run_config_path=run_config,
         run_config_sha256=run_config_sha256,
+        boundary_path=effective.boundary_path,
+        boundary_layer=effective.boundary_layer,
+        boundary_code=effective.boundary_code,
     )
     manifest_path = run_data_prep(pipeline_run_config)
     console.print(f"Run manifest: {manifest_path}")

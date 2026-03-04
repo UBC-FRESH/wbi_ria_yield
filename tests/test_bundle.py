@@ -148,6 +148,39 @@ def test_build_bundle_tables_from_curves_tracks_missing_mappings() -> None:
     assert out.missing_au_curve_mappings.loc[0, "stratum_code"] == "BWBS_AT"
 
 
+def test_bundle_tables_support_named_unit_codes() -> None:
+    vdyp_curves_smooth = {
+        "k3z": pd.DataFrame(
+            [
+                {"stratum_code": "CWH_HW", "si_level": "L", "age": 10, "volume": 1.0},
+                {"stratum_code": "CWH_HW", "si_level": "L", "age": 20, "volume": 2.0},
+            ]
+        )
+    }
+    tipsy_curves = {"k3z": pd.DataFrame(columns=["AU", "Age", "Yield"])}
+    scsi_au = {"k3z": {("CWH_HW", "L"): 5}}
+
+    out = build_bundle_tables_from_curves(
+        tsa_list=["k3z"],
+        vdyp_curves_smooth=vdyp_curves_smooth,
+        tipsy_curves=tipsy_curves,
+        scsi_au=scsi_au,
+        canfi_species_fn=lambda _s: 402,
+        pd_module=pd,
+        message_fn=lambda _m: None,
+    )
+    assert len(out.au_table) == 1
+    assert int(out.au_table.loc[0, "au_id"]) > 90_000_000
+
+    rebuilt_scsi: dict[str, dict[tuple[str, str], int]] = {}
+    ensure_scsi_au_from_table(
+        au_table=out.au_table,
+        scsi_au=rebuilt_scsi,
+        normalize_tsa_code_fn=lambda value: str(value),
+    )
+    assert rebuilt_scsi["k3z"][("CWH_HW", "L")] == 5
+
+
 def test_emit_missing_au_curve_mapping_warning_emits_expected_lines() -> None:
     missing_df = pd.DataFrame(
         [

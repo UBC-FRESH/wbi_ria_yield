@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
+from femic.pipeline.bundle import tsa_curve_id_prefix
+
 TARGET_NSTRATA_BY_TSA: dict[str, int] = {
     "08": 9,
     "16": 13,
@@ -263,7 +265,7 @@ def assign_au_ids_from_scsi(
                 )
                 is None
             )
-            else (100000 * int(tsa_code) + au_base)
+            else (100000 * tsa_curve_id_prefix(str(tsa_code)) + au_base)
         )
         for tsa_code, stratum_code, si_level in zip(
             table[tsa_col].values,
