@@ -26,7 +26,7 @@ from femic.vdyp.reporting import (
     evaluate_warning_budget,
     summarize_vdyp_logs,
 )
-from femic.workflows.legacy import run_data_prep, run_post_tipsy_bundle
+from femic.workflows.legacy import run_data_prep, run_post_tipsy_bundle_with_manifest
 
 app = typer.Typer(
     add_completion=False,
@@ -461,20 +461,26 @@ def tsa_run(
 def tsa_post_tipsy(
     tsa: list[str] | None = TSA_OPTION,
     verbose: bool = VERBOSE_OPTION,
+    run_id: str | None = RUN_ID_OPTION,
+    log_dir: Path = LOG_DIR_OPTION,
 ) -> None:
     targets = [str(v).zfill(2) for v in tsa] if tsa else []
     if not targets:
         console.print("[red]Provide at least one TSA via --tsa for post-tipsy.[/red]")
         raise typer.Exit(code=1)
-    result = run_post_tipsy_bundle(
+    run_result = run_post_tipsy_bundle_with_manifest(
         tsa_list=targets,
+        run_id=run_id,
+        log_dir=log_dir,
         message_fn=console.print if verbose else (lambda *_args, **_kwargs: None),
     )
+    result = run_result.result
     console.print(
         f"[green]post-tipsy completed[/green] tsa={result.tsa_list} "
         f"au_rows={result.au_rows} curves={result.curve_rows} "
         f"curve_points={result.curve_points_rows}"
     )
+    console.print(f"Run manifest: {run_result.manifest_path}")
     console.print(f"au_table: {result.au_table_path}")
     console.print(f"curve_table: {result.curve_table_path}")
     console.print(f"curve_points_table: {result.curve_points_table_path}")

@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import pickle
 
 import pandas as pd
 
-from femic.workflows.legacy import run_post_tipsy_bundle
+from femic.workflows.legacy import (
+    PostTipsyBundleResult,
+    run_post_tipsy_bundle,
+    run_post_tipsy_bundle_with_manifest,
+)
 
 
 def test_run_post_tipsy_bundle_builds_bundle_from_cached_artifacts(
@@ -92,3 +97,57 @@ def test_run_post_tipsy_bundle_builds_bundle_from_cached_artifacts(
     assert result.au_table_path.is_file()
     assert result.curve_table_path.is_file()
     assert result.curve_points_table_path.is_file()
+
+
+def test_run_post_tipsy_bundle_with_manifest_writes_manifest(
+    tmp_path: Path,
+) -> None:
+    log_dir = tmp_path / "logs"
+    expected_result = PostTipsyBundleResult(
+        tsa_list=["29"],
+        au_rows=30,
+        curve_rows=60,
+        curve_points_rows=1234,
+        tipsy_curves_paths=[tmp_path / "data" / "tipsy_curves_tsa29.csv"],
+        tipsy_sppcomp_paths=[tmp_path / "data" / "tipsy_sppcomp_tsa29.csv"],
+        au_table_path=tmp_path / "data" / "model_input_bundle" / "au_table.csv",
+        curve_table_path=tmp_path / "data" / "model_input_bundle" / "curve_table.csv",
+        curve_points_table_path=tmp_path
+        / "data"
+        / "model_input_bundle"
+        / "curve_points_table.csv",
+    )
+    for path in [
+        *expected_result.tipsy_curves_paths,
+        *expected_result.tipsy_sppcomp_paths,
+        expected_result.au_table_path,
+        expected_result.curve_table_path,
+        expected_result.curve_points_table_path,
+    ]:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("x\n", encoding="utf-8")
+
+    def _fake_run_post_tipsy_bundle(**_kwargs):
+        return expected_result
+
+    # Patch at module import boundary to avoid preparing real TSA artifacts here.
+    import femic.workflows.legacy as legacy_module
+
+    original = legacy_module.run_post_tipsy_bundle
+    legacy_module.run_post_tipsy_bundle = _fake_run_post_tipsy_bundle
+    try:
+        run_result = run_post_tipsy_bundle_with_manifest(
+            tsa_list=["29"],
+            run_id="post_tipsy_manifest_test",
+            log_dir=log_dir,
+            message_fn=lambda _msg: None,
+        )
+    finally:
+        legacy_module.run_post_tipsy_bundle = original
+
+    assert run_result.result == expected_result
+    assert run_result.manifest_path.is_file()
+    payload = json.loads(run_result.manifest_path.read_text(encoding="utf-8"))
+    assert payload["status"] == "ok"
+    assert payload["workflow"] == "tsa_post_tipsy"
+    assert payload["run_id"] == "post_tipsy_manifest_test"

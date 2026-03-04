@@ -50,6 +50,9 @@ PYTHONPATH=src python -m femic vdyp report
 PYTHONPATH=src python -m femic tsa post-tipsy --tsa 29 -v
 ```
 
+This command writes a run manifest to ``vdyp_io/logs/`` (override with ``--log-dir`` and
+``--run-id``).
+
 ### Config-Driven Runs
 
 Use a YAML/JSON profile to seed TSA selection and run modes:

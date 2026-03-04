@@ -223,25 +223,44 @@ def test_tsa_post_tipsy_calls_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli_main.console, "print", messages.append)
     called: dict[str, object] = {}
 
-    def _fake_run_post_tipsy_bundle(*, tsa_list, message_fn):
+    def _fake_run_post_tipsy_bundle_with_manifest(
+        *, tsa_list, run_id, log_dir, message_fn
+    ):
         called["tsa_list"] = tsa_list
+        called["run_id"] = run_id
+        called["log_dir"] = log_dir
         message_fn("fake-progress")
         return SimpleNamespace(
-            tsa_list=tsa_list,
-            au_rows=30,
-            curve_rows=60,
-            curve_points_rows=9000,
-            au_table_path=Path("data/model_input_bundle/au_table.csv"),
-            curve_table_path=Path("data/model_input_bundle/curve_table.csv"),
-            curve_points_table_path=Path(
-                "data/model_input_bundle/curve_points_table.csv"
+            manifest_path=Path("vdyp_io/logs/run_manifest-post_tipsy_test.json"),
+            result=SimpleNamespace(
+                tsa_list=tsa_list,
+                au_rows=30,
+                curve_rows=60,
+                curve_points_rows=9000,
+                au_table_path=Path("data/model_input_bundle/au_table.csv"),
+                curve_table_path=Path("data/model_input_bundle/curve_table.csv"),
+                curve_points_table_path=Path(
+                    "data/model_input_bundle/curve_points_table.csv"
+                ),
             ),
         )
 
-    monkeypatch.setattr(cli_main, "run_post_tipsy_bundle", _fake_run_post_tipsy_bundle)
+    monkeypatch.setattr(
+        cli_main,
+        "run_post_tipsy_bundle_with_manifest",
+        _fake_run_post_tipsy_bundle_with_manifest,
+    )
 
-    cli_main.tsa_post_tipsy(tsa=["29"], verbose=True)
+    cli_main.tsa_post_tipsy(
+        tsa=["29"],
+        verbose=True,
+        run_id="post_tipsy_test",
+        log_dir=Path("vdyp_io/logs"),
+    )
 
     assert called["tsa_list"] == ["29"]
+    assert called["run_id"] == "post_tipsy_test"
+    assert called["log_dir"] == Path("vdyp_io/logs")
     assert any("post-tipsy completed" in msg for msg in messages)
+    assert any("Run manifest:" in msg for msg in messages)
     assert any("fake-progress" in msg for msg in messages)

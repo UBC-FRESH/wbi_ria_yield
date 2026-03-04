@@ -1560,3 +1560,9 @@
   switched TIPSY output parsing to `sep="\\s+"` (pandas deprecation fix), pre-sorted VDYP
   stratum/SI index before per-AU lookups, and closed each Matplotlib figure after save to avoid
   open-figure buildup warnings during large TSA runs.
+- Added manifest/audit logging for `femic tsa post-tipsy` runs via
+  `run_post_tipsy_bundle_with_manifest(...)`, including run status, duration, runtime metadata, and
+  output artifact existence checks.
+- Extended `femic tsa post-tipsy` with `--run-id` and `--log-dir`, and now prints the generated
+  manifest path (e.g., `vdyp_io/logs/run_manifest-<run_id>.json`).
+- Added regression coverage for post-tipsy manifest emission and updated CLI/docs references.

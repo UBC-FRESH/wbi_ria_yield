@@ -1671,5 +1671,8 @@
   replaced deprecated `delim_whitespace` parsing with `sep="\\s+"`, pre-sorted the VDYP curve
   MultiIndex once before per-AU plotting, and added explicit `plt.close(fig)` in the loop to
   prevent figure accumulation warnings during `tsa post-tipsy` runs.
-- Remaining immediate queue: add run-manifest/audit logging for `femic tsa post-tipsy`, then begin
-  TSA29 TIPSY rule quality tuning + managed-vs-unmanaged regression assertions.
+- Closed queued run-manifest/audit logging for `femic tsa post-tipsy`:
+  added workflow-level manifest emission (`started`/`ok`/`failed`) with runtime metadata + output
+  artifact checks, and wired CLI `--run-id`/`--log-dir` through the command.
+- Remaining immediate queue: begin TSA29 TIPSY rule quality tuning and add managed-vs-unmanaged
+  regression assertions.

@@ -124,6 +124,8 @@ Subcommands
 
 - ``--tsa TEXT`` (repeatable, required)
 - ``--verbose`` / ``-v``
+- ``--run-id TEXT``
+- ``--log-dir PATH`` (default: ``vdyp_io/logs``)
 
 TIPSY
 -----
