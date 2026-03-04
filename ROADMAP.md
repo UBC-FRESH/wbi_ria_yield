@@ -1664,3 +1664,6 @@
 - Added targeted `vdyp_io` ignore rules in `.gitignore` for generated scratch artifacts
   (`vdyp_err_*`, `vdyp_out_*`, `vdyp_ply_*`, `vdyp_lyr_*`, and tmp dirs/files) so `git status`
   stays clean while retaining tracked `vdyp_io/VDYP_CFG` assets.
+- Updated ignore strategy to also exclude volatile local `vdyp_io/VDYP_CFG` runtime files
+  (`VDYP7_BACK.ctl`, `VDYP7_VDYP.ctl`, `vdyp7.log`) and untracked them from git index so repeated
+  model runs no longer generate persistent dirty-state churn.

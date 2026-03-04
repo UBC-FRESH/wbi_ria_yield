@@ -16,6 +16,9 @@ vdyp_io/vdyp_ply_*.csv
 vdyp_io/vdyp_lyr_*.csv
 vdyp_io/tmp*/
 vdyp_io/tmp*
+vdyp_io/VDYP_CFG/VDYP7_BACK.ctl
+vdyp_io/VDYP_CFG/VDYP7_VDYP.ctl
+vdyp_io/VDYP_CFG/vdyp7.log
 .vscode
 tmp/
 _build/

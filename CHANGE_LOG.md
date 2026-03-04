@@ -1553,3 +1553,6 @@
 - Added `.gitignore` coverage for generated `vdyp_io` scratch files:
   `vdyp_err_*.err`, `vdyp_out_*.out`, `vdyp_ply_*.csv`, `vdyp_lyr_*.csv`, and `tmp*`.
   This removes hundreds of transient artifacts from normal `git status` output.
+- Added `.gitignore` entries for volatile local runtime files under `vdyp_io/VDYP_CFG`
+  (`VDYP7_BACK.ctl`, `VDYP7_VDYP.ctl`, `vdyp7.log`) and removed them from git tracking index so
+  local model execution no longer dirties the branch on every run.
