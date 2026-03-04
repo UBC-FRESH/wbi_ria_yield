@@ -1556,3 +1556,7 @@
 - Added `.gitignore` entries for volatile local runtime files under `vdyp_io/VDYP_CFG`
   (`VDYP7_BACK.ctl`, `VDYP7_VDYP.ctl`, `vdyp7.log`) and removed them from git tracking index so
   local model execution no longer dirties the branch on every run.
+- Cleaned up 01b downstream runtime warnings:
+  switched TIPSY output parsing to `sep="\\s+"` (pandas deprecation fix), pre-sorted VDYP
+  stratum/SI index before per-AU lookups, and closed each Matplotlib figure after save to avoid
+  open-figure buildup warnings during large TSA runs.

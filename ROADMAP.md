@@ -1667,3 +1667,9 @@
 - Updated ignore strategy to also exclude volatile local `vdyp_io/VDYP_CFG` runtime files
   (`VDYP7_BACK.ctl`, `VDYP7_VDYP.ctl`, `vdyp7.log`) and untracked them from git index so repeated
   model runs no longer generate persistent dirty-state churn.
+- Closed queued runtime-noise cleanup for 01b:
+  replaced deprecated `delim_whitespace` parsing with `sep="\\s+"`, pre-sorted the VDYP curve
+  MultiIndex once before per-AU plotting, and added explicit `plt.close(fig)` in the loop to
+  prevent figure accumulation warnings during `tsa post-tipsy` runs.
+- Remaining immediate queue: add run-manifest/audit logging for `femic tsa post-tipsy`, then begin
+  TSA29 TIPSY rule quality tuning + managed-vs-unmanaged regression assertions.
