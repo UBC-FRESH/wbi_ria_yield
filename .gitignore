@@ -24,3 +24,8 @@ _build/
 plots/tipsy_vdyp_tsa*.png
 plots/strata-tsa*.png
 plots/strata-tsa*.pdf
+
+# Local scratch artifacts from ad-hoc VDYP/TIPSY debugging
+ply.feather
+lyr.feather
+vdyp_lyr_816_eoi3.csv/
