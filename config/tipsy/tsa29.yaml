@@ -1,0 +1,111 @@
+schema_version: 1
+tsa_code: "29"
+
+metadata:
+  source_tsr:
+    - title: "Provisional generic TSA29 scaffold"
+      year: 2026
+      url: ""
+      notes: "Functional catch-all for pipeline bring-up; replace with TSA-specific TSR logic."
+  author: "codex-provisional"
+  created_utc: "2026-03-03T00:00:00Z"
+  notes: "Catch-all rule ensures full AU coverage; species set from VRI leading species."
+
+defaults:
+  e:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    SPP_2: null
+    SPP_3: null
+    SPP_4: null
+    SPP_5: null
+    PCT_2: null
+    PCT_3: null
+    PCT_4: null
+    PCT_5: null
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+  f:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    SPP_2: null
+    SPP_3: null
+    SPP_4: null
+    SPP_5: null
+    PCT_2: null
+    PCT_3: null
+    PCT_4: null
+    PCT_5: null
+    GW_1: null
+    GW_2: null
+    GW_3: null
+    GW_4: null
+    GW_5: null
+    GW_age_1: null
+    GW_age_2: null
+    GW_age_3: null
+    GW_age_4: null
+    GW_age_5: null
+
+rules:
+  - id: "tsa29_all_aus_catchall"
+    when: {}
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1400
+        SPP_1: "$leading_species_tipsy"
+        PCT_1: 100
+        Util_DBH_cm: 17.5
+      f:
+        Regen_Delay: 1
+        Density: 1400
+        SPP_1: "$leading_species_tipsy"
+        PCT_1: 100
+        Util_DBH_cm: 17.5
+
+required_fields:
+  - AU
+  - TBLno
+  - BEC
+  - Proportion
+  - Regen_Delay
+  - SI
+  - OAF1
+  - OAF2
+  - FIZ
+  - Regen_Method
+  - Density
+  - SPP_1
+  - PCT_1
+  - SPP_2
+  - PCT_2
+  - SPP_3
+  - PCT_3
+  - SPP_4
+  - PCT_4
+  - SPP_5
+  - PCT_5
+  - GW_1
+  - GW_2
+  - GW_3
+  - GW_4
+  - GW_5
+  - GW_age_1
+  - GW_age_2
+  - GW_age_3
+  - GW_age_4
+  - GW_age_5
+  - Util_DBH_cm

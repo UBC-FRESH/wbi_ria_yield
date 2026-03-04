@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import builtins
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import typer
@@ -204,3 +205,43 @@ def test_run_all_uses_profile_dry_run_and_profile_defaults(
     assert any("resume=True" in msg for msg in messages)
     assert any("debug_rows=12" in msg for msg in messages)
     assert any("run_id=cfg-run" in msg for msg in messages)
+
+
+def test_tsa_post_tipsy_requires_tsa(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.tsa_post_tipsy(tsa=None, verbose=False)
+
+    assert exc_info.value.exit_code == 1
+    assert any("Provide at least one TSA" in msg for msg in messages)
+
+
+def test_tsa_post_tipsy_calls_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    called: dict[str, object] = {}
+
+    def _fake_run_post_tipsy_bundle(*, tsa_list, message_fn):
+        called["tsa_list"] = tsa_list
+        message_fn("fake-progress")
+        return SimpleNamespace(
+            tsa_list=tsa_list,
+            au_rows=30,
+            curve_rows=60,
+            curve_points_rows=9000,
+            au_table_path=Path("data/model_input_bundle/au_table.csv"),
+            curve_table_path=Path("data/model_input_bundle/curve_table.csv"),
+            curve_points_table_path=Path(
+                "data/model_input_bundle/curve_points_table.csv"
+            ),
+        )
+
+    monkeypatch.setattr(cli_main, "run_post_tipsy_bundle", _fake_run_post_tipsy_bundle)
+
+    cli_main.tsa_post_tipsy(tsa=["29"], verbose=True)
+
+    assert called["tsa_list"] == ["29"]
+    assert any("post-tipsy completed" in msg for msg in messages)
+    assert any("fake-progress" in msg for msg in messages)

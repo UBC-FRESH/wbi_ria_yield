@@ -1,0 +1,12 @@
+selection:
+  tsa:
+    - "29"
+  strata: []
+modes:
+  resume: true
+  dry_run: false
+  verbose: true
+  skip_checks: false
+run:
+  run_id: "tsa29_20260303"
+  log_dir: "vdyp_io/logs"

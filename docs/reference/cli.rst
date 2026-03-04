@@ -109,6 +109,7 @@ TSA
 Subcommands
 
 - ``run``: ``python -m femic tsa run [OPTIONS]``
+- ``post-tipsy``: ``python -m femic tsa post-tipsy [OPTIONS]``
 
 ``tsa run`` options
 
@@ -117,6 +118,11 @@ Subcommands
 - ``--tsa TEXT`` (repeatable)
 - ``--resume``
 - ``--dry-run``
+- ``--verbose`` / ``-v``
+
+``tsa post-tipsy`` options
+
+- ``--tsa TEXT`` (repeatable, required)
 - ``--verbose`` / ``-v``
 
 TIPSY

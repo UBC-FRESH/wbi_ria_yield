@@ -44,6 +44,12 @@ PYTHONPATH=src python -m femic run --tsa 08 --resume
 PYTHONPATH=src python -m femic vdyp report
 ```
 
+5. After manual BatchTIPSY output is uploaded, run downstream stages only (01b + bundle):
+
+```bash
+PYTHONPATH=src python -m femic tsa post-tipsy --tsa 29 -v
+```
+
 ### Config-Driven Runs
 
 Use a YAML/JSON profile to seed TSA selection and run modes:
