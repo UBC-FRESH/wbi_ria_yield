@@ -85,49 +85,66 @@ def run_tsa(
     spp = np.vectorize(conditions)
     df = pd.read_excel(tipsy_excel, sheet_name='TIPSY_inputTBL', usecols='A:AF')
     df=df.query('SI > 0').copy()
-    
-    # reformat data
-    for i in range(1,6):
-        df[['PCT_'+str(i)]] = df[['PCT_'+str(i)]].fillna(0)
-        if df['PCT_'+str(i)].dtype==object:  
-            df['PCT_'+str(i)] = pd.to_numeric(df['PCT_'+str(i)]).astype(int)
+    if df.empty:
+        print(f"warning: no valid TIPSY input rows for TSA {tsa}; writing empty 01b outputs")
+        pd.DataFrame(columns=["AU"]).to_csv(outSPP, header=True, index=False)
+        pd.DataFrame(columns=["AU", "Age", "Yield", "Height", "DBHq", "TPH"]).to_csv(
+            outYield,
+            header=True,
+            index=False,
+        )
+    else:
+        # reformat data
+        for i in range(1,6):
+            df[['PCT_'+str(i)]] = df[['PCT_'+str(i)]].fillna(0)
+            if df['PCT_'+str(i)].dtype==object:  
+                df['PCT_'+str(i)] = pd.to_numeric(df['PCT_'+str(i)]).astype(int)
+            else:
+                df['PCT_'+str(i)] = df['PCT_'+str(i)].astype(int)
+        
+        # consolidate species
+        for i in range (1,4):
+            ds = df.groupby(['AU', 'Proportion','SPP_'+str(i)], as_index=False)[['PCT_'+str(i)]].mean()
+            ds['SPP'] = ds['SPP_'+str(i)]
+            ds['PCT'] = ds['Proportion']*ds['PCT_'+str(i)]
+            ds = ds.query("PCT>0")
+            ds = ds.groupby(['AU', 'SPP'], as_index=False)[['PCT']].sum()
+            if i ==1:
+                dspp = ds
+            else:
+                dspp = pd.concat([dspp, ds], ignore_index=True)
+        dspp = dspp.groupby(['AU', 'SPP'])[['PCT']].sum()
+        
+        #unstack and remove extra columns
+        dspp = dspp.unstack()
+        dspp.columns = dspp.columns.droplevel(0)
+        dspp.reset_index(inplace=True)
+        dspp.to_csv (outSPP, header=True, index=False)
+        
+        if not Path(tipsyout).is_file():
+            print(
+                f"warning: missing TIPSY output file for TSA {tsa} at {tipsyout}; "
+                "writing empty yield table"
+            )
+            pd.DataFrame(
+                columns=["AU", "Age", "Yield", "Height", "DBHq", "TPH"]
+            ).to_csv(outYield, header=True, index=False)
         else:
-            df['PCT_'+str(i)] = df['PCT_'+str(i)].astype(int)
-    
-    # consolidate species
-    for i in range (1,4):
-        ds = df.groupby(['AU', 'Proportion','SPP_'+str(i)], as_index=False)[['PCT_'+str(i)]].mean()
-        ds['SPP'] = ds['SPP_'+str(i)]
-        ds['PCT'] = ds['Proportion']*ds['PCT_'+str(i)]
-        ds = ds.query("PCT>0")
-        ds = ds.groupby(['AU', 'SPP'], as_index=False)[['PCT']].sum()
-        if i ==1:
-            dspp = ds
-        else:
-            dspp = pd.concat([dspp, ds], ignore_index=True)
-    dspp = dspp.groupby(['AU', 'SPP'])[['PCT']].sum()
-    
-    #unstack and remove extra columns
-    dspp = dspp.unstack()
-    dspp.columns = dspp.columns.droplevel(0)
-    dspp.reset_index(inplace=True)
-    dspp.to_csv (outSPP, header=True, index=False)
-    
-    # consolidate yields
-    cols = ['TABLE_NO', 'Empty' ,'Age', 'Yield', 'Vol_gross', 'DBHq', 'Height', 'TPH', 'Crown_C', 'Crown_L', 'CWD_TPH']
-    dy = pd.read_csv(tipsyout, low_memory=False, header=None, skiprows = 4, delim_whitespace=True)
-    dy.columns = cols
-    dy.drop('Empty', axis=1, inplace=True)
-    dy.set_index('TABLE_NO', inplace=True)
-    dp = df.groupby(['AU', 'TBLno'],as_index=False)[['Proportion']].sum()
-    dp.set_index('TBLno',inplace=True)
-    dy = dy.join(dp)
-    dy.reset_index(inplace=True)
-    dyf = dy.groupby(['AU', 'Age'], as_index=False).agg({'Yield':['sum'], 'Height':['max'], 'DBHq':['max'], 'TPH':['sum']})
-    dyf.columns = dyf.columns.droplevel(1) #drop the sum/max labels
-    
-    # export result to a CSV file
-    dyf.to_csv(outYield, header=True, index=False)
+            # consolidate yields
+            cols = ['TABLE_NO', 'Empty' ,'Age', 'Yield', 'Vol_gross', 'DBHq', 'Height', 'TPH', 'Crown_C', 'Crown_L', 'CWD_TPH']
+            dy = pd.read_csv(tipsyout, low_memory=False, header=None, skiprows = 4, delim_whitespace=True)
+            dy.columns = cols
+            dy.drop('Empty', axis=1, inplace=True)
+            dy.set_index('TABLE_NO', inplace=True)
+            dp = df.groupby(['AU', 'TBLno'],as_index=False)[['Proportion']].sum()
+            dp.set_index('TBLno',inplace=True)
+            dy = dy.join(dp)
+            dy.reset_index(inplace=True)
+            dyf = dy.groupby(['AU', 'Age'], as_index=False).agg({'Yield':['sum'], 'Height':['max'], 'DBHq':['max'], 'TPH':['sum']})
+            dyf.columns = dyf.columns.droplevel(1) #drop the sum/max labels
+            
+            # export result to a CSV file
+            dyf.to_csv(outYield, header=True, index=False)
     
     # --- cell 4 ---
     df = pd.read_csv(outYield)

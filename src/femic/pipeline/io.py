@@ -185,17 +185,25 @@ def resolve_legacy_external_data_paths(
     ]
     resolved_candidates = [candidate.resolve() for candidate in candidates if candidate]
     required_vri_path = Path(required_vri_rel)
+    required_tsa_path = Path(tsa_boundaries_rel)
 
     external_data_root = resolved_candidates[0]
     for candidate in resolved_candidates:
-        if (candidate / required_vri_path).exists():
+        if (candidate / required_vri_path).exists() and (
+            candidate / required_tsa_path
+        ).exists():
             external_data_root = candidate
             break
+    else:
+        for candidate in resolved_candidates:
+            if (candidate / required_vri_path).exists():
+                external_data_root = candidate
+                break
 
     return LegacyExternalDataPaths(
         external_data_root=external_data_root,
         vri_vclr1p_path=external_data_root / required_vri_path,
-        tsa_boundaries_path=external_data_root / Path(tsa_boundaries_rel),
+        tsa_boundaries_path=external_data_root / required_tsa_path,
     )
 
 

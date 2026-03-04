@@ -40,7 +40,7 @@ def _base_row() -> dict[str, object]:
         "BCLCS_LEVEL_4": None,
         "BCLCS_LEVEL_5": None,
         "BEC_VARIANT": None,
-        "NON_PRODUCTIVE_CD": "N",
+        "NON_PRODUCTIVE_CD": None,
         "FOR_MGMT_LAND_BASE_IND": "Y",
         "BEC_ZONE_CODE": "SBS",
         "PROJ_AGE_1": 60,
@@ -69,8 +69,9 @@ def test_normalize_and_filter_checkpoint2_records_filters_excluded_rows() -> Non
     keep = _base_row()
     drop_bec = _base_row() | {"BEC_ZONE_CODE": "BAFA"}
     drop_live_vol = _base_row() | {"LIVE_STAND_VOLUME_125": 0}
-    frame = pd.DataFrame([keep, drop_bec, drop_live_vol]).assign(
-        LIVE_STAND_VOLUME_125=[10, 10, 0]
+    drop_nonproductive = _base_row() | {"NON_PRODUCTIVE_CD": "35"}
+    frame = pd.DataFrame([keep, drop_bec, drop_live_vol, drop_nonproductive]).assign(
+        LIVE_STAND_VOLUME_125=[10, 10, 0, 10]
     )
     out = normalize_and_filter_checkpoint2_records(f_table=frame)
     assert len(out) == 1

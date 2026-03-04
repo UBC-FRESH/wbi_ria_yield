@@ -190,7 +190,8 @@ def normalize_and_filter_checkpoint2_records(
     table["BASAL_AREA"] = pd_module.to_numeric(table["BASAL_AREA"], errors="coerce")
 
     table = table[table.BCLCS_LEVEL_2 == required_bclcs_level_2]
-    table = table[table.NON_PRODUCTIVE_CD.notna()]
+    # Keep productive stands: NON_PRODUCTIVE_CD is null for productive land.
+    table = table[table.NON_PRODUCTIVE_CD.isna()]
     table = table[table.FOR_MGMT_LAND_BASE_IND == required_for_mgmt_land_base]
     table = table[~table.BEC_ZONE_CODE.isin(list(excluded_bec_zones))]
     table = table[table.PROJ_AGE_1 >= min_proj_age]

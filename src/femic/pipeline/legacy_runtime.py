@@ -23,6 +23,7 @@ class Legacy01ARuntimeConfig:
     tipsy_params_columns: Sequence[str]
     tipsy_params_path_prefix: str | Path
     vdyp_cache_paths: Mapping[str, Path]
+    parallel_worker_count: int = 1
     vdyp_out_cache: dict[str, Any] | None = None
     curve_fit_impl: Any = None
 
@@ -50,6 +51,7 @@ def build_legacy_01a_runtime_config(
     tipsy_params_path_prefix: str | Path,
     vdyp_results_tsa_pickle_path_prefix: str | Path,
     vdyp_curves_smooth_tsa_feather_path_prefix: str | Path,
+    parallel_worker_count: int = 1,
     vdyp_out_cache: dict[str, Any] | None = None,
     curve_fit_impl: Any = None,
 ) -> Legacy01ARuntimeConfig:
@@ -70,6 +72,7 @@ def build_legacy_01a_runtime_config(
         tipsy_params_columns=tipsy_params_columns,
         tipsy_params_path_prefix=tipsy_params_path_prefix,
         vdyp_cache_paths=vdyp_cache_paths,
+        parallel_worker_count=max(int(parallel_worker_count), 1),
         vdyp_out_cache=vdyp_out_cache,
         curve_fit_impl=curve_fit_impl,
     )

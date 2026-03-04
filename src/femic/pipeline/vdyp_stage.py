@@ -449,14 +449,152 @@ def load_vdyp_input_tables(
     vdyp_ply_feather_path: str | Path,
     vdyp_lyr_feather_path: str | Path,
     read_from_source: bool = False,
+    source_where: str | None = None,
+    source_mask: Any | None = None,
+    source_map_ids: Sequence[str] | None = None,
+    source_feature_ids: Sequence[Any] | None = None,
+    source_map_id_chunk_size: int = 5,
+    source_feature_id_chunk_size: int = 400,
     gpd_module: Any | None = None,
+    message_fn: Callable[..., Any] = print,
 ) -> tuple[Any, Any]:
     """Load VDYP polygon/layer tables from feather cache or source geodatabase."""
     gpd_mod = gpd_module or importlib.import_module("geopandas")
     if read_from_source:
-        vdyp_ply = gpd_mod.read_file(vdyp_input_pandl_path, driver="FileGDB", layer=0)
+
+        def _normalize_feature_ids(values: Sequence[Any]) -> list[int]:
+            normalized: list[int] = []
+            for value in values:
+                if value is None:
+                    continue
+                value_str = str(value).strip()
+                if value_str == "":
+                    continue
+                normalized.append(int(value))
+            return sorted(set(normalized))
+
+        def _normalize_map_ids(values: Sequence[str]) -> list[str]:
+            normalized = [str(v).strip() for v in values if str(v).strip() != ""]
+            return sorted(set(normalized))
+
+        def _read_layer_by_feature_ids(*, layer: int, feature_ids: list[int]) -> Any:
+            if not feature_ids:
+                message_fn(f"VDYP layer {layer}: no feature_ids; returning empty table")
+                return gpd_mod.read_file(
+                    vdyp_input_pandl_path,
+                    layer=layer,
+                    driver="FileGDB",
+                    where="1=0",
+                )
+            pd_mod = importlib.import_module("pandas")
+            chunks: list[Any] = []
+            chunk_size = max(int(source_feature_id_chunk_size), 1)
+            total_chunks = (len(feature_ids) + chunk_size - 1) // chunk_size
+            message_fn(
+                f"VDYP layer {layer}: loading {len(feature_ids)} feature_ids "
+                f"in {total_chunks} chunks (chunk_size={chunk_size})"
+            )
+            for start in range(0, len(feature_ids), chunk_size):
+                chunk_ids = feature_ids[start : start + chunk_size]
+                chunk_where = "FEATURE_ID IN (%s)" % ",".join(
+                    str(fid) for fid in chunk_ids
+                )
+                chunk_i = (start // chunk_size) + 1
+                if chunk_i == 1 or chunk_i % 25 == 0 or chunk_i == total_chunks:
+                    message_fn(f"VDYP layer {layer}: chunk {chunk_i}/{total_chunks}")
+                chunks.append(
+                    gpd_mod.read_file(
+                        vdyp_input_pandl_path,
+                        layer=layer,
+                        driver="FileGDB",
+                        where=chunk_where,
+                        ignore_geometry=True,
+                    )
+                )
+            return pd_mod.concat(chunks, ignore_index=True)
+
+        def _read_layer_by_map_ids(*, layer: int, map_ids: list[str]) -> Any:
+            if not map_ids:
+                message_fn(f"VDYP layer {layer}: no map_ids; returning empty table")
+                return gpd_mod.read_file(
+                    vdyp_input_pandl_path,
+                    layer=layer,
+                    where="1=0",
+                    ignore_geometry=True,
+                )
+            pd_mod = importlib.import_module("pandas")
+            chunks: list[Any] = []
+            chunk_size = max(int(source_map_id_chunk_size), 1)
+            total_chunks = (len(map_ids) + chunk_size - 1) // chunk_size
+            message_fn(
+                f"VDYP layer {layer}: loading {len(map_ids)} map_ids "
+                f"in {total_chunks} chunks (chunk_size={chunk_size})"
+            )
+            for start in range(0, len(map_ids), chunk_size):
+                chunk_ids = map_ids[start : start + chunk_size]
+                quoted = ",".join(
+                    "'" + mid.replace("'", "''") + "'" for mid in chunk_ids
+                )
+                chunk_where = f"MAP_ID IN ({quoted})"
+                chunk_i = (start // chunk_size) + 1
+                if chunk_i == 1 or chunk_i % 10 == 0 or chunk_i == total_chunks:
+                    message_fn(f"VDYP layer {layer}: chunk {chunk_i}/{total_chunks}")
+                chunks.append(
+                    gpd_mod.read_file(
+                        vdyp_input_pandl_path,
+                        layer=layer,
+                        where=chunk_where,
+                        ignore_geometry=True,
+                    )
+                )
+            return pd_mod.concat(chunks, ignore_index=True)
+
+        explicit_map_ids = _normalize_map_ids(source_map_ids) if source_map_ids else []
+        if explicit_map_ids:
+            message_fn(
+                f"VDYP source load: explicit map-id mode (n={len(explicit_map_ids)})"
+            )
+            vdyp_ply = _read_layer_by_map_ids(layer=0, map_ids=explicit_map_ids)
+            vdyp_lyr = _read_layer_by_map_ids(layer=1, map_ids=explicit_map_ids)
+            vdyp_ply.to_feather(vdyp_ply_feather_path)
+            vdyp_lyr.to_feather(vdyp_lyr_feather_path)
+            return vdyp_ply, vdyp_lyr
+
+        explicit_feature_ids = (
+            _normalize_feature_ids(source_feature_ids) if source_feature_ids else []
+        )
+        if explicit_feature_ids:
+            message_fn(
+                f"VDYP source load: explicit feature-id mode "
+                f"(n={len(explicit_feature_ids)})"
+            )
+            vdyp_ply = _read_layer_by_feature_ids(
+                layer=0, feature_ids=explicit_feature_ids
+            )
+            vdyp_lyr = _read_layer_by_feature_ids(
+                layer=1, feature_ids=explicit_feature_ids
+            )
+            vdyp_ply.to_feather(vdyp_ply_feather_path)
+            vdyp_lyr.to_feather(vdyp_lyr_feather_path)
+            return vdyp_ply, vdyp_lyr
+
+        read_kwargs: dict[str, Any] = {"driver": "FileGDB"}
+        if source_where:
+            read_kwargs["where"] = source_where
+        if source_mask is not None:
+            read_kwargs["mask"] = source_mask
+        vdyp_ply = gpd_mod.read_file(vdyp_input_pandl_path, layer=0, **read_kwargs)
         vdyp_ply.to_feather(vdyp_ply_feather_path)
-        vdyp_lyr = gpd_mod.read_file(vdyp_input_pandl_path, driver="FileGDB", layer=1)
+        # Layer 1 has no geometry; when loading by mask, fetch feature-id chunks.
+        lyr_kwargs = {"driver": "FileGDB"}
+        if source_where:
+            lyr_kwargs["where"] = source_where
+            vdyp_lyr = gpd_mod.read_file(vdyp_input_pandl_path, layer=1, **lyr_kwargs)
+        elif source_mask is not None:
+            feature_ids = _normalize_feature_ids(vdyp_ply.FEATURE_ID.tolist())
+            vdyp_lyr = _read_layer_by_feature_ids(layer=1, feature_ids=feature_ids)
+        else:
+            vdyp_lyr = gpd_mod.read_file(vdyp_input_pandl_path, layer=1, **lyr_kwargs)
         vdyp_lyr.to_feather(vdyp_lyr_feather_path)
         return vdyp_ply, vdyp_lyr
     vdyp_ply = gpd_mod.read_feather(vdyp_ply_feather_path)
@@ -495,6 +633,22 @@ def load_or_build_vdyp_results_tsa(
     """Resolve per-TSA VDYP results from cache, combined cache, or fresh bootstrap."""
     tsa_path = Path(vdyp_results_tsa_pickle_path)
     combined_path = Path(vdyp_results_pickle_path)
+    si_levels = {"L", "M", "H"}
+
+    def _looks_like_per_tsa_vdyp_results(value: Any) -> bool:
+        if not isinstance(value, dict) or not value:
+            return isinstance(value, dict)
+        # Reject legacy/invalid shape where first-level keys are SI levels.
+        if set(str(k) for k in value.keys()).issubset(si_levels):
+            return False
+        for k, v in value.items():
+            if isinstance(k, bool):
+                return False
+            if not isinstance(k, int):
+                return False
+            if not isinstance(v, dict):
+                return False
+        return True
 
     def _bootstrap_and_cache() -> dict[int, dict[str, dict[Any, Any]]]:
         print_fn()
@@ -517,8 +671,17 @@ def load_or_build_vdyp_results_tsa(
             except (TypeError, ValueError):
                 vdyp_key = tsa
         if vdyp_key in vdyp_results_all:
-            return vdyp_results_all[vdyp_key]
-        return {}
+            cached = vdyp_results_all[vdyp_key]
+            if _looks_like_per_tsa_vdyp_results(cached):
+                return cached
+            print_fn(
+                "combined VDYP cache has invalid schema for tsa",
+                tsa,
+                "; rebuilding",
+            )
+            return _bootstrap_and_cache()
+        # Combined cache is optional; if TSA key is missing, run bootstrap.
+        return _bootstrap_and_cache()
 
     if not tsa_path.is_file():
         return _bootstrap_and_cache()
@@ -585,6 +748,7 @@ def build_smoothed_curve_table(
     output_path: str | Path | None = None,
 ) -> Any:
     """Build and optionally persist the smoothed VDYP curve table."""
+    out_cols = ["index", "age", "volume", "stratum_code", "si_level"]
     frames = []
     for run in smoothed_runs:
         df = pd_module.DataFrame(zip(run.x, run.y), columns=["age", "volume"])
@@ -592,7 +756,10 @@ def build_smoothed_curve_table(
         df["stratum_code"] = run.stratum_code
         df["si_level"] = run.si_level
         frames.append(df)
-    curve_table = pd_module.concat(frames).reset_index()
+    if frames:
+        curve_table = pd_module.concat(frames).reset_index()
+    else:
+        curve_table = pd_module.DataFrame(columns=out_cols)
     if output_path is not None:
         curve_table.to_feather(output_path)
     return curve_table
@@ -724,18 +891,26 @@ def fit_stratum_curves(
                 )
             fitattr = f"live_vol_per_ha_125_{species}"
             sss = ss[ss[fitattr] >= fitattr_thresh]
+            sv_sum = float(sv.sum())
+            if sv_sum <= 0 or sss.empty:
+                continue
             if fit_rawdata:
                 x = sss.PROJ_AGE_1.values
-                y = sss[fitattr].values / sv.sum()
+                y = sss[fitattr].values / sv_sum
                 sigma = None
             else:
                 agg = sss.groupby("PROJ_AGE_1")[fitattr].agg(
                     ["mean", "median", "std", "count"]
                 )
                 agg = agg[agg["count"] > 2]
-                agg["sigma"] = ((agg["std"].mean() + agg["std"]) / agg["count"]) ** 0.5
+                if agg.empty:
+                    continue
+                std_mean = float(agg["std"].fillna(0.0).mean())
+                agg["sigma"] = (
+                    (std_mean + agg["std"].fillna(0.0)) / agg["count"]
+                ) ** 0.5
                 x = agg.index.values
-                y = agg[agg_type].values / sv.sum()
+                y = agg[agg_type].values / sv_sum
                 sigma = agg["sigma"].values
             bounds = fit_func_bounds_func(x)
             try:
@@ -1283,6 +1458,8 @@ def build_run_vdyp_for_stratum_runner(
     """Build a per-TSA VDYP runner callable for bootstrap dispatch helpers."""
 
     def _run_vdyp(sample_table: Any, **kwargs: Any) -> dict[Any, Any]:
+        if "sampling_seed" not in kwargs:
+            kwargs["sampling_seed"] = sampling_seed_base
         return run_vdyp_for_stratum_fn(
             sample_table=sample_table,
             tsa=tsa,
@@ -1297,7 +1474,6 @@ def build_run_vdyp_for_stratum_runner(
             vdyp_log_path=vdyp_log_path,
             vdyp_stdout_log_path=vdyp_stdout_log_path,
             vdyp_stderr_log_path=vdyp_stderr_log_path,
-            sampling_seed=sampling_seed_base,
             **kwargs,
         )
 
@@ -1511,8 +1687,10 @@ def execute_vdyp_batch(
         )
 
         deps.write_vdyp_infiles(
-            vdyp_ply_,
-            vdyp_lyr_,
+            feature_ids_list,
+            vdyp_ply,
+            vdyp_lyr,
+            str(vdyp_io_dir),
             temp_artifacts.vdyp_ply_csv,
             temp_artifacts.vdyp_lyr_csv,
         )

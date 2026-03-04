@@ -203,10 +203,12 @@ def run_legacy_subprocess(
     drop_lines: set[str],
 ) -> StageResult:
     """Execute legacy script and stream output while filtering known noisy lines."""
+    env = dict(execution_plan.env)
+    env.setdefault("PYTHONUNBUFFERED", "1")
     process = subprocess.Popen(
         execution_plan.cmd,
         cwd=str(execution_plan.script_path.parent),
-        env=execution_plan.env,
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,

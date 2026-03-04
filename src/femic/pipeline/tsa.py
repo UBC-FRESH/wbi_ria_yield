@@ -12,13 +12,18 @@ TARGET_NSTRATA_BY_TSA: dict[str, int] = {
     "40": 7,
     "41": 10,
 }
+DEFAULT_TARGET_NSTRATA = 10
 MIN_STANDCOUNT = 1000
 
 
 def target_nstrata_for(tsa_code: str) -> int:
-    """Return configured target number of strata for a TSA code."""
+    """Return configured target number of strata for a TSA code.
+
+    Unknown TSA codes fall back to a conservative default so ad-hoc TSA runs
+    (for example, pipeline smoke tests on new TSA codes) do not hard-fail.
+    """
     tsa = str(tsa_code).zfill(2)
-    return TARGET_NSTRATA_BY_TSA[tsa]
+    return TARGET_NSTRATA_BY_TSA.get(tsa, DEFAULT_TARGET_NSTRATA)
 
 
 def build_strata_summary(
@@ -181,7 +186,15 @@ def assign_si_levels_from_stratum_quantiles(
     message_fn: Callable[[str], Any] = print,
 ) -> tuple[Any, Any]:
     """Assign SI-level labels within each matched stratum from configured quantile bands."""
+    import pandas as pd
+
     table = f_table.copy()
+    if stratum_matched_col not in table.columns:
+        return table, pd.DataFrame()
+    if table[stratum_matched_col].dropna().empty:
+        if si_level_col not in table.columns:
+            table[si_level_col] = None
+        return table, pd.DataFrame()
     stratum_si_stats = table.groupby(stratum_matched_col)[site_index_col].describe(
         percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
     )
@@ -225,6 +238,17 @@ def assign_au_ids_from_scsi(
 ) -> Any:
     """Assign absolute AU ids from `scsi_au` lookup map."""
     table = f_table.copy()
+    if tsa_col not in table.columns and (
+        getattr(table.index, "name", None) == tsa_col
+        or tsa_col in list(getattr(table.index, "names", []))
+    ):
+        table = table.reset_index()
+    if tsa_col not in table.columns:
+        table = table.reset_index()
+        if tsa_col not in table.columns and "index" in table.columns:
+            table = table.rename(columns={"index": tsa_col})
+    if tsa_col not in table.columns:
+        table[tsa_col] = None
     table[au_col] = [
         (
             None

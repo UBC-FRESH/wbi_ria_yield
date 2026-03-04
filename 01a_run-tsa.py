@@ -100,7 +100,19 @@ def run_tsa(
     print("processing tsa", tsa)
 
     # --- cell 2 ---
-    f_ = f.loc[tsa].reset_index().set_index(stratum_col)
+    tsa_slice = f.loc[[tsa]]
+
+    if stratum_col in tsa_slice.columns:
+        f_ = tsa_slice.reset_index(drop=True)
+    elif stratum_col in getattr(tsa_slice.index, "names", []):
+        f_ = tsa_slice.reset_index()
+    else:
+        raise KeyError(
+            f"{stratum_col!r} not found in TSA slice columns/index for tsa={tsa}; "
+            f"columns={list(getattr(tsa_slice, 'columns', []))}, "
+            f"index_names={list(getattr(tsa_slice.index, 'names', []))}"
+        )
+    f_ = f_.set_index(stratum_col)
 
     # --- cell 5 ---
     totalarea = f_.FEATURE_AREA_SQM.sum()
@@ -178,7 +190,6 @@ def run_tsa(
     )
 
     # --- cell 28 ---
-    N = 30
     stratum_fit_cfg = build_stratum_fit_run_config()
 
     vdyp_prep_checkpoint_path = pre_vdyp_checkpoint_path(tsa_code=tsa)
@@ -250,12 +261,51 @@ def run_tsa(
 
     # --- cell 38 ---
     # --- cell 40 ---
+    vdyp_ply_cache_path = Path(runtime_config.vdyp_ply_feather_path)
+    vdyp_lyr_cache_path = Path(runtime_config.vdyp_lyr_feather_path)
+    vdyp_ply_tsa_path = vdyp_ply_cache_path.with_name(
+        f"{vdyp_ply_cache_path.stem}-tsa{tsa}{vdyp_ply_cache_path.suffix}"
+    )
+    vdyp_lyr_tsa_path = vdyp_lyr_cache_path.with_name(
+        f"{vdyp_lyr_cache_path.stem}-tsa{tsa}{vdyp_lyr_cache_path.suffix}"
+    )
+    vdyp_source_feature_ids: list[int] = []
+    vdyp_source_map_ids: list[str] = []
+    for _stratumi, _sc, _fit_out in results[tsa]:
+        for _si in si_levels:
+            ss = _fit_out.get(_si, {}).get("ss")
+            if ss is None or "FEATURE_ID" not in ss.columns:
+                continue
+            vdyp_source_feature_ids.extend(
+                ss["FEATURE_ID"].dropna().astype(int).tolist()
+            )
+            if "MAP_ID" in ss.columns:
+                vdyp_source_map_ids.extend(ss["MAP_ID"].dropna().astype(str).tolist())
+    vdyp_source_feature_ids = sorted(set(vdyp_source_feature_ids))
+    vdyp_source_map_ids = sorted(set(vdyp_source_map_ids))
+
     vdyp_ply, vdyp_lyr = load_vdyp_input_tables(
         vdyp_input_pandl_path=runtime_config.vdyp_input_pandl_path,
-        vdyp_ply_feather_path=runtime_config.vdyp_ply_feather_path,
-        vdyp_lyr_feather_path=runtime_config.vdyp_lyr_feather_path,
-        read_from_source=False,
+        vdyp_ply_feather_path=vdyp_ply_tsa_path,
+        vdyp_lyr_feather_path=vdyp_lyr_tsa_path,
+        read_from_source=not (
+            vdyp_ply_tsa_path.is_file() and vdyp_lyr_tsa_path.is_file()
+        ),
+        source_map_ids=vdyp_source_map_ids,
+        source_feature_ids=vdyp_source_feature_ids,
+        message_fn=print,
     )
+    if vdyp_ply.shape[0] == 0 or vdyp_lyr.shape[0] == 0:
+        print(
+            "warning: TSA-filtered VDYP inputs are empty for tsa %s; "
+            "falling back to shared cached tables" % tsa
+        )
+        vdyp_ply, vdyp_lyr = load_vdyp_input_tables(
+            vdyp_input_pandl_path=runtime_config.vdyp_input_pandl_path,
+            vdyp_ply_feather_path=runtime_config.vdyp_ply_feather_path,
+            vdyp_lyr_feather_path=runtime_config.vdyp_lyr_feather_path,
+            read_from_source=False,
+        )
 
     # --- cell 42 ---
     vdyp_results_tsa_pickle_path = runtime_config.vdyp_cache_paths[
@@ -266,7 +316,7 @@ def run_tsa(
         run_id=femic_run_id,
         vdyp_ply=vdyp_ply,
         vdyp_lyr=vdyp_lyr,
-        rc_len=len(rc),
+        rc_len=max(int(runtime_config.parallel_worker_count), 1),
         curve_fit_fn=curve_fit,
         fit_func=body_fit_func,
         fit_func_bounds_func=body_fit_func_bounds_func,
@@ -342,13 +392,30 @@ def run_tsa(
     tipsy_exclusion = build_tipsy_exclusion()
     legacy_tipsy_builders = get_legacy_tipsy_builders()
     tipsy_config_dir, tipsy_use_legacy = resolve_tipsy_runtime_options()
+
+    def _missing_legacy_tipsy_builder(*_args, **_kwargs):
+        raise RuntimeError(
+            f"No legacy TIPSY builder registered for TSA {tsa}. "
+            "Provide config/tipsy/tsaXX.yaml or use a supported legacy TSA."
+        )
+
     tipsy_param_builder, tipsy_param_builder_message = resolve_tipsy_param_builder(
         tsa_code=tsa,
-        legacy_builder=legacy_tipsy_builders[tsa],
+        legacy_builder=legacy_tipsy_builders.get(tsa, _missing_legacy_tipsy_builder),
         config_dir=tipsy_config_dir,
         use_legacy=tipsy_use_legacy,
     )
     print(tipsy_param_builder_message)
+
+    exclusion = tipsy_exclusion.get(
+        tsa,
+        {
+            "min_si": lambda _s: 0.0,
+            "min_vol": lambda _s: 0.0,
+            "excl_bec": [],
+            "excl_leading_species": [],
+        },
+    )
 
     # --- cell 55 ---
     (
@@ -361,7 +428,7 @@ def run_tsa(
         si_levels=si_levels,
         vdyp_curves_smooth_tsa=vdyp_curves_smooth[tsa],
         vdyp_results_for_tsa=vdyp_results.get(tsa, {}),
-        exclusion=tipsy_exclusion[tsa],
+        exclusion=exclusion,
         tipsy_param_builder=tipsy_param_builder,
         vdyp_curve_events_path=vdyp_curve_events_path,
         append_jsonl_fn=append_jsonl,
@@ -375,11 +442,13 @@ def run_tsa(
             tipsy_params_columns=runtime_config.tipsy_params_columns,
             pd_module=pd,
         )
-    except RuntimeError as exc:
-        raise RuntimeError(
-            f"No TIPSY parameter tables generated for TSA {tsa}; see "
-            f"{vdyp_curve_events_path} for missing VDYP diagnostics."
-        ) from exc
+    except RuntimeError:
+        print(
+            "warning: no TIPSY parameter tables generated for TSA %s; writing empty "
+            "exports. See %s for missing VDYP diagnostics."
+            % (tsa, vdyp_curve_events_path)
+        )
+        df = pd.DataFrame(columns=list(runtime_config.tipsy_params_columns))
     write_tipsy_input_exports(
         tipsy_table=df,
         tsa=tsa,

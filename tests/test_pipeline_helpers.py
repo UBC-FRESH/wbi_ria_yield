@@ -31,6 +31,7 @@ import pandas as pd
 import numpy as np
 
 from femic.pipeline.tsa import (
+    DEFAULT_TARGET_NSTRATA,
     MIN_STANDCOUNT,
     assign_au_ids_from_scsi,
     assign_thlb_raw_from_raster,
@@ -106,9 +107,30 @@ def test_resolve_legacy_external_data_paths_prefers_first_existing_vri_root(
     assert resolved.tsa_boundaries_path == (fallback_data / "bc/tsa/FADM_TSA.gdb")
 
 
+def test_resolve_legacy_external_data_paths_prefers_root_with_vri_and_tsa(
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    primary_data = (repo_root / "data").resolve()
+    fallback_data = (repo_root / ".." / "data").resolve()
+    (primary_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb").mkdir(parents=True)
+    (fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb").mkdir(parents=True)
+    (fallback_data / "bc/tsa/FADM_TSA.gdb").mkdir(parents=True)
+
+    resolved = resolve_legacy_external_data_paths(repo_root=repo_root)
+
+    assert resolved.external_data_root == fallback_data
+    assert resolved.vri_vclr1p_path == (
+        fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb"
+    )
+    assert resolved.tsa_boundaries_path == (fallback_data / "bc/tsa/FADM_TSA.gdb")
+
+
 def test_tsa_target_nstrata_lookup() -> None:
     assert target_nstrata_for("8") == 9
     assert target_nstrata_for("16") == 13
+    assert target_nstrata_for("29") == DEFAULT_TARGET_NSTRATA
     assert MIN_STANDCOUNT == 1000
 
 
@@ -258,6 +280,25 @@ def test_assign_si_levels_from_stratum_quantiles_assigns_levels() -> None:
     assert set(out["si_level"].dropna().unique()) <= {"L", "M", "H"}
 
 
+def test_assign_si_levels_from_stratum_quantiles_handles_no_matched_rows() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum_matched": [None, None],
+            "SITE_INDEX": [10.0, 20.0],
+        }
+    )
+
+    out, stats = assign_si_levels_from_stratum_quantiles(
+        f_table=f_table,
+        si_levelquants={"L": [0, 20, 35]},
+        message_fn=lambda _m: None,
+    )
+
+    assert stats.empty
+    assert "si_level" in out.columns
+    assert out["si_level"].isnull().all()
+
+
 def test_lookup_scsi_au_base_and_assign_au_ids_from_scsi() -> None:
     scsi_au = {"08": {("S1", "L"): 7}}
     assert (
@@ -279,6 +320,32 @@ def test_lookup_scsi_au_base_and_assign_au_ids_from_scsi() -> None:
     out = assign_au_ids_from_scsi(f_table=frame, scsi_au=scsi_au)
     assert int(out["au"].iloc[0]) == 800007
     assert pd.isna(out["au"].iloc[1])
+
+
+def test_assign_au_ids_from_scsi_handles_tsa_code_as_index() -> None:
+    scsi_au = {"29": {("IDF_AT", "L"): 11}}
+    frame = pd.DataFrame(
+        {
+            "tsa_code": ["29"],
+            "stratum_matched": ["IDF_AT"],
+            "si_level": ["L"],
+        }
+    ).set_index("tsa_code")
+    out = assign_au_ids_from_scsi(f_table=frame, scsi_au=scsi_au)
+    assert int(out.loc[0, "au"]) == 2900011
+
+
+def test_assign_au_ids_from_scsi_handles_unnamed_index_fallback() -> None:
+    scsi_au = {"29": {("IDF_AT", "L"): 11}}
+    frame = pd.DataFrame(
+        {
+            "index": ["29"],
+            "stratum_matched": ["IDF_AT"],
+            "si_level": ["L"],
+        }
+    ).set_index("index")
+    out = assign_au_ids_from_scsi(f_table=frame, scsi_au=scsi_au)
+    assert int(out.loc[0, "au"]) == 2900011
 
 
 def test_summarize_missing_au_mappings_and_null_summary() -> None:

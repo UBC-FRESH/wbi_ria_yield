@@ -260,6 +260,7 @@ def test_build_legacy_01a_runtime_config_builds_cache_paths() -> None:
         tipsy_params_path_prefix="./data/tipsy_params_tsa",
         vdyp_results_tsa_pickle_path_prefix="./data/vdyp_results-tsa",
         vdyp_curves_smooth_tsa_feather_path_prefix="./data/vdyp_curves_smooth-tsa",
+        parallel_worker_count=4,
     )
 
     assert runtime_cfg.vdyp_cache_paths["vdyp_results_tsa_pickle_path"] == Path(
@@ -268,6 +269,7 @@ def test_build_legacy_01a_runtime_config_builds_cache_paths() -> None:
     assert runtime_cfg.vdyp_cache_paths["vdyp_curves_smooth_tsa_feather_path"] == Path(
         "./data/vdyp_curves_smooth-tsa08.feather"
     )
+    assert runtime_cfg.parallel_worker_count == 4
 
 
 def test_build_legacy_01b_runtime_config_builds_output_paths() -> None:

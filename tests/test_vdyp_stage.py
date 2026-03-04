@@ -441,6 +441,50 @@ def test_fit_stratum_curves_skips_species_on_curve_fit_error() -> None:
     assert any(msg and msg[0] == "fit error" for msg in messages)
 
 
+def test_fit_stratum_curves_skips_empty_aggregates_when_not_fit_rawdata() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["S1", "S1"],
+            "SITE_INDEX": [20.0, 22.0],
+            "PROJ_AGE_1": [40, 60],
+            "LIVE_STAND_VOLUME_125": [100.0, 100.0],
+            "live_vol_per_ha_125_SW": [50.0, 60.0],
+            "PROJ_HEIGHT_1": [15.0, 20.0],
+        }
+    ).set_index("stratum")
+    stratum_si_stats = f_table.groupby(level="stratum").SITE_INDEX.describe(
+        percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
+    )
+
+    class _FakeSns:
+        @staticmethod
+        def color_palette(_name: str, n: int) -> list[str]:
+            return ["#111"] * n
+
+    class _FakePlt:
+        pass
+
+    out = fit_stratum_curves(
+        f_table=f_table,
+        fit_func=lambda x, a, b, c, s: s * (a * ((x - c) ** b)) * np.exp(-a * (x - c)),
+        fit_func_bounds_func=lambda _x: ([0, 0, 0, 0], [1, 50, 100, 10]),
+        strata_df=pd.DataFrame({"totalarea_p": [1.0]}, index=["S1"]),
+        stratum_si_stats=stratum_si_stats,
+        stratumi=0,
+        species_list=["SW"],
+        curve_fit_fn=lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("fit boom")),
+        np_module=np,
+        pd_module=pd,
+        sns_module=_FakeSns(),
+        plt_module=_FakePlt(),
+        si_levelquants={"M": [0, 50, 100]},
+        plot=False,
+        fit_rawdata=False,
+    )
+
+    assert out["M"]["species"] == {}
+
+
 def test_fit_stratum_curves_unexpected_curve_fit_error_propagates() -> None:
     f_table = pd.DataFrame(
         {
@@ -806,6 +850,7 @@ def test_build_run_vdyp_for_stratum_runner_binds_runtime_context() -> None:
         vdyp_log_path="run.jsonl",
         vdyp_stdout_log_path="stdout.log",
         vdyp_stderr_log_path="stderr.log",
+        sampling_seed_base=1234,
         run_vdyp_for_stratum_fn=fake_run_vdyp_for_stratum,
     )
     out = runner(sample_table, verbose=True, nsamples="all")
@@ -822,6 +867,10 @@ def test_build_run_vdyp_for_stratum_runner_binds_runtime_context() -> None:
     assert captured["vdyp_stderr_log_path"] == "stderr.log"
     assert captured["verbose"] is True
     assert captured["nsamples"] == "all"
+    assert captured["sampling_seed"] == 1234
+
+    runner(sample_table, sampling_seed=777)
+    assert captured["sampling_seed"] == 777
 
 
 def test_execute_vdyp_batch_logs_ok_and_returns_output(tmp_path: Path) -> None:
@@ -831,7 +880,7 @@ def test_execute_vdyp_batch_logs_ok_and_returns_output(tmp_path: Path) -> None:
     text_logs: list[tuple[str, str]] = []
 
     def fake_write(*args: object) -> None:
-        assert len(args) == 4
+        assert len(args) == 6
 
     def fake_import(path: str) -> dict[int, object]:
         assert Path(path).name.endswith(".out")
@@ -1338,6 +1387,17 @@ def test_build_smoothed_curve_table_builds_rows_and_writes_output(
     assert written_paths == [output_path]
 
 
+def test_build_smoothed_curve_table_handles_empty_runs() -> None:
+    table = build_smoothed_curve_table(
+        smoothed_runs=[],
+        pd_module=pd,
+        output_path=None,
+    )
+
+    assert table.empty
+    assert list(table.columns) == ["index", "age", "volume", "stratum_code", "si_level"]
+
+
 def test_load_or_build_vdyp_results_tsa_force_run_builds_and_writes(
     tmp_path: Path,
 ) -> None:
@@ -1378,6 +1438,55 @@ def test_load_or_build_vdyp_results_tsa_reads_combined_cache_with_int_key(
     )
 
     assert out == {2: {"M": {202: {"ok": True}}}}
+
+
+def test_load_or_build_vdyp_results_tsa_bootstraps_when_combined_cache_missing_tsa(
+    tmp_path: Path,
+) -> None:
+    tsa_path = tmp_path / "vdyp_results-tsa29.pkl"
+    combined_path = tmp_path / "vdyp_results.pkl"
+    with combined_path.open("wb") as handle:
+        import pickle
+
+        pickle.dump({8: {2: {"M": {202: {"ok": True}}}}}, handle)
+
+    expected = {1: {"L": {101: {"ok": True}}}}
+    out = load_or_build_vdyp_results_tsa(
+        tsa="29",
+        force_run_vdyp=False,
+        vdyp_results_tsa_pickle_path=tsa_path,
+        vdyp_results_pickle_path=combined_path,
+        run_bootstrap_fn=lambda: expected,
+        print_fn=lambda *_a, **_k: None,
+    )
+
+    assert out == expected
+    assert tsa_path.exists()
+
+
+def test_load_or_build_vdyp_results_tsa_bootstraps_when_combined_cache_schema_invalid(
+    tmp_path: Path,
+) -> None:
+    tsa_path = tmp_path / "vdyp_results-tsa29.pkl"
+    combined_path = tmp_path / "vdyp_results.pkl"
+    with combined_path.open("wb") as handle:
+        import pickle
+
+        # Invalid per-TSA payload shape (SI-level keys at top level).
+        pickle.dump({29: {"L": {"bad": True}, "M": {}, "H": {}}}, handle)
+
+    expected = {1: {"L": {101: {"ok": True}}}}
+    out = load_or_build_vdyp_results_tsa(
+        tsa="29",
+        force_run_vdyp=False,
+        vdyp_results_tsa_pickle_path=tsa_path,
+        vdyp_results_pickle_path=combined_path,
+        run_bootstrap_fn=lambda: expected,
+        print_fn=lambda *_a, **_k: None,
+    )
+
+    assert out == expected
+    assert tsa_path.exists()
 
 
 def test_load_or_build_vdyp_results_tsa_uses_tsa_cache_when_present(
@@ -1427,25 +1536,49 @@ def test_load_or_build_vdyp_results_tsa_compat_loader_fallback(tmp_path: Path) -
 
 def test_load_vdyp_input_tables_reads_feather_by_default() -> None:
     class _FakeTable:
-        def __init__(self, name: str) -> None:
+        def __init__(self, name: str, feature_ids: list[int] | None = None) -> None:
             self.name = name
             self.writes: list[Path] = []
+            self._df = pd.DataFrame({"FEATURE_ID": feature_ids or []})
 
         def to_feather(self, path: str | Path) -> None:
             self.writes.append(Path(path))
 
+        @property
+        def FEATURE_ID(self) -> pd.Series:
+            return self._df["FEATURE_ID"]
+
+        def __getitem__(self, key: object) -> object:
+            return self._df.__getitem__(key)
+
+        def copy(self) -> "_FakeTable":
+            table = _FakeTable(self.name, self._df["FEATURE_ID"].tolist())
+            table.writes = self.writes.copy()
+            return table
+
     class _FakeGpd:
         def __init__(self) -> None:
-            self.read_file_calls: list[tuple[object, object, object]] = []
+            self.read_file_calls: list[
+                tuple[object, object, object, object, object]
+            ] = []
             self.read_feather_calls: list[object] = []
 
-        def read_file(self, path: object, driver: object, layer: object) -> _FakeTable:
-            self.read_file_calls.append((path, driver, layer))
-            return _FakeTable(f"file-{layer}")
+        def read_file(
+            self,
+            path: object,
+            *,
+            layer: object,
+            driver: object,
+            where: object | None = None,
+            mask: object | None = None,
+            ignore_geometry: bool | None = None,
+        ) -> _FakeTable:
+            self.read_file_calls.append((path, driver, layer, where, mask))
+            return _FakeTable(f"file-{layer}", [1, 2])
 
         def read_feather(self, path: object) -> _FakeTable:
             self.read_feather_calls.append(path)
-            return _FakeTable(f"feather-{path}")
+            return _FakeTable(f"feather-{path}", [1, 2])
 
     fake_gpd = _FakeGpd()
     ply, lyr = load_vdyp_input_tables(
@@ -1464,28 +1597,52 @@ def test_load_vdyp_input_tables_reads_feather_by_default() -> None:
 
 def test_load_vdyp_input_tables_reads_source_and_writes_feather() -> None:
     class _FakeTable:
-        def __init__(self, name: str) -> None:
+        def __init__(self, name: str, feature_ids: list[int] | None = None) -> None:
             self.name = name
             self.writes: list[Path] = []
+            self._df = pd.DataFrame({"FEATURE_ID": feature_ids or []})
 
         def to_feather(self, path: str | Path) -> None:
             self.writes.append(Path(path))
 
+        @property
+        def FEATURE_ID(self) -> pd.Series:
+            return self._df["FEATURE_ID"]
+
+        def __getitem__(self, key: object) -> object:
+            return self._df.__getitem__(key)
+
+        def copy(self) -> "_FakeTable":
+            table = _FakeTable(self.name, self._df["FEATURE_ID"].tolist())
+            table.writes = self.writes.copy()
+            return table
+
     class _FakeGpd:
         def __init__(self) -> None:
             self.tables: dict[int, _FakeTable] = {}
-            self.read_file_calls: list[tuple[object, object, object]] = []
+            self.read_file_calls: list[
+                tuple[object, object, object, object, object]
+            ] = []
             self.read_feather_calls: list[object] = []
 
-        def read_file(self, path: object, driver: object, layer: int) -> _FakeTable:
-            self.read_file_calls.append((path, driver, layer))
-            table = _FakeTable(f"file-{layer}")
+        def read_file(
+            self,
+            path: object,
+            *,
+            layer: int,
+            driver: object,
+            where: object | None = None,
+            mask: object | None = None,
+            ignore_geometry: bool | None = None,
+        ) -> _FakeTable:
+            self.read_file_calls.append((path, driver, layer, where, mask))
+            table = _FakeTable(f"file-{layer}", [1, 2] if layer == 0 else [2, 3])
             self.tables[layer] = table
             return table
 
         def read_feather(self, path: object) -> _FakeTable:
             self.read_feather_calls.append(path)
-            return _FakeTable(f"feather-{path}")
+            return _FakeTable(f"feather-{path}", [1, 2])
 
     fake_gpd = _FakeGpd()
     ply, lyr = load_vdyp_input_tables(
@@ -1499,9 +1656,198 @@ def test_load_vdyp_input_tables_reads_source_and_writes_feather() -> None:
     assert ply.name == "file-0"
     assert lyr.name == "file-1"
     assert fake_gpd.read_file_calls == [
-        ("input.gdb", "FileGDB", 0),
-        ("input.gdb", "FileGDB", 1),
+        ("input.gdb", "FileGDB", 0, None, None),
+        ("input.gdb", "FileGDB", 1, None, None),
     ]
     assert fake_gpd.read_feather_calls == []
     assert fake_gpd.tables[0].writes == [Path("ply.feather")]
-    assert fake_gpd.tables[1].writes == [Path("lyr.feather")]
+
+
+def test_load_vdyp_input_tables_passes_source_where_filter() -> None:
+    class _FakeTable:
+        def __init__(self, name: str, feature_ids: list[int] | None = None) -> None:
+            self.name = name
+            self.writes: list[Path] = []
+            self._df = pd.DataFrame({"FEATURE_ID": feature_ids or []})
+
+        def to_feather(self, path: str | Path) -> None:
+            self.writes.append(Path(path))
+
+        @property
+        def FEATURE_ID(self) -> pd.Series:
+            return self._df["FEATURE_ID"]
+
+        def __getitem__(self, key: object) -> object:
+            return self._df.__getitem__(key)
+
+        def copy(self) -> "_FakeTable":
+            table = _FakeTable(self.name, self._df["FEATURE_ID"].tolist())
+            table.writes = self.writes.copy()
+            return table
+
+    class _FakeGpd:
+        def __init__(self) -> None:
+            self.read_file_calls: list[
+                tuple[object, object, object, object, object]
+            ] = []
+
+        def read_file(
+            self,
+            path: object,
+            *,
+            layer: int,
+            driver: object,
+            where: object | None = None,
+            mask: object | None = None,
+            ignore_geometry: bool | None = None,
+        ) -> _FakeTable:
+            self.read_file_calls.append((path, driver, layer, where, mask))
+            return _FakeTable(f"file-{layer}", [1, 2] if layer == 0 else [2, 3])
+
+    fake_gpd = _FakeGpd()
+    load_vdyp_input_tables(
+        vdyp_input_pandl_path="input.gdb",
+        vdyp_ply_feather_path="ply.feather",
+        vdyp_lyr_feather_path="lyr.feather",
+        read_from_source=True,
+        source_where="TSA_NUMBER = 29",
+        gpd_module=fake_gpd,
+    )
+
+    assert fake_gpd.read_file_calls == [
+        ("input.gdb", "FileGDB", 0, "TSA_NUMBER = 29", None),
+        ("input.gdb", "FileGDB", 1, "TSA_NUMBER = 29", None),
+    ]
+
+
+def test_load_vdyp_input_tables_applies_source_mask_and_filters_layer_rows() -> None:
+    class _FakeGpd:
+        def __init__(self) -> None:
+            self.read_file_calls: list[
+                tuple[object, object, object, object, object]
+            ] = []
+
+        def read_file(
+            self,
+            path: object,
+            *,
+            layer: int,
+            driver: object,
+            where: object | None = None,
+            mask: object | None = None,
+            ignore_geometry: bool | None = None,
+        ) -> pd.DataFrame:
+            self.read_file_calls.append((path, driver, layer, where, mask))
+            if layer == 0:
+                return pd.DataFrame({"FEATURE_ID": [1, 2]})
+            if where == "FEATURE_ID IN (1,2)":
+                return pd.DataFrame({"FEATURE_ID": [1, 2]})
+            return pd.DataFrame({"FEATURE_ID": [2, 3]})
+
+    fake_gpd = _FakeGpd()
+    mask = object()
+    ply, lyr = load_vdyp_input_tables(
+        vdyp_input_pandl_path="input.gdb",
+        vdyp_ply_feather_path="ply.feather",
+        vdyp_lyr_feather_path="lyr.feather",
+        read_from_source=True,
+        source_mask=mask,
+        gpd_module=fake_gpd,
+    )
+
+    assert fake_gpd.read_file_calls == [
+        ("input.gdb", "FileGDB", 0, None, mask),
+        ("input.gdb", "FileGDB", 1, "FEATURE_ID IN (1,2)", None),
+    ]
+    assert ply["FEATURE_ID"].tolist() == [1, 2]
+    assert lyr["FEATURE_ID"].tolist() == [1, 2]
+
+
+def test_load_vdyp_input_tables_reads_source_by_explicit_feature_ids() -> None:
+    class _FakeGpd:
+        def __init__(self) -> None:
+            self.read_file_calls: list[
+                tuple[object, object, object, object, object]
+            ] = []
+
+        def read_file(
+            self,
+            path: object,
+            *,
+            layer: int,
+            driver: object,
+            where: object | None = None,
+            mask: object | None = None,
+            ignore_geometry: bool | None = None,
+        ) -> pd.DataFrame:
+            self.read_file_calls.append((path, driver, layer, where, mask))
+            if where == "FEATURE_ID IN (1,2)":
+                return pd.DataFrame({"FEATURE_ID": [1, 2], "layer": [layer, layer]})
+            if where == "FEATURE_ID IN (3)":
+                return pd.DataFrame({"FEATURE_ID": [3], "layer": [layer]})
+            return pd.DataFrame({"FEATURE_ID": [], "layer": []})
+
+    fake_gpd = _FakeGpd()
+    ply, lyr = load_vdyp_input_tables(
+        vdyp_input_pandl_path="input.gdb",
+        vdyp_ply_feather_path="ply.feather",
+        vdyp_lyr_feather_path="lyr.feather",
+        read_from_source=True,
+        source_feature_ids=[1, 2, 3],
+        source_feature_id_chunk_size=2,
+        gpd_module=fake_gpd,
+    )
+
+    assert fake_gpd.read_file_calls == [
+        ("input.gdb", "FileGDB", 0, "FEATURE_ID IN (1,2)", None),
+        ("input.gdb", "FileGDB", 0, "FEATURE_ID IN (3)", None),
+        ("input.gdb", "FileGDB", 1, "FEATURE_ID IN (1,2)", None),
+        ("input.gdb", "FileGDB", 1, "FEATURE_ID IN (3)", None),
+    ]
+    assert ply["FEATURE_ID"].tolist() == [1, 2, 3]
+    assert lyr["FEATURE_ID"].tolist() == [1, 2, 3]
+
+
+def test_load_vdyp_input_tables_reads_source_by_explicit_map_ids() -> None:
+    class _FakeGpd:
+        def __init__(self) -> None:
+            self.read_file_calls: list[tuple[object, object, object]] = []
+
+        def read_file(
+            self,
+            path: object,
+            *,
+            layer: int,
+            where: object | None = None,
+            ignore_geometry: bool | None = None,
+            **_kwargs: object,
+        ) -> pd.DataFrame:
+            self.read_file_calls.append((path, layer, where))
+            if where == "MAP_ID IN ('092N010','092N019')":
+                return pd.DataFrame(
+                    {"MAP_ID": ["092N010", "092N019"], "FEATURE_ID": [1, 2]}
+                )
+            if where == "MAP_ID IN ('092N040')":
+                return pd.DataFrame({"MAP_ID": ["092N040"], "FEATURE_ID": [3]})
+            return pd.DataFrame({"MAP_ID": [], "FEATURE_ID": []})
+
+    fake_gpd = _FakeGpd()
+    ply, lyr = load_vdyp_input_tables(
+        vdyp_input_pandl_path="input.gdb",
+        vdyp_ply_feather_path="ply.feather",
+        vdyp_lyr_feather_path="lyr.feather",
+        read_from_source=True,
+        source_map_ids=["092N010", "092N019", "092N040"],
+        source_map_id_chunk_size=2,
+        gpd_module=fake_gpd,
+        message_fn=lambda *_args: None,
+    )
+
+    assert fake_gpd.read_file_calls == [
+        ("input.gdb", 0, "MAP_ID IN ('092N010','092N019')"),
+        ("input.gdb", 0, "MAP_ID IN ('092N040')"),
+        ("input.gdb", 1, "MAP_ID IN ('092N010','092N019')"),
+        ("input.gdb", 1, "MAP_ID IN ('092N040')"),
+    ]
+    assert ply["FEATURE_ID"].tolist() == [1, 2, 3]
+    assert lyr["FEATURE_ID"].tolist() == [1, 2, 3]

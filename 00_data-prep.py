@@ -266,6 +266,7 @@ else:
     ria_tsas = _default_ria_tsas
 _femic_resume = os.environ.get("FEMIC_RESUME", "0") == "1"
 _femic_debug_rows_raw = os.environ.get("FEMIC_DEBUG_ROWS")
+_femic_no_cache_raw = os.environ.get("FEMIC_NO_CACHE", "0")
 _femic_thlb_diag_raw = os.environ.get("FEMIC_THLB_DIAGNOSTICS", "0")
 _femic_thlb_diagnostics = _femic_thlb_diag_raw.strip().lower() in (
     "1",
@@ -276,7 +277,8 @@ try:
     _femic_debug_rows = int(_femic_debug_rows_raw) if _femic_debug_rows_raw else None
 except ValueError:
     _femic_debug_rows = None
-_femic_no_cache = _femic_debug_rows is not None
+_femic_no_cache_env = _femic_no_cache_raw.strip().lower() in ("1", "true", "yes")
+_femic_no_cache = _femic_no_cache_env or _femic_debug_rows is not None
 _femic_resume_effective = _femic_resume and not _femic_no_cache
 si_levels = ["L", "M", "H"]
 
@@ -324,7 +326,7 @@ if not arc_raster_rescue_exe_path.is_file():
     pass
 
 # --- cell 15 ---
-import_tsa_boundaries_data = 0
+import_tsa_boundaries_data = 1 if _femic_no_cache else 0
 if import_tsa_boundaries_data:
     tsa_boundaries = gpd.read_file(tsa_boundaries_path)
     tsa_boundaries = (
@@ -493,6 +495,7 @@ f = prepare_tsa_index(f_table=f, tsa_column="tsa_code")
 force_run_vdyp = 0
 vdyp_out_cache = None
 curve_fit_impl = _curve_fit
+si_levelquants = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
 
 
 def _should_skip_01a(tsa):
@@ -529,6 +532,7 @@ def _build_01a_run_kwargs(tsa):
         tipsy_params_path_prefix=tipsy_params_path_prefix,
         vdyp_results_tsa_pickle_path_prefix=vdyp_results_tsa_pickle_path_prefix,
         vdyp_curves_smooth_tsa_feather_path_prefix=vdyp_curves_smooth_tsa_feather_path_prefix,
+        parallel_worker_count=len(rc),
         vdyp_out_cache=vdyp_out_cache,
         curve_fit_impl=curve_fit_impl,
     )
