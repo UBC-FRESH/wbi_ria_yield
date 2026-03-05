@@ -1606,3 +1606,17 @@
   missing-BatchTIPSY fallback, producing manifest
   `vdyp_io/logs/run_manifest-k3z_smoke5_20260304_221317.json` and K3Z step-1a artifacts
   (`data/02_input-tsak3z.dat`, `data/tipsy_params_tsak3z.xlsx`).
+- Hardened config-driven TIPSY planted-row mix normalization in
+  `src/femic/pipeline/tipsy_config.py`:
+  `SX -> SW` normalization across species slots, planted broadleaf removal with share
+  reallocation, dominant-species-first slot ordering, and exact integer `%` rounding to 100.
+- Added regression tests in `tests/test_tipsy_config.py` for normalized mix behavior and TSA29
+  expectations (no planted `AT`/`SX` in `f` rows, dominant species in `SPP_1`, sum of
+  `PCT_1..PCT_5 == 100`).
+- Completed validation gate for this slice:
+  `.venv/bin/ruff format src tests`, `.venv/bin/ruff check src tests`,
+  `.venv/bin/mypy src`, `.venv/bin/pytest`, `.venv/bin/pre-commit run --all-files`.
+- Installed `pandas-stubs` into `.venv` to satisfy strict `mypy src` import-typing requirements.
+- TSA29 full rerun remains pending due run-path stall/noise during heavy `FEMIC_NO_CACHE=1`
+  data-prep stage; immediate next action is deterministic regeneration of step-1a outputs and
+  BatchTIPSY revalidation.

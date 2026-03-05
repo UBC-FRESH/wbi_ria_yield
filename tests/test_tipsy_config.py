@@ -234,6 +234,57 @@ def test_build_tipsy_params_from_config_resolves_species_token_for_sx() -> None:
     assert out["f"]["SPP_1"] == "SW"
 
 
+def test_build_tipsy_params_from_config_normalizes_mix_sum_and_order() -> None:
+    cfg = {
+        "schema_version": 1,
+        "tsa_code": "08",
+        "defaults": {"e": {}, "f": {"Regen_Method": "P"}},
+        "rules": [
+            {
+                "id": "mix",
+                "when": {"leading_species_in": ["FD"]},
+                "assign": {
+                    "e": {"SPP_1": "FD", "PCT_1": 100},
+                    "f": {
+                        "SPP_1": "FD",
+                        "PCT_1": 24,
+                        "SPP_2": "PLI",
+                        "PCT_2": 42,
+                        "SPP_3": "AT",
+                        "PCT_3": 17,
+                        "SPP_4": "SX",
+                        "PCT_4": 15,
+                        "SPP_5": "BL",
+                        "PCT_5": 3,
+                    },
+                },
+            }
+        ],
+    }
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [15.0], "BEC_ZONE_CODE": ["IDF"]}),
+        "species": {"FD": {"pct": 100.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [15.0], "% Stk": [90.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=3003,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    pct_sum = sum(
+        int(out["f"][f"PCT_{idx}"])
+        for idx in range(1, 6)
+        if out["f"].get(f"PCT_{idx}") is not None
+    )
+    assert pct_sum == 100
+    assert out["f"]["SPP_1"] == "PLI"
+    assert out["f"]["PCT_1"] >= out["f"]["PCT_2"]
+    assert "AT" not in [out["f"].get(f"SPP_{idx}") for idx in range(1, 6)]
+    assert "SX" not in [out["f"].get(f"SPP_{idx}") for idx in range(1, 6)]
+    assert "SW" in [out["f"].get(f"SPP_{idx}") for idx in range(1, 6)]
+
+
 def test_repo_tsa16_config_loads_and_matches_spruce_rule() -> None:
     cfg = load_tipsy_tsa_config(tsa_code="16", config_dir="config/tipsy")
     assert cfg is not None
@@ -354,6 +405,8 @@ def test_repo_tsa29_config_matches_pine_ms_rule() -> None:
     assert out["e"]["PCT_1"] == 62
     assert out["e"]["SPP_2"] == "AT"
     assert out["f"]["GW_1"] == 3.0
+    assert "AT" not in [out["f"].get(f"SPP_{idx}") for idx in range(1, 6)]
+    assert "SX" not in [out["f"].get(f"SPP_{idx}") for idx in range(1, 6)]
     assert out["f"]["Util_DBH_cm"] == 12.5
 
 
@@ -373,7 +426,7 @@ def test_repo_tsa29_config_matches_idf_fir_rule() -> None:
     )
     assert out["e"]["SPP_1"] == "PL"
     assert out["e"]["PCT_1"] == 42
-    assert out["f"]["SPP_1"] == "FD"
+    assert out["f"]["SPP_1"] == "PLI"
     assert out["f"]["GW_1"] == 9.0
     assert out["f"]["Density"] == 1139
 

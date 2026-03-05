@@ -16,6 +16,38 @@ TipsyParamBuilder = Callable[
     [int, Mapping[str, Any], Mapping[Any, Any]], dict[str, dict[str, Any]]
 ]
 
+BROADLEAF_SPECIES_CODES = {
+    "A",
+    "AC",
+    "ACB",
+    "ACT",
+    "AD",
+    "AT",
+    "AX",
+    "D",
+    "DR",
+    "E",
+    "EA",
+    "EB",
+    "EE",
+    "EP",
+    "EW",
+    "EXP",
+    "GP",
+    "M",
+    "MB",
+    "MV",
+    "OA",
+    "Q",
+    "V",
+    "W",
+    "WA",
+    "WB",
+    "WD",
+    "WP",
+    "WS",
+}
+
 
 def resolve_tipsy_runtime_options(
     env: Mapping[str, str] | None = None,
@@ -249,6 +281,86 @@ def _resolve_assignment_block(
     }
 
 
+def _round_percentages_to_100(percentages: list[float]) -> list[int]:
+    if not percentages:
+        return []
+    clipped = [max(0.0, float(value)) for value in percentages]
+    floors = [int(value) for value in clipped]
+    remainder = 100 - sum(floors)
+    if remainder > 0:
+        fractions = [(value - int(value), idx) for idx, value in enumerate(clipped)]
+        for _fraction, idx in sorted(fractions, reverse=True)[:remainder]:
+            floors[idx] += 1
+    elif remainder < 0:
+        over = -remainder
+        fractions = [(value - int(value), idx) for idx, value in enumerate(clipped)]
+        for _fraction, idx in sorted(fractions)[:over]:
+            if floors[idx] > 0:
+                floors[idx] -= 1
+    return floors
+
+
+def _finalize_species_mix(
+    *,
+    side_map: dict[str, Any],
+    leading_species: str,
+) -> None:
+    entries: list[tuple[str, float]] = []
+    for idx in range(1, 6):
+        spp_key = f"SPP_{idx}"
+        pct_key = f"PCT_{idx}"
+        spp_raw = side_map.get(spp_key)
+        pct_raw = side_map.get(pct_key)
+        if spp_raw in (None, ""):
+            continue
+        if pct_raw is None:
+            continue
+        try:
+            pct = float(pct_raw)
+        except (TypeError, ValueError):
+            continue
+        if pct <= 0:
+            continue
+        entries.append((_normalize_species_for_tipsy(str(spp_raw)), pct))
+
+    if not entries:
+        entries = [(_normalize_species_for_tipsy(leading_species), 100.0)]
+
+    # In planted rows, strip broadleaf species and re-allocate their share to a
+    # conifer species to avoid BatchTIPSY planted-curve/mapping failures.
+    if str(side_map.get("Regen_Method", "P")).upper() == "P":
+        broadleaf_pct = sum(
+            pct for spp, pct in entries if spp.upper() in BROADLEAF_SPECIES_CODES
+        )
+        entries = [
+            (spp, pct)
+            for spp, pct in entries
+            if spp.upper() not in BROADLEAF_SPECIES_CODES
+        ]
+        if not entries:
+            entries = [(_normalize_species_for_tipsy(leading_species), broadleaf_pct)]
+        elif broadleaf_pct > 0:
+            spp0, pct0 = entries[0]
+            entries[0] = (spp0, pct0 + broadleaf_pct)
+
+    entries.sort(key=lambda item: item[1], reverse=True)
+
+    if len(entries) > 5:
+        spp5, pct5 = entries[4]
+        pct5 += sum(pct for _spp, pct in entries[5:])
+        entries = entries[:4] + [(spp5, pct5)]
+
+    rounded = _round_percentages_to_100([pct for _spp, pct in entries])
+    entries = [(spp, pct) for (spp, _pct), pct in zip(entries, rounded)]
+
+    for idx in range(1, 6):
+        side_map[f"SPP_{idx}"] = None
+        side_map[f"PCT_{idx}"] = None
+    for idx, (spp, pct) in enumerate(entries, start=1):
+        side_map[f"SPP_{idx}"] = spp
+        side_map[f"PCT_{idx}"] = int(pct)
+
+
 def build_tipsy_params_from_config(
     *,
     au_id: int,
@@ -322,4 +434,5 @@ def build_tipsy_params_from_config(
     tp["e"]["SI"] = tp["f"]["SI"] = si
     tp["e"]["BEC"] = tp["f"]["BEC"] = bec
     tp["e"]["OAF1"] = tp["f"]["OAF1"] = oaf1
+    _finalize_species_mix(side_map=tp["f"], leading_species=leading_species)
     return tp

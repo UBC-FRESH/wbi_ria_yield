@@ -1722,3 +1722,16 @@
   run full K3Z step 1a without debug-row truncation, then user runs BatchTIPSY on
   `data/02_input-tsak3z.dat`, uploads `data/04_output-tsak3z.out`, and we execute
   `python -m femic tsa post-tipsy --tsa k3z --run-id <id> -v`.
+- Hardened config-driven TIPSY mix output (`src/femic/pipeline/tipsy_config.py`) to eliminate
+  known BatchTIPSY failure patterns in planted rows:
+  normalize `SX -> SW`, drop planted broadleaf species from `f` mixes, enforce descending
+  species order (dominant species in `SPP_1`), and force exact integer composition sums to 100.
+- Added regression coverage in `tests/test_tipsy_config.py` for mix normalization and TSA29 rule
+  behavior (`AT`/`SX` removed from planted `f` rows, dominant species promoted to `SPP_1`,
+  `% composition == 100`).
+- Validation gate completed for this slice:
+  `.venv/bin/ruff format src tests`, `.venv/bin/ruff check src tests`,
+  `.venv/bin/mypy src`, `.venv/bin/pytest`, `.venv/bin/pre-commit run --all-files`.
+- Immediate next queue:
+  regenerate TSA29 step 1a artifacts (`data/tipsy_params_tsa29.xlsx`, `data/02_input-tsa29.dat`)
+  from a clean non-stalled run path, then rerun BatchTIPSY and post-tipsy downstream assembly.
