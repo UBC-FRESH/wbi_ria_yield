@@ -533,7 +533,9 @@ results = _legacy_stage_state.results
 f = prepare_tsa_index(f_table=f, tsa_column="tsa_code")
 
 # --- cell 54 ---
-force_run_vdyp = 0
+# In no-cache/debug/custom-boundary mode, always rebuild VDYP bootstrap results
+# instead of reusing stale per-TSA pickle caches.
+force_run_vdyp = 1 if _femic_no_cache else 0
 vdyp_out_cache = None
 curve_fit_impl = _curve_fit
 si_levelquants = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
@@ -754,9 +756,15 @@ def _run_post_01b_bundle_and_curve_assignment_stage(
         message_fn=print,
     )
     si_levelquants_local = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+    allowed_levels_by_stratum = (
+        au_table.groupby("stratum_code")["si_level"]
+        .apply(lambda s: sorted({str(v) for v in s.dropna().values}))
+        .to_dict()
+    )
     f_, _stratum_si_stats = assign_si_levels_from_stratum_quantiles(
         f_table=f_,
         si_levelquants=si_levelquants_local,
+        allowed_levels_by_stratum=allowed_levels_by_stratum,
         stratum_matched_col="stratum_matched",
         site_index_col="SITE_INDEX",
         si_level_col="si_level",

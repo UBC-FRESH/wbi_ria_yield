@@ -28,6 +28,7 @@ def run_tsa(
     from matplotlib import pyplot as plt
     import seaborn as sns
     from femic.pipeline.legacy_runtime import Legacy01BRuntimeConfig
+    from femic.pipeline.plots import tipsy_vdyp_ylim_for_tsa
     from femic.pipeline.tipsy import tipsy_params_excel_path, tipsy_stage_output_paths
 
     if not isinstance(runtime_config, Legacy01BRuntimeConfig):
@@ -155,6 +156,7 @@ def run_tsa(
         .set_index(["stratum_code", "si_level"])
         .sort_index()
     )
+    y_limits = tipsy_vdyp_ylim_for_tsa(tsa)
 
     for i, au in enumerate(df.index.unique(level=0)):
         print(i, au)
@@ -173,7 +175,7 @@ def run_tsa(
         plt.title("%s %s (AU %i)" % (sc, si_level, au))
         plt.legend()
         plt.xlim([0, 300])
-        plt.ylim([0, 600])
+        plt.ylim(list(y_limits))
         plt.savefig("./plots/tipsy_vdyp_tsa%s-%s.png" % (tsa, au), facecolor="white")
         plt.close(fig)
 

@@ -24,6 +24,7 @@ from femic.pipeline.plots import (
     resolve_strata_plot_ordering,
     strata_plot_paths,
     tipsy_vdyp_plot_path,
+    tipsy_vdyp_ylim_for_tsa,
 )
 from femic.pipeline.vdyp import build_vdyp_cache_paths
 import pytest
@@ -33,6 +34,9 @@ import numpy as np
 from femic.pipeline.tsa import (
     DEFAULT_TARGET_NSTRATA,
     MIN_STANDCOUNT,
+    SI_SPLIT_RANGE_SINGLE_LEVEL_MAX,
+    SI_SPLIT_RANGE_TWO_LEVEL_MAX,
+    STRATUM_SI_LEVEL_QUANTILES_OVERRIDE,
     assign_au_ids_from_scsi,
     assign_thlb_raw_from_raster,
     assign_thlb_area_and_flag,
@@ -45,6 +49,7 @@ from femic.pipeline.tsa import (
     emit_missing_au_mapping_warning,
     lookup_scsi_au_base,
     mean_thlb_for_geometry,
+    resolve_si_level_quantiles_for_stratum,
     summarize_missing_au_mappings,
     target_nstrata_for,
     validate_nonempty_au_assignment,
@@ -131,6 +136,7 @@ def test_tsa_target_nstrata_lookup() -> None:
     assert target_nstrata_for("8") == 9
     assert target_nstrata_for("16") == 13
     assert target_nstrata_for("29") == DEFAULT_TARGET_NSTRATA
+    assert target_nstrata_for("k3z") == 4
     assert MIN_STANDCOUNT == 1000
 
 
@@ -154,11 +160,40 @@ def test_build_strata_summary_filters_and_computes_expected_fields() -> None:
         min_standcount=2,
     )
 
-    assert list(strata_df.index) == ["B", "A"]
-    assert largestn == ["B", "A"]
+    assert set(strata_df.index) == {"A", "B"}
+    assert set(largestn) == {"A", "B"}
     assert strata_df.loc["A", "median_si"] == 11.0
     assert strata_df.loc["B", "median_si"] == 20.5
     assert round(site_index_iqr_mean, 2) == 0.5
+
+
+def test_build_strata_summary_falls_back_when_min_standcount_filters_all() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["A", "A", "B"],
+            "FEATURE_AREA_SQM": [10.0, 20.0, 30.0],
+            "SITE_INDEX": [10.0, 11.0, 20.0],
+            "FEATURE_ID": [1, 2, 3],
+            "CROWN_CLOSURE": [45.0, 55.0, 65.0],
+        }
+    ).set_index("stratum")
+    f_table["totalarea_p"] = f_table.FEATURE_AREA_SQM / f_table.FEATURE_AREA_SQM.sum()
+
+    strata_df, largestn, _site_index_iqr_mean = build_strata_summary(
+        f_table=f_table,
+        stratum_col="stratum",
+        pd_module=pd,
+        target_nstrata=2,
+        min_standcount=1000,
+    )
+
+    assert set(strata_df.index) == {"A", "B"}
+    assert set(largestn) == {"A", "B"}
+    assert float(strata_df["totalarea_p"].sum()) == pytest.approx(1.0)
+    assert strata_df["totalarea_p"].isna().sum() == 0
+    assert strata_df["stand_count"].isna().sum() == 0
+    assert strata_df.loc["A", "median_si"] == 10.5
+    assert strata_df.loc["B", "median_si"] == 20.0
 
 
 def test_build_strata_summary_requires_target_or_tsa_code() -> None:
@@ -278,6 +313,125 @@ def test_assign_si_levels_from_stratum_quantiles_assigns_levels() -> None:
 
     assert "S1" in stats.index
     assert set(out["si_level"].dropna().unique()) <= {"L", "M", "H"}
+
+
+def test_resolve_si_level_quantiles_for_stratum_applies_width_rules() -> None:
+    stats = pd.DataFrame(
+        {
+            "5%": [10.0, 10.0, 10.0],
+            "95%": [14.0, 19.0, 24.5],
+        },
+        index=["NARROW", "MID", "WIDE"],
+    )
+    base = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+
+    narrow = resolve_si_level_quantiles_for_stratum(
+        stratum_si_stats=stats,
+        stratum_code="NARROW",
+        si_levelquants=base,
+    )
+    mid = resolve_si_level_quantiles_for_stratum(
+        stratum_si_stats=stats,
+        stratum_code="MID",
+        si_levelquants=base,
+    )
+    wide = resolve_si_level_quantiles_for_stratum(
+        stratum_si_stats=stats,
+        stratum_code="WIDE",
+        si_levelquants=base,
+    )
+
+    assert SI_SPLIT_RANGE_SINGLE_LEVEL_MAX == 5.0
+    assert SI_SPLIT_RANGE_TWO_LEVEL_MAX == 10.0
+    assert list(narrow.keys()) == ["M"]
+    assert set(mid.keys()) == {"L", "H"}
+    assert set(wide.keys()) == {"L", "M", "H"}
+
+
+def test_resolve_si_level_quantiles_for_stratum_applies_stratum_override() -> None:
+    stats = pd.DataFrame(
+        {
+            "5%": [10.0],
+            "95%": [24.0],
+        },
+        index=["CWH_HW"],
+    )
+    base = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+
+    out = resolve_si_level_quantiles_for_stratum(
+        stratum_si_stats=stats,
+        stratum_code="CWH_HW",
+        si_levelquants=base,
+    )
+
+    assert out == STRATUM_SI_LEVEL_QUANTILES_OVERRIDE["CWH_HW"]
+
+
+def test_assign_si_levels_from_stratum_quantiles_adapts_split_count_by_width() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum_matched": ["N"] * 6 + ["M"] * 8 + ["W"] * 9,
+            "SITE_INDEX": [
+                10.0,
+                10.5,
+                11.0,
+                11.5,
+                12.0,
+                12.2,  # narrow (<5)
+                10.0,
+                11.0,
+                12.0,
+                13.0,
+                14.0,
+                15.0,
+                16.0,
+                17.0,  # medium (~7)
+                10.0,
+                12.0,
+                14.0,
+                16.0,
+                18.0,
+                20.0,
+                22.0,
+                24.0,
+                26.0,  # wide (>10)
+            ],
+        }
+    )
+    base = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+
+    out, _stats = assign_si_levels_from_stratum_quantiles(
+        f_table=f_table,
+        si_levelquants=base,
+        message_fn=lambda _m: None,
+    )
+    by_stratum = {
+        key: set(group["si_level"].dropna().unique())
+        for key, group in out.groupby("stratum_matched")
+    }
+
+    assert by_stratum["N"] == {"M"}
+    assert by_stratum["M"] == {"L", "H"}
+    assert by_stratum["W"] == {"L", "M", "H"}
+
+
+def test_assign_si_levels_from_stratum_quantiles_respects_allowed_levels() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum_matched": ["S1"] * 8,
+            "SITE_INDEX": [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0],
+        }
+    )
+    base = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+
+    out, _stats = assign_si_levels_from_stratum_quantiles(
+        f_table=f_table,
+        si_levelquants=base,
+        allowed_levels_by_stratum={"S1": ["L", "H"]},
+        message_fn=lambda _m: None,
+    )
+
+    assert set(out["si_level"].dropna().unique()) == {"L", "H"}
 
 
 def test_assign_si_levels_from_stratum_quantiles_handles_no_matched_rows() -> None:
@@ -494,10 +648,14 @@ def test_mean_thlb_for_geometry_fallback_scope() -> None:
 def test_plot_path_helpers() -> None:
     pdf_path, png_path = strata_plot_paths("8")
     tipsy_path = tipsy_vdyp_plot_path(23005, "08")
+    k3z_ylim = tipsy_vdyp_ylim_for_tsa("k3z")
+    default_ylim = tipsy_vdyp_ylim_for_tsa("08")
 
     assert pdf_path == Path("plots/strata-tsa08.pdf")
     assert png_path == Path("plots/strata-tsa08.png")
     assert tipsy_path == Path("plots/tipsy_vdyp_tsa08-23005.png")
+    assert k3z_ylim == (0.0, 2000.0)
+    assert default_ylim == (0.0, 600.0)
 
 
 def test_build_vdyp_cache_paths() -> None:
@@ -602,7 +760,7 @@ def test_plot_strata_site_index_diagnostics_calls_hist_and_scatter() -> None:
     )
 
     assert strata.site_index_median.hist_bins == [[float(i) for i in range(25)]]
-    assert strata.ax.xlim_calls == [[0, 25]]
+    assert strata.ax.xlim_calls == [[0.0, 26.0]]
     assert fake_plt.scatter_calls == [([0.4, 0.6], [12.0, 18.0])]
 
 
@@ -637,12 +795,16 @@ def test_render_strata_distribution_plot_uses_helper_config_and_paths() -> None:
         def __init__(self) -> None:
             self.barplot_calls = 0
             self.violinplot_calls = 0
+            self.stripplot_calls = 0
 
         def barplot(self, **_kwargs: object) -> None:
             self.barplot_calls += 1
 
         def violinplot(self, **_kwargs: object) -> None:
             self.violinplot_calls += 1
+
+        def stripplot(self, **_kwargs: object) -> None:
+            self.stripplot_calls += 1
 
     cfg = build_strata_distribution_plot_config()
     fake_plt = _FakePlt()
@@ -664,6 +826,7 @@ def test_render_strata_distribution_plot_uses_helper_config_and_paths() -> None:
 
     assert fake_sns.barplot_calls == 1
     assert fake_sns.violinplot_calls == 1
+    assert fake_sns.stripplot_calls == 1
     assert fake_plt.subplots_calls == [cfg.figsize]
     assert fake_plt.savefig_calls[0][0] == Path("plots/strata-tsa08.pdf")
     assert fake_plt.savefig_calls[1][0] == Path("plots/strata-tsa08.png")

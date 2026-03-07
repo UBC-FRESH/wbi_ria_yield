@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -13,9 +14,24 @@ TARGET_NSTRATA_BY_TSA: dict[str, int] = {
     "24": 8,
     "40": 7,
     "41": 10,
+    # Small custom CFA test unit (North Island Community Forest)
+    "k3z": 4,
 }
 DEFAULT_TARGET_NSTRATA = 10
 MIN_STANDCOUNT = 1000
+
+SI_SPLIT_RANGE_SINGLE_LEVEL_MAX = 5.0
+SI_SPLIT_RANGE_TWO_LEVEL_MAX = 10.0
+
+# Manual stratum-level SI band overrides for known edge cases.
+# Values are (low_quantile, mid_quantile, high_quantile).
+STRATUM_SI_LEVEL_QUANTILES_OVERRIDE: dict[str, dict[str, tuple[int, int, int]]] = {
+    # K3Z: merge sparse low-SI CWH_HW sample into the M class.
+    "CWH_HW": {
+        "M": (0, 35, 65),
+        "H": (65, 80, 100),
+    }
+}
 
 
 def target_nstrata_for(tsa_code: str) -> int:
@@ -58,14 +74,67 @@ def build_strata_summary(
     strata_df["stand_count"] = strata_gb2.FEATURE_ID.count()
     strata_df["coverage"] = strata_gb2.totalarea_p.sum()
     strata_df["crown_closure"] = strata_gb2.CROWN_CLOSURE.median()
-    strata_df = strata_df[strata_df.stand_count >= min_standcount]
-    strata_df = strata_df.head(resolved_target)
-    strata_df["median_si"] = (
+    filtered = strata_df[strata_df.stand_count >= min_standcount]
+    # Small custom-boundary runs (for example K3Z) can have far fewer stands per
+    # stratum than provincial TSA runs; retain top strata instead of producing an
+    # empty/NaN summary table.
+    if filtered.empty and not strata_df.empty:
+        filtered = strata_df.copy()
+    strata_df = filtered.head(resolved_target).copy()
+    median_si = (
         f_table[f_table.index.isin(largestn_strata_codes)]
         .groupby(level=stratum_col)
         .SITE_INDEX.median()
     )
+    strata_df["median_si"] = median_si.reindex(strata_df.index)
     return strata_df, largestn_strata_codes, float(site_index_iqr.mean())
+
+
+def resolve_si_level_quantiles_for_stratum(
+    *,
+    stratum_si_stats: Any,
+    stratum_code: Any,
+    si_levelquants: Mapping[str, Sequence[float]],
+    single_level_max_range: float = SI_SPLIT_RANGE_SINGLE_LEVEL_MAX,
+    two_level_max_range: float = SI_SPLIT_RANGE_TWO_LEVEL_MAX,
+) -> dict[str, tuple[int, int, int]]:
+    """Resolve per-stratum SI bin labels from 5-95 SI width.
+
+    Rules:
+    - width < 5  -> single `M` bin
+    - 5 <= width <= 10 -> `L` + `H` bins
+    - width > 10 -> `L` + `M` + `H` bins
+    """
+    base = {
+        level: (int(values[0]), int(values[1]), int(values[2]))
+        for level, values in si_levelquants.items()
+    }
+    override = STRATUM_SI_LEVEL_QUANTILES_OVERRIDE.get(str(stratum_code))
+    if override:
+        return {
+            level: (int(values[0]), int(values[1]), int(values[2]))
+            for level, values in override.items()
+        }
+    p5 = stratum_si_stats.loc[stratum_code].get("5%")
+    p95 = stratum_si_stats.loc[stratum_code].get("95%")
+    try:
+        width = float(p95) - float(p5)
+    except (TypeError, ValueError):
+        return base
+    if not math.isfinite(width):
+        return base
+    if width < float(single_level_max_range):
+        return {"M": (0, 50, 100)}
+    if width <= float(two_level_max_range):
+        return {
+            "L": (0, 20, 50),
+            "H": (50, 80, 100),
+        }
+    return {
+        "L": (0, 20, 35),
+        "M": (35, 50, 65),
+        "H": (65, 80, 100),
+    }
 
 
 def build_stratum_lexmatch_alias_map(
@@ -182,6 +251,7 @@ def assign_si_levels_from_stratum_quantiles(
     *,
     f_table: Any,
     si_levelquants: Mapping[str, Sequence[int]],
+    allowed_levels_by_stratum: Mapping[str, Sequence[str]] | None = None,
     stratum_matched_col: str = "stratum_matched",
     site_index_col: str = "SITE_INDEX",
     si_level_col: str = "si_level",
@@ -197,12 +267,38 @@ def assign_si_levels_from_stratum_quantiles(
         if si_level_col not in table.columns:
             table[si_level_col] = None
         return table, pd.DataFrame()
+    table[si_level_col] = None
     stratum_si_stats = table.groupby(stratum_matched_col)[site_index_col].describe(
         percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
     )
     for stratum_code in stratum_si_stats.index:
         message_fn(str(stratum_code))
-        for si_level, quantiles in si_levelquants.items():
+        level_quants = resolve_si_level_quantiles_for_stratum(
+            stratum_si_stats=stratum_si_stats,
+            stratum_code=stratum_code,
+            si_levelquants=si_levelquants,
+        )
+        if allowed_levels_by_stratum is not None:
+            allowed = {
+                str(level)
+                for level in allowed_levels_by_stratum.get(str(stratum_code), [])
+            }
+            if allowed:
+                fallback_quantiles = {
+                    "L": (0, 20, 50),
+                    "M": (0, 50, 100),
+                    "H": (50, 80, 100),
+                }
+                restricted: dict[str, tuple[int, int, int]] = {}
+                for level in ("L", "M", "H"):
+                    if level not in allowed:
+                        continue
+                    restricted[level] = level_quants.get(
+                        level, fallback_quantiles[level]
+                    )
+                if restricted:
+                    level_quants = restricted
+        for si_level, quantiles in level_quants.items():
             q_lo, _q_mid, q_hi = [int(v) for v in quantiles]
             si_lo = stratum_si_stats.loc[stratum_code].loc[f"{q_lo}%"]
             si_hi = stratum_si_stats.loc[stratum_code].loc[f"{q_hi}%"]
