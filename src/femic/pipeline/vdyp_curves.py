@@ -71,6 +71,136 @@ def prepend_quasi_origin_point(
     return np.insert(x_arr, 0, age), np.insert(y_arr, 0, epsilon)
 
 
+def _blend_right_tail_linear(
+    *,
+    x_curve: np.ndarray,
+    y_curve: np.ndarray,
+    observed_age: np.ndarray,
+    observed_volume: np.ndarray,
+    linear_min_points: int,
+    linear_min_r2: float,
+    linear_max_nrmse: float,
+    linear_prefer_min_age: float,
+    allow_quantile_fallback: bool,
+    anchor_quantile: float,
+    blend_years: float,
+    slope_min: float,
+    slope_max: float,
+) -> tuple[np.ndarray, dict[str, float] | None]:
+    def _fit_linear(x_tail: np.ndarray, y_tail: np.ndarray) -> dict[str, float] | None:
+        if x_tail.size < 2:
+            return None
+        x_mean = float(np.mean(x_tail))
+        y_mean = float(np.mean(y_tail))
+        den = float(np.sum(np.square(x_tail - x_mean)))
+        if den <= 0:
+            return None
+        slope = float(np.sum((x_tail - x_mean) * (y_tail - y_mean)) / den)
+        intercept = y_mean - slope * x_mean
+        y_hat = slope * x_tail + intercept
+        resid = y_tail - y_hat
+        rmse = float(np.sqrt(np.mean(np.square(resid))))
+        ss_tot = float(np.sum(np.square(y_tail - y_mean)))
+        r2 = 1.0 if ss_tot <= 0 else float(1.0 - (np.sum(np.square(resid)) / ss_tot))
+        scale = max(
+            float(np.nanmedian(np.abs(y_tail))),
+            float(np.nanmax(y_tail) - np.nanmin(y_tail)),
+            1.0,
+        )
+        nrmse = float(rmse / scale)
+        return {
+            "slope": slope,
+            "intercept": intercept,
+            "rmse": rmse,
+            "r2": r2,
+            "nrmse": nrmse,
+        }
+
+    def _detect_linear_tail(
+        x_obs: np.ndarray, y_obs: np.ndarray
+    ) -> tuple[int, dict[str, float]] | None:
+        min_points = max(int(linear_min_points), 2)
+        if x_obs.size < min_points:
+            return None
+        candidates: list[tuple[int, dict[str, float]]] = []
+        for start in range(0, int(x_obs.size - min_points + 1)):
+            fit = _fit_linear(x_obs[start:], y_obs[start:])
+            if fit is None:
+                continue
+            if fit["r2"] >= float(linear_min_r2) and fit["nrmse"] <= float(
+                linear_max_nrmse
+            ):
+                candidates.append((start, fit))
+        if not candidates:
+            return None
+        preferred = [
+            c for c in candidates if float(x_obs[c[0]]) >= float(linear_prefer_min_age)
+        ]
+        pool = preferred if preferred else []
+        if not pool:
+            return None
+        pool.sort(
+            key=lambda c: (
+                int(x_obs.size - c[0]),  # longest linear tail first
+                float(c[1]["r2"]),  # then strongest linearity
+                -float(c[1]["nrmse"]),  # then lowest normalized error
+            ),
+            reverse=True,
+        )
+        return pool[0]
+
+    if observed_age.size < 4 or observed_volume.size < 4:
+        return y_curve, None
+    order = np.argsort(observed_age)
+    x_sorted = np.asarray(observed_age[order], dtype=float)
+    y_sorted = np.asarray(observed_volume[order], dtype=float)
+    unique_x, unique_idx = np.unique(x_sorted, return_index=True)
+    x_sorted = unique_x
+    y_sorted = y_sorted[unique_idx]
+
+    tail_detect = _detect_linear_tail(x_sorted, y_sorted)
+    if tail_detect is None and allow_quantile_fallback:
+        q = float(np.clip(anchor_quantile, 0.50, 0.95))
+        anchor_age = float(np.quantile(x_sorted, q))
+        tail_mask = x_sorted >= anchor_age
+        if int(np.count_nonzero(tail_mask)) < max(int(linear_min_points), 2):
+            return y_curve, None
+        fit = _fit_linear(x_sorted[tail_mask], y_sorted[tail_mask])
+        if fit is None:
+            return y_curve, None
+        tail_start_idx = int(np.argmax(tail_mask))
+    elif tail_detect is not None:
+        tail_start_idx, fit = tail_detect
+        anchor_age = float(x_sorted[tail_start_idx])
+    else:
+        return y_curve, None
+
+    slope_raw = float(fit["slope"])
+    slope = float(np.clip(slope_raw, slope_min, slope_max))
+    y_anchor = float(np.interp(anchor_age, x_curve, y_curve))
+    intercept = y_anchor - slope * anchor_age
+    y_tail_line = slope * x_curve + intercept
+    y_tail_line = np.maximum(y_tail_line, 0.0)
+
+    end_age = min(float(np.max(x_curve)), anchor_age + max(1.0, float(blend_years)))
+    y_new = y_curve.copy()
+    mid = (x_curve >= anchor_age) & (x_curve <= end_age)
+    if np.any(mid):
+        w = (x_curve[mid] - anchor_age) / max(1.0, end_age - anchor_age)
+        y_new[mid] = (1.0 - w) * y_curve[mid] + w * y_tail_line[mid]
+    right = x_curve > end_age
+    y_new[right] = y_tail_line[right]
+    return y_new, {
+        "anchor_age": anchor_age,
+        "tail_n_points": float(x_sorted.size - tail_start_idx),
+        "tail_r2": float(fit["r2"]),
+        "tail_nrmse": float(fit["nrmse"]),
+        "tail_slope_raw": slope_raw,
+        "tail_slope": slope,
+        "tail_end_age": end_age,
+    }
+
+
 def fill_curve_left(
     x: np.ndarray,
     y: np.ndarray,
@@ -112,11 +242,24 @@ def process_vdyp_out(
     max_age: int = 300,
     sigma_c1: float = 10,
     sigma_c2: float = 0.4,
+    sigma_right_scale: float = 1.0,
+    sigma_right_offset: float = 0.0,
+    sigma_min: float = 1e-6,
     dx_c1: float = 0.5,
     dx_c2: float = 10,
     window: int = 10,
     skip1: int = 0,
     skip2: int = 30,
+    tail_blend_enabled: bool = False,
+    tail_linear_min_points: int = 4,
+    tail_linear_min_r2: float = 0.97,
+    tail_linear_max_nrmse: float = 0.08,
+    tail_linear_prefer_min_age: float = 200.0,
+    tail_linear_allow_quantile_fallback: bool = False,
+    tail_anchor_quantile: float = 0.70,
+    tail_blend_years: float = 30.0,
+    tail_slope_min: float = -1.0,
+    tail_slope_max: float = 0.15,
     maxfev: int = 100000,
     max_skip_increase: int = 30,
     skip_step: int = 1,
@@ -225,6 +368,15 @@ def process_vdyp_out(
 
     y_mai_max_age = y_mai.idxmax()
     sigma = (np.abs(x - y_mai_max_age) + sigma_c1) ** sigma_c2
+    if sigma_right_scale != 1.0 or sigma_right_offset != 0.0:
+        right_start = float(y_mai_max_age) + float(sigma_right_offset)
+        right_mask = x >= right_start
+        if np.any(right_mask):
+            sigma = np.asarray(sigma, dtype=float)
+            sigma[right_mask] = np.maximum(
+                float(sigma_min),
+                sigma[right_mask] * float(sigma_right_scale),
+            )
     try:
         popt, _ = curve_fit_fn(
             body_fit_func,
@@ -275,6 +427,30 @@ def process_vdyp_out(
             if used_skip != skip2:
                 emit(f"vdyp toe fit: increased skip to {used_skip}")
             emit(str(popt_toe))
+            if tail_blend_enabled:
+                y_blend, tail_meta = _blend_right_tail_linear(
+                    x_curve=np.asarray(x_, dtype=float),
+                    y_curve=np.asarray(y_, dtype=float),
+                    observed_age=np.asarray(c.index.values, dtype=float),
+                    observed_volume=np.asarray(c.values, dtype=float),
+                    linear_min_points=int(tail_linear_min_points),
+                    linear_min_r2=float(tail_linear_min_r2),
+                    linear_max_nrmse=float(tail_linear_max_nrmse),
+                    linear_prefer_min_age=float(tail_linear_prefer_min_age),
+                    allow_quantile_fallback=bool(tail_linear_allow_quantile_fallback),
+                    anchor_quantile=float(tail_anchor_quantile),
+                    blend_years=float(tail_blend_years),
+                    slope_min=float(tail_slope_min),
+                    slope_max=float(tail_slope_max),
+                )
+                y_ = y_blend
+                if tail_meta is not None:
+                    tail_meta_payload: dict[str, Any] = dict(tail_meta)
+                    emit_curve_event(
+                        status="ok",
+                        stage="tail_blend",
+                        **tail_meta_payload,
+                    )
             x_, y_ = prepend_quasi_origin_point(x_, y_)
             emit_curve_event(
                 status="ok",
@@ -308,6 +484,30 @@ def process_vdyp_out(
         "vdyp toe fit failed; returning body fit curve with quasi-origin "
         "(1, epsilon) anchor"
     )
+    if tail_blend_enabled:
+        y_blend, tail_meta = _blend_right_tail_linear(
+            x_curve=np.asarray(x, dtype=float),
+            y_curve=np.asarray(y, dtype=float),
+            observed_age=np.asarray(c.index.values, dtype=float),
+            observed_volume=np.asarray(c.values, dtype=float),
+            linear_min_points=int(tail_linear_min_points),
+            linear_min_r2=float(tail_linear_min_r2),
+            linear_max_nrmse=float(tail_linear_max_nrmse),
+            linear_prefer_min_age=float(tail_linear_prefer_min_age),
+            allow_quantile_fallback=bool(tail_linear_allow_quantile_fallback),
+            anchor_quantile=float(tail_anchor_quantile),
+            blend_years=float(tail_blend_years),
+            slope_min=float(tail_slope_min),
+            slope_max=float(tail_slope_max),
+        )
+        y = y_blend
+        if tail_meta is not None:
+            tail_meta_payload = dict(tail_meta)
+            emit_curve_event(
+                status="ok",
+                stage="tail_blend",
+                **tail_meta_payload,
+            )
     x, y = prepend_quasi_origin_point(x, y)
     emit_curve_event(
         event="vdyp_curve_anchor",

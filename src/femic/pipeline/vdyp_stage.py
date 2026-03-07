@@ -16,10 +16,13 @@ import traceback
 from pathlib import Path
 from typing import Any, cast
 
+import numpy as np
+
 from femic.pipeline.diagnostics import (
     build_contextual_error_message,
     build_timestamped_event,
 )
+from femic.pipeline.tsa import resolve_si_level_quantiles_for_stratum
 
 
 @dataclass(frozen=True)
@@ -848,7 +851,12 @@ def fit_stratum_curves(
         }
         palette_ = {v: palette[i] for i, v in enumerate("LMH")}
     result: dict[str, Any] = {}
-    for i, (si_level, q_values) in enumerate(si_levelquants.items()):
+    active_si_levelquants = resolve_si_level_quantiles_for_stratum(
+        stratum_si_stats=stratum_si_stats,
+        stratum_code=sc,
+        si_levelquants=si_levelquants,
+    )
+    for i, (si_level, q_values) in enumerate(active_si_levelquants.items()):
         del i
         result[si_level] = {}
         ss = f_table.loc[[sc]].copy()
@@ -1519,6 +1527,31 @@ def execute_bootstrap_vdyp_runs(
     for stratumi, sc, result in results_for_tsa:
         vdyp_results_tsa[stratumi] = {}
         for si_index, si_level in enumerate(si_levels):
+            si_payload = result.get(si_level) if isinstance(result, Mapping) else None
+            si_sample = (
+                si_payload.get("ss") if isinstance(si_payload, Mapping) else None
+            )
+            if si_sample is None or getattr(si_sample, "empty", False):
+                if verbose:
+                    print(f"skipping VDYP bootstrap ({sc}, {si_level}) - no samples")
+                vdyp_results_tsa[stratumi][si_level] = {}
+                append_jsonl_fn(
+                    vdyp_run_events_path,
+                    build_timestamped_event(
+                        event="vdyp_run",
+                        status="skipped",
+                        phase="bootstrap",
+                        reason="missing_or_empty_si_sample",
+                        context={
+                            "run_id": run_id,
+                            "tsa": tsa,
+                            "stratum_index": int(stratumi),
+                            "stratum_code": sc,
+                            "si_level": si_level,
+                        },
+                    ),
+                )
+                continue
             if verbose:
                 print(f"running VDYP in bootstrap sample mode ({sc}, {si_level})")
             run_context = {
@@ -1546,7 +1579,7 @@ def execute_bootstrap_vdyp_runs(
                         + int(si_index)
                     )
                 vdyp_out = run_vdyp_fn(
-                    result[si_level]["ss"],
+                    si_sample,
                     verbose=verbose,
                     half_rel_ci=half_rel_ci,
                     ipp_mode=ipp_mode,
@@ -1833,6 +1866,237 @@ def execute_curve_smoothing_runs(
     message_fn: Callable[..., Any] = print,
 ) -> list[SmoothedCurveResult]:
     """Build smoothed VDYP curves for each stratum/SI combination."""
+
+    def _build_observed_bins(vdyp_out: Mapping[Any, Any]) -> Any | None:
+        pd_module = importlib.import_module("pandas")
+        vdyp_tables = [
+            table
+            for table in vdyp_out.values()
+            if isinstance(table, pd_module.DataFrame)
+        ]
+        if not vdyp_tables:
+            return None
+        observed = pd_module.concat(vdyp_tables).reset_index()
+        if "Age" not in observed.columns or "Vdwb" not in observed.columns:
+            return None
+        observed = observed[["Age", "Vdwb"]].dropna()
+        observed = observed[(observed["Age"] >= 30) & (observed["Age"] < 300)]
+        if observed.empty:
+            return None
+        observed["age_bin"] = (observed["Age"] // 5) * 5
+        binned = observed.groupby("age_bin", as_index=False).agg(
+            median_volume=("Vdwb", "median"),
+            p25=("Vdwb", lambda s: float(s.quantile(0.25))),
+            p75=("Vdwb", lambda s: float(s.quantile(0.75))),
+            n=("Vdwb", "count"),
+        )
+        return binned if not binned.empty else None
+
+    def _fit_quality(
+        *,
+        binned: Any,
+        x_curve: Sequence[float],
+        y_curve: Sequence[float],
+    ) -> dict[str, float]:
+        obs_age = np.asarray(binned["age_bin"].values, dtype=float)
+        obs_vol = np.asarray(binned["median_volume"].values, dtype=float)
+        pred = np.interp(
+            obs_age, np.asarray(x_curve, dtype=float), np.asarray(y_curve, dtype=float)
+        )
+        resid = pred - obs_vol
+        rmse = float(np.sqrt(np.mean(np.square(resid))))
+        denom = np.maximum(obs_vol, 1e-6)
+        mape = float(np.mean(np.abs(resid) / denom))
+        tail_start = float(np.quantile(obs_age, 0.70))
+        tail = obs_age >= tail_start
+        tail_rmse = (
+            float(np.sqrt(np.mean(np.square(resid[tail])))) if np.any(tail) else rmse
+        )
+        early = obs_age <= float(np.quantile(obs_age, 0.35))
+        early_overshoot = (
+            float(np.max(pred[early] / np.maximum(obs_vol[early], 1e-6)))
+            if np.any(early)
+            else 1.0
+        )
+        return {
+            "rmse": rmse,
+            "mape": mape,
+            "tail_rmse": tail_rmse,
+            "early_overshoot": early_overshoot,
+        }
+
+    def _infer_auto_skip1(
+        *,
+        binned: Any,
+        x_curve: Sequence[float],
+        y_curve: Sequence[float],
+        current_skip1: int,
+    ) -> int:
+        obs_age = np.asarray(binned["age_bin"].values, dtype=float)
+        obs_vol = np.asarray(binned["median_volume"].values, dtype=float)
+        pred = np.interp(
+            obs_age, np.asarray(x_curve, dtype=float), np.asarray(y_curve, dtype=float)
+        )
+        early_limit = float(np.quantile(obs_age, 0.40))
+        early = obs_age <= early_limit
+        if not np.any(early):
+            return int(current_skip1)
+        ratio = pred[early] / np.maximum(obs_vol[early], 1e-6)
+        bad = ratio > 1.8
+        if not np.any(bad):
+            return int(current_skip1)
+        cutoff_age = float(np.max(obs_age[early][bad]))
+        suggested = int(np.count_nonzero(obs_age <= cutoff_age))
+        return int(max(current_skip1, suggested))
+
+    def _run_candidate(
+        *,
+        vdyp_out: Mapping[Any, Any],
+        curve_context: Mapping[str, Any],
+        kwargs: Mapping[str, Any],
+        candidate_name: str,
+    ) -> tuple[Sequence[float], Sequence[float]] | None:
+        try:
+            x_c, y_c = process_vdyp_out_fn(
+                vdyp_out,
+                curve_fit_fn=curve_fit_fn,
+                body_fit_func=body_fit_func,
+                body_fit_func_bounds_func=body_fit_func_bounds_func,
+                toe_fit_func=toe_fit_func,
+                toe_fit_func_bounds_func=toe_fit_func_bounds_func,
+                log_event=lambda payload: append_jsonl_fn(
+                    vdyp_curve_events_path, payload
+                ),
+                message=None,
+                curve_context=dict(curve_context, candidate=candidate_name),
+                **dict(kwargs),
+            )
+            return x_c, y_c
+        except Exception:
+            return None
+
+    def _emit_fit_diagnostic_plot(
+        *,
+        tsa_code: str,
+        stratumi: int,
+        stratum_code: str,
+        si_level: str,
+        vdyp_out: Mapping[Any, Any],
+        binned: Any | None,
+        x_fit: Sequence[float],
+        y_fit: Sequence[float],
+        candidate_curves: Mapping[str, tuple[Sequence[float], Sequence[float]]],
+        fit_metrics: Mapping[str, Mapping[str, float]],
+    ) -> None:
+        plt_module = importlib.import_module("matplotlib.pyplot")
+        plot_root = Path("plots")
+        plot_root.mkdir(parents=True, exist_ok=True)
+        plot_path = plot_root / (
+            f"vdyp_fitdiag_tsa{str(tsa_code).zfill(2)}-"
+            f"{str(stratumi).zfill(2)}-{stratum_code}-{si_level}.png"
+        )
+
+        fig, ax = plt_module.subplots(1, 1, figsize=(8, 5))
+        pd_module = importlib.import_module("pandas")
+        raw_label_used = False
+        for table in vdyp_out.values():
+            if not isinstance(table, pd_module.DataFrame):
+                continue
+            raw = table.reset_index()
+            if "Age" not in raw.columns or "Vdwb" not in raw.columns:
+                continue
+            raw = raw[["Age", "Vdwb"]].dropna()
+            raw = raw[
+                (raw["Age"] >= 0)
+                & (raw["Age"] <= 300)
+                & np.isfinite(raw["Age"])
+                & np.isfinite(raw["Vdwb"])
+                & (raw["Vdwb"] >= 0)
+            ]
+            if raw.empty:
+                continue
+            raw = raw.sort_values("Age")
+            ax.plot(
+                raw["Age"],
+                raw["Vdwb"],
+                color="0.5",
+                alpha=0.08,
+                linewidth=0.4,
+                label="Raw VDYP curves" if not raw_label_used else None,
+                zorder=1,
+            )
+            raw_label_used = True
+        if binned is not None:
+            ax.fill_between(
+                binned["age_bin"],
+                binned["p25"],
+                binned["p75"],
+                color="lightblue",
+                alpha=0.35,
+                label="Observed P25-P75 (5y bins)",
+            )
+            ax.scatter(
+                binned["age_bin"],
+                binned["median_volume"],
+                s=14,
+                color="tab:blue",
+                label="Observed median (5y bins)",
+            )
+        ax.plot(
+            list(x_fit), list(y_fit), color="tab:red", linewidth=2, label="Current fit"
+        )
+        for key, color, label in (
+            ("tail_blend", "tab:orange", "Tail-blend fit"),
+            ("auto_skip", "tab:purple", "Auto-skip fit"),
+        ):
+            curve = candidate_curves.get(key)
+            if curve is None:
+                continue
+            x_c, y_c = curve
+            ax.plot(
+                list(x_c),
+                list(y_c),
+                color=color,
+                linewidth=1.7,
+                linestyle="--",
+                label=label,
+            )
+        ax.set_title(f"VDYP Fit Diagnostic: {stratum_code} {si_level}")
+        ax.set_xlabel("Age")
+        ax.set_ylabel("Volume")
+        ax.set_xlim(0, 300)
+        ymax_fit = float(np.nanmax(y_fit)) * 1.05
+        ymax_obs = 0.0
+        if binned is not None:
+            ymax_obs = float(binned["p75"].max()) * 1.15
+        ymax = max(ymax_obs, ymax_fit, 1.0)
+        ax.set_ylim(0, ymax)
+        ax.grid(alpha=0.25)
+        ax.legend(fontsize=8)
+        stats_lines: list[str] = []
+        for name in ("current", "tail_blend", "auto_skip"):
+            metric = fit_metrics.get(name)
+            if not metric:
+                continue
+            stats_lines.append(
+                f"{name}: rmse={metric['rmse']:.1f}, tail={metric['tail_rmse']:.1f}, "
+                f"early_ratio={metric['early_overshoot']:.2f}"
+            )
+        if stats_lines:
+            ax.text(
+                0.01,
+                0.99,
+                "\n".join(stats_lines),
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=7,
+                bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none"},
+            )
+        fig.tight_layout()
+        fig.savefig(plot_path, dpi=150)
+        plt_module.close(fig)
+
     smoothed_runs: list[SmoothedCurveResult] = []
     for stratumi, sc, _result in results_for_tsa:
         for si_level in si_levels:
@@ -1872,13 +2136,101 @@ def execute_curve_smoothing_runs(
                 curve_context=curve_context,
                 **kwargs,
             )
+            binned_obs = _build_observed_bins(vdyp_out)
+            candidate_curves: dict[str, tuple[Sequence[float], Sequence[float]]] = {}
+            fit_metrics: dict[str, dict[str, float]] = {}
+            if binned_obs is not None:
+                fit_metrics["current"] = _fit_quality(
+                    binned=binned_obs,
+                    x_curve=x,
+                    y_curve=y,
+                )
+
+                tail_kwargs = dict(kwargs)
+                tail_kwargs["tail_blend_enabled"] = True
+                tail_kwargs["tail_linear_min_points"] = 4
+                tail_kwargs["tail_linear_min_r2"] = 0.82
+                tail_kwargs["tail_linear_max_nrmse"] = 0.12
+                tail_kwargs["tail_linear_prefer_min_age"] = 190.0
+                tail_kwargs["tail_linear_allow_quantile_fallback"] = False
+                tail_kwargs["tail_blend_years"] = 30.0
+                tail_curve = _run_candidate(
+                    vdyp_out=vdyp_out,
+                    curve_context=curve_context,
+                    kwargs=tail_kwargs,
+                    candidate_name="tail_blend",
+                )
+                if tail_curve is not None:
+                    candidate_curves["tail_blend"] = tail_curve
+                    fit_metrics["tail_blend"] = _fit_quality(
+                        binned=binned_obs,
+                        x_curve=tail_curve[0],
+                        y_curve=tail_curve[1],
+                    )
+
+                current_skip1 = int(kwargs.get("skip1", 0))
+                suggested_skip = _infer_auto_skip1(
+                    binned=binned_obs,
+                    x_curve=x,
+                    y_curve=y,
+                    current_skip1=current_skip1,
+                )
+                if suggested_skip > current_skip1:
+                    auto_kwargs = dict(kwargs)
+                    auto_kwargs["skip1"] = suggested_skip
+                    auto_curve = _run_candidate(
+                        vdyp_out=vdyp_out,
+                        curve_context=dict(curve_context, auto_skip1=suggested_skip),
+                        kwargs=auto_kwargs,
+                        candidate_name="auto_skip",
+                    )
+                    if auto_curve is not None:
+                        auto_metrics = _fit_quality(
+                            binned=binned_obs,
+                            x_curve=auto_curve[0],
+                            y_curve=auto_curve[1],
+                        )
+                        baseline = fit_metrics["current"]
+                        improved_rmse = auto_metrics["rmse"] <= (
+                            0.95 * baseline["rmse"]
+                        )
+                        improved_tail = (
+                            auto_metrics["tail_rmse"] <= baseline["tail_rmse"]
+                        )
+                        reduced_overshoot = (
+                            auto_metrics["early_overshoot"]
+                            <= baseline["early_overshoot"]
+                        )
+                        if improved_rmse and improved_tail and reduced_overshoot:
+                            candidate_curves["auto_skip"] = auto_curve
+                            fit_metrics["auto_skip"] = auto_metrics
+
+            _emit_fit_diagnostic_plot(
+                tsa_code=tsa,
+                stratumi=int(stratumi),
+                stratum_code=sc,
+                si_level=si_level,
+                vdyp_out=vdyp_out,
+                binned=binned_obs,
+                x_fit=x,
+                y_fit=y,
+                candidate_curves=candidate_curves,
+                fit_metrics=fit_metrics,
+            )
+            output_x, output_y = x, y
+            # K3Z is currently using tail-blend-smoothed unmanaged curves for
+            # TIPSY-vs-VDYP comparison plots.
+            if str(tsa).strip().lower() == "k3z":
+                tail_curve = candidate_curves.get("tail_blend")
+                if tail_curve is not None:
+                    output_x, output_y = tail_curve
             smoothed_runs.append(
                 SmoothedCurveResult(
                     stratumi=int(stratumi),
                     stratum_code=sc,
                     si_level=si_level,
-                    x=x,
-                    y=y,
+                    x=output_x,
+                    y=output_y,
                     vdyp_out=vdyp_out,
                 )
             )

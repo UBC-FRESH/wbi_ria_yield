@@ -14,6 +14,11 @@ def test_vdyp_kwarg_overrides_for_unknown_tsa_is_empty() -> None:
     assert vdyp_kwarg_overrides_for_tsa("99") == {}
 
 
+def test_vdyp_kwarg_overrides_for_tsa29_contains_sbps_pl_low_si_fix() -> None:
+    overrides = vdyp_kwarg_overrides_for_tsa("29")
+    assert overrides[("SBPS_PL", "L")]["skip1"] == 50
+
+
 def test_vdyp_kwarg_overrides_returns_defensive_copy() -> None:
     first = vdyp_kwarg_overrides_for_tsa("24")
     first[("ESSF_BL", "L")]["skip1"] = 999

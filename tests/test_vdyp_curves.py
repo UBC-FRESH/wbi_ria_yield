@@ -185,3 +185,159 @@ def test_process_vdyp_out_unexpected_toe_fit_error_propagates() -> None:
             window=2,
             max_skip_increase=2,
         )
+
+
+def test_process_vdyp_out_accepts_sigma_asymmetry_kwargs() -> None:
+    ages = np.array([30, 40, 50, 60, 70, 80], dtype=float)
+    vols = np.array([30, 80, 140, 190, 220, 240], dtype=float)
+    vdyp_df = pd.DataFrame({"Age": ages, "Vdwb": vols}).set_index("Age")
+    x, y = process_vdyp_out(
+        {1: vdyp_df},
+        curve_fit_fn=lambda *args, **kwargs: (np.array([0.04, 2.0, 12.0, 7.0]), None),
+        body_fit_func=_fit_func1,
+        body_fit_func_bounds_func=_fit_bounds,
+        toe_fit_func=_fit_func1,
+        toe_fit_func_bounds_func=_fit_bounds,
+        log_event=lambda _event: None,
+        min_age=30,
+        max_age=90,
+        window=2,
+        sigma_right_scale=0.4,
+        sigma_right_offset=5.0,
+    )
+    assert len(x) == len(y)
+    assert x[0] == 1.0
+
+
+def test_process_vdyp_out_tail_blend_executes_without_error() -> None:
+    ages = np.arange(30, 121, 10, dtype=float)
+    vols = np.array([20, 45, 80, 110, 135, 150, 155, 152, 149, 147], dtype=float)
+    vdyp_df = pd.DataFrame({"Age": ages, "Vdwb": vols}).set_index("Age")
+
+    x_blend, y_blend = process_vdyp_out(
+        {1: vdyp_df},
+        curve_fit_fn=lambda *args, **kwargs: (np.array([0.03, 2.0, 8.0, 6.0]), None),
+        body_fit_func=_fit_func1,
+        body_fit_func_bounds_func=_fit_bounds,
+        toe_fit_func=_fit_func1,
+        toe_fit_func_bounds_func=_fit_bounds,
+        log_event=lambda _event: None,
+        min_age=30,
+        max_age=140,
+        window=2,
+        tail_blend_enabled=True,
+        tail_anchor_quantile=0.7,
+        tail_blend_years=20.0,
+    )
+    assert len(x_blend) == len(y_blend)
+    assert np.all(np.isfinite(np.asarray(y_blend)))
+
+
+def test_process_vdyp_out_tail_blend_skips_when_no_linear_tail_detected() -> None:
+    ages = np.arange(30, 181, 10, dtype=float)
+    # Strongly curved/oscillatory right tail to fail strict linearity gates.
+    vols = np.array(
+        [25, 40, 58, 79, 101, 118, 130, 138, 141, 139, 133, 124, 112, 98, 83, 68],
+        dtype=float,
+    )
+    vdyp_df = pd.DataFrame({"Age": ages, "Vdwb": vols}).set_index("Age")
+    events: list[dict[str, Any]] = []
+    common_kwargs = dict(
+        curve_fit_fn=lambda *args, **kwargs: (np.array([0.03, 2.0, 8.0, 6.0]), None),
+        body_fit_func=_fit_func1,
+        body_fit_func_bounds_func=_fit_bounds,
+        toe_fit_func=_fit_func1,
+        toe_fit_func_bounds_func=_fit_bounds,
+        min_age=30,
+        max_age=200,
+        window=2,
+    )
+    x_base, y_base = process_vdyp_out(
+        {1: vdyp_df},
+        log_event=lambda _event: None,
+        **common_kwargs,
+    )
+    x_tail, y_tail = process_vdyp_out(
+        {1: vdyp_df},
+        log_event=events.append,
+        tail_blend_enabled=True,
+        tail_linear_min_r2=0.9999,
+        tail_linear_max_nrmse=1e-8,
+        tail_linear_allow_quantile_fallback=False,
+        **common_kwargs,
+    )
+    assert np.array_equal(np.asarray(x_base), np.asarray(x_tail))
+    assert np.array_equal(np.asarray(y_base), np.asarray(y_tail))
+    assert not any(event.get("stage") == "tail_blend" for event in events)
+
+
+def test_process_vdyp_out_tail_blend_prefers_late_linear_segment() -> None:
+    ages = np.arange(30, 301, 10, dtype=float)
+    vols = np.where(
+        ages < 200,
+        18 + 1.12 * ages - 0.0022 * np.square(ages),
+        160 - 0.28 * (ages - 200),
+    )
+    vdyp_df = pd.DataFrame({"Age": ages, "Vdwb": vols}).set_index("Age")
+    events: list[dict[str, Any]] = []
+    _ = process_vdyp_out(
+        {1: vdyp_df},
+        curve_fit_fn=lambda *args, **kwargs: (np.array([0.03, 2.0, 8.0, 6.0]), None),
+        body_fit_func=_fit_func1,
+        body_fit_func_bounds_func=_fit_bounds,
+        toe_fit_func=_fit_func1,
+        toe_fit_func_bounds_func=_fit_bounds,
+        log_event=events.append,
+        min_age=30,
+        max_age=320,
+        window=2,
+        tail_blend_enabled=True,
+        tail_linear_min_points=4,
+        tail_linear_min_r2=0.90,
+        tail_linear_max_nrmse=0.10,
+        tail_linear_prefer_min_age=200.0,
+        tail_linear_allow_quantile_fallback=False,
+        tail_blend_years=30.0,
+    )
+    tail_events = [event for event in events if event.get("stage") == "tail_blend"]
+    assert tail_events
+    tail_event = tail_events[-1]
+    assert float(tail_event["anchor_age"]) >= 200.0
+    assert float(tail_event["tail_n_points"]) >= 8.0
+
+
+def test_process_vdyp_out_tail_blend_requires_preferred_min_age_segment() -> None:
+    ages = np.arange(30, 181, 10, dtype=float)
+    # Early section is very linear, but nothing exists at/after age 200.
+    vols = 30 + 0.9 * ages
+    vdyp_df = pd.DataFrame({"Age": ages, "Vdwb": vols}).set_index("Age")
+    events: list[dict[str, Any]] = []
+    common_kwargs = dict(
+        curve_fit_fn=lambda *args, **kwargs: (np.array([0.03, 2.0, 8.0, 6.0]), None),
+        body_fit_func=_fit_func1,
+        body_fit_func_bounds_func=_fit_bounds,
+        toe_fit_func=_fit_func1,
+        toe_fit_func_bounds_func=_fit_bounds,
+        min_age=30,
+        max_age=220,
+        window=2,
+    )
+    x_base, y_base = process_vdyp_out(
+        {1: vdyp_df},
+        log_event=lambda _event: None,
+        **common_kwargs,
+    )
+    x_tail, y_tail = process_vdyp_out(
+        {1: vdyp_df},
+        log_event=events.append,
+        tail_blend_enabled=True,
+        tail_linear_min_points=4,
+        tail_linear_min_r2=0.90,
+        tail_linear_max_nrmse=0.10,
+        tail_linear_prefer_min_age=200.0,
+        tail_linear_allow_quantile_fallback=False,
+        **common_kwargs,
+    )
+    assert np.array_equal(np.asarray(x_base), np.asarray(x_tail))
+    assert np.array_equal(np.asarray(y_base), np.asarray(y_tail))
+    assert not any(event.get("stage") == "tail_blend" for event in events)

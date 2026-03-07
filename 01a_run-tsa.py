@@ -348,7 +348,11 @@ def run_tsa(
     vdyp_curves_smooth_tsa_feather_path = runtime_config.vdyp_cache_paths[
         "vdyp_curves_smooth_tsa_feather_path"
     ]
-    if not Path(vdyp_curves_smooth_tsa_feather_path).is_file():
+    should_rebuild_smooth_curves = (
+        (not Path(vdyp_curves_smooth_tsa_feather_path).is_file())
+        or (not bool(runtime_config.resume_effective))
+    )
+    if should_rebuild_smooth_curves:
         smooth_plot_cfg = build_curve_smoothing_plot_config(sns_module=sns)
         smoothed_runs = execute_curve_smoothing_runs(
             tsa=tsa,
