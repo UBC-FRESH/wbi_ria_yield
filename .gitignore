@@ -27,6 +27,12 @@ _build/
 plots/tipsy_vdyp_tsa*.png
 plots/strata-tsa*.png
 plots/strata-tsa*.pdf
+plots/vdyp_fitdiag_tsa*.png
+plots/vdyp_fitdiag_tsak3z-*.png
+plots/vdyp_fitdiag_tsa*_metrics_*.csv
+plots/diag_au*_curve_*.csv
+plots/diag_au*_obs_*.csv
+plots/diag_au*_fit_check.png
 
 # Local scratch artifacts from ad-hoc VDYP/TIPSY debugging
 ply.feather

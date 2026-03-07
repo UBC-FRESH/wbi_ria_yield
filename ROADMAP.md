@@ -1735,3 +1735,204 @@
 - Immediate next queue:
   regenerate TSA29 step 1a artifacts (`data/tipsy_params_tsa29.xlsx`, `data/02_input-tsa29.dat`)
   from a clean non-stalled run path, then rerun BatchTIPSY and post-tipsy downstream assembly.
+- Added config-driven SI tuning support in `src/femic/pipeline/tipsy_config.py`:
+  per-side `SI_offset` (or `si_offset`) can now be set in either `defaults.{e,f}` or any
+  rule `assign.{e,f}` block; final per-side SI is computed as
+  `round(computed_vdyp_si + SI_offset, 1)`.
+- Updated TSA29 config defaults to apply a +2.0 managed-side SI bump directly in config:
+  `config/tipsy/tsa29.yaml -> defaults.f.SI_offset: 2.0`.
+- Added/updated tests in `tests/test_tipsy_config.py` for side-specific SI offset handling
+  and TSA29 +2 SI expectations.
+- Regenerated TSA29 step-1a artifacts from cached TSA29 prep outputs with the new config:
+  `data/tipsy_params_tsa29.xlsx` and `data/02_input-tsa29.dat` now embed the +2 managed SI
+  adjustment without manual dat editing.
+- Extended TIPSY SI tuning from additive-only to linear transform support in
+  `src/femic/pipeline/tipsy_config.py`:
+  per-side config can now define `SI_c1` and `SI_c2` (plus lowercase aliases), applied as
+  `SI_final = SI_c1 * SI_baseline + SI_c2` (with legacy `SI_offset` still honored).
+- Updated TSA29 managed defaults to explicit linear form in `config/tipsy/tsa29.yaml`:
+  `defaults.f.SI_c1: 1.0`, `defaults.f.SI_c2: 2.0` (equivalent to fixed +2 SI).
+- Added regression tests in `tests/test_tipsy_config.py` for linear SI transform behavior and
+  retained backward-compatible SI offset coverage.
+- Updated TIPSY config docs/templates:
+  `config/tipsy/README.md` and `config/tipsy/template.tsa.yaml` now describe SI linear tuning
+  fields and usage.
+- Added TSA29 VDYP smoothing override for pathological curve AU 21005 (`SBPS_PL`, `L`) in
+  `src/femic/pipeline/vdyp_overrides.py`: `skip1=50`.
+- Added default per-curve VDYP fit diagnostic plot generation in
+  `src/femic/pipeline/vdyp_stage.py` during smoothing runs:
+  each stratum/SI now emits `plots/vdyp_fitdiag_tsaXX-<stratumi>-<stratum>-<si>.png` showing
+  observed 5-year binned median/IQR vs fitted curve.
+- Re-ran TSA29 01a/01b and post-tipsy stages to validate integration:
+  AU 21005 unmanaged curve corrected from early spike (peak 943.9 @ age 19) to a coherent shape
+  (peak 96.3 @ age 223), and fresh overlays/diagnostics were written.
+- Extended VDYP smoothing diagnostics in `src/femic/pipeline/vdyp_stage.py` to compare
+  three fit flavours per stratum/SI on each default fitdiag PNG:
+  baseline/current, sigma-asymmetric candidate, tail-blend candidate, plus conditional
+  auto-skip candidate when heuristically detected and validation-approved.
+- Extended `src/femic/pipeline/vdyp_curves.py` with two candidate-fit controls used by the new
+  diagnostics:
+  right-tail sigma reweighting (`sigma_right_scale`/`sigma_right_offset`) and optional
+  right-tail linear blend (`tail_blend_enabled`, anchor/blend/slope controls).
+- Added first-pass auto left-tail anomaly detection in `execute_curve_smoothing_runs(...)`:
+  infer suggested `skip1` from early-age overshoot, rerun, and only accept candidate when it
+  clears all validation gates (`rmse`, `tail_rmse`, `early_overshoot` vs baseline).
+- Ran TSA29 targeted smoothing from cached prep/results artifacts (no full rerun required) and
+  regenerated:
+  `data/vdyp_curves_smooth-tsa29.feather`,
+  `plots/vdyp_fitdiag_tsa29-*.png` (30 files),
+  and comparison summary `plots/vdyp_fitdiag_tsa29_metrics_compare.csv`.
+- Quick quantitative readout from `vdyp_fitdiag_tsa29_metrics_compare.csv`:
+  best-overall-RMSE counts across 30 curves were `tail_blend=18`, `sigma_asym=9`, `current=3`;
+  best-tail-RMSE counts were `sigma_asym=18`, `tail_blend=9`, `current=3`.
+  Auto-skip was suggested in 18 curves but validated in 0 under current strict acceptance gates.
+- Follow-up fit-logic revision based on visual QA feedback:
+  removed `sigma_asym` candidate from default diagnostics and switched focus to a stronger
+  tail-blend approach.
+- Updated `src/femic/pipeline/vdyp_curves.py` tail blend algorithm to detect a rightmost linear
+  binned segment automatically (maximal contiguous tail from the right that meets
+  `R² >= tail_linear_min_r2` and `NRMSE <= tail_linear_max_nrmse`), then blend the current NLLS
+  curve into that linear tail. If no credible linear tail exists, it naturally falls back to
+  raw/current behavior (no tail override).
+- New tail controls in `process_vdyp_out(...)`:
+  `tail_linear_min_points`, `tail_linear_min_r2`, `tail_linear_max_nrmse`
+  (with existing `tail_blend_years` and slope bounds still applied).
+- Updated default fitdiag plotting in `src/femic/pipeline/vdyp_stage.py` to show:
+  `current`, `tail_blend`, and validated `auto_skip` only.
+- Re-ran TSA29 smoothing from cached artifacts and regenerated:
+  `data/vdyp_curves_smooth-tsa29.feather`,
+  30 plots at `plots/vdyp_fitdiag_tsa29-*.png`,
+  and tail-only comparison summary at
+  `plots/vdyp_fitdiag_tsa29_metrics_tail_only.csv`.
+- Tail-only readout on TSA29 (30 curves):
+  `tail_blend` improved overall RMSE on 17 curves and improved tail RMSE on 17 curves;
+  auto-skip remained suggested in 18 curves.
+- Tail-blend failure diagnosis + heuristic correction (2026-03-05 follow-up):
+  identified that quantile fallback and non-age-constrained tail selection were still allowing
+  early-age pseudo-linear segments to be blended (for example ESSF_SE-L anchoring near age 65),
+  causing severe regressions.
+- Updated right-tail detection in `src/femic/pipeline/vdyp_curves.py` to require
+  preferred-age tail candidates (`tail_linear_prefer_min_age`, default 200) and skip blending
+  entirely when no preferred candidate passes thresholds.
+- Kept quantile fallback disabled for TSA29 diagnostic runs
+  (`tail_linear_allow_quantile_fallback=False`) so non-linear tails naturally retain
+  the current/NLLS curve.
+- Regenerated TSA29 fit diagnostics + metrics with the stricter age-aware logic:
+  `plots/vdyp_fitdiag_tsa29-*.png` and
+  `plots/vdyp_fitdiag_tsa29_metrics_tail_only.csv`.
+- New outcome (TSA29, 30 curves):
+  no catastrophic tail-blend failures remain; worst RMSE regression is now ~0.045
+  (`IDF_FDI-L`) instead of multi-unit failures.
+- Relaxed-tail detection calibration pass (to capture more long near-linear segments):
+  in `src/femic/pipeline/vdyp_stage.py` updated candidate tail thresholds to
+  `tail_linear_min_r2=0.82`, `tail_linear_max_nrmse=0.12`,
+  `tail_linear_prefer_min_age=190.0`.
+- Re-ran TSA29 smoothing + diagnostics with relaxed thresholds:
+  tail-blend detection increased from 22/30 to 26/30 curve pairs (4 still intentionally skipped).
+- Updated summary (`plots/vdyp_fitdiag_tsa29_metrics_tail_only.csv`) shows broader tail capture
+  with controlled but non-zero tradeoff:
+  `tail_better_rmse=15/30`, `tail_better_tail_rmse=15/30`;
+  worst remaining regression is moderate (`IDF_PL-H`, ΔRMSE ~ +0.67), with no catastrophic outliers.
+- Added a detailed planning summary of this entire curve-fit enhancement stream at:
+  `planning/VDYP_curve_fit_enhancements_2026-03-05.md`, including explicit TODO notes to
+  continue tuning tail-fit hyperparameters later.
+- Enhanced default fit diagnostic plotting for lecture/demo use:
+  `src/femic/pipeline/vdyp_stage.py` now overlays raw per-sample VDYP curves
+  (`Age` vs `Vdwb`) as fine low-alpha grey lines behind binned aggregates/fitted curves.
+- Re-ran K3Z with updated fitting/plotting logic:
+  `python -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_curvefit_enh_20260305`.
+  Run completed and emitted manifest
+  `vdyp_io/logs/run_manifest-k3z_curvefit_enh_20260305.json`.
+- New K3Z fit diagnostics are available at `plots/vdyp_fitdiag_tsak3z-*.png` (9 plots for
+  strata/SI combos with usable VDYP outputs: CWH_CW, CWH_FD, CWH_HW), with raw VDYP lines
+  visible in the updated style.
+- Ran full K3Z post-TIPSY integration using user-supplied BatchTIPSY output:
+  copied `data/02_output-tsak3z.out` to expected runtime filename
+  `data/04_output-tsak3z.out`, then executed
+  `python -m femic run --run-config config/run_profile.k3z.yaml -v --resume --run-id k3z_posttipsy_20260306_062442`.
+  Run completed successfully (manifest:
+  `vdyp_io/logs/run_manifest-k3z_posttipsy_20260306_062442.json`) and regenerated K3Z artifacts,
+  including `plots/strata-tsak3z.png`, `plots/tipsy_vdyp_tsak3z-*.png`,
+  `data/tipsy_params_tsak3z.xlsx`, and `data/tipsy_curves_tsak3z.csv`.
+- Debugged K3Z strata diagnostics regression and fixed summary/plot logic:
+  `src/femic/pipeline/tsa.py::build_strata_summary(...)` now avoids reintroducing filtered strata
+  as NaN rows, and falls back to unfiltered top strata when `min_standcount` removes everything
+  (small custom boundaries).
+- Improved strata plotting robustness in `src/femic/pipeline/plots.py`:
+  relative-abundance ordering now tolerates missing `totalarea_p`,
+  SI x-limits auto-expand to observed values (so high coastal SI is not clipped at 30),
+  and sparse-strata `stripplot` points are overlaid on violins for visibility.
+- Added K3Z-specific legacy TIPSY-vs-VDYP y-axis scaling helper
+  `tipsy_vdyp_ylim_for_tsa(...)` (`0..1500` for `k3z`, default `0..600`) and wired
+  `01b_run-tsa.py` to use it.
+- Re-ran K3Z end-to-end with the fixes:
+  `python -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_plotfix_20260306_063833`.
+  Run completed (`status=ok`, manifest:
+  `vdyp_io/logs/run_manifest-k3z_plotfix_20260306_063833.json`) with corrected
+  01a diagnostics (`coverage 1.0`, `count 9`) and refreshed K3Z plot artifacts.
+- Applied K3Z-focused scoping + comparison updates:
+  set `TARGET_NSTRATA_BY_TSA["k3z"] = 4` in `src/femic/pipeline/tsa.py`
+  to constrain the custom-boundary case to top-4 strata by area.
+- Updated smoothing-output selection in `src/femic/pipeline/vdyp_stage.py` so K3Z
+  exports tail-blend unmanaged curves (when available) to
+  `vdyp_curves_smooth-tsak3z.feather` for downstream TIPSY-vs-VDYP comparison plots,
+  while keeping fitdiag overlays unchanged (`current` + candidate curves).
+- Added regression coverage:
+  `tests/test_pipeline_helpers.py` now asserts `target_nstrata_for("k3z") == 4`,
+  and `tests/test_vdyp_stage.py` now verifies K3Z smoothing output prefers tail-blend
+  candidate curves when present.
+- Deleted all stale K3Z plot artifacts (`plots/*tsak3z*`) and re-ran K3Z end-to-end:
+  `python -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_n4_tailblend_20260306_064902`.
+  Run completed (`status=ok`, manifest:
+  `vdyp_io/logs/run_manifest-k3z_n4_tailblend_20260306_064902.json`) with
+  01a diagnostics now reporting `count 4` and `coverage 0.9882` (top-4 strata only).
+- Implemented adaptive SI split-count logic in `src/femic/pipeline/tsa.py` from per-stratum
+  5th-95th percentile SI width:
+  `< 5` -> `M` only, `5..10` -> `L/H`, `> 10` -> `L/M/H`.
+- Wired the same adaptive SI quantile resolver into VDYP curve fitting
+  (`src/femic/pipeline/vdyp_stage.py::fit_stratum_curves`) so fit outputs and AU definitions
+  stay aligned for narrow-SI strata.
+- Hardened SI assignment and AU mapping for variable split counts:
+  `assign_si_levels_from_stratum_quantiles(...)` now supports optional
+  `allowed_levels_by_stratum`, and `00_data-prep.py` passes allowed levels inferred from
+  `au_table` so post-01b stand assignment cannot request non-existent SI bins.
+- Updated TIPSY parameter assembly to tolerate missing per-stratum SI bins cleanly
+  (`src/femic/pipeline/tipsy.py::build_tipsy_params_for_tsa` skips absent fit levels).
+- Added regression coverage for adaptive split behavior and missing-level handling:
+  `tests/test_pipeline_helpers.py`, `tests/test_tipsy.py`, `tests/test_vdyp_stage.py`.
+- Re-validated K3Z end-to-end under the adaptive SI split logic:
+  `FEMIC_NO_CACHE=1 PYTHONPATH=src .venv/bin/python -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_siwidth_verify_20260306_070055`.
+  Run completed `status=ok` (manifest:
+  `vdyp_io/logs/run_manifest-k3z_siwidth_verify_20260306_070055.json`), producing
+  an 8-row K3Z TIPSY input table where `CWH_CW` is now correctly split into `L/H` only.
+- Fixed K3Z comparison-plot scaling request:
+  `src/femic/pipeline/plots.py::tipsy_vdyp_ylim_for_tsa(...)` now returns `0..2000`
+  for `k3z` (was `0..1500`), with regression assertion updated in
+  `tests/test_pipeline_helpers.py`.
+- Fixed fitdiag regeneration behavior:
+  1) `01a_run-tsa.py` now rebuilds smoothing outputs whenever `resume_effective=False`
+     (so non-resume/no-cache runs do not silently reuse stale
+     `vdyp_curves_smooth-tsa*.feather`), and
+  2) `src/femic/pipeline/vdyp_stage.py` now emits fitdiag PNGs even when binned
+     observations are missing (overlay is conditional, plot emission is unconditional).
+- Fixed no-cache VDYP bootstrap cache reuse:
+  `00_data-prep.py` now sets `force_run_vdyp = 1` whenever `_femic_no_cache` is active,
+  preventing stale `data/vdyp_results-tsa*.pkl` reuse during no-cache/debug/custom-boundary runs.
+- Fixed adaptive-SI bootstrap dispatch bug surfaced by forced reruns:
+  `src/femic/pipeline/vdyp_stage.py::execute_bootstrap_vdyp_runs(...)` now skips missing/empty
+  SI payloads per stratum (`status=skipped`, reason `missing_or_empty_si_sample`) instead of
+  raising `KeyError` when a stratum has `L/H` only under adaptive split rules.
+- Re-ran K3Z with forced fresh VDYP bootstraps:
+  `FEMIC_NO_CACHE=1 PYTHONPATH=src .venv/bin/python -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_forcevdyp_fix_20260306_072037`.
+  Run completed `status=ok` (manifest:
+  `vdyp_io/logs/run_manifest-k3z_forcevdyp_fix_20260306_072037.json`) and regenerated
+  current K3Z artifacts from fresh caches:
+  `data/vdyp_results-tsak3z.pkl` (updated), 8 fitdiag plots (`plots/vdyp_fitdiag_tsak3z-*.png`)
+  and 8 TIPSY-vs-VDYP comparison plots (`plots/tipsy_vdyp_tsak3z-*.png`).
+- Extracted K3Z FSP stocking guidance from `data/bc/cfa/k3z/NICF-LP-Forest-Stewardship-Plan-Appendices-2020.pdf` (Appendix B, pp. 4-6) and replaced provisional K3Z TIPSY assumptions with FSP-informed mixed-species pathways in `config/tipsy/tsak3z.yaml`.
+- Updated K3Z TIPSY rule set to use CWH-leading-species pathways (`CW/YC`, `HW/HM`, `FD/FDC`, `SS/SX`) with `Density=900`, `Regen_Delay=2`, and explicit mixed compositions summing to 100% instead of single-species 1400-sph defaults.
+- Re-ran K3Z no-cache pipeline with new rules:
+  `PYTHONPATH=src .venv/bin/python -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_fsp_rules_20260306_073524`.
+  Run completed (`status=ok`, manifest `vdyp_io/logs/run_manifest-k3z_fsp_rules_20260306_073524.json`) and regenerated K3Z artifacts.
+- Verified regenerated `data/02_input-tsak3z.dat` now reflects new FSP-informed parameters (8 rows; all rows `Density=900`, `Regen_Delay=2`, and mixed-species compositions such as `CW60/HW25/YC15`, `HW70/CW20/FD10`, `FD60/HW25/CW15`).
+- Next: user runs BatchTIPSY with the refreshed K3Z DAT, uploads updated `data/04_output-tsak3z.out`, then we re-run post-TIPSY to evaluate whether TIPSY-vs-VDYP coherence improved under FSP-informed assumptions.
