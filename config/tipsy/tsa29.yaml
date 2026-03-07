@@ -40,6 +40,8 @@ defaults:
     GW_age_4: null
     GW_age_5: null
   f:
+    SI_c1: 1.0
+    SI_c2: 2.0
     OAF2: 0.95
     FIZ: "I"
     Regen_Method: "P"

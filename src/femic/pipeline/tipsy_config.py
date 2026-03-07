@@ -431,7 +431,17 @@ def build_tipsy_params_from_config(
 
     tp["e"]["AU"] = tp["e"]["TBLno"] = 10000 + int(au_id)
     tp["f"]["AU"] = tp["f"]["TBLno"] = 20000 + int(au_id)
-    tp["e"]["SI"] = tp["f"]["SI"] = si
+    for side in ("e", "f"):
+        c1_raw = tp[side].pop("SI_c1", tp[side].pop("si_c1", 1.0))
+        c2_raw = tp[side].pop("SI_c2", tp[side].pop("si_c2", 0.0))
+        # Backward-compatible additive offset alias.
+        offset_raw = tp[side].pop("SI_offset", tp[side].pop("si_offset", 0.0))
+
+        c1 = 1.0 if c1_raw in (None, "") else float(c1_raw)
+        c2 = 0.0 if c2_raw in (None, "") else float(c2_raw)
+        offset = 0.0 if offset_raw in (None, "") else float(offset_raw)
+
+        tp[side]["SI"] = round((c1 * si) + c2 + offset, 1)
     tp["e"]["BEC"] = tp["f"]["BEC"] = bec
     tp["e"]["OAF1"] = tp["f"]["OAF1"] = oaf1
     _finalize_species_mix(side_map=tp["f"], leading_species=leading_species)

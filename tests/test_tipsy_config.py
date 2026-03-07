@@ -285,6 +285,77 @@ def test_build_tipsy_params_from_config_normalizes_mix_sum_and_order() -> None:
     assert "SW" in [out["f"].get(f"SPP_{idx}") for idx in range(1, 6)]
 
 
+def test_build_tipsy_params_from_config_applies_side_specific_si_offset() -> None:
+    cfg = {
+        "schema_version": 1,
+        "tsa_code": "08",
+        "defaults": {
+            "e": {"Regen_Method": "P"},
+            "f": {"Regen_Method": "P", "SI_offset": 2},
+        },
+        "rules": [
+            {
+                "id": "spruce_rule",
+                "when": {"leading_species_in": ["SW"]},
+                "assign": {
+                    "e": {"Density": 1200, "SPP_1": "SW", "PCT_1": 100},
+                    "f": {"Density": 1100, "SPP_1": "SW", "PCT_1": 100},
+                },
+            }
+        ],
+    }
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [15.0], "BEC_ZONE_CODE": ["SBS"]}),
+        "species": {"SW": {"pct": 100.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [15.0], "% Stk": [90.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=3010,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["SI"] == 15.0
+    assert out["f"]["SI"] == 17.0
+    assert "SI_offset" not in out["f"]
+
+
+def test_build_tipsy_params_from_config_applies_linear_si_transform() -> None:
+    cfg = {
+        "schema_version": 1,
+        "tsa_code": "08",
+        "defaults": {
+            "e": {"Regen_Method": "P"},
+            "f": {"Regen_Method": "P", "SI_c1": 1.1, "SI_c2": 2.0},
+        },
+        "rules": [
+            {
+                "id": "spruce_rule",
+                "when": {"leading_species_in": ["SW"]},
+                "assign": {
+                    "e": {"Density": 1200, "SPP_1": "SW", "PCT_1": 100},
+                    "f": {"Density": 1100, "SPP_1": "SW", "PCT_1": 100},
+                },
+            }
+        ],
+    }
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [15.0], "BEC_ZONE_CODE": ["SBS"]}),
+        "species": {"SW": {"pct": 100.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [15.0], "% Stk": [90.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=3011,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["SI"] == 15.0
+    assert out["f"]["SI"] == 18.5
+    assert "SI_c1" not in out["f"]
+    assert "SI_c2" not in out["f"]
+
+
 def test_repo_tsa16_config_loads_and_matches_spruce_rule() -> None:
     cfg = load_tipsy_tsa_config(tsa_code="16", config_dir="config/tipsy")
     assert cfg is not None
@@ -405,6 +476,7 @@ def test_repo_tsa29_config_matches_pine_ms_rule() -> None:
     assert out["e"]["PCT_1"] == 62
     assert out["e"]["SPP_2"] == "AT"
     assert out["f"]["GW_1"] == 3.0
+    assert out["f"]["SI"] == 14.0
     assert "AT" not in [out["f"].get(f"SPP_{idx}") for idx in range(1, 6)]
     assert "SX" not in [out["f"].get(f"SPP_{idx}") for idx in range(1, 6)]
     assert out["f"]["Util_DBH_cm"] == 12.5
@@ -427,6 +499,7 @@ def test_repo_tsa29_config_matches_idf_fir_rule() -> None:
     assert out["e"]["SPP_1"] == "PL"
     assert out["e"]["PCT_1"] == 42
     assert out["f"]["SPP_1"] == "PLI"
+    assert out["f"]["SI"] == 17.0
     assert out["f"]["GW_1"] == 9.0
     assert out["f"]["Density"] == 1139
 

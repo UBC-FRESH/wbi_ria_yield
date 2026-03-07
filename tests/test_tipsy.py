@@ -168,6 +168,32 @@ def test_write_tipsy_input_exports_writes_excel_and_dat(tmp_path: Path) -> None:
     assert "AU" in Path(dat_path).read_text()
 
 
+def test_write_tipsy_input_exports_keeps_regen_method_column_aligned(
+    tmp_path: Path,
+) -> None:
+    table = pd.DataFrame(
+        {
+            "AU": [21001, 22001],
+            "TBLno": [21001, 22001],
+            "BEC": ["CWH", "BWBS"],
+            "Proportion": [1, 1],
+            "Regen_Delay": [2, 2],
+            "Density": [1400, 1400],
+            "Regen_Method": ["P", "P"],
+        }
+    )
+    _excel_path, dat_path = write_tipsy_input_exports(
+        tipsy_table=table,
+        tsa="k3z",
+        tipsy_params_path_prefix=str(tmp_path / "tipsy_params_tsa"),
+        dat_path_template=str(tmp_path / "02_input-tsa{tsa}.dat"),
+    )
+    lines = Path(dat_path).read_text().splitlines()
+    assert len(lines) >= 3
+    p_positions = [lines[1].index("P"), lines[2].index("P")]
+    assert p_positions[0] == p_positions[1]
+
+
 def test_tipsy_stage_output_paths_uses_expected_naming(tmp_path: Path) -> None:
     curves_path, sppcomp_path = tipsy_stage_output_paths(tsa="08", output_root=tmp_path)
     assert curves_path == tmp_path / "tipsy_curves_tsa08.csv"
@@ -295,6 +321,57 @@ def test_build_tipsy_params_for_tsa_logs_missing_vdyp_output_warning() -> None:
     assert tipsy_params_tsa == {}
     assert len(events) == 1
     assert events[0]["reason"] == "missing_vdyp_output"
+
+
+def test_build_tipsy_params_for_tsa_skips_missing_fit_si_level() -> None:
+    results_for_tsa = [
+        (
+            0,
+            "SBS_7A",
+            {
+                "M": {
+                    "ss": pd.DataFrame(
+                        {
+                            "SITE_INDEX": [18.0],
+                            "siteprod": [17.0],
+                            "BEC_ZONE_CODE": ["SBS"],
+                        }
+                    ),
+                    "species": {"SW": {"pct": 60.0}},
+                }
+            },
+        )
+    ]
+    vdyp_curves_smooth_tsa = pd.DataFrame(
+        {
+            "stratum_code": ["SBS_7A", "SBS_7A"],
+            "si_level": ["M", "M"],
+            "age": [30, 120],
+            "volume": [160.0, 220.0],
+        }
+    )
+    exclusion = {
+        "min_vol": lambda _code: 140.0,
+        "min_si": lambda _species: 10.0,
+        "excl_leading_species": [],
+        "excl_bec": [],
+    }
+
+    scsi_au_tsa, au_scsi_tsa, tipsy_params_tsa = build_tipsy_params_for_tsa(
+        tsa="08",
+        results_for_tsa=results_for_tsa,
+        si_levels=["L", "M", "H"],
+        vdyp_curves_smooth_tsa=vdyp_curves_smooth_tsa,
+        vdyp_results_for_tsa={0: {"M": {"dummy": 1}}},
+        exclusion=exclusion,
+        tipsy_param_builder=lambda au_id, _au_data, _vdyp_out: {"f": {"TBLno": au_id}},
+        verbose=False,
+        message_fn=lambda *_args: None,
+    )
+
+    assert scsi_au_tsa == {("SBS_7A", "M"): 2000}
+    assert au_scsi_tsa == {2000: ("SBS_7A", "M")}
+    assert set(tipsy_params_tsa.keys()) == {2000}
 
 
 def test_build_tipsy_params_for_tsa_logs_no_species_candidates_warning() -> None:

@@ -125,12 +125,23 @@ def write_tipsy_input_exports(
     """Write TIPSY input exports to XLSX and DAT outputs for one TSA."""
     tipsy_excel_path = f"{tipsy_params_path_prefix}{tsa}.xlsx"
     tipsy_dat_path = dat_path_template.format(tsa=tsa)
+    # Keep fixed-width alignment stable across cases so BatchTIPSY column maps
+    # remain reusable (notably when BEC codes are 3-char like CWH).
+    col_space = {
+        col: width
+        for col, width in {"BEC": 4}.items()
+        if col in set(tipsy_table.columns)
+    }
     tipsy_table.to_excel(
         tipsy_excel_path,
         index=False,
         sheet_name="TIPSY_inputTBL",
     )
-    tipsy_table.fillna("").to_string(tipsy_dat_path, index=False)
+    tipsy_table.fillna("").to_string(
+        tipsy_dat_path,
+        index=False,
+        col_space=col_space,
+    )
     return tipsy_excel_path, tipsy_dat_path
 
 
@@ -331,6 +342,11 @@ def build_tipsy_params_for_tsa(
             continue
         for i, si_level in enumerate(si_levels, start=1):
             au = 1000 * i + stratumi
+            result_si = result.get(si_level)
+            if not isinstance(result_si, Mapping):
+                if verbose:
+                    message_fn("  missing fit result for", sc, si_level)
+                continue
             try:
                 df = vdyp_indexed.loc[sc, si_level]
             except KeyError:
@@ -344,7 +360,7 @@ def build_tipsy_params_for_tsa(
                 candidate = evaluate_tipsy_candidate(
                     sc=sc,
                     vdyp_curve_df=df,
-                    result_si=result[si_level],
+                    result_si=result_si,
                     exclusion=exclusion,
                     min_operable_years=min_operable_years,
                     si_iqrlo_quantile=si_iqrlo_quantile,
@@ -441,8 +457,6 @@ def build_tipsy_params_for_tsa(
                 continue
             scsi_au_tsa[(sc, si_level)] = au
             au_scsi_tsa[au] = (sc, si_level)
-            tipsy_params_tsa[au] = tipsy_param_builder(
-                au, result[si_level], vdyp_result
-            )
+            tipsy_params_tsa[au] = tipsy_param_builder(au, result_si, vdyp_result)
             message_fn()
     return scsi_au_tsa, au_scsi_tsa, tipsy_params_tsa

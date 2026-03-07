@@ -45,3 +45,17 @@ Each TSA file should contain:
 - defaults/fallbacks: optional shared values and explicit failure behavior
 
 See `config/tipsy/template.tsa.yaml` for a concrete draft shape.
+
+## SI transform tuning
+
+Config assignments can now tune TIPSY SI values per side (`e`/`f`) using:
+
+- `SI_c1`
+- `SI_c2`
+
+FEMIC computes baseline SI from VDYP and then applies:
+
+`SI_final = SI_c1 * SI_baseline + SI_c2`
+
+Legacy additive `SI_offset` is still supported for backward compatibility and is applied
+additively after the linear transform.

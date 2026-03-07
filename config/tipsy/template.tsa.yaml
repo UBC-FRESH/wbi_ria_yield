@@ -26,6 +26,10 @@ defaults:
     FIZ: "I"
     Regen_Method: "P"
     Proportion: 1
+    # Optional SI transform applied after FEMIC computes baseline SI:
+    # SI_final = SI_c1 * SI_baseline + SI_c2 (+ legacy SI_offset if provided)
+    SI_c1: 1.0
+    SI_c2: 0.0
 
 # Rule order matters: first matching rule wins (unless mode is changed in future schema versions).
 rules:
@@ -47,6 +51,9 @@ rules:
       f:
         Regen_Delay: 1
         Density: 1416
+        # Optional per-rule override for managed SI transform.
+        SI_c1: 1.1
+        SI_c2: 2.0
         SPP_1: "SW"
         PCT_1: 100
         Util_DBH_cm: 17.5
