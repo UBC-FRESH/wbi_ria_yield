@@ -67,6 +67,16 @@ geometry from `data/ria_vri_vclr1p_checkpoint7.feather`, then writes:
 - `output/patchworks/forestmodel.xml`
 - `output/patchworks/fragments/fragments.shp`
 
+7. Export Woodstock compatibility CSV package:
+
+```bash
+PYTHONPATH=src python -m femic export woodstock --tsa k3z
+```
+
+This currently writes:
+- `output/woodstock/woodstock_yields.csv`
+- `output/woodstock/woodstock_areas.csv`
+
 ### Config-Driven Runs
 
 Use a YAML/JSON profile to seed TSA selection and run modes:

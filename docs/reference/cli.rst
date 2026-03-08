@@ -154,6 +154,7 @@ Export
 Subcommands
 
 - ``patchworks``: ``python -m femic export patchworks [OPTIONS]``
+- ``woodstock``: ``python -m femic export woodstock [OPTIONS]``
 
 ``export patchworks`` options
 
@@ -165,4 +166,12 @@ Subcommands
 - ``--horizon-years INTEGER`` (default: ``300``)
 - ``--cc-min-age INTEGER`` (default: ``0``)
 - ``--cc-max-age INTEGER`` (default: ``1000``)
+- ``--fragments-crs TEXT`` (default: ``EPSG:3005``)
+
+``export woodstock`` options
+
+- ``--tsa TEXT`` (repeatable, required)
+- ``--bundle-dir PATH`` (default: ``data/model_input_bundle``)
+- ``--checkpoint PATH`` (default: ``data/ria_vri_vclr1p_checkpoint7.feather``)
+- ``--output-dir PATH`` (default: ``output/woodstock``)
 - ``--fragments-crs TEXT`` (default: ``EPSG:3005``)

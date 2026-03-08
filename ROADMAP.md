@@ -66,7 +66,7 @@
 - [ ] P4.2 Port legacy `fmg` core to Python 3 under `src/femic/fmg/`
   - [ ] P4.2a Port core model classes (`Curve`, `Treatment`, `ForestModel`, related XML nodes)
   - [ ] P4.2b Preserve deterministic XML serialization behavior with fixture-based parity tests
-  - [ ] P4.2c Port Woodstock import/export helpers as a compatibility module
+  - [x] P4.2c Port Woodstock import/export helpers as a compatibility module
 - [ ] P4.3 Build femic-to-fmg adapters from current pipeline outputs
   - [x] P4.3a Map `curve_table`/`curve_points_table` into fmg curve objects
   - [x] P4.3b Map AU-to-stand assignments into feature/treatment strata bindings
@@ -2176,6 +2176,10 @@
 - 2026-03-08: Documented the Patchworks export contract in docs:
   `docs/reference/patchworks-export.rst` now captures required ForestModel XML
   structure and required fragments schema fields enforced by exporter validators.
-- 2026-03-08 next queue: begin Woodstock compatibility module port (`P4.2c`),
-  then wire a
-  dedicated fmg adapter layer around shared curve/treatment classes (`P4.2a`, `P4.3` refactor).
+- 2026-03-08: Added initial Woodstock compatibility export module
+  `src/femic/fmg/woodstock.py` with `export_woodstock_package(...)`
+  (CSV outputs from current FEMIC bundle/checkpoint artifacts), wired to
+  CLI as `femic export woodstock`.
+- 2026-03-08 next queue: wire a dedicated fmg adapter layer around shared
+  curve/treatment classes (`P4.2a`, `P4.3` refactor), then add XML parity checks
+  against legacy fixtures (`P4.2b`).

@@ -2062,3 +2062,16 @@
   a TSA29 bundle/checkpoint under `output/patchworks_tsa29_validation/` and exporting with:
   `PYTHONPATH=src .venv/bin/python -m femic export patchworks --tsa 29 --bundle-dir output/patchworks_tsa29_validation/bundle --checkpoint output/patchworks_tsa29_validation/checkpoint7-tsa29.feather --output-dir output/patchworks_tsa29_validated`
   succeeded (`au=30`, `fragments=147959`, `curves=660`).
+
+## 2026-03-08 - Woodstock compatibility export bootstrap (P4.2c)
+- Added `src/femic/fmg/woodstock.py` with a Python 3 Woodstock compatibility export path:
+  `export_woodstock_package(...)` now emits:
+  - `woodstock_yields.csv` (long-form AU/IFM/age/volume curve rows)
+  - `woodstock_areas.csv` (stand/AU/IFM/age/area table from checkpoint geometry/areas)
+- Added CLI command `femic export woodstock` in `src/femic/cli/main.py`.
+- Added regression tests:
+  - `tests/test_fmg_woodstock.py`
+  - new CLI wiring tests in `tests/test_cli_main.py`
+- Updated docs:
+  - `README.md` quickstart snippet for Woodstock compatibility export
+  - `docs/reference/cli.rst` export command reference updates
