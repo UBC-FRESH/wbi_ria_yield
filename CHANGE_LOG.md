@@ -2171,3 +2171,14 @@
 - Added regression coverage:
   `tests/test_fmg_patchworks.py::test_forestmodel_xml_trims_repeated_curve_values_on_both_tails`.
 - Documented behavior in `docs/reference/patchworks-export.rst`.
+
+## 2026-03-08 - Patchworks XML non-finite value and all-flat curve hardening
+- Hardened curve-point serialization in `src/femic/fmg/patchworks.py`:
+  - non-finite `y` values are coerced to `0.0`
+  - non-finite `x` values are dropped
+  - points are sorted/normalized to monotonic `x` with duplicate-`x` collapse
+- Fixed all-flat curve trimming edge case so single-point flat curves retain
+  the earliest age point instead of collapsing to max-age `(299,0)` points.
+- Added regression tests:
+  - `test_forestmodel_xml_all_flat_curve_keeps_earliest_point`
+  - `test_forestmodel_xml_sanitizes_nan_point_values`

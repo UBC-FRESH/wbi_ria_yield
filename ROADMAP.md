@@ -2229,3 +2229,7 @@
   y-values on both far-left and far-right tails for non-`unity` curves (keep
   the inner edge points of each terminal plateau), matching Patchworks behavior
   of extending terminal points horizontally.
+- 2026-03-08: Hardened Patchworks XML point serialization for schema safety:
+  sanitize non-finite point values (replace non-finite `y` with `0.0`, drop
+  non-finite `x`), enforce monotonic/deduped `x` ordering, and fix all-flat
+  curve trimming to retain earliest age point (avoids degenerate `(299,0)` tails).

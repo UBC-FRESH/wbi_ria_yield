@@ -101,12 +101,17 @@ def _as_quoted_literal(value: str) -> str:
 
 def _curve_value_at_x(*, points: tuple[CurvePoint, ...], x: float) -> float:
     """Evaluate a curve at `x` using constant or piecewise-linear interpolation."""
-    if not points:
+    finite_points = [
+        (float(p.x), float(p.y))
+        for p in points
+        if math.isfinite(float(p.x)) and math.isfinite(float(p.y))
+    ]
+    if not finite_points:
         return 0.0
-    if len(points) == 1:
-        return float(points[0].y)
-    x_points = np.array([float(p.x) for p in points], dtype=float)
-    y_points = np.array([float(p.y) for p in points], dtype=float)
+    if len(finite_points) == 1:
+        return finite_points[0][1]
+    x_points = np.array([xy[0] for xy in finite_points], dtype=float)
+    y_points = np.array([xy[1] for xy in finite_points], dtype=float)
     order = np.argsort(x_points)
     x_sorted = x_points[order]
     y_sorted = y_points[order]
@@ -127,6 +132,8 @@ def _build_species_yield_curve(
     for point in total_points:
         total_y = max(0.0, float(point.y))
         species_prop = _curve_value_at_x(points=species_prop_points, x=float(point.x))
+        if not math.isfinite(species_prop):
+            species_prop = 0.0
         species_prop = max(0.0, min(1.0, species_prop))
         derived.append(CurvePoint(x=float(point.x), y=total_y * species_prop))
     return tuple(derived)
@@ -158,7 +165,38 @@ def _trim_flat_tail_points(
         float(points[right - 1].y), last_y, rel_tol=0.0, abs_tol=abs_tol
     ):
         right -= 1
-    return points[left : right + 1]
+    trimmed = points[left : right + 1]
+    if len(trimmed) > 1:
+        return trimmed
+    # Edge case: entire curve is flat; keep earliest point so XML doesn't collapse to max age.
+    return (points[0],)
+
+
+def _sanitize_curve_points_for_xml(
+    points: tuple[CurvePoint, ...], *, abs_tol: float = 1e-12
+) -> tuple[CurvePoint, ...]:
+    """Sanitize points for ForestModel XML (finite numeric values, monotonic x, no duplicate x)."""
+    finite: list[CurvePoint] = []
+    for point in points:
+        x_val = float(point.x)
+        y_val = float(point.y)
+        if not math.isfinite(x_val):
+            continue
+        if not math.isfinite(y_val):
+            y_val = 0.0
+        finite.append(CurvePoint(x=x_val, y=y_val))
+    if not finite:
+        return ()
+    finite = sorted(finite, key=lambda p: p.x)
+    deduped: list[CurvePoint] = []
+    for point in finite:
+        if deduped and math.isclose(
+            point.x, deduped[-1].x, rel_tol=0.0, abs_tol=abs_tol
+        ):
+            deduped[-1] = point
+        else:
+            deduped.append(point)
+    return tuple(deduped)
 
 
 def _gpd_module() -> Any:
@@ -502,9 +540,13 @@ def forestmodel_definition_to_xml_tree(
     )
     for curve_id in curve_ids:
         curve_node = et.SubElement(root, "curve", {"id": curve_id})
-        points = definition.curves[curve_id]
+        points = _sanitize_curve_points_for_xml(definition.curves[curve_id])
         if curve_id != "unity":
             points = _trim_flat_tail_points(points)
+        if not points and curve_id == "unity":
+            points = (CurvePoint(x=0.0, y=1.0),)
+        elif not points:
+            points = (CurvePoint(x=0.0, y=0.0),)
         for point in points:
             if curve_id == "unity":
                 x_val = str(point.x)

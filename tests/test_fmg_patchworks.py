@@ -252,6 +252,83 @@ def test_forestmodel_xml_trims_repeated_curve_values_on_both_tails() -> None:
     ]
 
 
+def test_forestmodel_xml_all_flat_curve_keeps_earliest_point() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 1001,
+                "tsa": "29",
+                "stratum_code": "SBPS_PLI",
+                "si_level": "L",
+                "managed_curve_id": 21001,
+                "unmanaged_curve_id": 1001,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 1001, "curve_type": "unmanaged"},
+            {"curve_id": 21001, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 1001, "x": 1, "y": 0.0},
+            {"curve_id": 1001, "x": 100, "y": 0.0},
+            {"curve_id": 1001, "x": 299, "y": 0.0},
+            {"curve_id": 21001, "x": 1, "y": 0.0},
+            {"curve_id": 21001, "x": 100, "y": 0.0},
+            {"curve_id": 21001, "x": 299, "y": 0.0},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    unmanaged_points = root.findall("./curve[@id='C1001']/point")
+    managed_points = root.findall("./curve[@id='C21001']/point")
+    assert [p.attrib for p in unmanaged_points] == [{"x": "1.000000", "y": "0.000000"}]
+    assert [p.attrib for p in managed_points] == [{"x": "1.000000", "y": "0.000000"}]
+
+
+def test_forestmodel_xml_sanitizes_nan_point_values() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 1001,
+                "tsa": "29",
+                "stratum_code": "SBPS_PLI",
+                "si_level": "L",
+                "managed_curve_id": 21001,
+                "unmanaged_curve_id": 1001,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 1001, "curve_type": "unmanaged"},
+            {"curve_id": 21001, "curve_type": "managed"},
+            {"curve_id": 21001001, "curve_type": "managed_species_prop_HW"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 1001, "x": 1, "y": 10.0},
+            {"curve_id": 21001, "x": 1, "y": 20.0},
+            {"curve_id": 21001001, "x": 1, "y": float("nan")},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    species_prop = root.find("./curve[@id='C21001001']/point")
+    assert species_prop is not None
+    assert species_prop.attrib == {"x": "1.000000", "y": "0.000000"}
+
+
 def test_export_patchworks_package_writes_xml_and_fragments(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
