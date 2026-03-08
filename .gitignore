@@ -25,10 +25,15 @@ _build/
 
 # Runtime/generated plot artifacts
 plots/tipsy_vdyp_tsa*.png
+plots/tipsy_vdyp_tsak3z-*.png
 plots/strata-tsa*.png
+plots/strata-tsak3z.png
 plots/strata-tsa*.pdf
+plots/strata-tsak3z.pdf
 plots/vdyp_fitdiag_tsa*.png
 plots/vdyp_fitdiag_tsak3z-*.png
+plots/vdyp_lmh_tsa*.png
+plots/vdyp_lmh_tsak3z-*.png
 plots/vdyp_fitdiag_tsa*_metrics_*.csv
 plots/diag_au*_curve_*.csv
 plots/diag_au*_obs_*.csv
@@ -38,3 +43,8 @@ plots/diag_au*_fit_check.png
 ply.feather
 lyr.feather
 vdyp_lyr_816_eoi3.csv/
+
+# Local external references and scratch symlinks (do not publish)
+docs/reference/*.pdf
+docs/reference/vdyp/*.pdf
+fmg
