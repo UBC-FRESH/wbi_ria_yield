@@ -184,8 +184,8 @@ def test_build_forestmodel_xml_tree_adds_species_yield_curves() -> None:
         curve_points_table=curve_points,
     )
 
-    unmanaged_curve = root.find("./curve[@id='C9855010000011']")
-    managed_curve = root.find("./curve[@id='C9855210000012']")
+    unmanaged_curve = root.find("./curve[@id='au_985501000_unmanaged_yield_HW']")
+    managed_curve = root.find("./curve[@id='au_985501000_managed_yield_HW']")
     assert unmanaged_curve is not None
     assert managed_curve is not None
     unmanaged_points = unmanaged_curve.findall("./point")
@@ -239,8 +239,8 @@ def test_forestmodel_xml_trims_repeated_curve_values_on_both_tails() -> None:
         curve_table=curve_table,
         curve_points_table=curve_points,
     )
-    unmanaged_points = root.findall("./curve[@id='C1001']/point")
-    managed_points = root.findall("./curve[@id='C21001']/point")
+    unmanaged_points = root.findall("./curve[@id='unmanaged_total_1001']/point")
+    managed_points = root.findall("./curve[@id='managed_total_21001']/point")
     assert [p.attrib for p in unmanaged_points] == [
         {"x": "2.000000", "y": "5.000000"},
         {"x": "10.000000", "y": "40.000000"},
@@ -286,8 +286,8 @@ def test_forestmodel_xml_all_flat_curve_keeps_earliest_point() -> None:
         curve_table=curve_table,
         curve_points_table=curve_points,
     )
-    unmanaged_points = root.findall("./curve[@id='C1001']/point")
-    managed_points = root.findall("./curve[@id='C21001']/point")
+    unmanaged_points = root.findall("./curve[@id='unmanaged_total_1001']/point")
+    managed_points = root.findall("./curve[@id='managed_total_21001']/point")
     assert [p.attrib for p in unmanaged_points] == [{"x": "1.000000", "y": "0.000000"}]
     assert [p.attrib for p in managed_points] == [{"x": "1.000000", "y": "0.000000"}]
 
@@ -324,7 +324,7 @@ def test_forestmodel_xml_sanitizes_nan_point_values() -> None:
         curve_table=curve_table,
         curve_points_table=curve_points,
     )
-    species_prop = root.find("./curve[@id='C21001001']/point")
+    species_prop = root.find("./curve[@id='managed_prop_HW_21001001']/point")
     assert species_prop is not None
     assert species_prop.attrib == {"x": "1.000000", "y": "0.000000"}
 
@@ -438,7 +438,7 @@ def test_validate_forestmodel_xml_tree_rejects_missing_curve_ref() -> None:
         curve_table=curve_table,
         curve_points_table=curve_points,
     )
-    managed_curve_node = root.find("./curve[@id='C985521000']")
+    managed_curve_node = root.find("./curve[@id='managed_total_985521000']")
     assert managed_curve_node is not None
     root.remove(managed_curve_node)
 

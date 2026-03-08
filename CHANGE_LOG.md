@@ -2182,3 +2182,13 @@
 - Added regression tests:
   - `test_forestmodel_xml_all_flat_curve_keeps_earliest_point`
   - `test_forestmodel_xml_sanitizes_nan_point_values`
+
+## 2026-03-08 - Readable Patchworks curve IDs
+- Replaced opaque numeric XML curve IDs (`C<id>`) with readable deterministic
+  ids while preserving uniqueness and stable idref linkage:
+  - `managed_total_<id>`, `unmanaged_total_<id>`
+  - `managed_prop_<SPP>_<id>`, `unmanaged_prop_<SPP>_<id>`
+  - `au_<au_id>_<managed|unmanaged>_yield_<SPP>` for derived species-yield curves
+- Updated serializer curve ordering to deterministic lexical ordering
+  (`unity` first, then sorted readable ids).
+- Updated fixture baselines and tests to assert new id conventions.

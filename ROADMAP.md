@@ -2233,3 +2233,6 @@
   sanitize non-finite point values (replace non-finite `y` with `0.0`, drop
   non-finite `x`), enforce monotonic/deduped `x` ordering, and fix all-flat
   curve trimming to retain earliest age point (avoids degenerate `(299,0)` tails).
+- 2026-03-08: Switched Patchworks XML curve IDs from opaque numeric aliases to
+  readable deterministic identifiers (`managed_total_*`, `unmanaged_prop_*`,
+  `au_*_managed_yield_*`), while preserving unique idref linkage.

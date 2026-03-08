@@ -42,6 +42,10 @@ To reduce XML size/noise, serializer output trims redundant far-left and far-rig
 points when a curve starts/ends with repeated y-values; Patchworks extends
 terminal points horizontally by default.
 
+Curve IDs are emitted as readable tokens (for example
+``managed_total_<id>``, ``managed_prop_<SPP>_<id>``,
+``au_<au_id>_managed_yield_<SPP>``) while remaining unique within the XML file.
+
 Fragments shapefile requirements
 --------------------------------
 

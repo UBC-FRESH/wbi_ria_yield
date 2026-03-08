@@ -9,13 +9,13 @@
   <curve id="unity">
     <point x="0.0" y="1.0" />
   </curve>
-  <curve id="C985501000">
-    <point x="1.000000" y="10.000000" />
-    <point x="10.000000" y="55.000000" />
-  </curve>
-  <curve id="C985521000">
+  <curve id="managed_total_985521000">
     <point x="1.000000" y="12.000000" />
     <point x="10.000000" y="70.000000" />
+  </curve>
+  <curve id="unmanaged_total_985501000">
+    <point x="1.000000" y="10.000000" />
+    <point x="10.000000" y="55.000000" />
   </curve>
   <select statement="AU eq '985501000' and IFM eq 'unmanaged'">
     <features>
@@ -23,7 +23,7 @@
         <curve idref="unity" />
       </attribute>
       <attribute label="feature.Yield.unmanaged.Total">
-        <curve idref="C985501000" />
+        <curve idref="unmanaged_total_985501000" />
       </attribute>
     </features>
     <track />
@@ -34,7 +34,7 @@
         <curve idref="unity" />
       </attribute>
       <attribute label="feature.Yield.managed.Total">
-        <curve idref="C985521000" />
+        <curve idref="managed_total_985521000" />
       </attribute>
     </features>
     <track>
@@ -54,7 +54,7 @@
         <curve idref="unity" />
       </attribute>
       <attribute label="product.Yield.managed.Total">
-        <curve idref="C985521000" />
+        <curve idref="managed_total_985521000" />
       </attribute>
     </products>
   </select>

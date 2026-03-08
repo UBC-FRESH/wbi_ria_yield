@@ -99,6 +99,33 @@ def _as_quoted_literal(value: str) -> str:
     return f"'{text}'"
 
 
+def _sanitize_id_component(value: str) -> str:
+    text = str(value).strip()
+    if not text:
+        return "na"
+    out = "".join(ch if ch.isalnum() or ch in {"_", "."} else "_" for ch in text)
+    out = out.strip("_")
+    return out or "na"
+
+
+def _source_curve_ref(*, curve_id: int, curve_type: str) -> str:
+    """Build readable, deterministic XML curve id from source metadata."""
+    ctype = str(curve_type or "").strip()
+    if ctype == "managed":
+        prefix = "managed_total"
+    elif ctype == "unmanaged":
+        prefix = "unmanaged_total"
+    elif ctype.startswith("managed_species_prop_"):
+        species = _sanitize_id_component(ctype.removeprefix("managed_species_prop_"))
+        prefix = f"managed_prop_{species}"
+    elif ctype.startswith("unmanaged_species_prop_"):
+        species = _sanitize_id_component(ctype.removeprefix("unmanaged_species_prop_"))
+        prefix = f"unmanaged_prop_{species}"
+    else:
+        prefix = _sanitize_id_component(ctype or "curve")
+    return f"{prefix}_{int(curve_id)}"
+
+
 def _curve_value_at_x(*, points: tuple[CurvePoint, ...], x: float) -> float:
     """Evaluate a curve at `x` using constant or piecewise-linear interpolation."""
     finite_points = [
@@ -139,12 +166,11 @@ def _build_species_yield_curve(
     return tuple(derived)
 
 
-def _derived_species_yield_curve_id(
-    *, species_prop_curve_id: int, managed: bool
-) -> int:
-    """Build deterministic synthetic curve ID for derived species-yield curves."""
-    suffix = 2 if managed else 1
-    return int(species_prop_curve_id) * 10 + suffix
+def _derived_species_yield_curve_ref(*, au_id: int, managed: bool, species: str) -> str:
+    """Build readable deterministic XML id for derived species-yield curves."""
+    mode = "managed" if managed else "unmanaged"
+    species_token = _sanitize_id_component(species)
+    return f"au_{int(au_id)}_{mode}_yield_{species_token}"
 
 
 def _trim_flat_tail_points(
@@ -279,10 +305,15 @@ def build_patchworks_forestmodel_definition(
 ) -> ForestModelDefinition:
     """Build Patchworks ForestModel core definition from shared context."""
     curves: dict[str, tuple[CurvePoint, ...]] = {"unity": (CurvePoint(x=0.0, y=1.0),)}
+    source_curve_ref_by_id: dict[int, str] = {}
     for curve_id in sorted(context.curves_by_id):
-        points = context.curves_by_id[curve_id].points
-        if points:
-            curves[f"C{curve_id}"] = points
+        curve_def = context.curves_by_id[curve_id]
+        curve_ref = _source_curve_ref(
+            curve_id=curve_def.curve_id,
+            curve_type=curve_def.curve_type,
+        )
+        source_curve_ref_by_id[curve_id] = curve_ref
+        curves[curve_ref] = curve_def.points
 
     selects: list[SelectDefinition] = []
     transition_assignments: tuple[TreatmentAssignment, ...] = ()
@@ -296,6 +327,8 @@ def build_patchworks_forestmodel_definition(
     for au in context.analysis_units:
         unmanaged_curve_id = au.unmanaged_curve_id
         managed_curve_id = au.managed_curve_id
+        unmanaged_curve_ref = source_curve_ref_by_id[unmanaged_curve_id]
+        managed_curve_ref = source_curve_ref_by_id[managed_curve_id]
         unmanaged_total_curve = context.curves_by_id.get(unmanaged_curve_id)
         managed_total_curve = context.curves_by_id.get(managed_curve_id)
 
@@ -303,37 +336,40 @@ def build_patchworks_forestmodel_definition(
             AttributeBinding(label="feature.Area.unmanaged", curve_idref="unity"),
             AttributeBinding(
                 label="feature.Yield.unmanaged.Total",
-                curve_idref=f"C{unmanaged_curve_id}",
+                curve_idref=unmanaged_curve_ref,
             ),
         ]
         for species, species_curve_id in sorted(
             context.unmanaged_species_curve_ids.get(unmanaged_curve_id, {}).items()
         ):
+            species_curve_ref = source_curve_ref_by_id.get(species_curve_id)
             if unmanaged_total_curve is not None:
                 species_prop_curve = context.curves_by_id.get(species_curve_id)
                 if species_prop_curve is not None:
-                    derived_curve_id = _derived_species_yield_curve_id(
-                        species_prop_curve_id=species_curve_id,
+                    derived_curve_ref = _derived_species_yield_curve_ref(
+                        au_id=au.au_id,
                         managed=False,
+                        species=species,
                     )
                     derived_curve_points = _build_species_yield_curve(
                         total_points=unmanaged_total_curve.points,
                         species_prop_points=species_prop_curve.points,
                     )
                     if derived_curve_points:
-                        curves[f"C{derived_curve_id}"] = derived_curve_points
+                        curves[derived_curve_ref] = derived_curve_points
                         unmanaged_attrs.append(
                             AttributeBinding(
                                 label=f"feature.Yield.unmanaged.{species}",
-                                curve_idref=f"C{derived_curve_id}",
+                                curve_idref=derived_curve_ref,
                             )
                         )
-            unmanaged_attrs.append(
-                AttributeBinding(
-                    label=f"feature.SpeciesProp.unmanaged.{species}",
-                    curve_idref=f"C{species_curve_id}",
+            if species_curve_ref is not None:
+                unmanaged_attrs.append(
+                    AttributeBinding(
+                        label=f"feature.SpeciesProp.unmanaged.{species}",
+                        curve_idref=species_curve_ref,
+                    )
                 )
-            )
         selects.append(
             SelectDefinition(
                 statement=f"AU eq '{au.au_id}' and IFM eq 'unmanaged'",
@@ -346,56 +382,59 @@ def build_patchworks_forestmodel_definition(
             AttributeBinding(label="feature.Area.managed", curve_idref="unity"),
             AttributeBinding(
                 label="feature.Yield.managed.Total",
-                curve_idref=f"C{managed_curve_id}",
+                curve_idref=managed_curve_ref,
             ),
         ]
         product_attrs = [
             AttributeBinding(label="product.Treated.managed.CC", curve_idref="unity"),
             AttributeBinding(
                 label="product.Yield.managed.Total",
-                curve_idref=f"C{managed_curve_id}",
+                curve_idref=managed_curve_ref,
             ),
         ]
         for species, species_curve_id in sorted(
             context.managed_species_curve_ids.get(managed_curve_id, {}).items()
         ):
+            species_curve_ref = source_curve_ref_by_id.get(species_curve_id)
             if managed_total_curve is not None:
                 species_prop_curve = context.curves_by_id.get(species_curve_id)
                 if species_prop_curve is not None:
-                    derived_curve_id = _derived_species_yield_curve_id(
-                        species_prop_curve_id=species_curve_id,
+                    derived_curve_ref = _derived_species_yield_curve_ref(
+                        au_id=au.au_id,
                         managed=True,
+                        species=species,
                     )
                     derived_curve_points = _build_species_yield_curve(
                         total_points=managed_total_curve.points,
                         species_prop_points=species_prop_curve.points,
                     )
                     if derived_curve_points:
-                        curves[f"C{derived_curve_id}"] = derived_curve_points
+                        curves[derived_curve_ref] = derived_curve_points
                         managed_attrs.append(
                             AttributeBinding(
                                 label=f"feature.Yield.managed.{species}",
-                                curve_idref=f"C{derived_curve_id}",
+                                curve_idref=derived_curve_ref,
                             )
                         )
                         product_attrs.append(
                             AttributeBinding(
                                 label=f"product.Yield.managed.{species}",
-                                curve_idref=f"C{derived_curve_id}",
+                                curve_idref=derived_curve_ref,
                             )
                         )
-            managed_attrs.append(
-                AttributeBinding(
-                    label=f"feature.SpeciesProp.managed.{species}",
-                    curve_idref=f"C{species_curve_id}",
+            if species_curve_ref is not None:
+                managed_attrs.append(
+                    AttributeBinding(
+                        label=f"feature.SpeciesProp.managed.{species}",
+                        curve_idref=species_curve_ref,
+                    )
                 )
-            )
-            product_attrs.append(
-                AttributeBinding(
-                    label=f"product.SpeciesProp.managed.{species}",
-                    curve_idref=f"C{species_curve_id}",
+                product_attrs.append(
+                    AttributeBinding(
+                        label=f"product.SpeciesProp.managed.{species}",
+                        curve_idref=species_curve_ref,
+                    )
                 )
-            )
 
         selects.append(
             SelectDefinition(
@@ -531,13 +570,9 @@ def forestmodel_definition_to_xml_tree(
             attrs["column"] = define_field.column
         et.SubElement(root, "define", attrs)
 
-    curve_ids = ["unity"] if "unity" in definition.curves else []
-    curve_ids.extend(
-        sorted(
-            [cid for cid in definition.curves if cid != "unity"],
-            key=lambda cid: int(cid.removeprefix("C")),
-        )
-    )
+    curve_ids = sorted([cid for cid in definition.curves if cid != "unity"])
+    if "unity" in definition.curves:
+        curve_ids = ["unity", *curve_ids]
     for curve_id in curve_ids:
         curve_node = et.SubElement(root, "curve", {"id": curve_id})
         points = _sanitize_curve_points_for_xml(definition.curves[curve_id])
