@@ -22,6 +22,22 @@ The exporter now enforces these required structure elements before writing XML:
 - At least one ``<treatment label="CC" ...>``
 - Every ``<attribute><curve idref="...">`` must reference an existing ``<curve id="...">``
 
+Species-wise yield curves
+-------------------------
+
+For each AU/IFM species proportion curve, FEMIC now also emits a derived
+species-yield curve:
+
+- unmanaged: ``feature.Yield.unmanaged.<SPP>``
+- managed: ``feature.Yield.managed.<SPP>`` and ``product.Yield.managed.<SPP>``
+
+Derived species-yield points are computed as:
+
+``TotalVolume(age) * SpeciesProportion(age)``
+
+where species proportions are evaluated at each total-curve age using constant or
+piecewise-linear interpolation of the source species-proportion curve.
+
 Fragments shapefile requirements
 --------------------------------
 

@@ -2146,3 +2146,20 @@
   - `femic export woodstock --tsa k3z`
     (`yield_rows=16162`, `area_rows=218`, `action_rows=14`,
     `transition_rows=14`)
+
+## 2026-03-08 - Patchworks species-wise yield curve derivation
+- Extended `src/femic/fmg/patchworks.py` to derive species-wise yield curves from
+  total-volume and species-proportion curves:
+  - unmanaged: `feature.Yield.unmanaged.<SPP>`
+  - managed: `feature.Yield.managed.<SPP>` and `product.Yield.managed.<SPP>`
+- Derivation logic now evaluates species proportions at total-curve ages using
+  constant or piecewise-linear interpolation, then multiplies by total volume.
+- Added regression coverage:
+  `tests/test_fmg_patchworks.py::test_build_forestmodel_xml_tree_adds_species_yield_curves`.
+- Regenerated deterministic XML fixture baselines to include derived species
+  yield attributes/curves:
+  - `tests/fixtures/fmg/forestmodel_minimal.xml`
+  - `tests/fixtures/fmg/forestmodel_multi_au.xml`
+- Updated docs:
+  - `docs/reference/patchworks-export.rst`
+  - `README.md`

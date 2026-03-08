@@ -37,6 +37,22 @@
   <curve id="C1002002">
     <point x="1.000000" y="0.450000" />
   </curve>
+  <curve id="C10010011">
+    <point x="1.000000" y="3.500000" />
+    <point x="10.000000" y="28.000000" />
+  </curve>
+  <curve id="C10010021">
+    <point x="1.000000" y="1.500000" />
+    <point x="10.000000" y="12.000000" />
+  </curve>
+  <curve id="C10020011">
+    <point x="1.000000" y="3.300000" />
+    <point x="10.000000" y="27.500000" />
+  </curve>
+  <curve id="C10020021">
+    <point x="1.000000" y="2.700000" />
+    <point x="10.000000" y="22.500000" />
+  </curve>
   <curve id="C21001001">
     <point x="1.000000" y="0.800000" />
   </curve>
@@ -49,6 +65,22 @@
   <curve id="C21002002">
     <point x="1.000000" y="0.400000" />
   </curve>
+  <curve id="C210010012">
+    <point x="1.000000" y="6.400000" />
+    <point x="10.000000" y="52.000000" />
+  </curve>
+  <curve id="C210010022">
+    <point x="1.000000" y="1.600000" />
+    <point x="10.000000" y="13.000000" />
+  </curve>
+  <curve id="C210020012">
+    <point x="1.000000" y="5.400000" />
+    <point x="10.000000" y="43.200000" />
+  </curve>
+  <curve id="C210020022">
+    <point x="1.000000" y="3.600000" />
+    <point x="10.000000" y="28.800000" />
+  </curve>
   <select statement="AU eq '1001' and IFM eq 'unmanaged'">
     <features>
       <attribute label="feature.Area.unmanaged">
@@ -57,8 +89,14 @@
       <attribute label="feature.Yield.unmanaged.Total">
         <curve idref="C1001" />
       </attribute>
+      <attribute label="feature.Yield.unmanaged.FD">
+        <curve idref="C10010021" />
+      </attribute>
       <attribute label="feature.SpeciesProp.unmanaged.FD">
         <curve idref="C1001002" />
+      </attribute>
+      <attribute label="feature.Yield.unmanaged.PL">
+        <curve idref="C10010011" />
       </attribute>
       <attribute label="feature.SpeciesProp.unmanaged.PL">
         <curve idref="C1001001" />
@@ -74,8 +112,14 @@
       <attribute label="feature.Yield.managed.Total">
         <curve idref="C21001" />
       </attribute>
+      <attribute label="feature.Yield.managed.FD">
+        <curve idref="C210010022" />
+      </attribute>
       <attribute label="feature.SpeciesProp.managed.FD">
         <curve idref="C21001002" />
+      </attribute>
+      <attribute label="feature.Yield.managed.PL">
+        <curve idref="C210010012" />
       </attribute>
       <attribute label="feature.SpeciesProp.managed.PL">
         <curve idref="C21001001" />
@@ -100,8 +144,14 @@
       <attribute label="product.Yield.managed.Total">
         <curve idref="C21001" />
       </attribute>
+      <attribute label="product.Yield.managed.FD">
+        <curve idref="C210010022" />
+      </attribute>
       <attribute label="product.SpeciesProp.managed.FD">
         <curve idref="C21001002" />
+      </attribute>
+      <attribute label="product.Yield.managed.PL">
+        <curve idref="C210010012" />
       </attribute>
       <attribute label="product.SpeciesProp.managed.PL">
         <curve idref="C21001001" />
@@ -116,8 +166,14 @@
       <attribute label="feature.Yield.unmanaged.Total">
         <curve idref="C1002" />
       </attribute>
+      <attribute label="feature.Yield.unmanaged.AT">
+        <curve idref="C10020021" />
+      </attribute>
       <attribute label="feature.SpeciesProp.unmanaged.AT">
         <curve idref="C1002002" />
+      </attribute>
+      <attribute label="feature.Yield.unmanaged.SW">
+        <curve idref="C10020011" />
       </attribute>
       <attribute label="feature.SpeciesProp.unmanaged.SW">
         <curve idref="C1002001" />
@@ -133,8 +189,14 @@
       <attribute label="feature.Yield.managed.Total">
         <curve idref="C21002" />
       </attribute>
+      <attribute label="feature.Yield.managed.AT">
+        <curve idref="C210020022" />
+      </attribute>
       <attribute label="feature.SpeciesProp.managed.AT">
         <curve idref="C21002002" />
+      </attribute>
+      <attribute label="feature.Yield.managed.SW">
+        <curve idref="C210020012" />
       </attribute>
       <attribute label="feature.SpeciesProp.managed.SW">
         <curve idref="C21002001" />
@@ -159,8 +221,14 @@
       <attribute label="product.Yield.managed.Total">
         <curve idref="C21002" />
       </attribute>
+      <attribute label="product.Yield.managed.AT">
+        <curve idref="C210020022" />
+      </attribute>
       <attribute label="product.SpeciesProp.managed.AT">
         <curve idref="C21002002" />
+      </attribute>
+      <attribute label="product.Yield.managed.SW">
+        <curve idref="C210020012" />
       </attribute>
       <attribute label="product.SpeciesProp.managed.SW">
         <curve idref="C21002001" />

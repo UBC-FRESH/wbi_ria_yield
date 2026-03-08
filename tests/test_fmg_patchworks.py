@@ -147,6 +147,60 @@ def test_build_patchworks_forestmodel_definition_contains_treatment() -> None:
     )
 
 
+def test_build_forestmodel_xml_tree_adds_species_yield_curves() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+            {"curve_id": 985501000001, "curve_type": "unmanaged_species_prop_HW"},
+            {"curve_id": 985521000001, "curve_type": "managed_species_prop_HW"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985501000, "x": 10, "y": 55.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+            {"curve_id": 985521000, "x": 10, "y": 70.0},
+            {"curve_id": 985501000001, "x": 1, "y": 0.6},
+            {"curve_id": 985521000001, "x": 1, "y": 0.7},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+
+    unmanaged_curve = root.find("./curve[@id='C9855010000011']")
+    managed_curve = root.find("./curve[@id='C9855210000012']")
+    assert unmanaged_curve is not None
+    assert managed_curve is not None
+    unmanaged_points = unmanaged_curve.findall("./point")
+    managed_points = managed_curve.findall("./point")
+    assert unmanaged_points[0].attrib == {"x": "1.000000", "y": "6.000000"}
+    assert unmanaged_points[1].attrib == {"x": "10.000000", "y": "33.000000"}
+    assert managed_points[0].attrib == {"x": "1.000000", "y": "8.400000"}
+    assert managed_points[1].attrib == {"x": "10.000000", "y": "49.000000"}
+
+    xml_text = et.tostring(root, encoding="unicode")
+    assert "feature.Yield.unmanaged.HW" in xml_text
+    assert "feature.Yield.managed.HW" in xml_text
+    assert "product.Yield.managed.HW" in xml_text
+
+
 def test_export_patchworks_package_writes_xml_and_fragments(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

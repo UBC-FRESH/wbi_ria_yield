@@ -98,6 +98,47 @@ def _as_quoted_literal(value: str) -> str:
     return f"'{text}'"
 
 
+def _curve_value_at_x(*, points: tuple[CurvePoint, ...], x: float) -> float:
+    """Evaluate a curve at `x` using constant or piecewise-linear interpolation."""
+    if not points:
+        return 0.0
+    if len(points) == 1:
+        return float(points[0].y)
+    x_points = np.array([float(p.x) for p in points], dtype=float)
+    y_points = np.array([float(p.y) for p in points], dtype=float)
+    order = np.argsort(x_points)
+    x_sorted = x_points[order]
+    y_sorted = y_points[order]
+    return float(
+        np.interp(float(x), x_sorted, y_sorted, left=y_sorted[0], right=y_sorted[-1])
+    )
+
+
+def _build_species_yield_curve(
+    *,
+    total_points: tuple[CurvePoint, ...],
+    species_prop_points: tuple[CurvePoint, ...],
+) -> tuple[CurvePoint, ...]:
+    """Derive species yield curve as total-volume curve times species-proportion curve."""
+    if not total_points or not species_prop_points:
+        return ()
+    derived: list[CurvePoint] = []
+    for point in total_points:
+        total_y = max(0.0, float(point.y))
+        species_prop = _curve_value_at_x(points=species_prop_points, x=float(point.x))
+        species_prop = max(0.0, min(1.0, species_prop))
+        derived.append(CurvePoint(x=float(point.x), y=total_y * species_prop))
+    return tuple(derived)
+
+
+def _derived_species_yield_curve_id(
+    *, species_prop_curve_id: int, managed: bool
+) -> int:
+    """Build deterministic synthetic curve ID for derived species-yield curves."""
+    suffix = 2 if managed else 1
+    return int(species_prop_curve_id) * 10 + suffix
+
+
 def _gpd_module() -> Any:
     return importlib.import_module("geopandas")
 
@@ -195,6 +236,8 @@ def build_patchworks_forestmodel_definition(
     for au in context.analysis_units:
         unmanaged_curve_id = au.unmanaged_curve_id
         managed_curve_id = au.managed_curve_id
+        unmanaged_total_curve = context.curves_by_id.get(unmanaged_curve_id)
+        managed_total_curve = context.curves_by_id.get(managed_curve_id)
 
         unmanaged_attrs = [
             AttributeBinding(label="feature.Area.unmanaged", curve_idref="unity"),
@@ -206,6 +249,25 @@ def build_patchworks_forestmodel_definition(
         for species, species_curve_id in sorted(
             context.unmanaged_species_curve_ids.get(unmanaged_curve_id, {}).items()
         ):
+            if unmanaged_total_curve is not None:
+                species_prop_curve = context.curves_by_id.get(species_curve_id)
+                if species_prop_curve is not None:
+                    derived_curve_id = _derived_species_yield_curve_id(
+                        species_prop_curve_id=species_curve_id,
+                        managed=False,
+                    )
+                    derived_curve_points = _build_species_yield_curve(
+                        total_points=unmanaged_total_curve.points,
+                        species_prop_points=species_prop_curve.points,
+                    )
+                    if derived_curve_points:
+                        curves[f"C{derived_curve_id}"] = derived_curve_points
+                        unmanaged_attrs.append(
+                            AttributeBinding(
+                                label=f"feature.Yield.unmanaged.{species}",
+                                curve_idref=f"C{derived_curve_id}",
+                            )
+                        )
             unmanaged_attrs.append(
                 AttributeBinding(
                     label=f"feature.SpeciesProp.unmanaged.{species}",
@@ -237,6 +299,31 @@ def build_patchworks_forestmodel_definition(
         for species, species_curve_id in sorted(
             context.managed_species_curve_ids.get(managed_curve_id, {}).items()
         ):
+            if managed_total_curve is not None:
+                species_prop_curve = context.curves_by_id.get(species_curve_id)
+                if species_prop_curve is not None:
+                    derived_curve_id = _derived_species_yield_curve_id(
+                        species_prop_curve_id=species_curve_id,
+                        managed=True,
+                    )
+                    derived_curve_points = _build_species_yield_curve(
+                        total_points=managed_total_curve.points,
+                        species_prop_points=species_prop_curve.points,
+                    )
+                    if derived_curve_points:
+                        curves[f"C{derived_curve_id}"] = derived_curve_points
+                        managed_attrs.append(
+                            AttributeBinding(
+                                label=f"feature.Yield.managed.{species}",
+                                curve_idref=f"C{derived_curve_id}",
+                            )
+                        )
+                        product_attrs.append(
+                            AttributeBinding(
+                                label=f"product.Yield.managed.{species}",
+                                curve_idref=f"C{derived_curve_id}",
+                            )
+                        )
             managed_attrs.append(
                 AttributeBinding(
                     label=f"feature.SpeciesProp.managed.{species}",
@@ -678,5 +765,5 @@ def export_patchworks_package(
         tsa_list=normalized_tsa,
         au_count=int(len(context.analysis_units)),
         fragment_count=int(fragments_gdf.shape[0]),
-        curve_count=int(context.curve_row_count),
+        curve_count=int(len(root.findall("./curve"))),
     )

@@ -67,6 +67,9 @@ geometry from `data/ria_vri_vclr1p_checkpoint7.feather`, then writes:
 - `output/patchworks/forestmodel.xml`
 - `output/patchworks/fragments/fragments.shp`
 
+Patchworks XML now includes species-wise yield attributes derived as
+`TotalVolume(age) * SpeciesProportion(age)` for unmanaged and managed tracks.
+
 7. Export Woodstock compatibility CSV package:
 
 ```bash

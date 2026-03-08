@@ -2218,3 +2218,10 @@
 - 2026-03-08 next queue: add configurable per-AU transition target fields
   (beyond IFM only), and evaluate adding Woodstock `.yld` writer/import parity
   helpers for tighter legacy interoperability.
+- 2026-03-08: Implemented species-wise yield curve derivation in Patchworks XML:
+  for each AU/IFM species, emit `feature.Yield.*.<SPP>` (and managed product
+  equivalents) as `TotalVolume(age) * SpeciesProp(age)` with piecewise-linear
+  species-proportion interpolation at total-curve ages.
+- 2026-03-08: Added coverage for derived species yields in
+  `tests/test_fmg_patchworks.py::test_build_forestmodel_xml_tree_adds_species_yield_curves`
+  and regenerated deterministic XML fixtures to lock serializer parity.
