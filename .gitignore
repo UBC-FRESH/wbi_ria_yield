@@ -22,6 +22,8 @@ vdyp_io/VDYP_CFG/vdyp7.log
 .vscode
 tmp/
 _build/
+output/
+outputs/
 
 # Runtime/generated plot artifacts
 plots/tipsy_vdyp_tsa*.png
