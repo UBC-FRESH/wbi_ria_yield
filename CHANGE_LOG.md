@@ -2290,3 +2290,32 @@
   - `config/tipsy/tsa29.yaml`
   - `ROADMAP.md`
   - `CHANGE_LOG.md`
+
+## 2026-03-08 - Phase 5 docs recovery and guides expansion
+- Added a new Sphinx `Guides` information architecture and wired it into
+  `docs/index.rst` so pipeline walkthrough content is first-class and separate
+  from API/contract reference pages.
+- Added curated workflow guides under `docs/guides/` covering:
+  - end-to-end pipeline walkthrough,
+  - Stage 00 data prep assumptions/checkpoints,
+  - Stage 01a strata/VDYP/TIPSY-input workflow,
+  - Stage 01b post-TIPSY integration,
+  - bundle/export workflow,
+  - diagnostics interpretation,
+  - troubleshooting/recovery,
+  - known limitations and human-in-the-loop boundaries.
+- Added notebook provenance artifacts:
+  - `docs/guides/legacy-traceability.rst`
+  - `docs/guides/legacy_notebook_coverage.csv`
+  preserving markdown-cell-level mapping from legacy notebooks into current docs,
+  including explicit `mapped` vs `retired` status.
+- Added docs contract tests in `tests/test_docs_contract.py` for:
+  - required guides/toctree presence,
+  - completeness of notebook markdown coverage mapping,
+  - high-value CLI option drift checks between Typer help output and
+    `docs/reference/cli.rst`.
+- Added a README documentation section linking the published site and clarifying
+  Guides vs Reference scope.
+- Updated `ROADMAP.md` with a new `Phase 5: Documentation Recovery + Expansion`
+  checklist and detailed next-step notes; remaining work in this phase is
+  deployment validation (`P5.7`) after push/publish.

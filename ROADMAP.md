@@ -84,7 +84,56 @@
   - [x] P4.6b Add regression tests for XML + fragments outputs
   - [x] P4.6c Update docs with a Patchworks-first workflow (Woodstock noted as secondary)
 
+## Phase 5: Documentation Recovery + Expansion
+- [x] P5.1 Inventory legacy notebook knowledge and map coverage gaps
+  - [x] P5.1a Extract markdown-cell inventory from `00_data-prep.ipynb`,
+    `01a_run-tsa.ipynb`, `01b_run-tsa.ipynb` with cell index + preview text
+  - [x] P5.1b Build a coverage matrix: notebook knowledge item -> existing docs
+    location (or gap)
+  - [x] P5.1c Classify each item as assumptions, step intent, interpretation
+    guidance, failure mode, or operator action
+- [x] P5.2 Add a Guides documentation section (separate from Reference)
+  - [x] P5.2a Create Guides toctree and wire it from docs landing page
+  - [x] P5.2b Add pipeline narrative pages by stage and workflow milestone
+  - [x] P5.2c Keep Reference pages API/CLI-oriented and move procedural content
+    to Guides
+- [x] P5.3 Re-author notebook narrative into structured guides (curated rewrite)
+  - [x] P5.3a Stage 00 guide: data dependencies, preprocessing assumptions,
+    checkpoint semantics
+  - [x] P5.3b Stage 01a guide: strata construction, SI splits, VDYP fitting
+    logic, TIPSY input boundary
+  - [x] P5.3c Stage 01b guide: TIPSY output ingestion, overlays, QA interpretation
+  - [x] P5.3d Bundle/export guide: `model_input_bundle` tables and
+    Patchworks/Woodstock outputs
+- [x] P5.4 Add operator QA and troubleshooting guidance
+  - [x] P5.4a Add “what good looks like” checks for strata, fit diagnostics, and
+    TIPSY-vs-VDYP overlays
+  - [x] P5.4b Document common failure signatures and deterministic remedies
+  - [x] P5.4c Add manual BatchTIPSY handoff checklist and fixed-width DAT caveats
+- [x] P5.5 Preserve traceability to legacy notebooks
+  - [x] P5.5a Add “Legacy Notebook Traceability” docs page with cell-index mapping
+  - [x] P5.5b Record source notebook/cell provenance for major guide content
+  - [x] P5.5c Mark intentionally retired legacy guidance explicitly
+- [x] P5.6 Keep docs current with code and CLI
+  - [x] P5.6a Add docs consistency checks for CLI command/options drift
+  - [x] P5.6b Add docs acceptance tests for required guide pages and toctree visibility
+  - [x] P5.6c Update changelog and roadmap notes for this docs milestone
+- [ ] P5.7 Publish and validate GitHub Pages output
+  - [ ] P5.7a Verify Guides navigation renders in published site
+  - [ ] P5.7b Validate direct URLs for all guide pages in deployed docs
+  - [ ] P5.7c Confirm docs workflow behavior for push/manual dispatch expectations
+
 ## Detailed Next Steps Notes
+- Phase 5 docs recovery milestone completed locally: added a new Guides section
+  (`docs/guides/*`), a notebook-to-guides coverage matrix
+  (`docs/guides/legacy_notebook_coverage.csv`), and a legacy traceability page
+  (`docs/guides/legacy-traceability.rst`) so notebook narrative knowledge is now
+  explicitly preserved in published docs.
+- Added docs contract tests in `tests/test_docs_contract.py` to enforce guide
+  page presence, toctree wiring, notebook markdown coverage completeness, and
+  high-value CLI docs drift checks.
+- Remaining Phase 5 work is deployment validation on GitHub Pages
+  (`P5.7`), which requires a push-triggered docs publish and URL verification.
 - `PYTHONPATH=src python -m femic --help` now works in the venv.
 - `pyproject.toml` defines the `femic` console script; install with `pip install -e .` when ready.
 - Added a legacy workflow wrapper that runs `00_data-prep.py` and honors `--tsa`/`--resume`.
