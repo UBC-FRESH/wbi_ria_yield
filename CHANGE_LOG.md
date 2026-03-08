@@ -2388,3 +2388,4 @@
 - Added release package outputs: `release_manifest.json` (SHA256 file inventory) and `HANDOFF.md` (operator checklist/commands).
 - Added tests for release packaging and CLI wiring (`tests/test_release_packaging.py`, `tests/test_cli_main.py`) and expanded docs CLI contract coverage.
 - Updated export workflow docs to include release package generation step.
+- Re-ran `femic patchworks preflight` after runtime-config path fix: artifact-path errors resolved; remaining failures are environment-dependent (`java -version` in Wine and license host reachability without active UBC VPN).

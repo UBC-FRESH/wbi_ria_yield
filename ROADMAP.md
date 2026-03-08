@@ -189,6 +189,10 @@
   verified `reference/Patchworks/` is now ignored and not tracked in git index;
   remaining queued Phase 7 work is first live VPN+Wine validation against the
   real license server environment.
+- Live preflight re-run with updated runtime config now resolves all local file
+  paths correctly; remaining blockers are environment/runtime only:
+  Java unavailable inside Wine context and license server reachability until
+  active UBC VPN session is established.
 - Phase 6 kickoff complete: added reusable onboarding assets for new cases:
   `config/run_profile.case_template.yaml`, `config/tipsy/template.case.yaml`,
   and `docs/guides/case-onboarding.rst`.
