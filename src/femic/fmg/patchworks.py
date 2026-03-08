@@ -11,6 +11,13 @@ import xml.etree.ElementTree as et
 import numpy as np
 import pandas as pd
 
+from .adapters import (
+    build_bundle_model_context,
+    build_bundle_model_context_from_tables,
+    normalize_tsa_code,
+)
+from .core import BundleModelContext
+
 
 DEFAULT_START_YEAR = 2026
 DEFAULT_HORIZON_YEARS = 300
@@ -39,91 +46,6 @@ class PatchworksExportResult:
     au_count: int
     fragment_count: int
     curve_count: int
-
-
-def _normalize_tsa_code(value: Any) -> str:
-    code = str(value).strip()
-    if code.isdigit():
-        return code.zfill(2)
-    return code.lower()
-
-
-def _coerce_int(value: Any) -> int:
-    if isinstance(value, (int, np.integer)):
-        return int(value)
-    if isinstance(value, (float, np.floating)):
-        return int(value)
-    return int(str(value))
-
-
-def _load_bundle_tables(
-    bundle_dir: Path,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    au_table = pd.read_csv(bundle_dir / "au_table.csv")
-    curve_table = pd.read_csv(bundle_dir / "curve_table.csv")
-    curve_points_table = pd.read_csv(bundle_dir / "curve_points_table.csv")
-    return au_table, curve_table, curve_points_table
-
-
-def _dedupe_au_table(au_table: pd.DataFrame) -> pd.DataFrame:
-    if "au_id" not in au_table.columns:
-        raise ValueError("au_table.csv missing required column: au_id")
-    ordered = au_table.copy()
-    deduped = (
-        ordered.sort_values(["au_id"])
-        .groupby("au_id", as_index=False)
-        .agg(
-            {
-                "tsa": "first",
-                "stratum_code": "first",
-                "si_level": "first",
-                "managed_curve_id": "first",
-                "unmanaged_curve_id": "first",
-            }
-        )
-    )
-    deduped["au_id"] = deduped["au_id"].astype(int)
-    deduped["managed_curve_id"] = deduped["managed_curve_id"].astype(int)
-    deduped["unmanaged_curve_id"] = deduped["unmanaged_curve_id"].astype(int)
-    return deduped
-
-
-def _curve_points_by_id(
-    curve_points_table: pd.DataFrame,
-) -> dict[int, list[tuple[float, float]]]:
-    points: dict[int, list[tuple[float, float]]] = {}
-    if not {"curve_id", "x", "y"}.issubset(curve_points_table.columns):
-        raise ValueError(
-            "curve_points_table.csv missing required columns: curve_id,x,y"
-        )
-    for curve_id_raw, subdf in curve_points_table.groupby("curve_id"):
-        rows = subdf.sort_values("x")
-        curve_id = _coerce_int(curve_id_raw)
-        points[int(curve_id)] = [
-            (float(x), float(y)) for x, y in zip(rows["x"].tolist(), rows["y"].tolist())
-        ]
-    return points
-
-
-def _species_curve_maps(
-    curve_table: pd.DataFrame,
-) -> tuple[dict[int, dict[str, int]], dict[int, dict[str, int]]]:
-    managed: dict[int, dict[str, int]] = {}
-    unmanaged: dict[int, dict[str, int]] = {}
-    if not {"curve_id", "curve_type"}.issubset(curve_table.columns):
-        return managed, unmanaged
-    for _, row in curve_table.iterrows():
-        curve_id = _coerce_int(row["curve_id"])
-        curve_type = str(row["curve_type"])
-        if curve_type.startswith("managed_species_prop_"):
-            species = curve_type.removeprefix("managed_species_prop_")
-            base = curve_id // 1000
-            managed.setdefault(base, {})[species] = curve_id
-        elif curve_type.startswith("unmanaged_species_prop_"):
-            species = curve_type.removeprefix("unmanaged_species_prop_")
-            base = curve_id // 1000
-            unmanaged.setdefault(base, {})[species] = curve_id
-    return managed, unmanaged
 
 
 def _add_attribute_with_curve_ref(
@@ -163,6 +85,22 @@ def _gpd_module() -> Any:
     return importlib.import_module("geopandas")
 
 
+def _context_to_au_table(context: BundleModelContext) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "au_id": au.au_id,
+                "tsa": au.tsa,
+                "stratum_code": au.stratum_code,
+                "si_level": au.si_level,
+                "managed_curve_id": au.managed_curve_id,
+                "unmanaged_curve_id": au.unmanaged_curve_id,
+            }
+            for au in context.analysis_units
+        ]
+    )
+
+
 def build_forestmodel_xml_tree(
     *,
     au_table: pd.DataFrame,
@@ -174,11 +112,33 @@ def build_forestmodel_xml_tree(
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
 ) -> et.Element:
     """Build a Patchworks ForestModel XML tree from FEMIC bundle tables."""
-    deduped_au = _dedupe_au_table(au_table=au_table)
-    point_map = _curve_points_by_id(curve_points_table=curve_points_table)
-    managed_species_map, unmanaged_species_map = _species_curve_maps(
-        curve_table=curve_table
+    context = build_bundle_model_context_from_tables(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points_table,
+        tsa_list=None,
     )
+    return build_forestmodel_xml_tree_from_context(
+        context=context,
+        start_year=start_year,
+        horizon_years=horizon_years,
+        cc_min_age=cc_min_age,
+        cc_max_age=cc_max_age,
+    )
+
+
+def build_forestmodel_xml_tree_from_context(
+    *,
+    context: BundleModelContext,
+    start_year: int = DEFAULT_START_YEAR,
+    horizon_years: int = DEFAULT_HORIZON_YEARS,
+    cc_min_age: int = DEFAULT_CC_MIN_AGE,
+    cc_max_age: int = DEFAULT_CC_MAX_AGE,
+) -> et.Element:
+    """Build a Patchworks ForestModel XML tree from shared FMG context."""
+    managed_species_map = context.managed_species_curve_ids
+    unmanaged_species_map = context.unmanaged_species_curve_ids
+    curves_by_id = context.curves_by_id
 
     root = et.Element(
         "ForestModel",
@@ -214,19 +174,23 @@ def build_forestmodel_xml_tree(
     unity_curve = et.SubElement(root, "curve", {"id": "unity"})
     et.SubElement(unity_curve, "point", {"x": "0.0", "y": "1.0"})
 
-    curve_ids = sorted({int(v) for v in curve_table["curve_id"].tolist()})
+    curve_ids = sorted(curves_by_id.keys())
     for curve_id in curve_ids:
-        points = point_map.get(curve_id, [])
+        points = curves_by_id[curve_id].points
         if not points:
             continue
         curve = et.SubElement(root, "curve", {"id": f"C{curve_id}"})
-        for x, y in points:
-            et.SubElement(curve, "point", {"x": f"{x:.6f}", "y": f"{y:.6f}"})
+        for point in points:
+            et.SubElement(
+                curve,
+                "point",
+                {"x": f"{point.x:.6f}", "y": f"{point.y:.6f}"},
+            )
 
-    for _, row in deduped_au.iterrows():
-        au_id = _coerce_int(row["au_id"])
-        unmanaged_curve_id = _coerce_int(row["unmanaged_curve_id"])
-        managed_curve_id = _coerce_int(row["managed_curve_id"])
+    for au in context.analysis_units:
+        au_id = au.au_id
+        unmanaged_curve_id = au.unmanaged_curve_id
+        managed_curve_id = au.managed_curve_id
 
         unmanaged_select = et.SubElement(
             root, "select", {"statement": f"AU eq '{au_id}' and IFM eq 'unmanaged'"}
@@ -405,9 +369,11 @@ def build_fragments_geodataframe(
             f"checkpoint missing required columns: {','.join(missing)} "
             f"({checkpoint_path})"
         )
-    normalized_tsa = {_normalize_tsa_code(tsa) for tsa in tsa_list}
-    au_ids = set(_dedupe_au_table(au_table=au_table)["au_id"].astype(int).tolist())
-    tsa_mask = df["tsa_code"].map(_normalize_tsa_code).isin(normalized_tsa)
+    if "au_id" not in au_table.columns:
+        raise ValueError("au_table missing required column: au_id")
+    normalized_tsa = {normalize_tsa_code(tsa) for tsa in tsa_list}
+    au_ids = set(pd.to_numeric(au_table["au_id"], errors="coerce").dropna().astype(int))
+    tsa_mask = df["tsa_code"].map(normalize_tsa_code).isin(normalized_tsa)
     scoped = df.loc[tsa_mask].copy()
     scoped = scoped[scoped["au"].notna()].copy()
     scoped["au"] = scoped["au"].astype(int)
@@ -521,22 +487,17 @@ def export_patchworks_package(
     fragments_crs: str = DEFAULT_FRAGMENTS_CRS,
 ) -> PatchworksExportResult:
     """Export Patchworks package artifacts from FEMIC outputs."""
-    normalized_tsa = sorted({_normalize_tsa_code(tsa) for tsa in tsa_list})
+    normalized_tsa = sorted({normalize_tsa_code(tsa) for tsa in tsa_list})
     if not normalized_tsa:
         raise ValueError("provide at least one TSA code for Patchworks export")
-
-    au_table, curve_table, curve_points_table = _load_bundle_tables(
-        bundle_dir=bundle_dir
+    context = build_bundle_model_context(
+        bundle_dir=bundle_dir,
+        tsa_list=normalized_tsa,
     )
-    au_table["tsa"] = au_table["tsa"].map(_normalize_tsa_code)
-    au_table = au_table[au_table["tsa"].isin(normalized_tsa)].copy()
-    if au_table.empty:
-        raise ValueError("no au_table rows matched requested TSA list")
+    au_table = _context_to_au_table(context)
 
-    root = build_forestmodel_xml_tree(
-        au_table=au_table,
-        curve_table=curve_table,
-        curve_points_table=curve_points_table,
+    root = build_forestmodel_xml_tree_from_context(
+        context=context,
         start_year=start_year,
         horizon_years=horizon_years,
         cc_min_age=cc_min_age,
@@ -560,7 +521,7 @@ def export_patchworks_package(
         forestmodel_xml_path=forestmodel_path,
         fragments_shapefile_path=fragments_path,
         tsa_list=normalized_tsa,
-        au_count=int(_dedupe_au_table(au_table=au_table).shape[0]),
+        au_count=int(len(context.analysis_units)),
         fragment_count=int(fragments_gdf.shape[0]),
-        curve_count=int(curve_table.shape[0]),
+        curve_count=int(context.curve_row_count),
     )

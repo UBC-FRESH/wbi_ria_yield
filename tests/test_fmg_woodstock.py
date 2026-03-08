@@ -25,6 +25,12 @@ def _write_bundle_tables(bundle_dir: Path) -> None:
     ).to_csv(bundle_dir / "au_table.csv", index=False)
     pd.DataFrame(
         [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    ).to_csv(bundle_dir / "curve_table.csv", index=False)
+    pd.DataFrame(
+        [
             {"curve_id": 985501000, "x": 1, "y": 10.0},
             {"curve_id": 985501000, "x": 2, "y": 15.0},
             {"curve_id": 985521000, "x": 1, "y": 12.0},

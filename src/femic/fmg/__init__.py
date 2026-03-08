@@ -11,6 +11,17 @@ from .patchworks import (
     validate_forestmodel_xml_tree,
     validate_fragments_geodataframe,
 )
+from .adapters import (
+    build_bundle_model_context,
+    build_bundle_model_context_from_tables,
+    normalize_tsa_code,
+)
+from .core import (
+    AnalysisUnitDefinition,
+    BundleModelContext,
+    CurveDefinition,
+    CurvePoint,
+)
 from .woodstock import (
     DEFAULT_WOODSTOCK_OUTPUT_DIR,
     WoodstockExportResult,
@@ -27,6 +38,13 @@ __all__ = [
     "export_patchworks_package",
     "validate_forestmodel_xml_tree",
     "validate_fragments_geodataframe",
+    "CurvePoint",
+    "CurveDefinition",
+    "AnalysisUnitDefinition",
+    "BundleModelContext",
+    "normalize_tsa_code",
+    "build_bundle_model_context",
+    "build_bundle_model_context_from_tables",
     "DEFAULT_WOODSTOCK_OUTPUT_DIR",
     "WoodstockExportResult",
     "export_woodstock_package",

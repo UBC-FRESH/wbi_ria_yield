@@ -8,6 +8,11 @@ from typing import Any, Iterable
 
 import pandas as pd
 
+from .adapters import (
+    build_bundle_model_context,
+    normalize_tsa_code,
+)
+from .core import BundleModelContext
 from .patchworks import (
     DEFAULT_FRAGMENTS_CRS,
     build_fragments_geodataframe,
@@ -28,63 +33,41 @@ class WoodstockExportResult:
     area_rows: int
 
 
-def _normalize_tsa_code(value: Any) -> str:
-    code = str(value).strip()
-    if code.isdigit():
-        return code.zfill(2)
-    return code.lower()
-
-
-def _coerce_int(value: Any) -> int:
-    if isinstance(value, int):
-        return value
-    return int(str(value))
-
-
-def _load_bundle_tables(bundle_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
-    au_table = pd.read_csv(bundle_dir / "au_table.csv")
-    curve_points_table = pd.read_csv(bundle_dir / "curve_points_table.csv")
-    return au_table, curve_points_table
+def _context_to_au_table(context: BundleModelContext) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "au_id": au.au_id,
+                "tsa": au.tsa,
+                "stratum_code": au.stratum_code,
+                "si_level": au.si_level,
+                "managed_curve_id": au.managed_curve_id,
+                "unmanaged_curve_id": au.unmanaged_curve_id,
+            }
+            for au in context.analysis_units
+        ]
+    )
 
 
 def build_woodstock_yields_table(
     *,
-    au_table: pd.DataFrame,
-    curve_points_table: pd.DataFrame,
+    context: BundleModelContext,
 ) -> pd.DataFrame:
     """Build long-format Woodstock compatibility yields table."""
     rows: list[dict[str, Any]] = []
-    deduped = (
-        au_table.sort_values(["au_id"])
-        .groupby("au_id", as_index=False)
-        .agg(
-            {
-                "tsa": "first",
-                "stratum_code": "first",
-                "si_level": "first",
-                "managed_curve_id": "first",
-                "unmanaged_curve_id": "first",
-            }
-        )
-    )
-    points = curve_points_table.copy()
-    points["curve_id"] = pd.to_numeric(points["curve_id"], errors="coerce").astype(int)
-    points["x"] = pd.to_numeric(points["x"], errors="coerce")
-    points["y"] = pd.to_numeric(points["y"], errors="coerce")
-
-    for row in deduped.itertuples(index=False):
-        au_id = _coerce_int(row.au_id)
-        tsa = str(row.tsa)
-        stratum_code = str(row.stratum_code)
-        si_level = str(row.si_level)
+    for au in context.analysis_units:
+        au_id = au.au_id
+        tsa = au.tsa
+        stratum_code = au.stratum_code
+        si_level = au.si_level
         for ifm, curve_id in (
-            ("unmanaged", _coerce_int(row.unmanaged_curve_id)),
-            ("managed", _coerce_int(row.managed_curve_id)),
+            ("unmanaged", au.unmanaged_curve_id),
+            ("managed", au.managed_curve_id),
         ):
-            sub = points.loc[points["curve_id"] == curve_id, ["x", "y"]].sort_values(
-                "x"
-            )
-            for x, y in zip(sub["x"].tolist(), sub["y"].tolist()):
+            curve = context.curves_by_id.get(curve_id)
+            if curve is None:
+                continue
+            for point in curve.points:
                 rows.append(
                     {
                         "tsa": tsa,
@@ -93,8 +76,8 @@ def build_woodstock_yields_table(
                         "si_level": si_level,
                         "ifm": ifm,
                         "curve_id": curve_id,
-                        "age": int(x),
-                        "volume": float(y),
+                        "age": int(point.x),
+                        "volume": float(point.y),
                     }
                 )
     return pd.DataFrame(rows)
@@ -137,19 +120,18 @@ def export_woodstock_package(
     fragments_crs: str = DEFAULT_FRAGMENTS_CRS,
 ) -> WoodstockExportResult:
     """Export Woodstock compatibility CSV package from FEMIC outputs."""
-    normalized_tsa = sorted({_normalize_tsa_code(tsa) for tsa in tsa_list})
+    normalized_tsa = sorted({normalize_tsa_code(tsa) for tsa in tsa_list})
     if not normalized_tsa:
         raise ValueError("provide at least one TSA code for Woodstock export")
 
-    au_table, curve_points_table = _load_bundle_tables(bundle_dir=bundle_dir)
-    au_table["tsa"] = au_table["tsa"].map(_normalize_tsa_code)
-    au_table = au_table[au_table["tsa"].isin(normalized_tsa)].copy()
-    if au_table.empty:
-        raise ValueError("no au_table rows matched requested TSA list")
+    context = build_bundle_model_context(
+        bundle_dir=bundle_dir,
+        tsa_list=normalized_tsa,
+    )
+    au_table = _context_to_au_table(context)
 
     yields = build_woodstock_yields_table(
-        au_table=au_table,
-        curve_points_table=curve_points_table,
+        context=context,
     )
     areas = build_woodstock_areas_table(
         checkpoint_path=checkpoint_path,
