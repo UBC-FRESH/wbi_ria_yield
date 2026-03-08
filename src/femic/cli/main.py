@@ -32,6 +32,7 @@ from femic.patchworks_runtime import (
     run_patchworks_command,
     run_patchworks_preflight,
 )
+from femic.release_packaging import build_release_package
 from femic.pipeline.io import (
     build_pipeline_run_config,
     file_sha256,
@@ -218,6 +219,44 @@ EXPORT_WOODSTOCK_OUTPUT_DIR_OPTION = typer.Option(
     DEFAULT_WOODSTOCK_OUTPUT_DIR,
     "--output-dir",
     help="Output directory for Woodstock compatibility CSV files.",
+)
+EXPORT_RELEASE_CASE_ID_OPTION = typer.Option(
+    None,
+    "--case-id",
+    help="Case identifier used in release bundle naming (for example: k3z, tsa29).",
+    show_default=False,
+)
+EXPORT_RELEASE_OUTPUT_ROOT_OPTION = typer.Option(
+    Path("releases"),
+    "--output-root",
+    help="Root directory where versioned release bundle folders are created.",
+)
+EXPORT_RELEASE_PATCHWORKS_DIR_OPTION = typer.Option(
+    Path("output/patchworks_k3z_validated"),
+    "--patchworks-dir",
+    help="Patchworks output directory to package (contains forestmodel.xml + fragments).",
+)
+EXPORT_RELEASE_WOODSTOCK_DIR_OPTION = typer.Option(
+    None,
+    "--woodstock-dir",
+    help="Optional Woodstock output directory to include in release package.",
+    show_default=False,
+)
+EXPORT_RELEASE_LOGS_DIR_OPTION = typer.Option(
+    Path("vdyp_io/logs"),
+    "--logs-dir",
+    help="Log directory used to include run manifests and Patchworks runtime logs.",
+)
+EXPORT_RELEASE_RUN_ID_OPTION = typer.Option(
+    None,
+    "--run-id",
+    help="Optional release run-id suffix; defaults to UTC timestamp.",
+    show_default=False,
+)
+EXPORT_RELEASE_STRICT_OPTION = typer.Option(
+    True,
+    "--strict/--no-strict",
+    help="Fail packaging if required model-input/Patchworks artifacts are missing.",
 )
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
@@ -869,6 +908,41 @@ def export_woodstock(
     console.print(f"areas_csv: {result.areas_csv_path}")
     console.print(f"actions_csv: {result.actions_csv_path}")
     console.print(f"transitions_csv: {result.transitions_csv_path}")
+
+
+@export_app.command("release")
+def export_release(
+    case_id: str | None = EXPORT_RELEASE_CASE_ID_OPTION,
+    output_root: Path = EXPORT_RELEASE_OUTPUT_ROOT_OPTION,
+    bundle_dir: Path = EXPORT_BUNDLE_DIR_OPTION,
+    patchworks_dir: Path = EXPORT_RELEASE_PATCHWORKS_DIR_OPTION,
+    woodstock_dir: Path | None = EXPORT_RELEASE_WOODSTOCK_DIR_OPTION,
+    logs_dir: Path = EXPORT_RELEASE_LOGS_DIR_OPTION,
+    run_id: str | None = EXPORT_RELEASE_RUN_ID_OPTION,
+    strict: bool = EXPORT_RELEASE_STRICT_OPTION,
+) -> None:
+    effective_case_id = case_id.strip() if case_id and case_id.strip() else "case"
+    try:
+        result = build_release_package(
+            case_id=effective_case_id,
+            output_root=output_root,
+            model_input_bundle_dir=bundle_dir,
+            patchworks_output_dir=patchworks_dir,
+            woodstock_output_dir=woodstock_dir,
+            logs_dir=logs_dir,
+            run_id=run_id,
+            strict=strict,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]Release package build failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        f"[green]release package built[/green] id={result.release_id} "
+        f"dir={result.release_dir}"
+    )
+    console.print(f"manifest: {result.manifest_path}")
+    console.print(f"handoff_notes: {result.handoff_notes_path}")
 
 
 @patchworks_app.command("preflight")

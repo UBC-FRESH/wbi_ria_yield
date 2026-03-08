@@ -86,10 +86,8 @@ def _as_path(value: Any, *, field: str, base_dir: Path) -> Path:
         raise PatchworksConfigError(f"Missing required field: {field}")
     candidate = Path(str(value)).expanduser()
     if not candidate.is_absolute():
-        candidate = (base_dir / candidate).resolve()
-    else:
-        candidate = candidate.resolve()
-    return candidate
+        candidate = base_dir / candidate
+    return candidate.resolve()
 
 
 def _as_optional_path(value: Any, *, base_dir: Path) -> Path | None:
@@ -97,10 +95,8 @@ def _as_optional_path(value: Any, *, base_dir: Path) -> Path | None:
         return None
     candidate = Path(str(value)).expanduser()
     if not candidate.is_absolute():
-        candidate = (base_dir / candidate).resolve()
-    else:
-        candidate = candidate.resolve()
-    return candidate
+        candidate = base_dir / candidate
+    return candidate.resolve()
 
 
 def load_patchworks_runtime_config(path: Path) -> PatchworksRuntimeConfig:

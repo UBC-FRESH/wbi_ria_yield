@@ -2383,3 +2383,8 @@
 - Updated README with Patchworks runtime command examples and proprietary-runtime boundary note.
 - Closed Phase 7 git-protection follow-up by verifying `reference/Patchworks/` is ignored and no proprietary Patchworks bundle files are tracked in the repository index.
 - Updated roadmap status so P7.1 is complete; next practical Phase 7 task is live UBC VPN + Wine license-server validation.
+- Fixed Patchworks runtime config relative-path resolution so sample config paths work from repo root when config lives under `config/`.
+- Added `femic export release` student-facing packaging command, including strict required-artifact validation and versioned release directory output.
+- Added release package outputs: `release_manifest.json` (SHA256 file inventory) and `HANDOFF.md` (operator checklist/commands).
+- Added tests for release packaging and CLI wiring (`tests/test_release_packaging.py`, `tests/test_cli_main.py`) and expanded docs CLI contract coverage.
+- Updated export workflow docs to include release package generation step.

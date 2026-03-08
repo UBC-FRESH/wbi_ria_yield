@@ -115,6 +115,16 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
             ["--bundle-dir", "--checkpoint", "--cc-transition-ifm"],
         ),
         (
+            ["export", "release", "--help"],
+            [
+                "--case-id",
+                "--patchworks-dir",
+                "--woodstock-dir",
+                "--strict",
+                "--no-strict",
+            ],
+        ),
+        (
             ["patchworks", "preflight", "--help"],
             ["--config", "--skip-license-reachability"],
         ),

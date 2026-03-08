@@ -163,6 +163,7 @@ Subcommands
 
 - ``patchworks``: ``python -m femic export patchworks [OPTIONS]``
 - ``woodstock``: ``python -m femic export woodstock [OPTIONS]``
+- ``release``: ``python -m femic export release [OPTIONS]``
 
 ``export patchworks`` options
 
@@ -186,6 +187,17 @@ Subcommands
 - ``--cc-min-age INTEGER`` (default: ``0``)
 - ``--cc-max-age INTEGER`` (default: ``1000``)
 - ``--fragments-crs TEXT`` (default: ``EPSG:3005``)
+
+``export release`` options
+
+- ``--case-id TEXT`` (default: ``case``)
+- ``--output-root PATH`` (default: ``releases``)
+- ``--bundle-dir PATH`` (default: ``data/model_input_bundle``)
+- ``--patchworks-dir PATH`` (default: ``output/patchworks_k3z_validated``)
+- ``--woodstock-dir PATH`` (optional)
+- ``--logs-dir PATH`` (default: ``vdyp_io/logs``)
+- ``--run-id TEXT`` (optional)
+- ``--strict / --no-strict`` (default: ``--strict``)
 
 Patchworks Runtime
 ------------------

@@ -1,10 +1,10 @@
 patchworks:
-  jar_path: reference/Patchworks/patchworks.jar
+  jar_path: ../reference/Patchworks/patchworks.jar
   wine_prefix: null
   license_env: SPS_LICENSE_SERVER
   license_value: frst424@auth.spatial.ca
 
 matrix_builder:
-  fragments_path: output/patchworks_k3z_validated/fragments/fragments.dbf
-  output_dir: output/patchworks_k3z_validated/tracks
-  forestmodel_xml_path: output/patchworks_k3z_validated/forestmodel.xml
+  fragments_path: ../output/patchworks_k3z_validated/fragments/fragments.dbf
+  output_dir: ../output/patchworks_k3z_validated/tracks
+  forestmodel_xml_path: ../output/patchworks_k3z_validated/forestmodel.xml

@@ -132,10 +132,10 @@
   - [x] P6.2a Validate required paths/configs before long compile runs
   - [x] P6.2b Emit clear remediation messages for missing prerequisites
   - [x] P6.2c Add regression tests for success/failure preflight scenarios
-- [ ] P6.3 Add student-facing release packaging workflow
-  - [ ] P6.3a Emit versioned output bundle for training deployments
-  - [ ] P6.3b Add concise handoff notes with commands and QA expectations
-  - [ ] P6.3c Add acceptance checks for package completeness
+- [x] P6.3 Add student-facing release packaging workflow
+  - [x] P6.3a Emit versioned output bundle for training deployments
+  - [x] P6.3b Add concise handoff notes with commands and QA expectations
+  - [x] P6.3c Add acceptance checks for package completeness
 - [ ] P6.4 Add onboarding regression scenario tests
   - [ ] P6.4a Add smoke case for new-case template instantiation
   - [ ] P6.4b Validate template-driven run/profile compatibility
@@ -173,6 +173,11 @@
   - [x] P7.6d Docs contract tests for new guides and CLI docs
 
 ## Detailed Next Steps Notes
+- Completed `P6.3`: added `femic export release` for versioned student-facing
+  bundle packaging with strict required-artifact checks, release manifest
+  (`release_manifest.json`), and operator handoff notes (`HANDOFF.md`).
+- Added release packaging tests and CLI/docs wiring; next queued work starts at
+  `P6.4` (onboarding regression scenario tests + docs linkage checks).
 - Started Phase 7 runtime integration for proprietary Patchworks tooling:
   added `femic patchworks preflight` and `femic patchworks matrix-build` command
   skeletons with config-driven Wine invocation, Matrix Builder command assembly,

@@ -410,6 +410,59 @@ def test_export_woodstock_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> Non
     assert any("woodstock export completed" in msg for msg in messages)
 
 
+def test_export_release_calls_packager(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    called: dict[str, object] = {}
+
+    def _fake_build_release_package(
+        *,
+        case_id,
+        output_root,
+        model_input_bundle_dir,
+        patchworks_output_dir,
+        woodstock_output_dir,
+        logs_dir,
+        run_id,
+        strict,
+    ):
+        called.update(
+            {
+                "case_id": case_id,
+                "output_root": output_root,
+                "model_input_bundle_dir": model_input_bundle_dir,
+                "patchworks_output_dir": patchworks_output_dir,
+                "woodstock_output_dir": woodstock_output_dir,
+                "logs_dir": logs_dir,
+                "run_id": run_id,
+                "strict": strict,
+            }
+        )
+        return SimpleNamespace(
+            release_id="k3z_test",
+            release_dir=Path("releases/k3z_test"),
+            manifest_path=Path("releases/k3z_test/release_manifest.json"),
+            handoff_notes_path=Path("releases/k3z_test/HANDOFF.md"),
+        )
+
+    monkeypatch.setattr(cli_main, "build_release_package", _fake_build_release_package)
+
+    cli_main.export_release(
+        case_id="k3z",
+        output_root=Path("releases"),
+        bundle_dir=Path("data/model_input_bundle"),
+        patchworks_dir=Path("output/patchworks_k3z_validated"),
+        woodstock_dir=Path("output/woodstock_k3z_validated"),
+        logs_dir=Path("vdyp_io/logs"),
+        run_id="test",
+        strict=True,
+    )
+
+    assert called["case_id"] == "k3z"
+    assert called["strict"] is True
+    assert any("release package built" in msg for msg in messages)
+
+
 def test_patchworks_preflight_reports_config_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

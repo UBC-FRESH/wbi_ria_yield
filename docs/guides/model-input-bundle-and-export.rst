@@ -41,6 +41,27 @@ Use:
 
 Outputs CSV compatibility tables for yield/area/action/transition ingestion.
 
+Release Packaging Export
+------------------------
+
+Use:
+
+.. code-block:: bash
+
+   PYTHONPATH=src python -m femic export release \
+     --case-id <code> \
+     --patchworks-dir output/patchworks_<case>_validated \
+     --woodstock-dir output/woodstock_<case>_validated
+
+This builds a versioned release folder under ``releases/`` with:
+
+- ``model_input_bundle/``
+- ``patchworks/``
+- optional ``woodstock/``
+- ``logs/`` (selected manifests/runtime logs when present)
+- ``release_manifest.json`` (file inventory + SHA256)
+- ``HANDOFF.md`` (operator handoff checklist)
+
 Assumptions
 -----------
 

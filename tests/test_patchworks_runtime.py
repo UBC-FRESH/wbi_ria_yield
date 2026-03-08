@@ -50,6 +50,47 @@ def test_load_patchworks_runtime_config_resolves_relative_paths(tmp_path: Path) 
     assert cfg.forestmodel_xml_path == (tmp_path / "output/forestmodel.xml").resolve()
 
 
+def test_load_patchworks_runtime_config_handles_parent_relative_paths(
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    cfg_dir = repo_root / "config"
+    cfg_dir.mkdir(parents=True, exist_ok=True)
+    (repo_root / "reference/Patchworks").mkdir(parents=True, exist_ok=True)
+    (repo_root / "reference/Patchworks/patchworks.jar").touch()
+    (repo_root / "output/patchworks_k3z_validated/fragments").mkdir(
+        parents=True, exist_ok=True
+    )
+    (repo_root / "output/patchworks_k3z_validated/fragments/fragments.dbf").touch()
+    (repo_root / "output/patchworks_k3z_validated/forestmodel.xml").touch()
+
+    cfg_path = cfg_dir / "patchworks.runtime.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "patchworks:",
+                "  jar_path: ../reference/Patchworks/patchworks.jar",
+                "  license_env: SPS_LICENSE_SERVER",
+                "  license_value: frst424@auth.spatial.ca",
+                "matrix_builder:",
+                "  fragments_path: ../output/patchworks_k3z_validated/fragments/fragments.dbf",
+                "  output_dir: ../output/patchworks_k3z_validated/tracks",
+                "  forestmodel_xml_path: ../output/patchworks_k3z_validated/forestmodel.xml",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    cfg = load_patchworks_runtime_config(cfg_path)
+    assert cfg.jar_path == (repo_root / "reference/Patchworks/patchworks.jar").resolve()
+    assert (
+        cfg.fragments_path
+        == (
+            repo_root / "output/patchworks_k3z_validated/fragments/fragments.dbf"
+        ).resolve()
+    )
+
+
 def test_parse_license_server_requires_user_host_format() -> None:
     assert parse_license_server("frst424@auth.spatial.ca") == (
         "frst424",
