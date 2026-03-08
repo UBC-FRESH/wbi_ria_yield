@@ -4,7 +4,7 @@
 
 ## CLI
 
-Run the legacy pipeline through the FEMIC CLI:
+Run the legacy pipeline through the FEMIC CLI: 
 
 ```bash
 femic run --tsa 08 --resume
