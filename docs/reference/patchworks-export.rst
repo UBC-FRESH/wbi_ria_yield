@@ -46,6 +46,13 @@ Curve IDs are emitted as readable tokens (for example
 ``managed_total_<id>``, ``managed_prop_<SPP>_<id>``,
 ``au_<au_id>_managed_yield_<SPP>``) while remaining unique within the XML file.
 
+Point formatting policy:
+
+- ``x``: integer age strings when integral (default case)
+- ``y`` for volume-yield curves (``managed_total_*``, ``unmanaged_total_*``,
+  ``au_*_..._yield_*``): rounded to 1 decimal place
+- ``y`` for normalized/proportion curves: rounded to at most 5 decimals
+
 Fragments shapefile requirements
 --------------------------------
 

@@ -2239,3 +2239,6 @@
 - 2026-03-08: Updated Patchworks XML point formatting to emit integer age `x`
   values when age is integral (default case), while preserving float formatting
   only for genuinely non-integral x values.
+- 2026-03-08: Updated Patchworks XML `y` formatting by curve family:
+  volume-yield curves now round to 1 decimal place; normalized/proportion
+  curves round to at most 5 decimals (avoids excessive precision noise).

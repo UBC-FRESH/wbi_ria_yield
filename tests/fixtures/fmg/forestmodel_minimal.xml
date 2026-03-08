@@ -10,12 +10,12 @@
     <point x="0" y="1.0" />
   </curve>
   <curve id="managed_total_985521000">
-    <point x="1" y="12.000000" />
-    <point x="10" y="70.000000" />
+    <point x="1" y="12.0" />
+    <point x="10" y="70.0" />
   </curve>
   <curve id="unmanaged_total_985501000">
-    <point x="1" y="10.000000" />
-    <point x="10" y="55.000000" />
+    <point x="1" y="10.0" />
+    <point x="10" y="55.0" />
   </curve>
   <select statement="AU eq '985501000' and IFM eq 'unmanaged'">
     <features>

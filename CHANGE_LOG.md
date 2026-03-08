@@ -2198,4 +2198,11 @@
 - Kept fallback float formatting for non-integral `x` values to preserve
   compatibility with transformed or custom curves.
 - Updated fixture baselines and regression expectations accordingly.
+
+## 2026-03-08 - Patchworks y-value precision policy by curve family
+- Updated Patchworks XML `y` formatting to reduce precision noise:
+  - volume-yield curves (`managed_total_*`, `unmanaged_total_*`,
+    `au_*_..._yield_*`) are now rounded to 1 decimal place
+  - normalized/proportion curves are now rounded to at most 5 decimals
+- Updated fixture baselines and tests accordingly.
 - Updated fixture baselines and tests to assert new id conventions.

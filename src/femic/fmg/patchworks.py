@@ -232,6 +232,29 @@ def _format_xml_x(x_value: float, *, abs_tol: float = 1e-9) -> str:
     return f"{x_value:.6f}".rstrip("0").rstrip(".")
 
 
+def _is_volume_yield_curve_id(curve_id: str) -> bool:
+    """Return True for absolute volume-yield curves (not normalized proportions)."""
+    return curve_id.startswith(("managed_total_", "unmanaged_total_", "au_"))
+
+
+def _format_xml_y(curve_id: str, y_value: float) -> str:
+    """Format y with practical precision by curve family."""
+    if curve_id == "unity":
+        return str(y_value)
+    if _is_volume_yield_curve_id(curve_id):
+        # Volume yields are communicated at 0.1 precision.
+        rounded = round(float(y_value), 1)
+        if math.isclose(rounded, 0.0, rel_tol=0.0, abs_tol=1e-12):
+            rounded = 0.0
+        return f"{rounded:.1f}"
+    # Normalized/proportion curves keep more precision, but cap display detail.
+    rounded = round(float(y_value), 5)
+    if math.isclose(rounded, 0.0, rel_tol=0.0, abs_tol=1e-12):
+        rounded = 0.0
+    text = f"{rounded:.5f}".rstrip("0").rstrip(".")
+    return text or "0"
+
+
 def _gpd_module() -> Any:
     return importlib.import_module("geopandas")
 
@@ -591,10 +614,7 @@ def forestmodel_definition_to_xml_tree(
             points = (CurvePoint(x=0.0, y=0.0),)
         for point in points:
             x_val = _format_xml_x(float(point.x))
-            if curve_id == "unity":
-                y_val = str(point.y)
-            else:
-                y_val = f"{point.y:.6f}"
+            y_val = _format_xml_y(curve_id, float(point.y))
             et.SubElement(
                 curve_node,
                 "point",
