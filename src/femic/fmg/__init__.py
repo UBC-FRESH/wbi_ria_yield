@@ -11,6 +11,11 @@ from .patchworks import (
     validate_forestmodel_xml_tree,
     validate_fragments_geodataframe,
 )
+from .woodstock import (
+    DEFAULT_WOODSTOCK_OUTPUT_DIR,
+    WoodstockExportResult,
+    export_woodstock_package,
+)
 
 __all__ = [
     "DEFAULT_CC_MAX_AGE",
@@ -22,4 +27,7 @@ __all__ = [
     "export_patchworks_package",
     "validate_forestmodel_xml_tree",
     "validate_fragments_geodataframe",
+    "DEFAULT_WOODSTOCK_OUTPUT_DIR",
+    "WoodstockExportResult",
+    "export_woodstock_package",
 ]

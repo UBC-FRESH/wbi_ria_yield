@@ -17,7 +17,9 @@ from femic.fmg import (
     DEFAULT_FRAGMENTS_CRS,
     DEFAULT_HORIZON_YEARS,
     DEFAULT_START_YEAR,
+    DEFAULT_WOODSTOCK_OUTPUT_DIR,
     export_patchworks_package,
+    export_woodstock_package,
 )
 from femic.pipeline.io import (
     build_pipeline_run_config,
@@ -171,6 +173,11 @@ EXPORT_FRAGMENTS_CRS_OPTION = typer.Option(
     DEFAULT_FRAGMENTS_CRS,
     "--fragments-crs",
     help="CRS assigned to exported fragments shapefile.",
+)
+EXPORT_WOODSTOCK_OUTPUT_DIR_OPTION = typer.Option(
+    DEFAULT_WOODSTOCK_OUTPUT_DIR,
+    "--output-dir",
+    help="Output directory for Woodstock compatibility CSV files.",
 )
 VDYP_CURVE_LOG_OPTION = typer.Option(
     Path("vdyp_io/logs/vdyp_curve_events.jsonl"),
@@ -627,6 +634,45 @@ def export_patchworks(
     )
     console.print(f"forestmodel_xml: {result.forestmodel_xml_path}")
     console.print(f"fragments_shp: {result.fragments_shapefile_path}")
+
+
+@export_app.command("woodstock")
+def export_woodstock(
+    tsa: list[str] | None = TSA_OPTION,
+    bundle_dir: Path = EXPORT_BUNDLE_DIR_OPTION,
+    checkpoint: Path = EXPORT_CHECKPOINT_OPTION,
+    output_dir: Path = EXPORT_WOODSTOCK_OUTPUT_DIR_OPTION,
+    fragments_crs: str = EXPORT_FRAGMENTS_CRS_OPTION,
+) -> None:
+    targets = (
+        [str(v).zfill(2) if str(v).isdigit() else str(v).lower() for v in tsa]
+        if tsa
+        else []
+    )
+    if not targets:
+        console.print(
+            "[red]Provide at least one TSA via --tsa for woodstock export.[/red]"
+        )
+        raise typer.Exit(code=1)
+    try:
+        result = export_woodstock_package(
+            bundle_dir=bundle_dir,
+            checkpoint_path=checkpoint,
+            output_dir=output_dir,
+            tsa_list=targets,
+            fragments_crs=fragments_crs,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]Woodstock export failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        "[green]woodstock export completed[/green] "
+        f"tsa={result.tsa_list} yield_rows={result.yield_rows} "
+        f"area_rows={result.area_rows}"
+    )
+    console.print(f"yields_csv: {result.yields_csv_path}")
+    console.print(f"areas_csv: {result.areas_csv_path}")
 
 
 app.add_typer(prep_app, name="prep")

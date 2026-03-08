@@ -335,3 +335,61 @@ def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> No
     assert called["tsa_list"] == ["k3z"]
     assert called["cc_max_age"] == 500
     assert any("patchworks export completed" in msg for msg in messages)
+
+
+def test_export_woodstock_requires_tsa(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.export_woodstock(tsa=None)
+
+    assert exc_info.value.exit_code == 1
+    assert any("Provide at least one TSA" in msg for msg in messages)
+
+
+def test_export_woodstock_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    called: dict[str, object] = {}
+
+    def _fake_export_woodstock_package(
+        *,
+        bundle_dir,
+        checkpoint_path,
+        output_dir,
+        tsa_list,
+        fragments_crs,
+    ):
+        called.update(
+            {
+                "bundle_dir": bundle_dir,
+                "checkpoint_path": checkpoint_path,
+                "output_dir": output_dir,
+                "tsa_list": tsa_list,
+                "fragments_crs": fragments_crs,
+            }
+        )
+        return SimpleNamespace(
+            yields_csv_path=Path("output/woodstock/woodstock_yields.csv"),
+            areas_csv_path=Path("output/woodstock/woodstock_areas.csv"),
+            tsa_list=tsa_list,
+            yield_rows=1234,
+            area_rows=567,
+        )
+
+    monkeypatch.setattr(
+        cli_main, "export_woodstock_package", _fake_export_woodstock_package
+    )
+
+    cli_main.export_woodstock(
+        tsa=["k3z"],
+        bundle_dir=Path("data/model_input_bundle"),
+        checkpoint=Path("data/ria_vri_vclr1p_checkpoint7.feather"),
+        output_dir=Path("output/woodstock"),
+        fragments_crs="EPSG:3005",
+    )
+
+    assert called["tsa_list"] == ["k3z"]
+    assert called["fragments_crs"] == "EPSG:3005"
+    assert any("woodstock export completed" in msg for msg in messages)
