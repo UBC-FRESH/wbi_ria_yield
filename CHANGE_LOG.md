@@ -1832,3 +1832,193 @@
 - Verified regenerated `data/02_input-tsak3z.dat` now carries the new rule
   outputs (8 AUs, `Density=900`, `Regen_Delay=2`, mixed species such as
   `CW60/HW25/YC15`, `HW70/CW20/FD10`, `FD60/HW25/CW15`).
+- Added `planning/CFAK3Z_dataset_compile_plan.md` by cloning the TSA29 planning
+  structure and adapting it to K3Z-specific compile constraints, including fixed
+  BatchTIPSY field-map handling and small-area stratification caveats.
+- Recorded next K3Z refinement experiments in the new plan:
+  BEC subzone/variant/phase stratification and top-N leading-species combination
+  stratification (N=2 first, then N=3 trial).
+- Verified local VRI schema support for these experiments from
+  `data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb`:
+  `BEC_ZONE_CODE`, `BEC_SUBZONE`, `BEC_VARIANT`, `BEC_PHASE`,
+  `SITE_INDEX`, `EST_SITE_INDEX*`, `SPECIES_CD_1..6`, `SPECIES_PCT_1..6`.
+- Verified `data/bc/vri/VEG_COMP_LYR_R1_POLY_2024.gdb.zip` is currently corrupt/
+  incomplete (`End-of-central-directory signature not found`) and cannot be
+  unzipped yet.
+- Implemented configurable stratum-key controls in the run-profile pipeline and
+  wired them end-to-end into legacy 00-data-prep execution:
+  - `selection.stratification.bec_grouping` (`zone|subzone|variant|phase`)
+  - `selection.stratification.species_combo_count` (top-N by `SPECIES_PCT_1..6`)
+  - `selection.stratification.include_tm_species2_for_single`
+  These now flow through `src/femic/pipeline/io.py` -> CLI effective options ->
+  legacy env (`FEMIC_STRAT_*`) -> `00_data-prep.py`.
+- Refactored `src/femic/pipeline/vri.py` stratum builders to support:
+  - BEC grouping levels beyond zone (`subzone`, `variant`, `phase`)
+  - Species-combination keys using ranked top-N species shares
+  while preserving legacy default behavior for existing TSA runs.
+- Updated K3Z profile defaults in `config/run_profile.k3z.yaml` to start from
+  finer stratification (`bec_grouping: subzone`, `species_combo_count: 2`) and
+  documented new options in `config/run_profile.example.yaml`.
+- Updated K3Z planning doc (`planning/CFAK3Z_dataset_compile_plan.md`) with the
+  new stratification controls and expected console confirmation output.
+- Added/updated regression coverage for new stratification plumbing and behavior:
+  `tests/test_vri.py` and `tests/test_pipeline_helpers.py`.
+- Validation run status:
+  - `.venv/bin/ruff check src tests` passed
+  - `.venv/bin/mypy src` passed
+  - `.venv/bin/pytest` passed (`312 passed`)
+  - `.venv/bin/pre-commit run --all-files` passed
+- Switched legacy VRI source auto-resolution to prefer 2024 VRI datasets when available,
+  with 2019 fallback preserved for compatibility:
+  `bc/vri/2024/VEG_COMP_LYR_R1_POLY_2024.gdb` before
+  `bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb`.
+  Implemented in `src/femic/pipeline/io.py::resolve_legacy_external_data_paths(...)`.
+- Added startup visibility in `00_data-prep.py` to print the resolved VRI path and TSA
+  boundaries path at run start, so active data-source selection is explicit.
+- Added regression coverage:
+  `tests/test_pipeline_helpers.py::test_resolve_legacy_external_data_paths_prefers_2024_vri_when_available`.
+- Validation run status:
+  - `.venv/bin/ruff format src tests 00_data-prep.py` passed
+  - `.venv/bin/ruff check src tests` passed
+  - `.venv/bin/mypy src` passed
+  - `.venv/bin/pytest` passed (`313 passed`)
+  - `.venv/bin/pre-commit run --all-files` passed
+- Extended external source resolution so VRI and VDYP input layers are selected together
+  from the same preferred vintage (2024 first, then 2019 fallback):
+  - VRI candidates: `bc/vri/2024/VEG_COMP_LYR_R1_POLY_2024.gdb`,
+    `bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb`
+  - VDYP input candidates:
+    `bc/vri/2024/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb`,
+    `bc/vri/2019/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb`,
+    `VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb`
+  Implemented in `src/femic/pipeline/io.py::resolve_legacy_external_data_paths(...)`.
+- Updated `00_data-prep.py` to consume the resolved external VDYP input path and print all
+  active source paths at runtime:
+  - `using VRI source: ...`
+  - `using TSA boundaries source: ...`
+  - `using VDYP input source: ...`
+- Added regression assertions in `tests/test_pipeline_helpers.py` for the new
+  `vdyp_input_pandl_path` resolution behavior (including 2024-preferred selection).
+- Added a non-fatal guard in `00_data-prep.py` for empty AU-table outcomes after 01b/bundle
+  assembly so no-cache exploratory runs can complete and preserve diagnostics even when
+  no TIPSY-compatible AU mapping exists.
+- Executed fresh 2024 K3Z runs (`k3z_vri2024_refresh2_20260307`,
+  `k3z_vri2024_zone1_fixvdyp_20260307`) and confirmed 2024 sources were selected; however,
+  VDYP run logs show `empty_output` across bootstrap events, yielding empty smoothed curves
+  and an empty `data/02_input-tsak3z.dat` (next debugging target: 2024 VDYP input prep/schema alignment).
+- Completed 2024 VDYP ID-domain fix for K3Z:
+  in `run_vdyp_for_stratum(...)` (`src/femic/pipeline/vdyp_stage.py`), bootstrap dispatch now
+  resolves sampled source `FEATURE_ID`s to the VDYP table key space using `MAP_ID` when direct
+  `FEATURE_ID` overlap is absent, then maps returned VDYP outputs back to source IDs for cache
+  compatibility.
+- Added regression coverage for the map-join fallback:
+  `tests/test_vdyp_stage.py::test_run_vdyp_for_stratum_maps_source_feature_ids_via_map_id`
+  asserts that non-overlapping source IDs are bridged through `MAP_ID` and still return results
+  keyed by original source `FEATURE_ID`.
+- Re-ran full no-cache K3Z pipeline against 2024 VRI+VDYP inputs:
+  `FEMIC_NO_CACHE=1 PYTHONPATH=src .venv/bin/python -u -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_vri2024_mapfix_20260307`.
+  Run completed `status=ok` with non-empty outputs (`data/vdyp_curves_smooth-tsak3z.feather`
+  rows `= 3588`, `data/02_input-tsak3z.dat` lines `= 13`) and VDYP report showing no empty-output
+  failures (`status counts: dispatch=12, start=12, ok=12`).
+- Consulted local VRI metadata PDFs in `docs/reference` while debugging
+  (`vegcomp_poly_rank1_data_dictionaryv5_2019*.pdf`,
+  `vegcomp_toc_data_dictionaryv5_2019.pdf`); practical takeaway for this run path remains:
+  `MAP_ID` is the reliable bridge field across 2024 VRI rank1 samples and 2024 VDYP input layers
+  when `FEATURE_ID` domains diverge.
+- Added profile/env support for cumulative top-strata selection by area coverage:
+  new config key `selection.stratification.top_area_coverage` (wired through CLI/profile/env as
+  `FEMIC_STRAT_TOP_AREA_COVERAGE`) and 01a runtime (`target_area_coverage`) now drive
+  `build_strata_summary(..., target_coverage=...)`.
+- Updated K3Z profile to `top_area_coverage: 0.95` in
+  `config/run_profile.k3z.yaml`.
+- Re-ran K3Z no-cache with 95% top-area cutoff:
+  `FEMIC_NO_CACHE=1 PYTHONPATH=src .venv/bin/python -u -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_cov95_20260307`.
+  01a now selects `13` strata at cumulative coverage `0.95565930139286`.
+- BEC hierarchy check for selected K3Z strata:
+  all selected strata remain identical at zone+subzone (`CWHvm`), and also at
+  zone+subzone+variant (`CWHvm1`) with phase null throughout; deeper BEC hierarchy
+  does not add partition signal for this case.
+- SI split diagnostics on the 95% run show frequent sparse SI bins in tail strata
+  (many `L/M/H` bins with 0-2 stands), with corresponding VDYP `skipped`/`empty_output`
+  events; this supports collapsing SI splits for sparse K3Z strata in the next tuning step.
+- Implemented requested K3Z stratification reset: lowered `top_area_coverage` to `0.80`, removed adaptive SI-width split overrides, and restored fixed SI quantile bins (`L=5..35`, `M=35..65`, `H=65..95`).
+- Added post-fit adjacent SI-curve merge behavior in TIPSY AU assembly (`src/femic/pipeline/tipsy.py`), including per-stratum merge diagnostics (`si-groups`) and shared-AU mapping for merged SI levels.
+- Fixed merged-AU downstream bundle failure by making `assign_curve_ids_from_au_table(...)` robust to duplicate `au_id` rows (select first non-null managed/unmanaged curve IDs before managed/unmanaged assignment).
+- Hardened stand export for merged AUs by resolving duplicate-`au_id` lookups in `prepare_stands_export_frame(...)` to a stable `canfi_species` scalar.
+- Added regression tests:
+  - `tests/test_bundle.py::test_assign_curve_ids_from_au_table_handles_duplicate_au_rows`
+  - `tests/test_stands.py::test_prepare_stands_export_frame_handles_duplicate_au_rows`
+- Re-ran K3Z end-to-end with no-cache and requested settings:
+  `FEMIC_NO_CACHE=1 PYTHONPATH=src .venv/bin/python -u -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_cov80_fixedsi_merge_debug2_20260307`.
+  Run completed successfully (`status=ok`, manifest: `vdyp_io/logs/run_manifest-k3z_cov80_fixedsi_merge_debug2_20260307.json`).
+- Implemented pre-fit SI-bin stabilization in `src/femic/pipeline/vdyp_stage.py::fit_stratum_curves(...)`:
+  added `min_stands_per_si_bin` (default `25`) and automatic adjacent-bin collapse before NLLS;
+  collapse actions are logged per stratum.
+- Updated SI-level AU merge behavior in `src/femic/pipeline/tipsy.py::build_tipsy_params_for_tsa(...)`:
+  merges now require both bounded max-relative-gap and bounded age-window NRMSE
+  (plus existing common-age checks), with per-pair `gap/rmse/nrmse` diagnostics.
+- Added deterministic weak-species override hooks for config-driven TIPSY:
+  `species_code_overrides` and `siteprod_si_fallback_by_species` are now supported in
+  `src/femic/pipeline/tipsy_config.py` and used during candidate evaluation/assignment.
+- Updated `config/tipsy/tsa29.yaml` and `config/tipsy/tsak3z.yaml` with explicit
+  `species_code_overrides` (`SX->SW`, `DR->FD`) plus `siteprod_si_fallback_by_species`.
+- Added requested L/M/H comparison diagnostics: `execute_curve_smoothing_runs(...)` now emits
+  per-stratum overlays (`plots/vdyp_lmh_tsa*-*.png`) showing L/M/H best-fit VDYP curves on one plot.
+- Wired site productivity source resolution to prefer the fresh dataset path
+  `data/bc/siteprod/Site_Prod_BC.gdb` (with fallback), and surfaced the active siteprod path
+  in startup logging.
+- Re-ran full no-cache K3Z compile against 2024 VRI/VDYP + fresh siteprod source:
+  `FEMIC_NO_CACHE=1 PYTHONPATH=src .venv/bin/python -u -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_siteprod_refresh_20260307`
+  completed `status=ok` and regenerated current K3Z fitdiag/TIPSY comparison artifacts.
+- Isolated the K3Z two-pass SI rebin failure to pipeline regressions (not a BC schema change):
+  stale TSA-specific VDYP feathers were being reused under no-cache runs and output remap
+  did not robustly handle table-number keyed VDYP outputs with extra tables.
+- Fixed `load_vdyp_input_tables(...)` precedence to prefer explicit `source_feature_ids`
+  when both feature IDs and map IDs are provided, with map-id fallback only if feature-id
+  lookup returns empty.
+- Updated 01a VDYP-table load behavior to force source reads whenever
+  `runtime_config.force_run_vdyp` is true, preventing stale TSA-scoped VDYP caches from
+  contaminating no-cache debug runs.
+- Hardened `run_vdyp_for_stratum(...)` remap logic to use VDYP output table attrs
+  (`vdyp_map_name` + `vdyp_polygon_id`) back to resolved feature IDs before key/order fallbacks.
+- Updated `import_vdyp_tables(...)` to key outputs by `Table Number` (preserving map/polygon attrs)
+  to avoid polygon-key collisions/overwrites in mixed-map batches.
+- Added regression tests for:
+  - feature-id loader precedence when both feature IDs and map IDs are supplied
+  - table-number output remap via VDYP table attrs
+  - map-id and map+polygon remap paths
+- Revalidated no-cache K3Z two-pass run:
+  `FEMIC_NO_CACHE=1 PYTHONPATH=src .venv/bin/python -u -m femic run --run-config config/run_profile.k3z.yaml -v --run-id k3z_twopass_fix5_20260307`
+  now reports `two-pass SI rebin: mapped VDYP SI for 194/251 rows` and completes downstream
+  TIPSY/bundle stages (previously `0/251` with empty downstream outputs).
+- 2026-03-08: Added configurable SI-bin collapse threshold for 01a fitting (`modes.vdyp_min_stands_per_si_bin` -> `FEMIC_VDYP_MIN_STANDS_PER_SI_BIN` -> runtime `min_stands_per_si_bin`).
+- 2026-03-08: Updated `config/run_profile.k3z.yaml` for requested test settings (`top_area_coverage: 0.90`, `vdyp_min_stands_per_si_bin: 10`).
+- 2026-03-08: Re-ran no-cache K3Z with requested settings; 01a selected 9 strata at 90.655% coverage, AU bundle contains 27 AUs, and SS remains represented (`CWHvm_HW+SS`).
+- 2026-03-08: Ran comparison compile with `species_combo_count: 3`; 01a selected 25 strata at 90.153% coverage and downstream AU bundle expanded to 66 AUs (22 strata x 3 SI levels), indicating substantially higher fragmentation than combo=2.
+- 2026-03-08: Added run-profile docs for `vdyp_min_stands_per_si_bin` in `config/run_profile.example.yaml` and `docs/reference/run-config.rst`.
+- 2026-03-08: Added species-proportion curve export to post-TIPSY bundle assembly. For each AU, bundle `curve_table.csv` and `curve_points_table.csv` now include `unmanaged_species_prop_<SPP>` and `managed_species_prop_<SPP>` curves (single-point `x=1`, `y=proportion`) when inventory species-universe scanning is available.
+- 2026-03-08: Implemented TSA-scoped inventory pre-scan of top-6 VRI species from `data/ria_vri_vclr1p_checkpoint8.feather` (`SPECIES_CD_1..6` + positive `SPECIES_PCT_*`) so each AU receives a full, consistent species curve set (zero for absent species).
+- 2026-03-08: Wired unmanaged species proportions from VDYP fit payload species shares and managed species proportions from `tipsy_sppcomp_tsa<tsa>.csv`.
+- 2026-03-08: Added regression test `tests/test_bundle.py::test_build_bundle_tables_from_curves_adds_species_proportion_curves` and updated README notes for the new bundle behavior.
+- 2026-03-08: Hardened TIPSY DAT export to a truly fixed schema in `src/femic/pipeline/tipsy.py`.
+  - Switched DAT writing to explicit start-position rendering (header + row), instead of `pandas.to_string` heuristics.
+  - Enforced full 32-column schema on every DAT row, including blank columns, so sparse K3Z rows do not collapse/shift downstream fields.
+  - Kept line lengths fixed and removed variable trailing-trim behavior.
+  - Updated/added tests in `tests/test_tipsy.py` for stable header-start expectations.
+- 2026-03-08: Regenerated `data/02_input-tsak3z.dat` from `data/tipsy_params_tsak3z.xlsx` with the fixed writer. Verified row-field slices preserve intended values (for example `PCT_1=70`, `SI=23.9`, `SPP_2=CW`, `PCT_2=20`, `SPP_3=FD`, `PCT_3=10`) instead of prior concatenation.
+- 2026-03-08: Rebased TIPSY DAT writer field ranges to the exact BatchTIPSY GUI indices from user screenshots (instead of inferred spacing), eliminating merged-token failures like `900P`/`0.95I`.
+- 2026-03-08: Added anti-regression hardening for TIPSY DAT generation.
+  - Canonicalized all DAT field positions as one 1-based BatchTIPSY schema constant copied from the GUI index spec.
+  - Added strict row validation (`_validate_tipsy_dat_row`) to fail on width overflow or slice mismatch before file write.
+  - Added regression test `test_write_tipsy_input_exports_fails_fast_on_width_overflow`.
+  - Regenerated `data/02_input-tsak3z.dat` via the hardened writer.
+- 2026-03-08: Cleared stale plot artifacts (`plots/*`) and executed a full fresh no-cache K3Z run from top of pipeline with current `config/run_profile.k3z.yaml` parameters (`run_id=k3z_fresh_20260308_032428`).
+- 2026-03-08: Run completed successfully and regenerated 52 K3Z plot artifacts (strata, VDYP fitdiag, L/M/H overlays, and TIPSY-vs-VDYP AU plots), with manifest at `vdyp_io/logs/run_manifest-k3z_fresh_20260308_032428.json`.
+- 2026-03-08: Implemented synthetic managed-yield fallback mode for unstable TIPSY cases.
+  - New run-profile modes: `managed_curve_mode` (`tipsy|vdyp_transform`), `managed_curve_x_scale`, `managed_curve_y_scale`, `managed_curve_truncate_at_culm`, `managed_curve_max_age`.
+  - New helper module `src/femic/pipeline/managed_curves.py` for AU-wise VDYP->managed curve synthesis.
+  - Updated `01b_run-tsa.py` to apply `vdyp_transform` mode and overwrite managed yield outputs (`tipsy_curves_tsa*.csv`) with transformed curves.
+  - Added regression coverage in `tests/test_managed_curves.py` and run-profile parsing/env propagation coverage in `tests/test_pipeline_helpers.py`.
+  - Updated `config/run_profile.k3z.yaml` to use `vdyp_transform` with `x=0.8`, `y=1.2`, truncated post-culmination tail.
+- 2026-03-08: Cleared old plot artifacts and ran a full no-cache K3Z compile with synthetic managed curves (`run_id=k3z_vdyp_managed_20260308_1`), regenerating fresh K3Z strata/fitdiag/LMH/TIPSY-vs-VDYP plots and model-input bundle tables.
+- 2026-03-08: Extended `ROADMAP.md` with a new `Phase 4` for `femic.fmg` delivery, including tracked subtasks for proprietary Patchworks guide handling, Python 3 port of legacy fmg core, Patchworks ForestModel XML generation, fragments shapefile generation from BC VRI, Woodstock carry-over, and end-to-end validation.
