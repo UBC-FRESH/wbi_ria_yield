@@ -2075,3 +2075,21 @@
 - Updated docs:
   - `README.md` quickstart snippet for Woodstock compatibility export
   - `docs/reference/cli.rst` export command reference updates
+
+## 2026-03-08 - Shared FMG core/adapters refactor (P4.2a foundation, P4.3 consolidation)
+- Added shared core dataclasses in `src/femic/fmg/core.py`:
+  `CurvePoint`, `CurveDefinition`, `AnalysisUnitDefinition`, `BundleModelContext`.
+- Added shared bundle adapters in `src/femic/fmg/adapters.py`:
+  - `normalize_tsa_code(...)`
+  - `build_bundle_model_context_from_tables(...)`
+  - `build_bundle_model_context(...)`
+- Refactored Patchworks export (`src/femic/fmg/patchworks.py`) to consume
+  shared `BundleModelContext` for AU/curve/species maps and retained prior
+  user-facing counts (`curve_count` now sourced from original curve-table row count in context).
+- Refactored Woodstock export (`src/femic/fmg/woodstock.py`) to consume
+  shared `BundleModelContext` instead of local AU/curve parsing.
+- Added adapter regression coverage in `tests/test_fmg_adapters.py`.
+- Revalidated exporter flows after refactor:
+  - Patchworks `k3z`: `au=14`, `fragments=218`, `curves=54`
+  - Woodstock `k3z`: `yield_rows=16162`, `area_rows=218`
+  - Woodstock `tsa29` (validation bundle/checkpoint): `yield_rows=10050`, `area_rows=147959`

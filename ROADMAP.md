@@ -59,7 +59,7 @@
   - [x] P3.5b Add a quickstart for running end-to-end
 
 ## Phase 4: Patchworks + Woodstock Export (femic.fmg)
-- [ ] P4.1 Patchworks requirements + source governance
+- [x] P4.1 Patchworks requirements + source governance
   - [x] P4.1a Parse Patchworks user guide into a concrete implementation checklist
   - [x] P4.1b Add gitignore rules for proprietary reference PDFs (do not republish)
   - [x] P4.1c Document required ForestModel XML elements and fragments schema fields
@@ -67,19 +67,19 @@
   - [ ] P4.2a Port core model classes (`Curve`, `Treatment`, `ForestModel`, related XML nodes)
   - [ ] P4.2b Preserve deterministic XML serialization behavior with fixture-based parity tests
   - [x] P4.2c Port Woodstock import/export helpers as a compatibility module
-- [ ] P4.3 Build femic-to-fmg adapters from current pipeline outputs
+- [x] P4.3 Build femic-to-fmg adapters from current pipeline outputs
   - [x] P4.3a Map `curve_table`/`curve_points_table` into fmg curve objects
   - [x] P4.3b Map AU-to-stand assignments into feature/treatment strata bindings
   - [x] P4.3c Auto-create baseline CC treatment and default post-treatment transitions
-- [ ] P4.4 Generate Patchworks ForestModel XML
+- [x] P4.4 Generate Patchworks ForestModel XML
   - [x] P4.4a Add a writer stage that emits valid ForestModel XML for a compiled run
   - [x] P4.4b Add schema/structure validation checks and fail-fast diagnostics
   - [x] P4.4c Add CLI entrypoint(s) for export (`femic export patchworks ...`)
-- [ ] P4.5 Generate Patchworks fragments shapefile from BC VRI
+- [x] P4.5 Generate Patchworks fragments shapefile from BC VRI
   - [x] P4.5a Define canonical fragments field map (IDs/themes/area/treatment linkage)
   - [x] P4.5b Build shapefile writer with robust CRS/field-type/width handling
   - [x] P4.5c Join model themes/curve assignment attributes to stand geometries
-- [ ] P4.6 End-to-end validation and handoff
+- [x] P4.6 End-to-end validation and handoff
   - [x] P4.6a Validate patchworks package build on TSA29 and CFA K3Z test cases
   - [x] P4.6b Add regression tests for XML + fragments outputs
   - [x] P4.6c Update docs with a Patchworks-first workflow (Woodstock noted as secondary)
@@ -2180,6 +2180,16 @@
   `src/femic/fmg/woodstock.py` with `export_woodstock_package(...)`
   (CSV outputs from current FEMIC bundle/checkpoint artifacts), wired to
   CLI as `femic export woodstock`.
+- 2026-03-08: Added shared FMG core dataclasses in `src/femic/fmg/core.py`
+  (`CurvePoint`, `CurveDefinition`, `AnalysisUnitDefinition`, `BundleModelContext`)
+  and bundle adapters in `src/femic/fmg/adapters.py` so Patchworks/Woodstock exporters
+  consume one normalized AU/curve context instead of duplicating parsing logic.
+- 2026-03-08: Refactored `src/femic/fmg/patchworks.py` and
+  `src/femic/fmg/woodstock.py` to use shared adapters/context; revalidated exports:
+  - Patchworks `k3z` (`au=14`, `fragments=218`, `curves=54`)
+  - Woodstock `k3z` (`yield_rows=16162`, `area_rows=218`)
+  - Woodstock `tsa29` from reconstructed validation bundle/checkpoint
+    (`yield_rows=10050`, `area_rows=147959`).
 - 2026-03-08 next queue: wire a dedicated fmg adapter layer around shared
-  curve/treatment classes (`P4.2a`, `P4.3` refactor), then add XML parity checks
-  against legacy fixtures (`P4.2b`).
+  curve/treatment classes (`P4.2a`) and extend the current core model to include
+  treatment/transition definitions, then add XML parity checks against legacy fixtures (`P4.2b`).
