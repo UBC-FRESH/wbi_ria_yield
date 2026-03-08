@@ -123,7 +123,31 @@
   - [x] P5.7b Validate direct URLs for all guide pages in deployed docs
   - [x] P5.7c Confirm docs workflow behavior for push/manual dispatch expectations
 
+## Phase 6: Deployment Readiness and Case Onboarding
+- [x] P6.1 Add reusable case onboarding template set
+  - [x] P6.1a Add run-profile onboarding template for TSA and custom-boundary modes
+  - [x] P6.1b Add TIPSY rule starter template for new case config files
+  - [x] P6.1c Publish required-input and acceptance checklist in Guides
+- [ ] P6.2 Add one-command case preflight validation
+  - [ ] P6.2a Validate required paths/configs before long compile runs
+  - [ ] P6.2b Emit clear remediation messages for missing prerequisites
+  - [ ] P6.2c Add regression tests for success/failure preflight scenarios
+- [ ] P6.3 Add student-facing release packaging workflow
+  - [ ] P6.3a Emit versioned output bundle for training deployments
+  - [ ] P6.3b Add concise handoff notes with commands and QA expectations
+  - [ ] P6.3c Add acceptance checks for package completeness
+- [ ] P6.4 Add onboarding regression scenario tests
+  - [ ] P6.4a Add smoke case for new-case template instantiation
+  - [ ] P6.4b Validate template-driven run/profile compatibility
+  - [ ] P6.4c Add docs checks ensuring onboarding guide + templates remain linked
+
 ## Detailed Next Steps Notes
+- Phase 6 kickoff complete: added reusable onboarding assets for new cases:
+  `config/run_profile.case_template.yaml`, `config/tipsy/template.case.yaml`,
+  and `docs/guides/case-onboarding.rst`.
+- Guides navigation now includes a dedicated onboarding page so new-case setup
+  is discoverable in published docs.
+- Next queued work starts at `P6.2` (single-command case preflight validation).
 - Phase 5 docs recovery milestone completed locally: added a new Guides section
   (`docs/guides/*`), a notebook-to-guides coverage matrix
   (`docs/guides/legacy_notebook_coverage.csv`), and a legacy traceability page

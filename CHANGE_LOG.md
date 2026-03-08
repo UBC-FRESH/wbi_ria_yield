@@ -2329,3 +2329,17 @@
 - Updated docs workflow deploy condition in `.github/workflows/docs-pages.yml`
   so deploy runs for both `push` and manual `workflow_dispatch` on `main`
   (while still excluding pull-request events).
+
+## 2026-03-08 - Phase 6 kickoff: case onboarding templates and guide
+- Started `Phase 6: Deployment Readiness and Case Onboarding` in `ROADMAP.md`
+  and marked `P6.1` complete.
+- Added reusable case onboarding templates:
+  - `config/run_profile.case_template.yaml` (TSA + custom-boundary profile scaffold)
+  - `config/tipsy/template.case.yaml` (new-case TIPSY config starter)
+- Added onboarding guide page:
+  - `docs/guides/case-onboarding.rst`
+  including required-input and acceptance checklists.
+- Wired onboarding page into guides navigation (`docs/guides/index.rst`) and
+  linked onboarding assets from `README.md`.
+- Extended docs contract checks in `tests/test_docs_contract.py` to assert
+  onboarding templates exist and remain part of maintained docs structure.
