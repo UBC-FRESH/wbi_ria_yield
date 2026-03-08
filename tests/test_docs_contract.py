@@ -95,6 +95,10 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
     checks: list[tuple[list[str], list[str]]] = [
         (["run", "--help"], ["--run-config", "--run-id", "--log-dir", "--debug-rows"]),
         (
+            ["prep", "validate-case", "--help"],
+            ["--run-config", "--tipsy-config-dir", "--strict-warnings"],
+        ),
+        (
             ["vdyp", "report", "--help"],
             [
                 "--max-curve-warnings",

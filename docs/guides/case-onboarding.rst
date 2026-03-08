@@ -44,7 +44,13 @@ Onboarding Workflow
 
       PYTHONPATH=src python -m femic tipsy validate --config-dir config/tipsy --tsa <code>
 
-6. Dry-run and compile:
+6. Run single-command case preflight:
+
+   .. code-block:: bash
+
+      PYTHONPATH=src python -m femic prep validate-case --run-config config/run_profile.<case>.yaml
+
+7. Dry-run and compile:
 
    .. code-block:: bash
 

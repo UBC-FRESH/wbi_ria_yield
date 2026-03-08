@@ -54,6 +54,7 @@ Prep
 Subcommands
 
 - ``run``: ``python -m femic prep run [OPTIONS]``
+- ``validate-case``: ``python -m femic prep validate-case [OPTIONS]``
 
 ``prep run`` options
 
@@ -63,6 +64,12 @@ Subcommands
 - ``--resume``
 - ``--dry-run``
 - ``--verbose`` / ``-v``
+
+``prep validate-case`` options
+
+- ``--run-config PATH`` (default: ``config/run_profile.case_template.yaml``)
+- ``--tipsy-config-dir PATH`` (default: ``config/tipsy``)
+- ``--strict-warnings``
 
 VDYP
 ----

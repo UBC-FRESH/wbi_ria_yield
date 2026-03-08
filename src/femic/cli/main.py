@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import shutil
 
@@ -26,6 +27,7 @@ from femic.pipeline.io import (
     build_pipeline_run_config,
     file_sha256,
     load_pipeline_run_profile,
+    resolve_legacy_external_data_paths,
     resolve_effective_run_options,
 )
 from femic.pipeline.tipsy_config import (
@@ -134,6 +136,21 @@ RUN_CONFIG_OPTION = typer.Option(
     "--run-config",
     help="YAML/JSON run profile used to seed TSA/strata and mode defaults.",
     show_default=False,
+)
+CASE_RUN_CONFIG_OPTION = typer.Option(
+    Path("config/run_profile.case_template.yaml"),
+    "--run-config",
+    help="YAML/JSON run profile for case preflight validation.",
+)
+CASE_TIPSY_CONFIG_DIR_OPTION = typer.Option(
+    Path("config/tipsy"),
+    "--tipsy-config-dir",
+    help="Directory containing case TIPSY config files (tsaXX.yaml / tsak3z.yaml).",
+)
+CASE_STRICT_WARNINGS_OPTION = typer.Option(
+    False,
+    "--strict-warnings",
+    help="Fail preflight when warnings are present.",
 )
 EXPORT_BUNDLE_DIR_OPTION = typer.Option(
     Path("data/model_input_bundle"),
@@ -329,6 +346,11 @@ def _emit_stub(name: str) -> None:
     raise typer.Exit(code=1)
 
 
+def _normalize_case_code(value: str) -> str:
+    code = str(value).strip()
+    return code.zfill(2) if code.isdigit() else code.lower()
+
+
 @app.callback()
 def main(
     version: bool = VERSION_OPTION,
@@ -445,6 +467,127 @@ def prep_run(
 ) -> None:
     _ = (data_root, output_root, tsa, resume, dry_run, verbose)
     _emit_stub("femic prep run")
+
+
+@prep_app.command("validate-case")
+def prep_validate_case(
+    run_config: Path = CASE_RUN_CONFIG_OPTION,
+    tipsy_config_dir: Path = CASE_TIPSY_CONFIG_DIR_OPTION,
+    strict_warnings: bool = CASE_STRICT_WARNINGS_OPTION,
+) -> None:
+    try:
+        profile = load_pipeline_run_profile(run_config)
+    except (
+        FileNotFoundError,
+        ValueError,
+        json.JSONDecodeError,
+        yaml.YAMLError,
+    ) as exc:
+        console.print(f"[red]Invalid run config:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    effective = resolve_effective_run_options(
+        tsa_list=None,
+        resume=False,
+        dry_run=False,
+        verbose=False,
+        skip_checks=False,
+        debug_rows=None,
+        run_id=None,
+        log_dir=Path("vdyp_io/logs"),
+        profile=profile,
+    )
+
+    _preflight_checks(resume=effective.resume)
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    case_codes: set[str] = set()
+
+    if profile.boundary_path is None and not profile.tsa_list:
+        errors.append(
+            "Run profile must set either selection.tsa or "
+            "selection.boundary_path + selection.boundary_code."
+        )
+
+    if profile.boundary_path is not None:
+        boundary_path = Path(profile.boundary_path)
+        if not boundary_path.exists():
+            errors.append(
+                f"Boundary path does not exist: {boundary_path} "
+                "(set selection.boundary_path to an existing geometry file)."
+            )
+        if not profile.boundary_code:
+            errors.append(
+                "selection.boundary_code is required when selection.boundary_path is set."
+            )
+        else:
+            case_codes.add(_normalize_case_code(profile.boundary_code))
+
+    if profile.tsa_list:
+        case_codes.update(_normalize_case_code(code) for code in profile.tsa_list)
+
+    for code in sorted(case_codes):
+        try:
+            cfg = load_tipsy_tsa_config(tsa_code=code, config_dir=tipsy_config_dir)
+        except ValueError as exc:
+            errors.append(f"Invalid TIPSY config for {code}: {exc}")
+            continue
+        if cfg is None:
+            expected_yaml = tipsy_config_dir / f"tsa{code}.yaml"
+            expected_yml = tipsy_config_dir / f"tsa{code}.yml"
+            errors.append(
+                f"Missing TIPSY config for {code} in {tipsy_config_dir} "
+                f"(expected {expected_yaml.name} or {expected_yml.name})."
+            )
+
+    repo_root = Path(__file__).resolve().parents[3]
+    external_paths = resolve_legacy_external_data_paths(
+        repo_root=repo_root,
+        env_override=os.environ.get("FEMIC_EXTERNAL_DATA_ROOT"),
+    )
+    required_external_paths = {
+        "VRI source": external_paths.vri_vclr1p_path,
+        "VDYP polygon/layer source": external_paths.vdyp_input_pandl_path,
+        "TSA boundaries source": external_paths.tsa_boundaries_path,
+        "Site productivity source": external_paths.site_prod_bc_gdb_path,
+    }
+    for label, path in required_external_paths.items():
+        if not path.exists():
+            errors.append(
+                f"Missing {label}: {path} "
+                "(set FEMIC_EXTERNAL_DATA_ROOT or restore expected dataset path)."
+            )
+
+    if not tipsy_config_dir.exists():
+        errors.append(
+            f"TIPSY config directory does not exist: {tipsy_config_dir} "
+            "(create directory and add tsa*.yaml case configs)."
+        )
+
+    if not effective.log_dir.exists():
+        warnings.append(
+            f"Log directory does not exist yet: {effective.log_dir} "
+            "(it will be created during run execution)."
+        )
+
+    for message in warnings:
+        console.print(f"[yellow]Warning:[/yellow] {message}")
+
+    if errors or (strict_warnings and warnings):
+        for message in errors:
+            console.print(f"[red]Error:[/red] {message}")
+        if strict_warnings and warnings:
+            console.print(
+                "[red]Error:[/red] strict warning mode enabled and warnings were found."
+            )
+        raise typer.Exit(code=1)
+
+    targets = ", ".join(sorted(case_codes)) if case_codes else "<none>"
+    console.print(
+        f"[green]Case preflight passed[/green] run_config={run_config} "
+        f"targets=[{targets}] tipsy_config_dir={tipsy_config_dir}"
+    )
 
 
 @vdyp_app.command("run")

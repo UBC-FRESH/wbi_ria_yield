@@ -123,6 +123,12 @@ Custom management-unit runs are also supported via run profile fields:
 `selection.boundary_code`. Example profile:
 `config/run_profile.k3z.yaml` (North Island Community Forest test case).
 
+Validate case prerequisites before long runs:
+
+```bash
+PYTHONPATH=src python -m femic prep validate-case --run-config config/run_profile.<case>.yaml
+```
+
 ### Reproducibility Controls
 
 Set deterministic VDYP sampling with:
