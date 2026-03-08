@@ -2043,3 +2043,22 @@
 - Verified runtime smoke export:
   `PYTHONPATH=src .venv/bin/python -m femic export patchworks --tsa k3z --output-dir output/patchworks_k3z_smoke`
   completed successfully (`au=14`, `fragments=218`, `curves=54`).
+
+## 2026-03-08 - Patchworks export validation hardening (P4.4b, P4.6a)
+- Added strict export validators in `src/femic/fmg/patchworks.py`:
+  - `validate_forestmodel_xml_tree(...)` for required root attributes, `<input>/<output>`,
+    required `<define field=...>` entries, curve/idref integrity, and CC treatment presence.
+  - `validate_fragments_geodataframe(...)` for required columns, CRS presence, geometry sanity,
+    numeric constraints, unique block IDs, positive area, and valid `IFM` values.
+- Wired both validators into `export_patchworks_package(...)` so malformed exports fail before write.
+- Expanded regression tests in `tests/test_fmg_patchworks.py` to cover:
+  missing curve-idref detection and invalid `IFM` rejection.
+- Added explicit export contract docs in `docs/reference/patchworks-export.rst`
+  and linked it from `docs/index.rst` to record required XML/fragments fields.
+- Re-validated direct K3Z export:
+  `PYTHONPATH=src .venv/bin/python -m femic export patchworks --tsa k3z --output-dir output/patchworks_k3z_validated`
+  succeeded (`au=14`, `fragments=218`, `curves=54`).
+- Completed TSA29 export validation path from cached artifacts by reconstructing
+  a TSA29 bundle/checkpoint under `output/patchworks_tsa29_validation/` and exporting with:
+  `PYTHONPATH=src .venv/bin/python -m femic export patchworks --tsa 29 --bundle-dir output/patchworks_tsa29_validation/bundle --checkpoint output/patchworks_tsa29_validation/checkpoint7-tsa29.feather --output-dir output/patchworks_tsa29_validated`
+  succeeded (`au=30`, `fragments=147959`, `curves=660`).

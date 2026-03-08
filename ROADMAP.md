@@ -62,7 +62,7 @@
 - [ ] P4.1 Patchworks requirements + source governance
   - [x] P4.1a Parse Patchworks user guide into a concrete implementation checklist
   - [x] P4.1b Add gitignore rules for proprietary reference PDFs (do not republish)
-  - [ ] P4.1c Document required ForestModel XML elements and fragments schema fields
+  - [x] P4.1c Document required ForestModel XML elements and fragments schema fields
 - [ ] P4.2 Port legacy `fmg` core to Python 3 under `src/femic/fmg/`
   - [ ] P4.2a Port core model classes (`Curve`, `Treatment`, `ForestModel`, related XML nodes)
   - [ ] P4.2b Preserve deterministic XML serialization behavior with fixture-based parity tests
@@ -73,14 +73,14 @@
   - [x] P4.3c Auto-create baseline CC treatment and default post-treatment transitions
 - [ ] P4.4 Generate Patchworks ForestModel XML
   - [x] P4.4a Add a writer stage that emits valid ForestModel XML for a compiled run
-  - [ ] P4.4b Add schema/structure validation checks and fail-fast diagnostics
+  - [x] P4.4b Add schema/structure validation checks and fail-fast diagnostics
   - [x] P4.4c Add CLI entrypoint(s) for export (`femic export patchworks ...`)
 - [ ] P4.5 Generate Patchworks fragments shapefile from BC VRI
   - [x] P4.5a Define canonical fragments field map (IDs/themes/area/treatment linkage)
   - [x] P4.5b Build shapefile writer with robust CRS/field-type/width handling
   - [x] P4.5c Join model themes/curve assignment attributes to stand geometries
 - [ ] P4.6 End-to-end validation and handoff
-  - [ ] P4.6a Validate patchworks package build on TSA29 and CFA K3Z test cases
+  - [x] P4.6a Validate patchworks package build on TSA29 and CFA K3Z test cases
   - [x] P4.6b Add regression tests for XML + fragments outputs
   - [x] P4.6c Update docs with a Patchworks-first workflow (Woodstock noted as secondary)
 
@@ -2158,6 +2158,24 @@
 - 2026-03-08: Ran full milestone validation gates after export implementation:
   `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
   `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W` all passing.
-- 2026-03-08 next queue: add ForestModel schema/structure validation (`P4.4b`), run
-  full export validation for TSA29 + K3Z (`P4.6a`), and start Woodstock compatibility
-  port (`P4.2c`) once Patchworks validation is green.
+- 2026-03-08: Added fail-fast Patchworks validation in `src/femic/fmg/patchworks.py`:
+  `validate_forestmodel_xml_tree(...)` now checks required ForestModel nodes/attrs,
+  required define fields, curve-idref integrity, and CC treatment presence; and
+  `validate_fragments_geodataframe(...)` now checks required fragment schema,
+  value domains (`IFM`), geometry validity/non-null, uniqueness of `BLOCK`,
+  numeric coercion, and positive area.
+- 2026-03-08: Hooked validations into export orchestration:
+  `export_patchworks_package(...)` now validates XML tree and fragments data before writing.
+- 2026-03-08: Added regression tests for validation rules in
+  `tests/test_fmg_patchworks.py` (missing curve-idref detection and invalid IFM rejection).
+- 2026-03-08: Validated Patchworks package builds for both active test cases:
+  `k3z` via direct CLI export from current bundle/checkpoint, and `tsa29` via
+  a reconstructed TSA29 validation bundle/checkpoint built from cached TSA29 prep artifacts
+  (`vdyp_prep-tsa29.pkl`, `vdyp_curves_smooth-tsa29.feather`,
+  `tipsy_curves_tsa29.csv`, `tipsy_sppcomp_tsa29.csv`).
+- 2026-03-08: Documented the Patchworks export contract in docs:
+  `docs/reference/patchworks-export.rst` now captures required ForestModel XML
+  structure and required fragments schema fields enforced by exporter validators.
+- 2026-03-08 next queue: begin Woodstock compatibility module port (`P4.2c`),
+  then wire a
+  dedicated fmg adapter layer around shared curve/treatment classes (`P4.2a`, `P4.3` refactor).
