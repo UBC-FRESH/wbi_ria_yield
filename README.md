@@ -52,6 +52,9 @@ PYTHONPATH=src python -m femic tsa post-tipsy --tsa 29 -v
 
 This command writes a run manifest to ``vdyp_io/logs/`` (override with ``--log-dir`` and
 ``--run-id``).
+When `data/ria_vri_vclr1p_checkpoint8.feather` is available, post-TIPSY bundle assembly also
+adds species-proportion curves for all top-6 VRI species present in the selected TSA(s):
+`unmanaged_species_prop_<SPP>` and `managed_species_prop_<SPP>` (single-point curves at `x=1`).
 
 ### Config-Driven Runs
 
@@ -162,3 +165,12 @@ Validate TIPSY config handoff files before running:
 ```bash
 femic tipsy validate --config-dir config/tipsy --tsa 08 --tsa 16
 ```
+
+Config-driven TIPSY rules now also support deterministic weak-mapping controls:
+
+- `species_code_overrides` (for example `DR: FD`, `SX: SW`)
+- `siteprod_si_fallback_by_species` (species-specific SI fallback values when siteprod
+  values are missing/invalid)
+
+VDYP fit diagnostics also emit per-stratum L/M/H comparison overlays at:
+`plots/vdyp_lmh_tsa<tsa>-<stratum>-<stratum_code>.png`.

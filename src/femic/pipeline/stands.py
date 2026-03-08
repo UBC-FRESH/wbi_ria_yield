@@ -97,11 +97,21 @@ def prepare_stands_export_frame(
     frame = f_tsa.copy()
     if getattr(au_table.index, "name", None) != "au_id":
         au_table = au_table.set_index("au_id")
+
+    def _lookup_canfi_species(au_id: int) -> Any:
+        row = au_table.loc[au_id]
+        if hasattr(row, "ndim") and row.ndim > 1:
+            values = row["canfi_species"].dropna()
+            if values.empty:
+                return None
+            return values.iloc[0]
+        return row.canfi_species
+
     frame.rename(columns=columns_map, inplace=True)
     frame["theme0"] = "tsa" + frame["theme0"]
     frame["theme2"] = frame["theme2"].astype(int)
     frame["theme3"] = frame.apply(
-        lambda r: au_table.loc[r["theme2"]].canfi_species,
+        lambda r: _lookup_canfi_species(r["theme2"]),
         axis=1,
     )
     frame["age"] = frame["age"].fillna(0).astype(int)

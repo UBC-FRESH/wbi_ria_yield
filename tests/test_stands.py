@@ -66,6 +66,48 @@ def test_extract_and_prepare_stands_export_frame() -> None:
     assert float(prepared.loc[0, "area"]) == 1.0
 
 
+def test_prepare_stands_export_frame_handles_duplicate_au_rows() -> None:
+    class _Geom:
+        is_valid = True
+
+    f_table = pd.DataFrame(
+        [
+            {
+                "geometry": _Geom(),
+                "tsa_code": "k3z",
+                "thlb": 1,
+                "au": 900001,
+                "curve1": 920001,
+                "curve2": 900001,
+                "SPECIES_CD_1": "HW",
+                "PROJ_AGE_1": 45,
+                "FEATURE_AREA_SQM": 5000.0,
+            }
+        ]
+    )
+    au_table = pd.DataFrame(
+        [
+            {"au_id": 900001, "canfi_species": 263},
+            {"au_id": 900001, "canfi_species": 263},
+        ]
+    )
+    extracted = extract_stand_features_for_tsa(
+        f_table=f_table,
+        tsa_code="k3z",
+        clean_geometry_fn=lambda g: g,
+    )
+    prepared = prepare_stands_export_frame(
+        f_tsa=extracted,
+        columns_map=build_stands_column_map(),
+        au_table=au_table,
+        pd_module=pd,
+    )
+
+    assert prepared.loc[0, "theme0"] == "tsak3z"
+    assert int(prepared.loc[0, "theme2"]) == 900001
+    assert int(prepared.loc[0, "theme3"]) == 263
+
+
 def test_export_stands_shapefiles_with_stubbed_frame(tmp_path: Path) -> None:
     calls: list[tuple[str, str]] = []
 

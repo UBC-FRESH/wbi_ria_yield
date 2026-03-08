@@ -148,6 +148,62 @@ def test_build_bundle_tables_from_curves_tracks_missing_mappings() -> None:
     assert out.missing_au_curve_mappings.loc[0, "stratum_code"] == "BWBS_AT"
 
 
+def test_build_bundle_tables_from_curves_adds_species_proportion_curves() -> None:
+    vdyp_curves_smooth = {
+        "08": pd.DataFrame(
+            [
+                {"stratum_code": "BWBS_AT", "si_level": "L", "age": 10, "volume": 1.0},
+                {"stratum_code": "BWBS_AT", "si_level": "L", "age": 20, "volume": 2.0},
+            ]
+        )
+    }
+    tipsy_curves = {
+        "08": pd.DataFrame(
+            [
+                {"AU": 20005, "Age": 10, "Yield": 1.5},
+                {"AU": 20005, "Age": 20, "Yield": 2.5},
+            ]
+        )
+    }
+    tipsy_spp = {"08": pd.DataFrame([{"AU": 20005, "SW": 60.0, "PL": 40.0}])}
+    vdyp_spp = {"08": {("BWBS_AT", "L"): {"SW": 0.7, "PL": 0.3}}}
+    scsi_au = {"08": {("BWBS_AT", "L"): 5}}
+
+    out = build_bundle_tables_from_curves(
+        tsa_list=["08"],
+        vdyp_curves_smooth=vdyp_curves_smooth,
+        tipsy_curves=tipsy_curves,
+        scsi_au=scsi_au,
+        canfi_species_fn=lambda _s: 100,
+        species_universe=["SW", "PL"],
+        vdyp_species_proportions=vdyp_spp,
+        tipsy_species_proportions=tipsy_spp,
+        pd_module=pd,
+        message_fn=lambda _m: None,
+    )
+
+    curve_types = set(out.curve_table["curve_type"].tolist())
+    assert "unmanaged_species_prop_SW" in curve_types
+    assert "unmanaged_species_prop_PL" in curve_types
+    assert "managed_species_prop_SW" in curve_types
+    assert "managed_species_prop_PL" in curve_types
+
+    unmanaged_sw_id = out.curve_table.loc[
+        out.curve_table["curve_type"] == "unmanaged_species_prop_SW", "curve_id"
+    ].iloc[0]
+    managed_sw_id = out.curve_table.loc[
+        out.curve_table["curve_type"] == "managed_species_prop_SW", "curve_id"
+    ].iloc[0]
+    unmanaged_sw_y = out.curve_points_table.loc[
+        out.curve_points_table["curve_id"] == unmanaged_sw_id, "y"
+    ].iloc[0]
+    managed_sw_y = out.curve_points_table.loc[
+        out.curve_points_table["curve_id"] == managed_sw_id, "y"
+    ].iloc[0]
+    assert unmanaged_sw_y == 0.7
+    assert managed_sw_y == 0.6
+
+
 def test_bundle_tables_support_named_unit_codes() -> None:
     vdyp_curves_smooth = {
         "k3z": pd.DataFrame(
@@ -229,3 +285,31 @@ def test_assign_curve_ids_from_au_table_assigns_managed_and_unmanaged() -> None:
     assert out["curve2"].iloc[:2].tolist() == [800005, 800005]
     assert pd.isna(out["curve1"].iloc[2])
     assert pd.isna(out["curve2"].iloc[2])
+
+
+def test_assign_curve_ids_from_au_table_handles_duplicate_au_rows() -> None:
+    f_table = pd.DataFrame([{"au": 800005, "PROJ_AGE_1": 40}])
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 800005,
+                "managed_curve_id": 820005,
+                "unmanaged_curve_id": 800005,
+            },
+            {
+                "au_id": 800005,
+                "managed_curve_id": 820005,
+                "unmanaged_curve_id": 800005,
+            },
+        ]
+    )
+
+    out = assign_curve_ids_from_au_table(
+        f_table=f_table,
+        au_table=au_table,
+        pd_module=pd,
+        np_module=np,
+    )
+
+    assert out["curve1"].iloc[0] == 820005
+    assert out["curve2"].iloc[0] == 800005

@@ -99,6 +99,80 @@ def _build_au_maps_from_results(
     return scsi_au_tsa, au_scsi_tsa
 
 
+def _normalize_species_code(value: object) -> str:
+    code = str(value).strip().upper()
+    if not code or code in {"NAN", "NONE", "X", "XX"}:
+        return ""
+    return code
+
+
+def _load_species_universe_for_tsas(
+    *,
+    data_root: Path,
+    tsa_list: list[str],
+    message_fn: Callable[[str], Any] = print,
+) -> list[str]:
+    """Load unique top-6 VRI species codes for selected TSAs from checkpoint8."""
+    checkpoint_path = data_root / "ria_vri_vclr1p_checkpoint8.feather"
+    if not checkpoint_path.exists():
+        message_fn(f"warning: species-universe scan skipped; missing {checkpoint_path}")
+        return []
+    table = pd.read_feather(checkpoint_path)
+    if "tsa_code" not in table.columns:
+        message_fn(
+            "warning: species-universe scan skipped; checkpoint missing 'tsa_code'"
+        )
+        return []
+    normalized = {str(tsa).zfill(2).lower() for tsa in tsa_list}
+    tsa_mask = table["tsa_code"].astype(str).str.lower().isin(normalized)
+    scoped = table.loc[tsa_mask]
+    species_codes: set[str] = set()
+    for idx in range(1, 7):
+        species_col = f"SPECIES_CD_{idx}"
+        if species_col not in scoped.columns:
+            continue
+        pct_col = f"SPECIES_PCT_{idx}"
+        if pct_col in scoped.columns:
+            pct_mask = pd.to_numeric(scoped[pct_col], errors="coerce").fillna(0) > 0
+            species_values = scoped.loc[pct_mask, species_col]
+        else:
+            species_values = scoped[species_col]
+        species_codes.update(
+            code for code in species_values.map(_normalize_species_code) if code
+        )
+    return sorted(species_codes)
+
+
+def _vdyp_species_proportions_for_tsa(
+    *,
+    results_for_tsa: list[tuple[int, str, Any]],
+) -> dict[tuple[str, str], dict[str, float]]:
+    out: dict[tuple[str, str], dict[str, float]] = {}
+    for _stratumi, stratum_code, result in results_for_tsa:
+        for si_level in _DEFAULT_SI_LEVELS:
+            result_si = result.get(si_level, {}) if isinstance(result, dict) else {}
+            species_map = (
+                result_si.get("species", {}) if isinstance(result_si, dict) else {}
+            )
+            normalized: dict[str, float] = {}
+            total = 0.0
+            for species_code, payload in species_map.items():
+                code = _normalize_species_code(species_code)
+                if not code:
+                    continue
+                pct = float(payload.get("pct", 0.0))
+                if pct <= 0:
+                    continue
+                prop = pct * 0.01
+                normalized[code] = normalized.get(code, 0.0) + prop
+                total += prop
+            if total > 0:
+                for code in list(normalized.keys()):
+                    normalized[code] = normalized[code] / total
+            out[(str(stratum_code), str(si_level))] = normalized
+    return out
+
+
 def run_post_tipsy_bundle(
     *,
     tsa_list: list[str],
@@ -129,6 +203,8 @@ def run_post_tipsy_bundle(
     scsi_au: dict[str, Any] = {}
     vdyp_curves_smooth: dict[str, Any] = {}
     tipsy_curves: dict[str, Any] = {}
+    tipsy_sppcomp: dict[str, Any] = {}
+    vdyp_species_proportions: dict[str, dict[tuple[str, str], dict[str, float]]] = {}
     tipsy_curves_paths: list[Path] = []
     tipsy_sppcomp_paths: list[Path] = []
 
@@ -143,6 +219,9 @@ def run_post_tipsy_bundle(
         with prep_path.open("rb") as fh:
             results_for_tsa = pickle.load(fh)
         results[tsa] = results_for_tsa
+        vdyp_species_proportions[tsa] = _vdyp_species_proportions_for_tsa(
+            results_for_tsa=results_for_tsa
+        )
         vdyp_curves_smooth[tsa] = pd.read_feather(smooth_path)
         scsi_au[tsa], au_scsi[tsa] = _build_au_maps_from_results(
             results_for_tsa=results_for_tsa
@@ -164,6 +243,19 @@ def run_post_tipsy_bundle(
         )
         tipsy_curves_paths.append(data_root / f"tipsy_curves_tsa{tsa}.csv")
         tipsy_sppcomp_paths.append(data_root / f"tipsy_sppcomp_tsa{tsa}.csv")
+        tipsy_spp_path = tipsy_sppcomp_paths[-1]
+        if tipsy_spp_path.exists():
+            tipsy_sppcomp[tsa] = pd.read_csv(tipsy_spp_path)
+
+    species_universe = _load_species_universe_for_tsas(
+        data_root=data_root,
+        tsa_list=normalized_tsa_list,
+        message_fn=message_fn,
+    )
+    if species_universe:
+        message_fn(
+            f"species proportion export enabled for {len(species_universe)} species"
+        )
 
     bundle_dir = (
         model_input_bundle_dir
@@ -177,6 +269,9 @@ def run_post_tipsy_bundle(
         tipsy_curves=tipsy_curves,
         scsi_au=scsi_au,
         canfi_species_fn=canfi_species_fn,
+        species_universe=species_universe,
+        vdyp_species_proportions=vdyp_species_proportions,
+        tipsy_species_proportions=tipsy_sppcomp,
         pd_module=pd,
         message_fn=message_fn,
     )

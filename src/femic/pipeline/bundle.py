@@ -131,6 +131,10 @@ def build_bundle_tables_from_curves(
     scsi_au: dict[str, dict[tuple[str, str], int]],
     canfi_species_fn: Callable[[str], int],
     pd_module: Any,
+    species_universe: list[str] | None = None,
+    vdyp_species_proportions: dict[str, dict[tuple[str, str], dict[str, float]]]
+    | None = None,
+    tipsy_species_proportions: dict[str, Any] | None = None,
     message_fn: Callable[[str], Any] = print,
 ) -> BundleAssemblyResult:
     """Build AU/curve tables from per-TSA VDYP and TIPSY curve outputs."""
@@ -146,6 +150,7 @@ def build_bundle_tables_from_curves(
     curve_table_data: dict[str, list[Any]] = {"curve_id": [], "curve_type": []}
     curve_points_table_data: dict[str, list[Any]] = {"curve_id": [], "x": [], "y": []}
     missing_au_curve_mappings: list[dict[str, Any]] = []
+    ordered_species = [str(s).upper() for s in (species_universe or [])]
 
     for tsa in tsa_list:
         message_fn(str(tsa))
@@ -153,6 +158,11 @@ def build_bundle_tables_from_curves(
             ["stratum_code", "si_level"]
         )
         tipsy_curves_tsa = tipsy_curves[tsa].reset_index().set_index("AU")
+        tipsy_spp_tsa = None
+        if tipsy_species_proportions is not None:
+            tipsy_spp_tsa = tipsy_species_proportions.get(tsa)
+            if tipsy_spp_tsa is not None:
+                tipsy_spp_tsa = tipsy_spp_tsa.set_index("AU")
         tipsy_curve_ids = set(tipsy_curves_tsa.index.unique())
         for stratum_code, si_level in list(vdyp_curves_tsa.index.unique()):
             scsi_key = (str(stratum_code), str(si_level))
@@ -180,6 +190,23 @@ def build_bundle_tables_from_curves(
                 curve_points_table_data["curve_id"].append(unmanaged_curve_id)
                 curve_points_table_data["x"].append(int(x))
                 curve_points_table_data["y"].append(round(y, 2))
+            if ordered_species:
+                vdyp_prop_map = {}
+                if vdyp_species_proportions is not None:
+                    vdyp_prop_map = (
+                        vdyp_species_proportions.get(tsa, {}).get(scsi_key, {}) or {}
+                    )
+                for species_idx, species_code in enumerate(ordered_species, start=1):
+                    species_curve_id = unmanaged_curve_id * 1000 + species_idx
+                    curve_table_data["curve_id"].append(species_curve_id)
+                    curve_table_data["curve_type"].append(
+                        f"unmanaged_species_prop_{species_code}"
+                    )
+                    curve_points_table_data["curve_id"].append(species_curve_id)
+                    curve_points_table_data["x"].append(1)
+                    curve_points_table_data["y"].append(
+                        round(float(vdyp_prop_map.get(species_code, 0.0)), 6)
+                    )
             au_table_data["managed_curve_id"].append(managed_curve_id)
             if is_managed_au:
                 curve_table_data["curve_id"].append(managed_curve_id)
@@ -189,6 +216,33 @@ def build_bundle_tables_from_curves(
                     curve_points_table_data["curve_id"].append(managed_curve_id)
                     curve_points_table_data["x"].append(int(x))
                     curve_points_table_data["y"].append(round(y, 2))
+                if ordered_species:
+                    tipsy_prop_map = {}
+                    if (
+                        tipsy_spp_tsa is not None
+                        and tipsy_curve_id in tipsy_spp_tsa.index
+                    ):
+                        tipsy_row = tipsy_spp_tsa.loc[tipsy_curve_id]
+                        if hasattr(tipsy_row, "ndim") and tipsy_row.ndim > 1:
+                            tipsy_row = tipsy_row.iloc[0]
+                        tipsy_prop_map = {
+                            str(col).upper(): float(tipsy_row[col]) * 0.01
+                            for col in tipsy_row.index
+                            if str(col).upper() != "AU"
+                        }
+                    for species_idx, species_code in enumerate(
+                        ordered_species, start=1
+                    ):
+                        species_curve_id = managed_curve_id * 1000 + species_idx
+                        curve_table_data["curve_id"].append(species_curve_id)
+                        curve_table_data["curve_type"].append(
+                            f"managed_species_prop_{species_code}"
+                        )
+                        curve_points_table_data["curve_id"].append(species_curve_id)
+                        curve_points_table_data["x"].append(1)
+                        curve_points_table_data["y"].append(
+                            round(float(tipsy_prop_map.get(species_code, 0.0)), 6)
+                        )
 
     return BundleAssemblyResult(
         au_table=pd_module.DataFrame(au_table_data),
@@ -238,6 +292,16 @@ def assign_curve_ids_from_au_table(
     if getattr(au_indexed.index, "name", None) != "au_id":
         au_indexed = au_indexed.set_index("au_id")
 
+    def _first_scalar(value: Any) -> Any:
+        if hasattr(value, "empty") and hasattr(value, "iloc"):
+            if value.empty:
+                return np_module.nan
+            non_na = value.dropna()
+            if not non_na.empty:
+                return non_na.iloc[0]
+            return value.iloc[0]
+        return value
+
     curve1_values: list[int | None] = []
     curve2_values: list[int | None] = []
     for au_value, proj_age in zip(table[au_col].values, table[proj_age_col].values):
@@ -251,9 +315,13 @@ def assign_curve_ids_from_au_table(
             curve2_values.append(None)
             continue
         au_row = au_indexed.loc[au_id]
-        unmanaged_curve_id = au_row[unmanaged_curve_col]
-        managed_curve_id = au_row[managed_curve_col]
-        if proj_age <= managed_age_cutoff and not np_module.isnan(managed_curve_id):
+        if hasattr(au_row, "ndim") and au_row.ndim > 1:
+            unmanaged_curve_id = _first_scalar(au_row[unmanaged_curve_col])
+            managed_curve_id = _first_scalar(au_row[managed_curve_col])
+        else:
+            unmanaged_curve_id = au_row[unmanaged_curve_col]
+            managed_curve_id = au_row[managed_curve_col]
+        if proj_age <= managed_age_cutoff and pd_module.notna(managed_curve_id):
             curve1_id = managed_curve_id
         else:
             curve1_id = unmanaged_curve_id
