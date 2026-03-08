@@ -32,6 +32,7 @@ DEFAULT_START_YEAR = 2026
 DEFAULT_HORIZON_YEARS = 300
 DEFAULT_CC_MIN_AGE = 0
 DEFAULT_CC_MAX_AGE = 1000
+DEFAULT_CC_TRANSITION_IFM = "managed"
 DEFAULT_FRAGMENTS_CRS = "EPSG:3005"
 VALID_IFM_VALUES = {"managed", "unmanaged"}
 REQUIRED_FRAGMENT_COLUMNS = {
@@ -90,6 +91,13 @@ def _coerce_geometry(value: Any) -> Any:
     return value
 
 
+def _as_quoted_literal(value: str) -> str:
+    text = str(value).strip()
+    if text.startswith("'") and text.endswith("'"):
+        return text
+    return f"'{text}'"
+
+
 def _gpd_module() -> Any:
     return importlib.import_module("geopandas")
 
@@ -119,6 +127,7 @@ def build_forestmodel_xml_tree(
     horizon_years: int = DEFAULT_HORIZON_YEARS,
     cc_min_age: int = DEFAULT_CC_MIN_AGE,
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
+    cc_transition_ifm: str | None = DEFAULT_CC_TRANSITION_IFM,
 ) -> et.Element:
     """Build a Patchworks ForestModel XML tree from FEMIC bundle tables."""
     context = build_bundle_model_context_from_tables(
@@ -133,6 +142,7 @@ def build_forestmodel_xml_tree(
         horizon_years=horizon_years,
         cc_min_age=cc_min_age,
         cc_max_age=cc_max_age,
+        cc_transition_ifm=cc_transition_ifm,
     )
 
 
@@ -143,6 +153,7 @@ def build_forestmodel_xml_tree_from_context(
     horizon_years: int = DEFAULT_HORIZON_YEARS,
     cc_min_age: int = DEFAULT_CC_MIN_AGE,
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
+    cc_transition_ifm: str | None = DEFAULT_CC_TRANSITION_IFM,
 ) -> et.Element:
     """Build a Patchworks ForestModel XML tree from shared FMG context."""
     definition = build_patchworks_forestmodel_definition(
@@ -151,6 +162,7 @@ def build_forestmodel_xml_tree_from_context(
         horizon_years=horizon_years,
         cc_min_age=cc_min_age,
         cc_max_age=cc_max_age,
+        cc_transition_ifm=cc_transition_ifm,
     )
     return forestmodel_definition_to_xml_tree(definition=definition)
 
@@ -162,6 +174,7 @@ def build_patchworks_forestmodel_definition(
     horizon_years: int = DEFAULT_HORIZON_YEARS,
     cc_min_age: int = DEFAULT_CC_MIN_AGE,
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
+    cc_transition_ifm: str | None = DEFAULT_CC_TRANSITION_IFM,
 ) -> ForestModelDefinition:
     """Build Patchworks ForestModel core definition from shared context."""
     curves: dict[str, tuple[CurvePoint, ...]] = {"unity": (CurvePoint(x=0.0, y=1.0),)}
@@ -171,6 +184,14 @@ def build_patchworks_forestmodel_definition(
             curves[f"C{curve_id}"] = points
 
     selects: list[SelectDefinition] = []
+    transition_assignments: tuple[TreatmentAssignment, ...] = ()
+    if cc_transition_ifm is not None and str(cc_transition_ifm).strip():
+        transition_assignments = (
+            TreatmentAssignment(
+                field="IFM",
+                value=_as_quoted_literal(cc_transition_ifm),
+            ),
+        )
     for au in context.analysis_units:
         unmanaged_curve_id = au.unmanaged_curve_id
         managed_curve_id = au.managed_curve_id
@@ -238,7 +259,13 @@ def build_patchworks_forestmodel_definition(
                     label="CC",
                     min_age=int(cc_min_age),
                     max_age=int(cc_max_age),
-                    assignments=(TreatmentAssignment(field="treatment", value="'CC'"),),
+                    assignments=(
+                        TreatmentAssignment(
+                            field="treatment",
+                            value=_as_quoted_literal("CC"),
+                        ),
+                    ),
+                    transition_assignments=transition_assignments,
                 ),
             )
         )
@@ -314,11 +341,21 @@ def _append_track(
         },
     )
     if not track_treatment.assignments:
+        pass
+    else:
+        produce = et.SubElement(treatment, "produce")
+        for assignment in track_treatment.assignments:
+            et.SubElement(
+                produce,
+                "assign",
+                {"field": assignment.field, "value": assignment.value},
+            )
+    if not track_treatment.transition_assignments:
         return
-    produce = et.SubElement(treatment, "produce")
-    for assignment in track_treatment.assignments:
+    transition = et.SubElement(treatment, "transition")
+    for assignment in track_treatment.transition_assignments:
         et.SubElement(
-            produce,
+            transition,
             "assign",
             {"field": assignment.field, "value": assignment.value},
         )
@@ -600,6 +637,7 @@ def export_patchworks_package(
     horizon_years: int = DEFAULT_HORIZON_YEARS,
     cc_min_age: int = DEFAULT_CC_MIN_AGE,
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
+    cc_transition_ifm: str | None = DEFAULT_CC_TRANSITION_IFM,
     fragments_crs: str = DEFAULT_FRAGMENTS_CRS,
 ) -> PatchworksExportResult:
     """Export Patchworks package artifacts from FEMIC outputs."""
@@ -618,6 +656,7 @@ def export_patchworks_package(
         horizon_years=horizon_years,
         cc_min_age=cc_min_age,
         cc_max_age=cc_max_age,
+        cc_transition_ifm=cc_transition_ifm,
     )
     validate_forestmodel_xml_tree(root=root)
     forestmodel_path = output_dir / "forestmodel.xml"

@@ -14,12 +14,16 @@ from .adapters import (
 )
 from .core import BundleModelContext
 from .patchworks import (
+    DEFAULT_CC_MAX_AGE,
+    DEFAULT_CC_MIN_AGE,
     DEFAULT_FRAGMENTS_CRS,
     build_fragments_geodataframe,
 )
 
 
 DEFAULT_WOODSTOCK_OUTPUT_DIR = Path("output/woodstock")
+DEFAULT_WOODSTOCK_CC_MIN_AGE = DEFAULT_CC_MIN_AGE
+DEFAULT_WOODSTOCK_CC_MAX_AGE = DEFAULT_CC_MAX_AGE
 
 
 @dataclass(frozen=True)
@@ -28,9 +32,13 @@ class WoodstockExportResult:
 
     yields_csv_path: Path
     areas_csv_path: Path
+    actions_csv_path: Path
+    transitions_csv_path: Path
     tsa_list: list[str]
     yield_rows: int
     area_rows: int
+    action_rows: int
+    transition_rows: int
 
 
 def _context_to_au_table(context: BundleModelContext) -> pd.DataFrame:
@@ -111,12 +119,58 @@ def build_woodstock_areas_table(
     )
 
 
+def build_woodstock_actions_table(
+    *,
+    context: BundleModelContext,
+    cc_min_age: int = DEFAULT_WOODSTOCK_CC_MIN_AGE,
+    cc_max_age: int = DEFAULT_WOODSTOCK_CC_MAX_AGE,
+) -> pd.DataFrame:
+    """Build Woodstock action table from managed AU treatment defaults."""
+    rows: list[dict[str, Any]] = []
+    for au in context.analysis_units:
+        rows.append(
+            {
+                "tsa": au.tsa,
+                "au_id": au.au_id,
+                "action_id": "CC",
+                "from_ifm": "managed",
+                "to_ifm": "managed",
+                "min_age": int(cc_min_age),
+                "max_age": int(cc_max_age),
+                "managed_curve_id": au.managed_curve_id,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def build_woodstock_transitions_table(
+    *,
+    context: BundleModelContext,
+) -> pd.DataFrame:
+    """Build Woodstock transition table from baseline managed treatment flow."""
+    rows: list[dict[str, Any]] = []
+    for au in context.analysis_units:
+        rows.append(
+            {
+                "tsa": au.tsa,
+                "au_id": au.au_id,
+                "action_id": "CC",
+                "from_ifm": "managed",
+                "to_ifm": "managed",
+                "next_au_id": au.au_id,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def export_woodstock_package(
     *,
     bundle_dir: Path,
     checkpoint_path: Path,
     output_dir: Path = DEFAULT_WOODSTOCK_OUTPUT_DIR,
     tsa_list: Iterable[str],
+    cc_min_age: int = DEFAULT_WOODSTOCK_CC_MIN_AGE,
+    cc_max_age: int = DEFAULT_WOODSTOCK_CC_MAX_AGE,
     fragments_crs: str = DEFAULT_FRAGMENTS_CRS,
 ) -> WoodstockExportResult:
     """Export Woodstock compatibility CSV package from FEMIC outputs."""
@@ -139,17 +193,31 @@ def export_woodstock_package(
         tsa_list=normalized_tsa,
         fragments_crs=fragments_crs,
     )
+    actions = build_woodstock_actions_table(
+        context=context,
+        cc_min_age=cc_min_age,
+        cc_max_age=cc_max_age,
+    )
+    transitions = build_woodstock_transitions_table(context=context)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     yields_path = output_dir / "woodstock_yields.csv"
     areas_path = output_dir / "woodstock_areas.csv"
+    actions_path = output_dir / "woodstock_actions.csv"
+    transitions_path = output_dir / "woodstock_transitions.csv"
     yields.to_csv(yields_path, index=False)
     areas.to_csv(areas_path, index=False)
+    actions.to_csv(actions_path, index=False)
+    transitions.to_csv(transitions_path, index=False)
 
     return WoodstockExportResult(
         yields_csv_path=yields_path,
         areas_csv_path=areas_path,
+        actions_csv_path=actions_path,
+        transitions_csv_path=transitions_path,
         tsa_list=normalized_tsa,
         yield_rows=int(yields.shape[0]),
         area_rows=int(areas.shape[0]),
+        action_rows=int(actions.shape[0]),
+        transition_rows=int(transitions.shape[0]),
     )

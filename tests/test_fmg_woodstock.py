@@ -72,13 +72,34 @@ def test_export_woodstock_package_writes_csv(
 
     assert result.yields_csv_path.is_file()
     assert result.areas_csv_path.is_file()
+    assert result.actions_csv_path.is_file()
+    assert result.transitions_csv_path.is_file()
     yields = pd.read_csv(result.yields_csv_path)
     areas = pd.read_csv(result.areas_csv_path)
+    actions = pd.read_csv(result.actions_csv_path)
+    transitions = pd.read_csv(result.transitions_csv_path)
     assert set(["tsa", "au_id", "ifm", "age", "volume"]).issubset(yields.columns)
     assert set(yields["ifm"].unique()) == {"managed", "unmanaged"}
     assert set(["stand_id", "tsa", "au_id", "ifm", "age", "area_ha"]).issubset(
         areas.columns
     )
+    assert set(
+        [
+            "tsa",
+            "au_id",
+            "action_id",
+            "from_ifm",
+            "to_ifm",
+            "min_age",
+            "max_age",
+            "managed_curve_id",
+        ]
+    ).issubset(actions.columns)
+    assert set(
+        ["tsa", "au_id", "action_id", "from_ifm", "to_ifm", "next_au_id"]
+    ).issubset(transitions.columns)
+    assert actions.loc[0, "action_id"] == "CC"
+    assert transitions.loc[0, "to_ifm"] == "managed"
 
 
 def test_export_woodstock_package_requires_tsa(tmp_path: Path) -> None:

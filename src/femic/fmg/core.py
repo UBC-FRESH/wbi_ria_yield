@@ -78,6 +78,7 @@ class TreatmentDefinition:
     min_age: int
     max_age: int
     assignments: tuple[TreatmentAssignment, ...] = ()
+    transition_assignments: tuple[TreatmentAssignment, ...] = ()
 
 
 @dataclass(frozen=True)

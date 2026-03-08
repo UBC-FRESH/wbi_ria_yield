@@ -2123,3 +2123,26 @@
 - Marked `P4.2` and `P4.2b` complete in `ROADMAP.md` and updated the
   detailed next-step queue toward treatment transition/action parity and
   Woodstock ingest conventions.
+
+## 2026-03-08 - Treatment transition + Woodstock ingest table extensions
+- Extended Patchworks treatment serialization for transition semantics:
+  - `TreatmentDefinition` now supports `transition_assignments`
+  - serializer now emits `<transition><assign .../></transition>` blocks
+  - default CC treatment includes transition assignment `IFM='managed'`
+- Added new Patchworks CLI/export control:
+  - `--cc-transition-ifm` (default `managed`)
+- Extended Woodstock compatibility package outputs:
+  - `woodstock_actions.csv` (baseline CC action rows by AU)
+  - `woodstock_transitions.csv` (baseline managed transition rows by AU)
+  - corresponding result metadata (`action_rows`, `transition_rows`)
+  - CLI now accepts `--cc-min-age` / `--cc-max-age` for Woodstock export too
+- Updated docs for new export behavior:
+  - `README.md` (new Woodstock output files)
+  - `docs/reference/cli.rst` (new options)
+  - `docs/reference/woodstock-export.rst` (new reference page)
+  - `docs/index.rst` and `docs/reference/patchworks-export.rst`
+- Revalidated runtime smoke exports:
+  - `femic export patchworks --tsa k3z` (`au=14`, `fragments=218`, `curves=54`)
+  - `femic export woodstock --tsa k3z`
+    (`yield_rows=16162`, `area_rows=218`, `action_rows=14`,
+    `transition_rows=14`)

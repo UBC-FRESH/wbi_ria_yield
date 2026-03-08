@@ -132,9 +132,18 @@ def test_build_patchworks_forestmodel_definition_contains_treatment() -> None:
     )
     definition = build_patchworks_forestmodel_definition(context=context)
     assert definition.define_fields[0].field == "AU"
+    treatment_selects = [s for s in definition.selects if s.track_treatment is not None]
     assert any(
         s.track_treatment is not None and s.track_treatment.label == "CC"
-        for s in definition.selects
+        for s in treatment_selects
+    )
+    assert any(
+        any(
+            a.field == "IFM" and a.value == "'managed'"
+            for a in s.track_treatment.transition_assignments
+        )
+        for s in treatment_selects
+        if s.track_treatment is not None
     )
 
 

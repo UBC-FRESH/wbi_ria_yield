@@ -292,6 +292,7 @@ def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> No
         horizon_years,
         cc_min_age,
         cc_max_age,
+        cc_transition_ifm,
         fragments_crs,
     ):
         called.update(
@@ -304,6 +305,7 @@ def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> No
                 "horizon_years": horizon_years,
                 "cc_min_age": cc_min_age,
                 "cc_max_age": cc_max_age,
+                "cc_transition_ifm": cc_transition_ifm,
                 "fragments_crs": fragments_crs,
             }
         )
@@ -329,11 +331,13 @@ def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> No
         horizon_years=300,
         cc_min_age=0,
         cc_max_age=500,
+        cc_transition_ifm="managed",
         fragments_crs="EPSG:3005",
     )
 
     assert called["tsa_list"] == ["k3z"]
     assert called["cc_max_age"] == 500
+    assert called["cc_transition_ifm"] == "managed"
     assert any("patchworks export completed" in msg for msg in messages)
 
 
@@ -359,6 +363,8 @@ def test_export_woodstock_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> Non
         checkpoint_path,
         output_dir,
         tsa_list,
+        cc_min_age,
+        cc_max_age,
         fragments_crs,
     ):
         called.update(
@@ -367,15 +373,21 @@ def test_export_woodstock_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> Non
                 "checkpoint_path": checkpoint_path,
                 "output_dir": output_dir,
                 "tsa_list": tsa_list,
+                "cc_min_age": cc_min_age,
+                "cc_max_age": cc_max_age,
                 "fragments_crs": fragments_crs,
             }
         )
         return SimpleNamespace(
             yields_csv_path=Path("output/woodstock/woodstock_yields.csv"),
             areas_csv_path=Path("output/woodstock/woodstock_areas.csv"),
+            actions_csv_path=Path("output/woodstock/woodstock_actions.csv"),
+            transitions_csv_path=Path("output/woodstock/woodstock_transitions.csv"),
             tsa_list=tsa_list,
             yield_rows=1234,
             area_rows=567,
+            action_rows=12,
+            transition_rows=12,
         )
 
     monkeypatch.setattr(
@@ -387,9 +399,12 @@ def test_export_woodstock_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> Non
         bundle_dir=Path("data/model_input_bundle"),
         checkpoint=Path("data/ria_vri_vclr1p_checkpoint7.feather"),
         output_dir=Path("output/woodstock"),
+        cc_min_age=0,
+        cc_max_age=500,
         fragments_crs="EPSG:3005",
     )
 
     assert called["tsa_list"] == ["k3z"]
+    assert called["cc_max_age"] == 500
     assert called["fragments_crs"] == "EPSG:3005"
     assert any("woodstock export completed" in msg for msg in messages)

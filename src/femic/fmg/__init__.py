@@ -3,6 +3,7 @@
 from .patchworks import (
     DEFAULT_CC_MAX_AGE,
     DEFAULT_CC_MIN_AGE,
+    DEFAULT_CC_TRANSITION_IFM,
     DEFAULT_FRAGMENTS_CRS,
     DEFAULT_HORIZON_YEARS,
     DEFAULT_START_YEAR,
@@ -29,6 +30,8 @@ from .core import (
     TreatmentDefinition,
 )
 from .woodstock import (
+    DEFAULT_WOODSTOCK_CC_MAX_AGE,
+    DEFAULT_WOODSTOCK_CC_MIN_AGE,
     DEFAULT_WOODSTOCK_OUTPUT_DIR,
     WoodstockExportResult,
     export_woodstock_package,
@@ -37,6 +40,7 @@ from .woodstock import (
 __all__ = [
     "DEFAULT_CC_MAX_AGE",
     "DEFAULT_CC_MIN_AGE",
+    "DEFAULT_CC_TRANSITION_IFM",
     "DEFAULT_FRAGMENTS_CRS",
     "DEFAULT_HORIZON_YEARS",
     "DEFAULT_START_YEAR",
@@ -57,6 +61,8 @@ __all__ = [
     "normalize_tsa_code",
     "build_bundle_model_context",
     "build_bundle_model_context_from_tables",
+    "DEFAULT_WOODSTOCK_CC_MAX_AGE",
+    "DEFAULT_WOODSTOCK_CC_MIN_AGE",
     "DEFAULT_WOODSTOCK_OUTPUT_DIR",
     "WoodstockExportResult",
     "export_woodstock_package",

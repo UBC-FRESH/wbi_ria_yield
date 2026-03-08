@@ -42,6 +42,9 @@
         <produce>
           <assign field="treatment" value="'CC'" />
         </produce>
+        <transition>
+          <assign field="IFM" value="'managed'" />
+        </transition>
       </treatment>
     </track>
   </select>

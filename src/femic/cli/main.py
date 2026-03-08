@@ -14,6 +14,7 @@ from femic import __version__
 from femic.fmg import (
     DEFAULT_CC_MAX_AGE,
     DEFAULT_CC_MIN_AGE,
+    DEFAULT_CC_TRANSITION_IFM,
     DEFAULT_FRAGMENTS_CRS,
     DEFAULT_HORIZON_YEARS,
     DEFAULT_START_YEAR,
@@ -168,6 +169,11 @@ EXPORT_CC_MAX_AGE_OPTION = typer.Option(
     DEFAULT_CC_MAX_AGE,
     "--cc-max-age",
     help="Clearcut maximum operability age for exported treatment rule.",
+)
+EXPORT_CC_TRANSITION_IFM_OPTION = typer.Option(
+    DEFAULT_CC_TRANSITION_IFM,
+    "--cc-transition-ifm",
+    help="Post-CC IFM value written in treatment transition assignments.",
 )
 EXPORT_FRAGMENTS_CRS_OPTION = typer.Option(
     DEFAULT_FRAGMENTS_CRS,
@@ -599,6 +605,7 @@ def export_patchworks(
     horizon_years: int = EXPORT_HORIZON_YEARS_OPTION,
     cc_min_age: int = EXPORT_CC_MIN_AGE_OPTION,
     cc_max_age: int = EXPORT_CC_MAX_AGE_OPTION,
+    cc_transition_ifm: str | None = EXPORT_CC_TRANSITION_IFM_OPTION,
     fragments_crs: str = EXPORT_FRAGMENTS_CRS_OPTION,
 ) -> None:
     targets = (
@@ -621,6 +628,7 @@ def export_patchworks(
             horizon_years=horizon_years,
             cc_min_age=cc_min_age,
             cc_max_age=cc_max_age,
+            cc_transition_ifm=cc_transition_ifm,
             fragments_crs=fragments_crs,
         )
     except (FileNotFoundError, ValueError) as exc:
@@ -642,6 +650,8 @@ def export_woodstock(
     bundle_dir: Path = EXPORT_BUNDLE_DIR_OPTION,
     checkpoint: Path = EXPORT_CHECKPOINT_OPTION,
     output_dir: Path = EXPORT_WOODSTOCK_OUTPUT_DIR_OPTION,
+    cc_min_age: int = EXPORT_CC_MIN_AGE_OPTION,
+    cc_max_age: int = EXPORT_CC_MAX_AGE_OPTION,
     fragments_crs: str = EXPORT_FRAGMENTS_CRS_OPTION,
 ) -> None:
     targets = (
@@ -660,6 +670,8 @@ def export_woodstock(
             checkpoint_path=checkpoint,
             output_dir=output_dir,
             tsa_list=targets,
+            cc_min_age=cc_min_age,
+            cc_max_age=cc_max_age,
             fragments_crs=fragments_crs,
         )
     except (FileNotFoundError, ValueError) as exc:
@@ -669,10 +681,13 @@ def export_woodstock(
     console.print(
         "[green]woodstock export completed[/green] "
         f"tsa={result.tsa_list} yield_rows={result.yield_rows} "
-        f"area_rows={result.area_rows}"
+        f"area_rows={result.area_rows} action_rows={result.action_rows} "
+        f"transition_rows={result.transition_rows}"
     )
     console.print(f"yields_csv: {result.yields_csv_path}")
     console.print(f"areas_csv: {result.areas_csv_path}")
+    console.print(f"actions_csv: {result.actions_csv_path}")
+    console.print(f"transitions_csv: {result.transitions_csv_path}")
 
 
 app.add_typer(prep_app, name="prep")

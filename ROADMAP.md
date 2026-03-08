@@ -2207,3 +2207,14 @@
 - 2026-03-08 next queue: start treatment transition/action parity work beyond
   baseline CC assignment (legacy semantics), and extend Woodstock compatibility
   outputs toward direct model ingest conventions.
+- 2026-03-08: Started treatment transition/action parity by extending the
+  Patchworks treatment model/serializer to emit `<transition>` assignments;
+  baseline CC tracks now include `IFM -> 'managed'` transition assignment
+  (configurable via `--cc-transition-ifm`).
+- 2026-03-08: Extended Woodstock compatibility export toward direct-ingest
+  conventions by adding `woodstock_actions.csv` and
+  `woodstock_transitions.csv` outputs (plus CLI support for `--cc-min-age` /
+  `--cc-max-age`).
+- 2026-03-08 next queue: add configurable per-AU transition target fields
+  (beyond IFM only), and evaluate adding Woodstock `.yld` writer/import parity
+  helpers for tighter legacy interoperability.

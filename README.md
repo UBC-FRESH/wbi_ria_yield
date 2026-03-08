@@ -76,6 +76,8 @@ PYTHONPATH=src python -m femic export woodstock --tsa k3z
 This currently writes:
 - `output/woodstock/woodstock_yields.csv`
 - `output/woodstock/woodstock_areas.csv`
+- `output/woodstock/woodstock_actions.csv`
+- `output/woodstock/woodstock_transitions.csv`
 
 ### Config-Driven Runs
 

@@ -51,4 +51,5 @@ Useful overrides:
 - ``--bundle-dir``: alternate bundle source (``au_table.csv``, ``curve_table.csv``, ``curve_points_table.csv``)
 - ``--checkpoint``: alternate stand checkpoint feather (must include geometry, TSA, AU, age)
 - ``--output-dir``: export destination
-- ``--start-year``, ``--horizon-years``, ``--cc-min-age``, ``--cc-max-age``, ``--fragments-crs``
+- ``--start-year``, ``--horizon-years``, ``--cc-min-age``, ``--cc-max-age``,
+  ``--cc-transition-ifm``, ``--fragments-crs``
