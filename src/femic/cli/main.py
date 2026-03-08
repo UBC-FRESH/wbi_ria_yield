@@ -11,6 +11,14 @@ import yaml
 from rich.console import Console
 
 from femic import __version__
+from femic.fmg import (
+    DEFAULT_CC_MAX_AGE,
+    DEFAULT_CC_MIN_AGE,
+    DEFAULT_FRAGMENTS_CRS,
+    DEFAULT_HORIZON_YEARS,
+    DEFAULT_START_YEAR,
+    export_patchworks_package,
+)
 from femic.pipeline.io import (
     build_pipeline_run_config,
     file_sha256,
@@ -46,6 +54,11 @@ tipsy_app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
     help="Validate TIPSY config handoff files.",
+)
+export_app = typer.Typer(
+    add_completion=False,
+    no_args_is_help=True,
+    help="Export model artifacts for downstream planning systems.",
 )
 console = Console()
 
@@ -118,6 +131,46 @@ RUN_CONFIG_OPTION = typer.Option(
     "--run-config",
     help="YAML/JSON run profile used to seed TSA/strata and mode defaults.",
     show_default=False,
+)
+EXPORT_BUNDLE_DIR_OPTION = typer.Option(
+    Path("data/model_input_bundle"),
+    "--bundle-dir",
+    help="Directory containing au_table.csv / curve_table.csv / curve_points_table.csv.",
+)
+EXPORT_CHECKPOINT_OPTION = typer.Option(
+    Path("data/ria_vri_vclr1p_checkpoint7.feather"),
+    "--checkpoint",
+    help="Stand checkpoint feather used to build fragments shapefile.",
+)
+EXPORT_OUTPUT_DIR_OPTION = typer.Option(
+    Path("output/patchworks"),
+    "--output-dir",
+    help="Output directory for ForestModel XML + fragments shapefile.",
+)
+EXPORT_START_YEAR_OPTION = typer.Option(
+    DEFAULT_START_YEAR,
+    "--start-year",
+    help="Patchworks ForestModel start year.",
+)
+EXPORT_HORIZON_YEARS_OPTION = typer.Option(
+    DEFAULT_HORIZON_YEARS,
+    "--horizon-years",
+    help="Patchworks ForestModel planning horizon in years.",
+)
+EXPORT_CC_MIN_AGE_OPTION = typer.Option(
+    DEFAULT_CC_MIN_AGE,
+    "--cc-min-age",
+    help="Clearcut minimum operability age for exported treatment rule.",
+)
+EXPORT_CC_MAX_AGE_OPTION = typer.Option(
+    DEFAULT_CC_MAX_AGE,
+    "--cc-max-age",
+    help="Clearcut maximum operability age for exported treatment rule.",
+)
+EXPORT_FRAGMENTS_CRS_OPTION = typer.Option(
+    DEFAULT_FRAGMENTS_CRS,
+    "--fragments-crs",
+    help="CRS assigned to exported fragments shapefile.",
 )
 VDYP_CURVE_LOG_OPTION = typer.Option(
     Path("vdyp_io/logs/vdyp_curve_events.jsonl"),
@@ -529,7 +582,55 @@ def tipsy_validate(
     )
 
 
+@export_app.command("patchworks")
+def export_patchworks(
+    tsa: list[str] | None = TSA_OPTION,
+    bundle_dir: Path = EXPORT_BUNDLE_DIR_OPTION,
+    checkpoint: Path = EXPORT_CHECKPOINT_OPTION,
+    output_dir: Path = EXPORT_OUTPUT_DIR_OPTION,
+    start_year: int = EXPORT_START_YEAR_OPTION,
+    horizon_years: int = EXPORT_HORIZON_YEARS_OPTION,
+    cc_min_age: int = EXPORT_CC_MIN_AGE_OPTION,
+    cc_max_age: int = EXPORT_CC_MAX_AGE_OPTION,
+    fragments_crs: str = EXPORT_FRAGMENTS_CRS_OPTION,
+) -> None:
+    targets = (
+        [str(v).zfill(2) if str(v).isdigit() else str(v).lower() for v in tsa]
+        if tsa
+        else []
+    )
+    if not targets:
+        console.print(
+            "[red]Provide at least one TSA via --tsa for patchworks export.[/red]"
+        )
+        raise typer.Exit(code=1)
+    try:
+        result = export_patchworks_package(
+            bundle_dir=bundle_dir,
+            checkpoint_path=checkpoint,
+            output_dir=output_dir,
+            tsa_list=targets,
+            start_year=start_year,
+            horizon_years=horizon_years,
+            cc_min_age=cc_min_age,
+            cc_max_age=cc_max_age,
+            fragments_crs=fragments_crs,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]Patchworks export failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        "[green]patchworks export completed[/green] "
+        f"tsa={result.tsa_list} au={result.au_count} "
+        f"fragments={result.fragment_count} curves={result.curve_count}"
+    )
+    console.print(f"forestmodel_xml: {result.forestmodel_xml_path}")
+    console.print(f"fragments_shp: {result.fragments_shapefile_path}")
+
+
 app.add_typer(prep_app, name="prep")
 app.add_typer(vdyp_app, name="vdyp")
 app.add_typer(tsa_app, name="tsa")
 app.add_typer(tipsy_app, name="tipsy")
+app.add_typer(export_app, name="export")

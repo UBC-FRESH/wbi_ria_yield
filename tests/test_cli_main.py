@@ -264,3 +264,74 @@ def test_tsa_post_tipsy_calls_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
     assert any("post-tipsy completed" in msg for msg in messages)
     assert any("Run manifest:" in msg for msg in messages)
     assert any("fake-progress" in msg for msg in messages)
+
+
+def test_export_patchworks_requires_tsa(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.export_patchworks(tsa=None)
+
+    assert exc_info.value.exit_code == 1
+    assert any("Provide at least one TSA" in msg for msg in messages)
+
+
+def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    called: dict[str, object] = {}
+
+    def _fake_export_patchworks_package(
+        *,
+        bundle_dir,
+        checkpoint_path,
+        output_dir,
+        tsa_list,
+        start_year,
+        horizon_years,
+        cc_min_age,
+        cc_max_age,
+        fragments_crs,
+    ):
+        called.update(
+            {
+                "bundle_dir": bundle_dir,
+                "checkpoint_path": checkpoint_path,
+                "output_dir": output_dir,
+                "tsa_list": tsa_list,
+                "start_year": start_year,
+                "horizon_years": horizon_years,
+                "cc_min_age": cc_min_age,
+                "cc_max_age": cc_max_age,
+                "fragments_crs": fragments_crs,
+            }
+        )
+        return SimpleNamespace(
+            forestmodel_xml_path=Path("output/patchworks/forestmodel.xml"),
+            fragments_shapefile_path=Path("output/patchworks/fragments/fragments.shp"),
+            tsa_list=tsa_list,
+            au_count=12,
+            fragment_count=218,
+            curve_count=48,
+        )
+
+    monkeypatch.setattr(
+        cli_main, "export_patchworks_package", _fake_export_patchworks_package
+    )
+
+    cli_main.export_patchworks(
+        tsa=["k3z"],
+        bundle_dir=Path("data/model_input_bundle"),
+        checkpoint=Path("data/ria_vri_vclr1p_checkpoint7.feather"),
+        output_dir=Path("output/patchworks"),
+        start_year=2026,
+        horizon_years=300,
+        cc_min_age=0,
+        cc_max_age=500,
+        fragments_crs="EPSG:3005",
+    )
+
+    assert called["tsa_list"] == ["k3z"]
+    assert called["cc_max_age"] == 500
+    assert any("patchworks export completed" in msg for msg in messages)

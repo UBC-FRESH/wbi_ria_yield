@@ -56,6 +56,17 @@ When `data/ria_vri_vclr1p_checkpoint8.feather` is available, post-TIPSY bundle a
 adds species-proportion curves for all top-6 VRI species present in the selected TSA(s):
 `unmanaged_species_prop_<SPP>` and `managed_species_prop_<SPP>` (single-point curves at `x=1`).
 
+6. Export Patchworks starter package (ForestModel XML + fragments shapefile):
+
+```bash
+PYTHONPATH=src python -m femic export patchworks --tsa k3z
+```
+
+By default this command reads bundle tables from `data/model_input_bundle/` and stand
+geometry from `data/ria_vri_vclr1p_checkpoint7.feather`, then writes:
+- `output/patchworks/forestmodel.xml`
+- `output/patchworks/fragments/fragments.shp`
+
 ### Config-Driven Runs
 
 Use a YAML/JSON profile to seed TSA selection and run modes:
