@@ -314,3 +314,75 @@ def test_write_forestmodel_xml_matches_fixture(tmp_path: Path) -> None:
     )
     actual = out_path.read_text(encoding="utf-8")
     assert actual == expected
+
+
+def test_write_forestmodel_xml_matches_multi_au_fixture(tmp_path: Path) -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 1001,
+                "tsa": "29",
+                "stratum_code": "SBPS_PLI",
+                "si_level": "L",
+                "managed_curve_id": 21001,
+                "unmanaged_curve_id": 1001,
+            },
+            {
+                "au_id": 1002,
+                "tsa": "29",
+                "stratum_code": "IDF_FD",
+                "si_level": "M",
+                "managed_curve_id": 21002,
+                "unmanaged_curve_id": 1002,
+            },
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 1001, "curve_type": "unmanaged"},
+            {"curve_id": 1002, "curve_type": "unmanaged"},
+            {"curve_id": 21001, "curve_type": "managed"},
+            {"curve_id": 21002, "curve_type": "managed"},
+            {"curve_id": 1001001, "curve_type": "unmanaged_species_prop_PL"},
+            {"curve_id": 1001002, "curve_type": "unmanaged_species_prop_FD"},
+            {"curve_id": 1002001, "curve_type": "unmanaged_species_prop_SW"},
+            {"curve_id": 1002002, "curve_type": "unmanaged_species_prop_AT"},
+            {"curve_id": 21001001, "curve_type": "managed_species_prop_PL"},
+            {"curve_id": 21001002, "curve_type": "managed_species_prop_FD"},
+            {"curve_id": 21002001, "curve_type": "managed_species_prop_SW"},
+            {"curve_id": 21002002, "curve_type": "managed_species_prop_AT"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 1001, "x": 1, "y": 5.0},
+            {"curve_id": 1001, "x": 10, "y": 40.0},
+            {"curve_id": 1002, "x": 1, "y": 6.0},
+            {"curve_id": 1002, "x": 10, "y": 50.0},
+            {"curve_id": 21001, "x": 1, "y": 8.0},
+            {"curve_id": 21001, "x": 10, "y": 65.0},
+            {"curve_id": 21002, "x": 1, "y": 9.0},
+            {"curve_id": 21002, "x": 10, "y": 72.0},
+            {"curve_id": 1001001, "x": 1, "y": 0.70},
+            {"curve_id": 1001002, "x": 1, "y": 0.30},
+            {"curve_id": 1002001, "x": 1, "y": 0.55},
+            {"curve_id": 1002002, "x": 1, "y": 0.45},
+            {"curve_id": 21001001, "x": 1, "y": 0.80},
+            {"curve_id": 21001002, "x": 1, "y": 0.20},
+            {"curve_id": 21002001, "x": 1, "y": 0.60},
+            {"curve_id": 21002002, "x": 1, "y": 0.40},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    out_path = tmp_path / "forestmodel_multi.xml"
+    write_forestmodel_xml(root=root, path=out_path)
+
+    expected = Path("tests/fixtures/fmg/forestmodel_multi_au.xml").read_text(
+        encoding="utf-8"
+    )
+    actual = out_path.read_text(encoding="utf-8")
+    assert actual == expected

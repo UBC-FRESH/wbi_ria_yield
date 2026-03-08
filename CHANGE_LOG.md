@@ -2115,3 +2115,11 @@
 - Revalidated patchworks export smoke:
   `PYTHONPATH=src .venv/bin/python -m femic export patchworks --tsa k3z --output-dir output/patchworks_k3z_modelclass_smoke`
   succeeded (`au=14`, `fragments=218`, `curves=54`).
+
+## 2026-03-08 - Expanded deterministic XML fixture parity (P4.2b)
+- Added richer multi-AU/species fixture parity coverage for Patchworks XML:
+  - `tests/fixtures/fmg/forestmodel_multi_au.xml`
+  - `tests/test_fmg_patchworks.py::test_write_forestmodel_xml_matches_multi_au_fixture`
+- Marked `P4.2` and `P4.2b` complete in `ROADMAP.md` and updated the
+  detailed next-step queue toward treatment transition/action parity and
+  Woodstock ingest conventions.

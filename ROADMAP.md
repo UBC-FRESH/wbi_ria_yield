@@ -63,9 +63,9 @@
   - [x] P4.1a Parse Patchworks user guide into a concrete implementation checklist
   - [x] P4.1b Add gitignore rules for proprietary reference PDFs (do not republish)
   - [x] P4.1c Document required ForestModel XML elements and fragments schema fields
-- [ ] P4.2 Port legacy `fmg` core to Python 3 under `src/femic/fmg/`
+- [x] P4.2 Port legacy `fmg` core to Python 3 under `src/femic/fmg/`
   - [x] P4.2a Port core model classes (`Curve`, `Treatment`, `ForestModel`, related XML nodes)
-  - [ ] P4.2b Preserve deterministic XML serialization behavior with fixture-based parity tests
+  - [x] P4.2b Preserve deterministic XML serialization behavior with fixture-based parity tests
   - [x] P4.2c Port Woodstock import/export helpers as a compatibility module
 - [x] P4.3 Build femic-to-fmg adapters from current pipeline outputs
   - [x] P4.3a Map `curve_table`/`curve_points_table` into fmg curve objects
@@ -2200,6 +2200,10 @@
   `AttributeBinding`, `DefineFieldDefinition`, `TreatmentAssignment`) and moving
   Patchworks XML construction to `build_patchworks_forestmodel_definition(...)`
   + `forestmodel_definition_to_xml_tree(...)`.
-- 2026-03-08 next queue: expand deterministic XML parity coverage (`P4.2b`) from
-  minimal fixture to richer multi-AU/species fixtures, then port transition/action
-  semantics needed for full legacy treatment parity.
+- 2026-03-08: Expanded deterministic XML parity coverage for `P4.2b` with a
+  richer multi-AU/species fixture:
+  `tests/fixtures/fmg/forestmodel_multi_au.xml` and
+  `tests/test_fmg_patchworks.py::test_write_forestmodel_xml_matches_multi_au_fixture`.
+- 2026-03-08 next queue: start treatment transition/action parity work beyond
+  baseline CC assignment (legacy semantics), and extend Woodstock compatibility
+  outputs toward direct model ingest conventions.
