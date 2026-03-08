@@ -2381,3 +2381,5 @@
   - `tests/test_patchworks_runtime.py`
   - extended `tests/test_cli_main.py` and `tests/test_docs_contract.py`.
 - Updated README with Patchworks runtime command examples and proprietary-runtime boundary note.
+- Closed Phase 7 git-protection follow-up by verifying `reference/Patchworks/` is ignored and no proprietary Patchworks bundle files are tracked in the repository index.
+- Updated roadmap status so P7.1 is complete; next practical Phase 7 task is live UBC VPN + Wine license-server validation.

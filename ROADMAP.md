@@ -142,9 +142,9 @@
   - [ ] P6.4c Add docs checks ensuring onboarding guide + templates remain linked
 
 ## Phase 7: Patchworks Runtime Integration + UBC VPN Licensing
-- [ ] P7.1 Protect proprietary Patchworks bundle in git
+- [x] P7.1 Protect proprietary Patchworks bundle in git
   - [x] P7.1a Add `.gitignore` entry for `reference/Patchworks/`
-  - [ ] P7.1b If already tracked, remove from index (`git rm --cached -r reference/Patchworks`)
+  - [x] P7.1b If already tracked, remove from index (`git rm --cached -r reference/Patchworks`)
   - [x] P7.1c Add docs note that users must provide local Patchworks install separately
 - [x] P7.2 Add Patchworks runtime preflight checks (CLI)
   - [x] P7.2a Verify `wine64` exists
@@ -181,9 +181,9 @@
   for local editing, and gitignored `reference/Patchworks/` to avoid publishing
   proprietary binaries/API docs.
 - Added Phase 7 docs/test wiring for Patchworks runtime and VPN diagnostics;
-  remaining queued Phase 7 work is P7.1b (drop from git index if proprietary
-  files were previously tracked) plus first live VPN+Wine validation against
-  the real license server environment.
+  verified `reference/Patchworks/` is now ignored and not tracked in git index;
+  remaining queued Phase 7 work is first live VPN+Wine validation against the
+  real license server environment.
 - Phase 6 kickoff complete: added reusable onboarding assets for new cases:
   `config/run_profile.case_template.yaml`, `config/tipsy/template.case.yaml`,
   and `docs/guides/case-onboarding.rst`.
