@@ -109,6 +109,12 @@ def build_run_manifest_payload(
             "FEMIC_BOUNDARY_PATH": execution_plan.env.get("FEMIC_BOUNDARY_PATH"),
             "FEMIC_BOUNDARY_LAYER": execution_plan.env.get("FEMIC_BOUNDARY_LAYER"),
             "FEMIC_BOUNDARY_CODE": execution_plan.env.get("FEMIC_BOUNDARY_CODE"),
+            "FEMIC_VDYP_SAMPLING_MODE": execution_plan.env.get(
+                "FEMIC_VDYP_SAMPLING_MODE"
+            ),
+            "FEMIC_VDYP_TWO_PASS_REBIN": execution_plan.env.get(
+                "FEMIC_VDYP_TWO_PASS_REBIN"
+            ),
         },
         "runtime_parameters": {
             "femic_tsa_list": execution_plan.env.get("FEMIC_TSA_LIST"),
@@ -125,6 +131,12 @@ def build_run_manifest_payload(
             "femic_boundary_path": execution_plan.env.get("FEMIC_BOUNDARY_PATH"),
             "femic_boundary_layer": execution_plan.env.get("FEMIC_BOUNDARY_LAYER"),
             "femic_boundary_code": execution_plan.env.get("FEMIC_BOUNDARY_CODE"),
+            "femic_vdyp_sampling_mode": execution_plan.env.get(
+                "FEMIC_VDYP_SAMPLING_MODE"
+            ),
+            "femic_vdyp_two_pass_rebin": execution_plan.env.get(
+                "FEMIC_VDYP_TWO_PASS_REBIN"
+            ),
         },
         "runtime_versions": collect_runtime_versions(),
         "paths": {

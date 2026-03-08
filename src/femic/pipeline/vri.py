@@ -5,32 +5,157 @@ from __future__ import annotations
 from typing import Any, Sequence
 
 
+_BEC_KEY_LEVELS = {"zone", "subzone", "variant", "phase"}
+
+
+def _coerce_text_token(value: Any, *, fallback: str = "X") -> str:
+    text = str(value).strip() if value is not None else ""
+    if not text or text.lower() == "nan":
+        return fallback
+    return text
+
+
+def _value_from_row(row: Any, key: str) -> Any:
+    try:
+        return row[key]
+    except (KeyError, TypeError, IndexError):
+        return getattr(row, key, None)
+
+
+def _bec_key_from_row(
+    row: Any,
+    *,
+    bec_grouping: str,
+    lexmatch: bool = False,
+    lexmatch_fieldname_suffix: str = "_lexmatch",
+) -> str:
+    level = str(bec_grouping).strip().lower()
+    if level not in _BEC_KEY_LEVELS:
+        level = "zone"
+
+    zone_key = (
+        f"BEC_ZONE_CODE{lexmatch_fieldname_suffix}" if lexmatch else "BEC_ZONE_CODE"
+    )
+    zone = _coerce_text_token(_value_from_row(row, zone_key))
+    if lexmatch:
+        zone = zone * 3
+
+    if level == "zone":
+        return zone
+
+    subzone = _coerce_text_token(_value_from_row(row, "BEC_SUBZONE"), fallback="")
+    if level == "subzone":
+        return f"{zone}{subzone}"
+
+    variant = _coerce_text_token(_value_from_row(row, "BEC_VARIANT"), fallback="")
+    if level == "variant":
+        return f"{zone}{subzone}{variant}"
+
+    phase = _coerce_text_token(_value_from_row(row, "BEC_PHASE"), fallback="")
+    return f"{zone}{subzone}{variant}{phase}"
+
+
+def _species_combo_from_row(
+    row: Any,
+    *,
+    species_combo_count: int,
+    lexmatch: bool = False,
+    lexmatch_fieldname_suffix: str = "_lexmatch",
+    include_tm_species2_for_single: bool = True,
+) -> str:
+    combo_count = max(int(species_combo_count), 1)
+    if combo_count == 1:
+        first_key = (
+            f"SPECIES_CD_1{lexmatch_fieldname_suffix}" if lexmatch else "SPECIES_CD_1"
+        )
+        first_species = _coerce_text_token(_value_from_row(row, first_key))
+        result = first_species * 2 if lexmatch else first_species
+        if include_tm_species2_for_single:
+            level_4 = _coerce_text_token(
+                _value_from_row(row, "BCLCS_LEVEL_4"), fallback=""
+            )
+            species_2 = _value_from_row(row, "SPECIES_CD_2")
+            if level_4 == "TM" and species_2 is not None:
+                second_key = (
+                    f"SPECIES_CD_2{lexmatch_fieldname_suffix}"
+                    if lexmatch
+                    else "SPECIES_CD_2"
+                )
+                second_species = _coerce_text_token(
+                    _value_from_row(row, second_key), fallback=""
+                )
+                if second_species:
+                    result += "+" + second_species
+        return result
+
+    species_entries: list[tuple[float, int, str]] = []
+    seen_codes: set[str] = set()
+    for idx in range(1, 7):
+        species_key = (
+            f"SPECIES_CD_{idx}{lexmatch_fieldname_suffix}"
+            if lexmatch
+            else f"SPECIES_CD_{idx}"
+        )
+        species_text = _coerce_text_token(
+            _value_from_row(row, species_key), fallback=""
+        )
+        if not species_text or species_text == "X":
+            continue
+        base_species_text = _coerce_text_token(
+            _value_from_row(row, f"SPECIES_CD_{idx}"),
+            fallback="",
+        )
+        if not base_species_text or base_species_text in {"X", "XX"}:
+            continue
+        if base_species_text in seen_codes:
+            continue
+        seen_codes.add(base_species_text)
+        pct_raw = _value_from_row(row, f"SPECIES_PCT_{idx}")
+        try:
+            pct = float(pct_raw)
+        except (TypeError, ValueError):
+            pct = 0.0
+        if pct <= 0.0:
+            continue
+        species_entries.append((pct, idx, species_text))
+    if not species_entries:
+        return _coerce_text_token(
+            _value_from_row(
+                row,
+                f"SPECIES_CD_1{lexmatch_fieldname_suffix}"
+                if lexmatch
+                else "SPECIES_CD_1",
+            )
+        )
+    species_entries.sort(key=lambda entry: (-entry[0], entry[1]))
+    parts = [entry[2] for entry in species_entries[:combo_count]]
+    return "+".join(parts)
+
+
 def stratify_stand(
     row: Any,
     *,
     lexmatch: bool = False,
     lexmatch_fieldname_suffix: str = "_lexmatch",
+    bec_grouping: str = "zone",
+    species_combo_count: int = 1,
+    include_tm_species2_for_single: bool = True,
 ) -> str:
-    """Build stratum code from BEC + leading species with optional lexmatch fields."""
-
-    def _value(key: str) -> Any:
-        try:
-            return row[key]
-        except (KeyError, TypeError, IndexError):
-            return getattr(row, key)
-
-    if lexmatch:
-        result = 3 * _value(f"BEC_ZONE_CODE{lexmatch_fieldname_suffix}")
-        result += "_"
-        result += 2 * _value(f"SPECIES_CD_1{lexmatch_fieldname_suffix}")
-        if _value("BCLCS_LEVEL_4") == "TM" and _value("SPECIES_CD_2") is not None:
-            result += "+" + _value(f"SPECIES_CD_2{lexmatch_fieldname_suffix}")
-        return result
-    result = str(_value("BEC_ZONE_CODE")) + "_"
-    result += str(_value("SPECIES_CD_1"))
-    if _value("BCLCS_LEVEL_4") == "TM" and _value("SPECIES_CD_2") is not None:
-        result += "+" + str(_value("SPECIES_CD_2"))
-    return result
+    """Build stratum code from BEC grouping + leading species combination."""
+    bec = _bec_key_from_row(
+        row,
+        bec_grouping=bec_grouping,
+        lexmatch=lexmatch,
+        lexmatch_fieldname_suffix=lexmatch_fieldname_suffix,
+    )
+    species_combo = _species_combo_from_row(
+        row,
+        species_combo_count=species_combo_count,
+        lexmatch=lexmatch,
+        lexmatch_fieldname_suffix=lexmatch_fieldname_suffix,
+        include_tm_species2_for_single=include_tm_species2_for_single,
+    )
+    return f"{bec}_{species_combo}"
 
 
 def assign_stratum_codes_with_lexmatch(
@@ -42,23 +167,40 @@ def assign_stratum_codes_with_lexmatch(
     lexmatch_suffix: str = "_lexmatch",
     stratum_col: str = "stratum",
     stratum_lexmatch_col: str = "stratum_lexmatch",
+    bec_grouping: str = "zone",
+    species_combo_count: int = 1,
+    include_tm_species2_for_single: bool = True,
 ) -> Any:
     """Populate legacy stratum and stratum_lexmatch fields from stand attributes."""
     table = f_table.copy()
     table[f"{bec_col}{lexmatch_suffix}"] = table[bec_col].str.ljust(4, fillchar="x")
-    for idx in range(1, 3):
+    for idx in range(1, 7):
         species_col = f"{species_col_prefix}{idx}"
+        if species_col not in table.columns:
+            continue
         lex_col = f"{species_col}{lexmatch_suffix}"
         table[lex_col] = table[species_col].str.ljust(4, "x")
         table[lex_col] = table[species_col].str[:1] + table[species_col]
 
-    table[stratum_col] = row_apply_fn(table, stratify_stand, axis=1)
+    table[stratum_col] = row_apply_fn(
+        table,
+        lambda row: stratify_stand(
+            row,
+            bec_grouping=bec_grouping,
+            species_combo_count=species_combo_count,
+            include_tm_species2_for_single=include_tm_species2_for_single,
+        ),
+        axis=1,
+    )
     table[stratum_lexmatch_col] = row_apply_fn(
         table,
         lambda row: stratify_stand(
             row,
             lexmatch=True,
             lexmatch_fieldname_suffix=lexmatch_suffix,
+            bec_grouping=bec_grouping,
+            species_combo_count=species_combo_count,
+            include_tm_species2_for_single=include_tm_species2_for_single,
         ),
         axis=1,
     )

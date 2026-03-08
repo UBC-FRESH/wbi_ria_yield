@@ -124,6 +124,7 @@ def run_tsa(
         stratum_col=stratum_col,
         pd_module=pd,
         tsa_code=tsa,
+        target_coverage=runtime_config.target_area_coverage,
     )
     print("mean stratum SI IQR", site_index_iqr_mean)
     print("coverage", strata_df.coverage.sum())
@@ -190,7 +191,9 @@ def run_tsa(
     )
 
     # --- cell 28 ---
-    stratum_fit_cfg = build_stratum_fit_run_config()
+    stratum_fit_cfg = build_stratum_fit_run_config(
+        min_stands_per_si_bin=runtime_config.min_stands_per_si_bin
+    )
 
     vdyp_prep_checkpoint_path = pre_vdyp_checkpoint_path(tsa_code=tsa)
     prep_loaded = False
@@ -226,6 +229,7 @@ def run_tsa(
             sns_module=sns,
             plt_module=plt,
             fit_rawdata=stratum_fit_cfg.fit_rawdata,
+            min_stands_per_si_bin=stratum_fit_cfg.min_stands_per_si_bin,
             min_age=stratum_fit_cfg.min_age,
             agg_type=stratum_fit_cfg.agg_type,
             plot=stratum_fit_cfg.plot,
@@ -245,6 +249,41 @@ def run_tsa(
             "saved pre-VDYP checkpoint with %s strata to %s"
             % (saved_count, vdyp_prep_checkpoint_path)
         )
+
+    def _compile_fit_results(*, f_table, stratum_si_stats_for_fit):
+        compile_one_fn_local = build_fit_stratum_curves_runner(
+            f_table=f_table,
+            fit_func=body_fit_func,
+            fit_func_bounds_func=body_fit_func_bounds_func,
+            strata_df=strata_df,
+            stratum_si_stats=stratum_si_stats_for_fit,
+            species_list=species_list,
+            curve_fit_fn=curve_fit,
+            np_module=np,
+            pd_module=pd,
+            sns_module=sns,
+            plt_module=plt,
+            fit_rawdata=stratum_fit_cfg.fit_rawdata,
+            min_stands_per_si_bin=stratum_fit_cfg.min_stands_per_si_bin,
+            min_age=stratum_fit_cfg.min_age,
+            agg_type=stratum_fit_cfg.agg_type,
+            plot=stratum_fit_cfg.plot,
+            figsize=stratum_fit_cfg.figsize,
+            verbose=stratum_fit_cfg.verbose,
+            ylim=stratum_fit_cfg.ylim,
+            xlim=stratum_fit_cfg.xlim,
+            message_fn=print,
+        )
+        return compile_strata_fit_results(
+            strata_df=strata_df,
+            compile_one_fn=compile_one_fn_local,
+            message_fn=print,
+        )
+
+    vdyp_sampling_mode = runtime_config.vdyp_sampling_mode
+    if runtime_config.vdyp_two_pass_rebin and str(vdyp_sampling_mode).lower() == "auto":
+        vdyp_sampling_mode = "all"
+        print("two-pass rebin enabled: forcing first-pass VDYP sampling mode to all")
 
     # --- cell 30/32 ---
 
@@ -284,13 +323,14 @@ def run_tsa(
     vdyp_source_feature_ids = sorted(set(vdyp_source_feature_ids))
     vdyp_source_map_ids = sorted(set(vdyp_source_map_ids))
 
+    vdyp_read_from_source = runtime_config.force_run_vdyp or not (
+        vdyp_ply_tsa_path.is_file() and vdyp_lyr_tsa_path.is_file()
+    )
     vdyp_ply, vdyp_lyr = load_vdyp_input_tables(
         vdyp_input_pandl_path=runtime_config.vdyp_input_pandl_path,
         vdyp_ply_feather_path=vdyp_ply_tsa_path,
         vdyp_lyr_feather_path=vdyp_lyr_tsa_path,
-        read_from_source=not (
-            vdyp_ply_tsa_path.is_file() and vdyp_lyr_tsa_path.is_file()
-        ),
+        read_from_source=vdyp_read_from_source,
         source_map_ids=vdyp_source_map_ids,
         source_feature_ids=vdyp_source_feature_ids,
         message_fn=print,
@@ -334,6 +374,7 @@ def run_tsa(
         append_jsonl_fn=append_jsonl,
         run_vdyp_fn=run_vdyp_fn,
         vdyp_out_cache=runtime_config.vdyp_out_cache,
+        nsamples_mode=vdyp_sampling_mode,
     )
     vdyp_results[tsa] = load_or_build_vdyp_results_tsa(
         tsa=tsa,
@@ -344,6 +385,132 @@ def run_tsa(
         print_fn=print,
     )
 
+    if runtime_config.vdyp_two_pass_rebin:
+        print("two-pass SI rebin: deriving stand-level SI from first-pass VDYP output")
+
+        def _coerce_feature_id(value):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+
+        def _extract_stand_si_from_vdyp(vdyp_results_for_tsa):
+            by_stratum = {}
+            for stratumi_, per_si in vdyp_results_for_tsa.items():
+                stand_si = {}
+                if not isinstance(per_si, dict):
+                    by_stratum[int(stratumi_)] = stand_si
+                    continue
+                for tables in per_si.values():
+                    if not isinstance(tables, dict):
+                        continue
+                    for feature_id, table in tables.items():
+                        if (
+                            not isinstance(table, pd.DataFrame)
+                            or "SI" not in table.columns
+                        ):
+                            continue
+                        fid = _coerce_feature_id(feature_id)
+                        if fid is None:
+                            continue
+                        si_values = pd.to_numeric(table["SI"], errors="coerce").dropna()
+                        if si_values.empty:
+                            continue
+                        stand_si[fid] = float(si_values.median())
+                by_stratum[int(stratumi_)] = stand_si
+            return by_stratum
+
+        def _collect_stand_tables(vdyp_results_for_tsa):
+            by_stratum = {}
+            for stratumi_, per_si in vdyp_results_for_tsa.items():
+                stand_tables = {}
+                if isinstance(per_si, dict):
+                    for tables in per_si.values():
+                        if not isinstance(tables, dict):
+                            continue
+                        for feature_id, table in tables.items():
+                            fid = _coerce_feature_id(feature_id)
+                            if fid is None:
+                                continue
+                            stand_tables[fid] = table
+                by_stratum[int(stratumi_)] = stand_tables
+            return by_stratum
+
+        vdyp_si_by_stratum = _extract_stand_si_from_vdyp(vdyp_results.get(tsa, {}))
+        vdyp_tables_by_stratum = _collect_stand_tables(vdyp_results.get(tsa, {}))
+        f_rebin = f__.copy()
+        lookup = {}
+        for stratumi_, sc, _fit_out in results[tsa]:
+            stand_si_map = vdyp_si_by_stratum.get(int(stratumi_), {})
+            for fid, si_value in stand_si_map.items():
+                lookup[(str(sc), int(fid))] = float(si_value)
+        feature_ids_numeric = pd.to_numeric(f_rebin["FEATURE_ID"], errors="coerce")
+        mapped_si = []
+        mapped_count = 0
+        for sc, fid in zip(f_rebin.index.astype(str), feature_ids_numeric):
+            if pd.notna(fid):
+                key = (str(sc), int(fid))
+                si_value = lookup.get(key)
+                if si_value is not None:
+                    mapped_count += 1
+                    mapped_si.append(float(si_value))
+                    continue
+            mapped_si.append(np.nan)
+        f_rebin["_VDYP_OUTPUT_SI"] = mapped_si
+        f_rebin["_VDYP_OUTPUT_SI"] = f_rebin["_VDYP_OUTPUT_SI"].fillna(
+            f_rebin["SITE_INDEX"]
+        )
+        f_rebin["SITE_INDEX"] = f_rebin["_VDYP_OUTPUT_SI"]
+        print(
+            "two-pass SI rebin: mapped VDYP SI for %s/%s rows"
+            % (mapped_count, f_rebin.shape[0])
+        )
+        stratum_si_stats_vdyp = f_rebin.groupby(stratum_col).SITE_INDEX.describe(
+            percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
+        )
+        results[tsa] = _compile_fit_results(
+            f_table=f_rebin,
+            stratum_si_stats_for_fit=stratum_si_stats_vdyp,
+        )
+        saved_count = save_vdyp_prep_checkpoint(vdyp_prep_checkpoint_path, results[tsa])
+        print(
+            "saved pre-VDYP checkpoint (VDYP-SI rebin) with %s strata to %s"
+            % (saved_count, vdyp_prep_checkpoint_path)
+        )
+
+        rebinned_vdyp_results = {}
+        missing_tables = 0
+        expected_tables = 0
+        for stratumi_, _sc, fit_out in results[tsa]:
+            stand_tables = vdyp_tables_by_stratum.get(int(stratumi_), {})
+            rebinned_vdyp_results[int(stratumi_)] = {}
+            for si_level in si_levels:
+                ss = fit_out.get(si_level, {}).get("ss")
+                if ss is None or getattr(ss, "empty", False):
+                    rebinned_vdyp_results[int(stratumi_)][si_level] = {}
+                    continue
+                fids = (
+                    pd.to_numeric(ss["FEATURE_ID"], errors="coerce")
+                    .dropna()
+                    .astype(int)
+                    .unique()
+                    .tolist()
+                )
+                expected_tables += len(fids)
+                rebinned_tables = {}
+                for fid in fids:
+                    table = stand_tables.get(int(fid))
+                    if table is None:
+                        missing_tables += 1
+                        continue
+                    rebinned_tables[int(fid)] = table
+                rebinned_vdyp_results[int(stratumi_)][si_level] = rebinned_tables
+        vdyp_results[tsa] = rebinned_vdyp_results
+        print(
+            "two-pass SI rebin: rebuilt VDYP bins using cached stand tables "
+            "(missing=%s of %s)" % (missing_tables, expected_tables)
+        )
+
     # --- cell 45 ---
     vdyp_curves_smooth_tsa_feather_path = runtime_config.vdyp_cache_paths[
         "vdyp_curves_smooth_tsa_feather_path"
@@ -351,6 +518,7 @@ def run_tsa(
     should_rebuild_smooth_curves = (
         (not Path(vdyp_curves_smooth_tsa_feather_path).is_file())
         or (not bool(runtime_config.resume_effective))
+        or bool(runtime_config.vdyp_two_pass_rebin)
     )
     if should_rebuild_smooth_curves:
         smooth_plot_cfg = build_curve_smoothing_plot_config(sns_module=sns)

@@ -222,12 +222,20 @@ vri_vclr1p_path = _external_paths.vri_vclr1p_path
 _legacy_data_paths = build_legacy_data_artifact_paths()
 ria_stands_path = _legacy_data_paths.ria_stands_path
 tsa_boundaries_path = _external_paths.tsa_boundaries_path
+print(f"using VRI source: {vri_vclr1p_path}")
+print(f"using TSA boundaries source: {tsa_boundaries_path}")
 ria_maptiles_path = "ria_maptiles.csv"
-vdyp_input_pandl_path = _legacy_data_paths.vdyp_input_pandl_path
+vdyp_input_pandl_path = _external_paths.vdyp_input_pandl_path
+if not vdyp_input_pandl_path.exists():
+    vdyp_input_pandl_path = _legacy_data_paths.vdyp_input_pandl_path
+print(f"using VDYP input source: {vdyp_input_pandl_path}")
 
 site_prod_bc_gdb_path = (
-    _legacy_data_paths.site_prod_bc_gdb_path
+    _external_paths.site_prod_bc_gdb_path
 )  # ESRI File Geodatabase containing 22 species-wise site productivity raster layers
+if not site_prod_bc_gdb_path.exists():
+    site_prod_bc_gdb_path = _legacy_data_paths.site_prod_bc_gdb_path
+print(f"using site productivity source: {site_prod_bc_gdb_path}")
 
 tsa_boundaries_feather_path = _legacy_data_paths.tsa_boundaries_feather_path
 _ria_vri_checkpoint_paths = build_ria_vri_checkpoint_paths()
@@ -239,17 +247,23 @@ ria_vri_vclr1p_checkpoint5_feather_path = _ria_vri_checkpoint_paths[5]
 ria_vri_vclr1p_checkpoint6_feather_path = _ria_vri_checkpoint_paths[6]
 ria_vri_vclr1p_checkpoint7_feather_path = _ria_vri_checkpoint_paths[7]
 ria_vri_vclr1p_checkpoint8_feather_path = _ria_vri_checkpoint_paths[8]
-vri_vclr1p_categorical_columns_path = _legacy_data_paths.vri_vclr1p_categorical_columns_path
+vri_vclr1p_categorical_columns_path = (
+    _legacy_data_paths.vri_vclr1p_categorical_columns_path
+)
 ria_vclr1p_feature_tif_path = _legacy_data_paths.ria_vclr1p_feature_tif_path
 
 arc_raster_rescue_exe_path = Path("../ArcRasterRescue/build/arc_raster_rescue.exe")
-siteprod_gdb_path = _legacy_data_paths.siteprod_gdb_path
-siteprod_tmpexport_tif_path_prefix = _legacy_data_paths.siteprod_tmpexport_tif_path_prefix
+siteprod_gdb_path = site_prod_bc_gdb_path
+siteprod_tmpexport_tif_path_prefix = (
+    _legacy_data_paths.siteprod_tmpexport_tif_path_prefix
+)
 siteprod_tif_path = _legacy_data_paths.siteprod_tif_path
 
 vdyp_ply_feather_path = _legacy_data_paths.vdyp_ply_feather_path
 vdyp_lyr_feather_path = _legacy_data_paths.vdyp_lyr_feather_path
-vdyp_results_tsa_pickle_path_prefix = _legacy_data_paths.vdyp_results_tsa_pickle_path_prefix
+vdyp_results_tsa_pickle_path_prefix = (
+    _legacy_data_paths.vdyp_results_tsa_pickle_path_prefix
+)
 vdyp_results_pickle_path = _legacy_data_paths.vdyp_results_pickle_path
 vdyp_curves_smooth_tsa_feather_path_prefix = (
     _legacy_data_paths.vdyp_curves_smooth_tsa_feather_path_prefix
@@ -271,6 +285,19 @@ _femic_thlb_diag_raw = os.environ.get("FEMIC_THLB_DIAGNOSTICS", "0")
 _femic_boundary_path_raw = os.environ.get("FEMIC_BOUNDARY_PATH")
 _femic_boundary_layer = os.environ.get("FEMIC_BOUNDARY_LAYER")
 _femic_boundary_code = os.environ.get("FEMIC_BOUNDARY_CODE")
+_femic_strat_bec_grouping = os.environ.get("FEMIC_STRAT_BEC_GROUPING", "zone")
+_femic_strat_species_combo_count_raw = os.environ.get(
+    "FEMIC_STRAT_SPECIES_COMBO_COUNT", "1"
+)
+_femic_strat_include_tm_species2_raw = os.environ.get(
+    "FEMIC_STRAT_INCLUDE_TM_SPECIES2_FOR_SINGLE", "1"
+)
+_femic_strat_top_area_coverage_raw = os.environ.get("FEMIC_STRAT_TOP_AREA_COVERAGE")
+_femic_vdyp_sampling_mode_raw = os.environ.get("FEMIC_VDYP_SAMPLING_MODE", "auto")
+_femic_vdyp_two_pass_rebin_raw = os.environ.get("FEMIC_VDYP_TWO_PASS_REBIN", "0")
+_femic_vdyp_min_stands_per_si_bin_raw = os.environ.get(
+    "FEMIC_VDYP_MIN_STANDS_PER_SI_BIN", "25"
+)
 _femic_thlb_diagnostics = _femic_thlb_diag_raw.strip().lower() in (
     "1",
     "true",
@@ -287,6 +314,58 @@ _femic_no_cache = (
 )
 _femic_resume_effective = _femic_resume and not _femic_no_cache
 si_levels = ["L", "M", "H"]
+try:
+    _femic_strat_species_combo_count = max(1, int(_femic_strat_species_combo_count_raw))
+except ValueError:
+    _femic_strat_species_combo_count = 1
+_femic_strat_include_tm_species2_for_single = (
+    _femic_strat_include_tm_species2_raw.strip().lower() in ("1", "true", "yes")
+)
+try:
+    _femic_strat_top_area_coverage = (
+        float(_femic_strat_top_area_coverage_raw)
+        if _femic_strat_top_area_coverage_raw not in (None, "")
+        else None
+    )
+except ValueError:
+    _femic_strat_top_area_coverage = None
+if _femic_strat_top_area_coverage is not None and not (
+    0.0 < _femic_strat_top_area_coverage <= 1.0
+):
+    print(
+        "warning: invalid FEMIC_STRAT_TOP_AREA_COVERAGE=%s; expected 0<value<=1, ignoring"
+        % _femic_strat_top_area_coverage_raw
+    )
+    _femic_strat_top_area_coverage = None
+_femic_vdyp_two_pass_rebin = _femic_vdyp_two_pass_rebin_raw.strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+_femic_vdyp_sampling_mode_token = _femic_vdyp_sampling_mode_raw.strip().lower()
+if _femic_vdyp_sampling_mode_token in {"auto", "all"}:
+    _femic_vdyp_sampling_mode: str | int = _femic_vdyp_sampling_mode_token
+elif (
+    _femic_vdyp_sampling_mode_token.isdigit()
+    and int(_femic_vdyp_sampling_mode_token) > 0
+):
+    _femic_vdyp_sampling_mode = int(_femic_vdyp_sampling_mode_token)
+else:
+    print(
+        "warning: invalid FEMIC_VDYP_SAMPLING_MODE=%s; expected auto|all|positive-int, using auto"
+        % _femic_vdyp_sampling_mode_raw
+    )
+    _femic_vdyp_sampling_mode = "auto"
+try:
+    _femic_vdyp_min_stands_per_si_bin = int(_femic_vdyp_min_stands_per_si_bin_raw)
+except ValueError:
+    _femic_vdyp_min_stands_per_si_bin = 25
+if _femic_vdyp_min_stands_per_si_bin <= 0:
+    print(
+        "warning: invalid FEMIC_VDYP_MIN_STANDS_PER_SI_BIN=%s; expected positive integer, using 25"
+        % _femic_vdyp_min_stands_per_si_bin_raw
+    )
+    _femic_vdyp_min_stands_per_si_bin = 25
 
 
 def _apply_debug_rows(_df, _label=None):
@@ -306,11 +385,29 @@ if _femic_custom_boundary:
         "custom boundary mode: %s (layer=%s)"
         % (_femic_boundary_path_raw, _femic_boundary_layer or "<default>")
     )
+print(
+    "stratum key config: bec_grouping=%s species_combo_count=%d include_tm_species2_for_single=%s top_area_coverage=%s"
+    % (
+        _femic_strat_bec_grouping,
+        _femic_strat_species_combo_count,
+        _femic_strat_include_tm_species2_for_single,
+        _femic_strat_top_area_coverage,
+    )
+)
+print(
+    "vdyp run config: sampling_mode=%s two_pass_rebin=%s min_stands_per_si_bin=%s"
+    % (
+        _femic_vdyp_sampling_mode,
+        _femic_vdyp_two_pass_rebin,
+        _femic_vdyp_min_stands_per_si_bin,
+    )
+)
 
 raster_pxw = raster_pxh = 100
 
 tipsy_params_columns = [
-    line.strip() for line in _legacy_data_paths.tipsy_params_columns_path.read_text().splitlines()
+    line.strip()
+    for line in _legacy_data_paths.tipsy_params_columns_path.read_text().splitlines()
 ]
 
 # --- cell 11 ---
@@ -442,7 +539,7 @@ if not siteprod_tif_path.is_file():
     export_and_stack_siteprod_layers(
         arc_raster_rescue_exe_path=arc_raster_rescue_exe_path,
         site_prod_bc_gdb_path=site_prod_bc_gdb_path,
-        site_prod_bc_layerspecies=site_prod_bc_layerspecies,
+        site_prod_bc_layerspecies=siteprod_layerspecies,
         siteprod_layerspecies=siteprod_layerspecies,
         siteprod_tmpexport_tif_path_prefix=siteprod_tmpexport_tif_path_prefix,
         siteprod_tif_path=siteprod_tif_path,
@@ -504,6 +601,9 @@ else:
 f = assign_stratum_codes_with_lexmatch(
     f_table=f,
     row_apply_fn=_row_apply,
+    bec_grouping=_femic_strat_bec_grouping,
+    species_combo_count=_femic_strat_species_combo_count,
+    include_tm_species2_for_single=_femic_strat_include_tm_species2_for_single,
 )
 
 # --- cell 34 ---
@@ -538,7 +638,7 @@ f = prepare_tsa_index(f_table=f, tsa_column="tsa_code")
 force_run_vdyp = 1 if _femic_no_cache else 0
 vdyp_out_cache = None
 curve_fit_impl = _curve_fit
-si_levelquants = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+si_levelquants = {"L": [5, 20, 35], "M": [35, 50, 65], "H": [65, 80, 95]}
 
 
 def _should_skip_01a(tsa):
@@ -578,6 +678,10 @@ def _build_01a_run_kwargs(tsa):
         parallel_worker_count=len(rc),
         vdyp_out_cache=vdyp_out_cache,
         curve_fit_impl=curve_fit_impl,
+        target_area_coverage=_femic_strat_top_area_coverage,
+        vdyp_sampling_mode=_femic_vdyp_sampling_mode,
+        vdyp_two_pass_rebin=_femic_vdyp_two_pass_rebin,
+        min_stands_per_si_bin=_femic_vdyp_min_stands_per_si_bin,
     )
     return dict(
         tsa=tsa,
@@ -724,7 +828,9 @@ def _run_post_01b_bundle_and_curve_assignment_stage(
         )
 
     f_ = f_table
-    if "tsa_code" not in f_.columns and "tsa_code" in list(getattr(f_.index, "names", [])):
+    if "tsa_code" not in f_.columns and "tsa_code" in list(
+        getattr(f_.index, "names", [])
+    ):
         f_ = f_.reset_index("tsa_code")
     if not femic_no_cache:
         f_ = gpd.read_feather(checkpoint1_path)
@@ -743,8 +849,26 @@ def _run_post_01b_bundle_and_curve_assignment_stage(
     f_ = assign_stratum_codes_with_lexmatch(
         f_table=f_,
         row_apply_fn=_row_apply,
+        bec_grouping=_femic_strat_bec_grouping,
+        species_combo_count=_femic_strat_species_combo_count,
+        include_tm_species2_for_single=_femic_strat_include_tm_species2_for_single,
     )
     f_.to_feather(checkpoint5_path)
+
+    if au_table.empty:
+        print(
+            "warning: au_table is empty after 01b/bundle assembly; skipping AU/curve "
+            "assignment stage (likely missing or incompatible TIPSY output for current "
+            "strata)."
+        )
+        f_["au"] = np.nan
+        f_["managed_curve_id"] = np.nan
+        f_["unmanaged_curve_id"] = np.nan
+        f_["curve1"] = np.nan
+        f_["curve2"] = np.nan
+        f_.to_feather(checkpoint6_path)
+        f_.to_feather(checkpoint7_path)
+        return f_, au_table, curve_table, curve_points_table
 
     stratum_col = "stratum"
     f_[f"{stratum_col}_matched"] = None
@@ -755,7 +879,7 @@ def _run_post_01b_bundle_and_curve_assignment_stage(
         stratum_col=stratum_col,
         message_fn=print,
     )
-    si_levelquants_local = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+    si_levelquants_local = {"L": [5, 20, 35], "M": [35, 50, 65], "H": [65, 80, 95]}
     allowed_levels_by_stratum = (
         au_table.groupby("stratum_code")["si_level"]
         .apply(lambda s: sorted({str(v) for v in s.dropna().values}))

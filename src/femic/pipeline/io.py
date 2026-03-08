@@ -8,7 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import tomllib
-from typing import Iterable, Mapping
+from typing import Iterable, Mapping, Sequence
 import uuid
 
 import yaml
@@ -17,6 +17,15 @@ import yaml
 DEFAULT_DEV_CONFIG_PATH = Path("config/dev.toml")
 FALLBACK_DEFAULT_TSA_LIST = ["08"]
 DEFAULT_RUN_CONFIG_PATH = Path("config/run_profile.yaml")
+DEFAULT_LEGACY_VRI_RELATIVE_PATHS: tuple[Path, ...] = (
+    Path("bc/vri/2024/VEG_COMP_LYR_R1_POLY_2024.gdb"),
+    Path("bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb"),
+)
+DEFAULT_LEGACY_VDYP_INPUT_RELATIVE_PATHS: tuple[Path, ...] = (
+    Path("bc/vri/2024/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb"),
+    Path("bc/vri/2019/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"),
+    Path("VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"),
+)
 
 
 def load_default_tsa_list(config_path: Path = DEFAULT_DEV_CONFIG_PATH) -> list[str]:
@@ -85,6 +94,18 @@ class PipelineRunConfig:
     boundary_path: Path | None = None
     boundary_layer: str | None = None
     boundary_code: str | None = None
+    strat_bec_grouping: str | None = None
+    strat_species_combo_count: int | None = None
+    strat_include_tm_species2_for_single: bool | None = None
+    strat_top_area_coverage: float | None = None
+    vdyp_sampling_mode: str | int | None = None
+    vdyp_two_pass_rebin: bool | None = None
+    vdyp_min_stands_per_si_bin: int | None = None
+    managed_curve_mode: str | None = None
+    managed_curve_x_scale: float | None = None
+    managed_curve_y_scale: float | None = None
+    managed_curve_truncate_at_culm: bool | None = None
+    managed_curve_max_age: int | None = None
 
 
 @dataclass(frozen=True)
@@ -103,6 +124,18 @@ class PipelineRunProfile:
     boundary_path: Path | None = None
     boundary_layer: str | None = None
     boundary_code: str | None = None
+    strat_bec_grouping: str | None = None
+    strat_species_combo_count: int | None = None
+    strat_include_tm_species2_for_single: bool | None = None
+    strat_top_area_coverage: float | None = None
+    vdyp_sampling_mode: str | int | None = None
+    vdyp_two_pass_rebin: bool | None = None
+    vdyp_min_stands_per_si_bin: int | None = None
+    managed_curve_mode: str | None = None
+    managed_curve_x_scale: float | None = None
+    managed_curve_y_scale: float | None = None
+    managed_curve_truncate_at_culm: bool | None = None
+    managed_curve_max_age: int | None = None
 
 
 @dataclass(frozen=True)
@@ -121,6 +154,18 @@ class EffectiveRunOptions:
     boundary_path: Path | None
     boundary_layer: str | None
     boundary_code: str | None
+    strat_bec_grouping: str | None
+    strat_species_combo_count: int | None
+    strat_include_tm_species2_for_single: bool | None
+    strat_top_area_coverage: float | None
+    vdyp_sampling_mode: str | int | None
+    vdyp_two_pass_rebin: bool | None
+    vdyp_min_stands_per_si_bin: int | None
+    managed_curve_mode: str | None
+    managed_curve_x_scale: float | None
+    managed_curve_y_scale: float | None
+    managed_curve_truncate_at_culm: bool | None
+    managed_curve_max_age: int | None
 
 
 @dataclass(frozen=True)
@@ -174,15 +219,20 @@ class LegacyExternalDataPaths:
 
     external_data_root: Path
     vri_vclr1p_path: Path
+    vdyp_input_pandl_path: Path
     tsa_boundaries_path: Path
+    site_prod_bc_gdb_path: Path
 
 
 def resolve_legacy_external_data_paths(
     *,
     repo_root: str | Path,
     env_override: str | None = None,
-    required_vri_rel: str | Path = "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb",
+    required_vri_rel: str | Path | None = None,
+    vri_rel_candidates: Sequence[str | Path] | None = None,
+    vdyp_input_rel_candidates: Sequence[str | Path] | None = None,
     tsa_boundaries_rel: str | Path = "bc/tsa/FADM_TSA.gdb",
+    siteprod_rel_candidates: Sequence[str | Path] | None = None,
 ) -> LegacyExternalDataPaths:
     """Resolve legacy external data root + canonical VRI/TSA source paths."""
     root = Path(repo_root)
@@ -193,26 +243,87 @@ def resolve_legacy_external_data_paths(
         Path.home() / "data",
     ]
     resolved_candidates = [candidate.resolve() for candidate in candidates if candidate]
-    required_vri_path = Path(required_vri_rel)
+    if vri_rel_candidates is not None:
+        required_vri_paths = [Path(path) for path in vri_rel_candidates]
+    elif required_vri_rel is not None:
+        required_vri_paths = [Path(required_vri_rel)]
+    else:
+        required_vri_paths = list(DEFAULT_LEGACY_VRI_RELATIVE_PATHS)
     required_tsa_path = Path(tsa_boundaries_rel)
+    required_siteprod_paths = (
+        [Path(path) for path in siteprod_rel_candidates]
+        if siteprod_rel_candidates is not None
+        else [
+            Path("bc/siteprod/Site_Prod_BC.gdb"),
+            Path("Site_Prod_BC.gdb"),
+        ]
+    )
+    required_vdyp_paths = (
+        [Path(path) for path in vdyp_input_rel_candidates]
+        if vdyp_input_rel_candidates is not None
+        else list(DEFAULT_LEGACY_VDYP_INPUT_RELATIVE_PATHS)
+    )
+
+    def _resolve_vri_path(candidate_root: Path) -> Path | None:
+        for rel_path in required_vri_paths:
+            resolved = candidate_root / rel_path
+            if resolved.exists():
+                return resolved
+        return None
+
+    def _resolve_vdyp_path(candidate_root: Path) -> Path | None:
+        for rel_path in required_vdyp_paths:
+            resolved = candidate_root / rel_path
+            if resolved.exists():
+                return resolved
+        return None
+
+    def _resolve_siteprod_path(candidate_root: Path) -> Path | None:
+        for rel_path in required_siteprod_paths:
+            resolved = candidate_root / rel_path
+            if resolved.exists():
+                return resolved
+        return None
 
     external_data_root = resolved_candidates[0]
+    selected_vri_path: Path | None = None
+    selected_vdyp_path: Path | None = None
     for candidate in resolved_candidates:
-        if (candidate / required_vri_path).exists() and (
-            candidate / required_tsa_path
-        ).exists():
+        resolved_vri = _resolve_vri_path(candidate)
+        resolved_vdyp = _resolve_vdyp_path(candidate)
+        if (
+            resolved_vri is not None
+            and resolved_vdyp is not None
+            and (candidate / required_tsa_path).exists()
+        ):
             external_data_root = candidate
+            selected_vri_path = resolved_vri
+            selected_vdyp_path = resolved_vdyp
             break
     else:
         for candidate in resolved_candidates:
-            if (candidate / required_vri_path).exists():
+            resolved_vri = _resolve_vri_path(candidate)
+            resolved_vdyp = _resolve_vdyp_path(candidate)
+            if resolved_vri is not None:
                 external_data_root = candidate
+                selected_vri_path = resolved_vri
+                selected_vdyp_path = resolved_vdyp
                 break
+
+    if selected_vri_path is None:
+        selected_vri_path = external_data_root / required_vri_paths[0]
+    if selected_vdyp_path is None:
+        selected_vdyp_path = external_data_root / required_vdyp_paths[0]
+    selected_siteprod_path = _resolve_siteprod_path(external_data_root)
+    if selected_siteprod_path is None:
+        selected_siteprod_path = external_data_root / required_siteprod_paths[0]
 
     return LegacyExternalDataPaths(
         external_data_root=external_data_root,
-        vri_vclr1p_path=external_data_root / required_vri_path,
+        vri_vclr1p_path=selected_vri_path,
+        vdyp_input_pandl_path=selected_vdyp_path,
         tsa_boundaries_path=external_data_root / required_tsa_path,
+        site_prod_bc_gdb_path=selected_siteprod_path,
     )
 
 
@@ -225,11 +336,11 @@ def build_legacy_data_artifact_paths(
     return LegacyDataArtifactPaths(
         ria_stands_path=root / "veg_comp_lyr_r1_poly-ria.shp",
         vdyp_input_pandl_path=root / "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb",
-        site_prod_bc_gdb_path=root / "Site_Prod_BC.gdb",
+        site_prod_bc_gdb_path=root / "bc" / "siteprod" / "Site_Prod_BC.gdb",
         tsa_boundaries_feather_path=root / "tsa_boundaries.feather",
         vri_vclr1p_categorical_columns_path=root / "vri_vclr1p_categorical_columns",
         ria_vclr1p_feature_tif_path=root / "ria_vclr1p_feature_raster.tif",
-        siteprod_gdb_path=root / "Site_Prod_BC.gdb",
+        siteprod_gdb_path=root / "bc" / "siteprod" / "Site_Prod_BC.gdb",
         siteprod_tmpexport_tif_path_prefix=root / "site_prod_bc_",
         siteprod_tif_path=root / "siteprod.tif",
         vdyp_ply_feather_path=root / "vdyp_ply.feather",
@@ -270,6 +381,23 @@ def _normalize_optional_int(value: object, *, field_name: str) -> int | None:
     return value
 
 
+def _normalize_optional_positive_int(value: object, *, field_name: str) -> int | None:
+    if value is None:
+        return None
+    normalized = _normalize_optional_int(value, field_name=field_name)
+    if normalized is None or normalized <= 0:
+        raise ValueError(f"{field_name} must be a positive integer")
+    return normalized
+
+
+def _normalize_optional_float(value: object, *, field_name: str) -> float | None:
+    if value is None:
+        return None
+    if not isinstance(value, (int, float)):
+        raise ValueError(f"{field_name} must be numeric")
+    return float(value)
+
+
 def _normalize_optional_path(value: object, *, field_name: str) -> Path | None:
     if value is None:
         return None
@@ -284,6 +412,38 @@ def _normalize_optional_str(value: object, *, field_name: str) -> str | None:
     if not isinstance(value, str):
         raise ValueError(f"{field_name} must be a string")
     return value
+
+
+def _normalize_optional_vdyp_sampling_mode(
+    value: object, *, field_name: str
+) -> str | int | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        if value <= 0:
+            raise ValueError(f"{field_name} must be > 0 when integer")
+        return int(value)
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be 'auto', 'all', or positive integer")
+    normalized = value.strip().lower()
+    if normalized in {"auto", "all"}:
+        return normalized
+    if normalized.isdigit() and int(normalized) > 0:
+        return int(normalized)
+    raise ValueError(f"{field_name} must be 'auto', 'all', or positive integer")
+
+
+def _normalize_optional_managed_curve_mode(
+    value: object, *, field_name: str
+) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be 'tipsy' or 'vdyp_transform'")
+    normalized = value.strip().lower()
+    if normalized not in {"tipsy", "vdyp_transform"}:
+        raise ValueError(f"{field_name} must be 'tipsy' or 'vdyp_transform'")
+    return normalized
 
 
 def load_pipeline_run_profile(config_path: Path) -> PipelineRunProfile:
@@ -320,6 +480,11 @@ def load_pipeline_run_profile(config_path: Path) -> PipelineRunProfile:
         run = {}
     if not isinstance(run, dict):
         raise ValueError("run must be a mapping")
+    stratification = selection.get("stratification", {})
+    if stratification is None:
+        stratification = {}
+    if not isinstance(stratification, dict):
+        raise ValueError("selection.stratification must be a mapping")
 
     return PipelineRunProfile(
         tsa_list=_normalize_optional_str_list(
@@ -336,6 +501,66 @@ def load_pipeline_run_profile(config_path: Path) -> PipelineRunProfile:
         ),
         boundary_code=_normalize_optional_str(
             selection.get("boundary_code"), field_name="selection.boundary_code"
+        ),
+        strat_bec_grouping=_normalize_optional_str(
+            stratification.get("bec_grouping"),
+            field_name="selection.stratification.bec_grouping",
+        ),
+        strat_species_combo_count=_normalize_optional_int(
+            stratification.get("species_combo_count"),
+            field_name="selection.stratification.species_combo_count",
+        ),
+        strat_include_tm_species2_for_single=(
+            _normalize_optional_bool(
+                stratification.get("include_tm_species2_for_single"),
+                field_name=("selection.stratification.include_tm_species2_for_single"),
+            )
+            if "include_tm_species2_for_single" in stratification
+            else None
+        ),
+        strat_top_area_coverage=_normalize_optional_float(
+            stratification.get("top_area_coverage"),
+            field_name="selection.stratification.top_area_coverage",
+        ),
+        vdyp_sampling_mode=_normalize_optional_vdyp_sampling_mode(
+            modes.get("vdyp_sampling_mode"),
+            field_name="modes.vdyp_sampling_mode",
+        ),
+        vdyp_two_pass_rebin=(
+            _normalize_optional_bool(
+                modes.get("vdyp_two_pass_rebin"),
+                field_name="modes.vdyp_two_pass_rebin",
+            )
+            if "vdyp_two_pass_rebin" in modes
+            else None
+        ),
+        vdyp_min_stands_per_si_bin=_normalize_optional_positive_int(
+            modes.get("vdyp_min_stands_per_si_bin"),
+            field_name="modes.vdyp_min_stands_per_si_bin",
+        ),
+        managed_curve_mode=_normalize_optional_managed_curve_mode(
+            modes.get("managed_curve_mode"),
+            field_name="modes.managed_curve_mode",
+        ),
+        managed_curve_x_scale=_normalize_optional_float(
+            modes.get("managed_curve_x_scale"),
+            field_name="modes.managed_curve_x_scale",
+        ),
+        managed_curve_y_scale=_normalize_optional_float(
+            modes.get("managed_curve_y_scale"),
+            field_name="modes.managed_curve_y_scale",
+        ),
+        managed_curve_truncate_at_culm=(
+            _normalize_optional_bool(
+                modes.get("managed_curve_truncate_at_culm"),
+                field_name="modes.managed_curve_truncate_at_culm",
+            )
+            if "managed_curve_truncate_at_culm" in modes
+            else None
+        ),
+        managed_curve_max_age=_normalize_optional_positive_int(
+            modes.get("managed_curve_max_age"),
+            field_name="modes.managed_curve_max_age",
         ),
         resume=_normalize_optional_bool(modes.get("resume"), field_name="modes.resume"),
         dry_run=_normalize_optional_bool(
@@ -397,6 +622,20 @@ def resolve_effective_run_options(
         boundary_path=active_profile.boundary_path,
         boundary_layer=active_profile.boundary_layer,
         boundary_code=active_profile.boundary_code,
+        strat_bec_grouping=active_profile.strat_bec_grouping,
+        strat_species_combo_count=active_profile.strat_species_combo_count,
+        strat_include_tm_species2_for_single=(
+            active_profile.strat_include_tm_species2_for_single
+        ),
+        strat_top_area_coverage=active_profile.strat_top_area_coverage,
+        vdyp_sampling_mode=active_profile.vdyp_sampling_mode,
+        vdyp_two_pass_rebin=active_profile.vdyp_two_pass_rebin,
+        vdyp_min_stands_per_si_bin=active_profile.vdyp_min_stands_per_si_bin,
+        managed_curve_mode=active_profile.managed_curve_mode,
+        managed_curve_x_scale=active_profile.managed_curve_x_scale,
+        managed_curve_y_scale=active_profile.managed_curve_y_scale,
+        managed_curve_truncate_at_culm=active_profile.managed_curve_truncate_at_culm,
+        managed_curve_max_age=active_profile.managed_curve_max_age,
     )
 
 
@@ -422,6 +661,18 @@ def build_pipeline_run_config(
     boundary_path: Path | None = None,
     boundary_layer: str | None = None,
     boundary_code: str | None = None,
+    strat_bec_grouping: str | None = None,
+    strat_species_combo_count: int | None = None,
+    strat_include_tm_species2_for_single: bool | None = None,
+    strat_top_area_coverage: float | None = None,
+    vdyp_sampling_mode: str | int | None = None,
+    vdyp_two_pass_rebin: bool | None = None,
+    vdyp_min_stands_per_si_bin: int | None = None,
+    managed_curve_mode: str | None = None,
+    managed_curve_x_scale: float | None = None,
+    managed_curve_y_scale: float | None = None,
+    managed_curve_truncate_at_culm: bool | None = None,
+    managed_curve_max_age: int | None = None,
 ) -> PipelineRunConfig:
     """Create normalized pipeline run configuration from CLI inputs."""
     normalized_tsas = normalize_tsa_list(tsa_list)
@@ -437,6 +688,18 @@ def build_pipeline_run_config(
         boundary_path=Path(boundary_path) if boundary_path is not None else None,
         boundary_layer=boundary_layer,
         boundary_code=boundary_code,
+        strat_bec_grouping=strat_bec_grouping,
+        strat_species_combo_count=strat_species_combo_count,
+        strat_include_tm_species2_for_single=strat_include_tm_species2_for_single,
+        strat_top_area_coverage=strat_top_area_coverage,
+        vdyp_sampling_mode=vdyp_sampling_mode,
+        vdyp_two_pass_rebin=vdyp_two_pass_rebin,
+        vdyp_min_stands_per_si_bin=vdyp_min_stands_per_si_bin,
+        managed_curve_mode=managed_curve_mode,
+        managed_curve_x_scale=managed_curve_x_scale,
+        managed_curve_y_scale=managed_curve_y_scale,
+        managed_curve_truncate_at_culm=managed_curve_truncate_at_culm,
+        managed_curve_max_age=managed_curve_max_age,
     )
 
 
@@ -475,6 +738,46 @@ def build_legacy_execution_plan(
         env["FEMIC_BOUNDARY_LAYER"] = run_config.boundary_layer
     if run_config.boundary_code:
         env["FEMIC_BOUNDARY_CODE"] = run_config.boundary_code
+    if run_config.strat_bec_grouping:
+        env["FEMIC_STRAT_BEC_GROUPING"] = run_config.strat_bec_grouping
+    if run_config.strat_species_combo_count is not None:
+        env["FEMIC_STRAT_SPECIES_COMBO_COUNT"] = str(
+            int(run_config.strat_species_combo_count)
+        )
+    if run_config.strat_include_tm_species2_for_single is not None:
+        env["FEMIC_STRAT_INCLUDE_TM_SPECIES2_FOR_SINGLE"] = (
+            "1" if run_config.strat_include_tm_species2_for_single else "0"
+        )
+    if run_config.strat_top_area_coverage is not None:
+        env["FEMIC_STRAT_TOP_AREA_COVERAGE"] = str(
+            float(run_config.strat_top_area_coverage)
+        )
+    if run_config.vdyp_sampling_mode is not None:
+        env["FEMIC_VDYP_SAMPLING_MODE"] = str(run_config.vdyp_sampling_mode)
+    if run_config.vdyp_two_pass_rebin is not None:
+        env["FEMIC_VDYP_TWO_PASS_REBIN"] = (
+            "1" if bool(run_config.vdyp_two_pass_rebin) else "0"
+        )
+    if run_config.vdyp_min_stands_per_si_bin is not None:
+        env["FEMIC_VDYP_MIN_STANDS_PER_SI_BIN"] = str(
+            int(run_config.vdyp_min_stands_per_si_bin)
+        )
+    if run_config.managed_curve_mode is not None:
+        env["FEMIC_MANAGED_CURVE_MODE"] = str(run_config.managed_curve_mode)
+    if run_config.managed_curve_x_scale is not None:
+        env["FEMIC_MANAGED_CURVE_X_SCALE"] = str(
+            float(run_config.managed_curve_x_scale)
+        )
+    if run_config.managed_curve_y_scale is not None:
+        env["FEMIC_MANAGED_CURVE_Y_SCALE"] = str(
+            float(run_config.managed_curve_y_scale)
+        )
+    if run_config.managed_curve_truncate_at_culm is not None:
+        env["FEMIC_MANAGED_CURVE_TRUNCATE_AT_CULM"] = (
+            "1" if run_config.managed_curve_truncate_at_culm else "0"
+        )
+    if run_config.managed_curve_max_age is not None:
+        env["FEMIC_MANAGED_CURVE_MAX_AGE"] = str(int(run_config.managed_curve_max_age))
     env.setdefault("FEMIC_RUN_UUID", str(uuid.uuid4()))
     run_uuid = env["FEMIC_RUN_UUID"]
 

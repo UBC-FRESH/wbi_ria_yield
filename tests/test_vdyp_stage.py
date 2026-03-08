@@ -441,6 +441,67 @@ def test_fit_stratum_curves_skips_species_on_curve_fit_error() -> None:
     assert any(msg and msg[0] == "fit error" for msg in messages)
 
 
+def test_fit_stratum_curves_collapses_sparse_si_bins_before_fit() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["S1"] * 7,
+            "SITE_INDEX": [10.0, 20.0, 22.0, 24.0, 30.0, 32.0, 34.0],
+            "PROJ_AGE_1": [40, 45, 50, 55, 60, 65, 70],
+            "LIVE_STAND_VOLUME_125": [100.0] * 7,
+            "live_vol_per_ha_125_SW": [40.0, 45.0, 50.0, 55.0, 65.0, 70.0, 75.0],
+            "PROJ_HEIGHT_1": [14.0, 15.0, 16.0, 17.0, 19.0, 20.0, 21.0],
+        }
+    ).set_index("stratum")
+    stratum_si_stats = f_table.groupby(level="stratum").SITE_INDEX.describe(
+        percentiles=[0, 0.05, 0.20, 0.35, 0.5, 0.65, 0.80, 0.95, 1]
+    )
+
+    class _FakeSns:
+        @staticmethod
+        def color_palette(_name: str, n: int) -> list[str]:
+            return ["#111"] * n
+
+        @staticmethod
+        def set_palette(_palette: object) -> None:
+            return None
+
+        @staticmethod
+        def lineplot(*_args: object, **_kwargs: object) -> None:
+            return None
+
+    class _FakePlt:
+        @staticmethod
+        def subplots(*_args: object, **_kwargs: object) -> tuple[None, list[None]]:
+            return None, [None, None, None, None]
+
+    def fake_curve_fit(
+        *_args: object, **_kwargs: object
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return np.array([1.0, 2.0, 3.0, 4.0]), np.eye(4)
+
+    out = fit_stratum_curves(
+        f_table=f_table,
+        fit_func=lambda x, a, b, c, s: s * (a * ((x - c) ** b)) * np.exp(-a * (x - c)),
+        fit_func_bounds_func=lambda _x: ([0, 0, 0, 0], [1, 50, 100, 10]),
+        strata_df=pd.DataFrame({"totalarea_p": [1.0]}, index=["S1"]),
+        stratum_si_stats=stratum_si_stats,
+        stratumi=0,
+        species_list=["SW"],
+        curve_fit_fn=fake_curve_fit,
+        np_module=np,
+        pd_module=pd,
+        sns_module=_FakeSns(),
+        plt_module=_FakePlt(),
+        si_levelquants={"L": [5, 20, 35], "M": [35, 50, 65], "H": [65, 80, 95]},
+        min_stands_per_si_bin=3,
+        plot=False,
+    )
+
+    assert out["M"]["collapsed_to"] != "M"
+    assert out["H"]["collapsed_to"] != "H"
+    assert out["M"]["si_group_stand_count"] >= 3
+
+
 def test_fit_stratum_curves_skips_empty_aggregates_when_not_fit_rawdata() -> None:
     f_table = pd.DataFrame(
         {
@@ -551,6 +612,7 @@ def test_build_fit_stratum_curves_runner_binds_fit_context() -> None:
         sns_module="sns",
         plt_module="plt",
         fit_rawdata=True,
+        min_stands_per_si_bin=11,
         min_age=25,
         agg_type="min",
         plot=False,
@@ -571,6 +633,7 @@ def test_build_fit_stratum_curves_runner_binds_fit_context() -> None:
     assert captured["stratum_si_stats"] == "si_stats"
     assert captured["species_list"] == ["SW", "FD"]
     assert captured["fit_rawdata"] is True
+    assert captured["min_stands_per_si_bin"] == 11
     assert captured["min_age"] == 25
     assert captured["agg_type"] == "min"
     assert captured["plot"] is False
@@ -829,6 +892,322 @@ def test_run_vdyp_for_stratum_uses_default_log_paths_and_runs_batch(
     assert events[0]["phase"] == "auto_small_sample"
 
 
+def test_run_vdyp_for_stratum_maps_source_feature_ids_via_map_id(
+    tmp_path: Path,
+) -> None:
+    sample_table = pd.DataFrame(
+        {
+            "FEATURE_ID": [1001, 1002],
+            "MAP_ID": ["092L043", "092L043"],
+        }
+    )
+    vdyp_ply = pd.DataFrame(
+        {
+            "FEATURE_ID": [11, 12],
+            "MAP_ID": ["092L043", "092L043"],
+        }
+    )
+    vdyp_lyr = pd.DataFrame(
+        {
+            "FEATURE_ID": [11, 12],
+            "MAP_ID": ["092L043", "092L043"],
+        }
+    )
+    vdyp_bin = tmp_path / "vdyp.exe"
+    vdyp_params = tmp_path / "vdyp_params-landp"
+    vdyp_bin.write_text("x", encoding="utf-8")
+    vdyp_params.write_text("x", encoding="utf-8")
+
+    captured_feature_ids: list[int] = []
+
+    def fake_execute_vdyp_batch_fn(**kwargs: object) -> dict[int, dict[str, int]]:
+        feature_ids = [int(fid) for fid in kwargs["feature_ids"]]
+        captured_feature_ids.extend(feature_ids)
+        return {fid: {"curve_id": fid} for fid in feature_ids}
+
+    out = run_vdyp_for_stratum(
+        sample_table=sample_table,
+        tsa="k3z",
+        run_id="run-map-join",
+        vdyp_ply=vdyp_ply,
+        vdyp_lyr=vdyp_lyr,
+        rc_len=1,
+        curve_fit_fn=lambda *_a, **_k: None,
+        fit_func=lambda *_a, **_k: None,
+        fit_func_bounds_func=lambda *_a, **_k: None,
+        nsamples="all",
+        vdyp_binpath=str(vdyp_bin),
+        vdyp_params_infile=str(vdyp_params),
+        which_fn=lambda _name: "/usr/bin/wine",
+        build_tsa_vdyp_log_paths_fn=lambda **_kwargs: {
+            "run": tmp_path / "run.jsonl",
+            "curve": tmp_path / "curve.jsonl",
+            "stdout": tmp_path / "stdout.log",
+            "stderr": tmp_path / "stderr.log",
+        },
+        append_jsonl_fn=lambda *_args: None,
+        append_text_fn=lambda *_args: None,
+        execute_vdyp_batch_fn=fake_execute_vdyp_batch_fn,
+        nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
+    )
+
+    assert captured_feature_ids == [11, 12]
+    assert set(out.keys()) == {1001, 1002}
+    assert out[1001] == {"curve_id": 11}
+    assert out[1002] == {"curve_id": 12}
+
+
+def test_run_vdyp_for_stratum_remaps_nonmatching_output_keys_by_batch_order(
+    tmp_path: Path,
+) -> None:
+    sample_table = pd.DataFrame({"FEATURE_ID": [1001, 1002]})
+    vdyp_ply = pd.DataFrame({"FEATURE_ID": [1001, 1002]})
+    vdyp_lyr = pd.DataFrame({"FEATURE_ID": [1001, 1002]})
+    vdyp_bin = tmp_path / "vdyp.exe"
+    vdyp_params = tmp_path / "vdyp_params-landp"
+    vdyp_bin.write_text("x", encoding="utf-8")
+    vdyp_params.write_text("x", encoding="utf-8")
+
+    captured_feature_ids: list[int] = []
+
+    def fake_execute_vdyp_batch_fn(**kwargs: object) -> dict[int, dict[str, int]]:
+        feature_ids = [int(fid) for fid in kwargs["feature_ids"]]
+        captured_feature_ids.extend(feature_ids)
+        return {
+            79: {"curve_id": feature_ids[0]},
+            51: {"curve_id": feature_ids[1]},
+        }
+
+    out = run_vdyp_for_stratum(
+        sample_table=sample_table,
+        tsa="k3z",
+        run_id="run-order-remap",
+        vdyp_ply=vdyp_ply,
+        vdyp_lyr=vdyp_lyr,
+        rc_len=1,
+        curve_fit_fn=lambda *_a, **_k: None,
+        fit_func=lambda *_a, **_k: None,
+        fit_func_bounds_func=lambda *_a, **_k: None,
+        nsamples="all",
+        vdyp_binpath=str(vdyp_bin),
+        vdyp_params_infile=str(vdyp_params),
+        which_fn=lambda _name: "/usr/bin/wine",
+        build_tsa_vdyp_log_paths_fn=lambda **_kwargs: {
+            "run": tmp_path / "run.jsonl",
+            "curve": tmp_path / "curve.jsonl",
+            "stdout": tmp_path / "stdout.log",
+            "stderr": tmp_path / "stderr.log",
+        },
+        append_jsonl_fn=lambda *_args: None,
+        append_text_fn=lambda *_args: None,
+        execute_vdyp_batch_fn=fake_execute_vdyp_batch_fn,
+        nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
+    )
+
+    assert captured_feature_ids == [1001, 1002]
+    assert set(out.keys()) == {1001, 1002}
+    assert out[1001] == {"curve_id": 1001}
+    assert out[1002] == {"curve_id": 1002}
+
+
+def test_run_vdyp_for_stratum_order_remap_still_maps_back_to_source_feature_ids(
+    tmp_path: Path,
+) -> None:
+    sample_table = pd.DataFrame(
+        {
+            "FEATURE_ID": [1001, 1002],
+            "MAP_ID": ["092L043", "092L043"],
+        }
+    )
+    vdyp_ply = pd.DataFrame(
+        {
+            "FEATURE_ID": [11, 12],
+            "MAP_ID": ["092L043", "092L043"],
+        }
+    )
+    vdyp_lyr = pd.DataFrame(
+        {
+            "FEATURE_ID": [11, 12],
+            "MAP_ID": ["092L043", "092L043"],
+        }
+    )
+    vdyp_bin = tmp_path / "vdyp.exe"
+    vdyp_params = tmp_path / "vdyp_params-landp"
+    vdyp_bin.write_text("x", encoding="utf-8")
+    vdyp_params.write_text("x", encoding="utf-8")
+
+    out = run_vdyp_for_stratum(
+        sample_table=sample_table,
+        tsa="k3z",
+        run_id="run-map-join-order-remap",
+        vdyp_ply=vdyp_ply,
+        vdyp_lyr=vdyp_lyr,
+        rc_len=1,
+        curve_fit_fn=lambda *_a, **_k: None,
+        fit_func=lambda *_a, **_k: None,
+        fit_func_bounds_func=lambda *_a, **_k: None,
+        nsamples="all",
+        vdyp_binpath=str(vdyp_bin),
+        vdyp_params_infile=str(vdyp_params),
+        which_fn=lambda _name: "/usr/bin/wine",
+        build_tsa_vdyp_log_paths_fn=lambda **_kwargs: {
+            "run": tmp_path / "run.jsonl",
+            "curve": tmp_path / "curve.jsonl",
+            "stdout": tmp_path / "stdout.log",
+            "stderr": tmp_path / "stderr.log",
+        },
+        append_jsonl_fn=lambda *_args: None,
+        append_text_fn=lambda *_args: None,
+        execute_vdyp_batch_fn=lambda **kwargs: {
+            79: {"curve_id": int(kwargs["feature_ids"][0])},
+            51: {"curve_id": int(kwargs["feature_ids"][1])},
+        },
+        nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
+    )
+
+    assert set(out.keys()) == {1001, 1002}
+    assert out[1001] == {"curve_id": 11}
+    assert out[1002] == {"curve_id": 12}
+
+
+def test_run_vdyp_for_stratum_prefers_map_polygon_join_when_available(
+    tmp_path: Path,
+) -> None:
+    sample_table = pd.DataFrame(
+        {
+            "FEATURE_ID": [1001, 1002],
+            "MAP_ID": ["092L043", "092L043"],
+            "POLYGON_ID": [5001, 5002],
+        }
+    )
+    vdyp_ply = pd.DataFrame(
+        {
+            "FEATURE_ID": [11, 12],
+            "MAP_ID": ["092L043", "092L043"],
+            "POLYGON_NUMBER": [5001, 5002],
+        }
+    )
+    vdyp_lyr = pd.DataFrame(
+        {
+            "FEATURE_ID": [11, 12],
+            "MAP_ID": ["092L043", "092L043"],
+            "POLYGON_NUMBER": [5001, 5002],
+        }
+    )
+    vdyp_bin = tmp_path / "vdyp.exe"
+    vdyp_params = tmp_path / "vdyp_params-landp"
+    vdyp_bin.write_text("x", encoding="utf-8")
+    vdyp_params.write_text("x", encoding="utf-8")
+
+    captured_feature_ids: list[int] = []
+
+    def fake_execute_vdyp_batch_fn(**kwargs: object) -> dict[int, dict[str, int]]:
+        feature_ids = [int(fid) for fid in kwargs["feature_ids"]]
+        captured_feature_ids.extend(feature_ids)
+        return {fid: {"curve_id": fid} for fid in feature_ids}
+
+    out = run_vdyp_for_stratum(
+        sample_table=sample_table,
+        tsa="k3z",
+        run_id="run-map-polygon-join",
+        vdyp_ply=vdyp_ply,
+        vdyp_lyr=vdyp_lyr,
+        rc_len=1,
+        curve_fit_fn=lambda *_a, **_k: None,
+        fit_func=lambda *_a, **_k: None,
+        fit_func_bounds_func=lambda *_a, **_k: None,
+        nsamples="all",
+        vdyp_binpath=str(vdyp_bin),
+        vdyp_params_infile=str(vdyp_params),
+        which_fn=lambda _name: "/usr/bin/wine",
+        build_tsa_vdyp_log_paths_fn=lambda **_kwargs: {
+            "run": tmp_path / "run.jsonl",
+            "curve": tmp_path / "curve.jsonl",
+            "stdout": tmp_path / "stdout.log",
+            "stderr": tmp_path / "stderr.log",
+        },
+        append_jsonl_fn=lambda *_args: None,
+        append_text_fn=lambda *_args: None,
+        execute_vdyp_batch_fn=fake_execute_vdyp_batch_fn,
+        nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
+    )
+
+    assert captured_feature_ids == [11, 12]
+    assert set(out.keys()) == {1001, 1002}
+    assert out[1001] == {"curve_id": 11}
+    assert out[1002] == {"curve_id": 12}
+
+
+def test_run_vdyp_for_stratum_maps_table_number_outputs_via_table_attrs(
+    tmp_path: Path,
+) -> None:
+    sample_table = pd.DataFrame(
+        {
+            "FEATURE_ID": [1001, 1002],
+            "MAP_ID": ["092L043", "092L043"],
+            "POLYGON_ID": [5001, 5002],
+        }
+    )
+    vdyp_ply = pd.DataFrame(
+        {
+            "FEATURE_ID": [1001, 1002],
+            "MAP_ID": ["092L043", "092L043"],
+            "POLYGON_NUMBER": [5001, 5002],
+        }
+    )
+    vdyp_lyr = pd.DataFrame(
+        {
+            "FEATURE_ID": [1001, 1002],
+            "MAP_ID": ["092L043", "092L043"],
+            "POLYGON_NUMBER": [5001, 5002],
+        }
+    )
+    vdyp_bin = tmp_path / "vdyp.exe"
+    vdyp_params = tmp_path / "vdyp_params-landp"
+    vdyp_bin.write_text("x", encoding="utf-8")
+    vdyp_params.write_text("x", encoding="utf-8")
+
+    def _table(curve_id: int, map_name: str, polygon_id: int) -> pd.DataFrame:
+        table = pd.DataFrame({"curve_id": [curve_id]})
+        table.attrs["vdyp_map_name"] = map_name
+        table.attrs["vdyp_polygon_id"] = polygon_id
+        return table
+
+    out = run_vdyp_for_stratum(
+        sample_table=sample_table,
+        tsa="k3z",
+        run_id="run-table-attrs-remap",
+        vdyp_ply=vdyp_ply,
+        vdyp_lyr=vdyp_lyr,
+        rc_len=1,
+        curve_fit_fn=lambda *_a, **_k: None,
+        fit_func=lambda *_a, **_k: None,
+        fit_func_bounds_func=lambda *_a, **_k: None,
+        nsamples="all",
+        vdyp_binpath=str(vdyp_bin),
+        vdyp_params_infile=str(vdyp_params),
+        which_fn=lambda _name: "/usr/bin/wine",
+        build_tsa_vdyp_log_paths_fn=lambda **_kwargs: {
+            "run": tmp_path / "run.jsonl",
+            "curve": tmp_path / "curve.jsonl",
+            "stdout": tmp_path / "stdout.log",
+            "stderr": tmp_path / "stderr.log",
+        },
+        append_jsonl_fn=lambda *_args: None,
+        append_text_fn=lambda *_args: None,
+        execute_vdyp_batch_fn=lambda **_kwargs: {
+            1: _table(1001, "092L043", 5001),
+            2: _table(1002, "092L043", 5002),
+            3: _table(9999, "092L999", 9999),
+        },
+        nsamples_from_curves_fn=lambda *_a, **_k: (0, None),
+    )
+
+    assert set(out.keys()) == {1001, 1002}
+    assert int(out[1001]["curve_id"].iloc[0]) == 1001
+    assert int(out[1002]["curve_id"].iloc[0]) == 1002
+
+
 def test_build_run_vdyp_for_stratum_runner_binds_runtime_context() -> None:
     sample_table = object()
     captured: dict[str, object] = {}
@@ -1053,6 +1432,7 @@ def test_execute_vdyp_batch_unexpected_parse_error_propagates(tmp_path: Path) ->
 
 def test_execute_bootstrap_vdyp_runs_success() -> None:
     events: list[dict[str, object]] = []
+    seen_nsamples: list[object] = []
 
     def append_event(_path: str | Path, payload: object) -> None:
         assert isinstance(payload, dict)
@@ -1060,6 +1440,7 @@ def test_execute_bootstrap_vdyp_runs_success() -> None:
 
     def fake_run_vdyp(sample: object, **_kwargs: object) -> dict[int, dict[str, str]]:
         assert sample == "sample-ss"
+        seen_nsamples.append(_kwargs.get("nsamples"))
         return {1: {"curve": "ok"}}
 
     results = execute_bootstrap_vdyp_runs(
@@ -1077,16 +1458,19 @@ def test_execute_bootstrap_vdyp_runs_success() -> None:
     assert len(events) == 1
     assert events[0]["status"] == "dispatch"
     assert events[0]["phase"] == "bootstrap"
+    assert seen_nsamples == ["auto"]
 
 
 def test_execute_bootstrap_vdyp_runs_derives_sampling_seed_per_stratum_and_si() -> None:
     seen_seeds: list[int | None] = []
+    seen_nsamples: list[object] = []
 
     def append_event(_path: str | Path, _payload: object) -> None:
         return None
 
     def fake_run_vdyp(_sample: object, **kwargs: object) -> dict[int, dict[str, str]]:
         seen_seeds.append(kwargs.get("sampling_seed"))
+        seen_nsamples.append(kwargs.get("nsamples"))
         return {1: {"curve": "ok"}}
 
     execute_bootstrap_vdyp_runs(
@@ -1102,6 +1486,32 @@ def test_execute_bootstrap_vdyp_runs_derives_sampling_seed_per_stratum_and_si() 
     )
 
     assert seen_seeds == [400, 401]
+    assert seen_nsamples == ["auto", "auto"]
+
+
+def test_execute_bootstrap_vdyp_runs_passes_custom_nsamples_mode() -> None:
+    seen_nsamples: list[object] = []
+
+    def append_event(_path: str | Path, _payload: object) -> None:
+        return None
+
+    def fake_run_vdyp(_sample: object, **kwargs: object) -> dict[int, dict[str, str]]:
+        seen_nsamples.append(kwargs.get("nsamples"))
+        return {1: {"curve": "ok"}}
+
+    execute_bootstrap_vdyp_runs(
+        tsa="08",
+        run_id="run-1",
+        results_for_tsa=[(3, "S1", {"L": {"ss": "sample-l"}})],
+        si_levels=["L"],
+        vdyp_run_events_path="dummy.jsonl",
+        append_jsonl_fn=append_event,
+        run_vdyp_fn=fake_run_vdyp,
+        verbose=False,
+        nsamples_mode="all",
+    )
+
+    assert seen_nsamples == ["all"]
 
 
 def test_build_bootstrap_vdyp_results_runner_binds_dispatch_inputs() -> None:
@@ -1125,6 +1535,7 @@ def test_build_bootstrap_vdyp_results_runner_binds_dispatch_inputs() -> None:
         append_jsonl_fn=lambda *_a, **_k: None,
         run_vdyp_fn=run_vdyp_fn,
         vdyp_out_cache={"cached": "value"},
+        nsamples_mode="all",
         execute_bootstrap_vdyp_runs_fn=fake_execute_bootstrap,
     )
 
@@ -1137,6 +1548,7 @@ def test_build_bootstrap_vdyp_results_runner_binds_dispatch_inputs() -> None:
     assert captured["si_levels"] == ["L"]
     assert captured["run_vdyp_fn"] is run_vdyp_fn
     assert captured["vdyp_out_cache"] == {"cached": "value"}
+    assert captured["nsamples_mode"] == "all"
 
 
 def test_execute_bootstrap_vdyp_runs_logs_dispatch_error() -> None:
@@ -1196,7 +1608,11 @@ def test_execute_bootstrap_vdyp_runs_unexpected_error_propagates() -> None:
     assert events[0]["status"] == "dispatch"
 
 
-def test_execute_curve_smoothing_runs_builds_output_and_logs_missing() -> None:
+def test_execute_curve_smoothing_runs_builds_output_and_logs_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
     events: list[dict[str, object]] = []
 
     def append_event(_path: str | Path, payload: object) -> None:
@@ -1243,7 +1659,11 @@ def test_execute_curve_smoothing_runs_builds_output_and_logs_missing() -> None:
     assert events[0]["reason"] == "missing_vdyp_output"
 
 
-def test_execute_curve_smoothing_runs_prefers_tail_blend_for_k3z_output() -> None:
+def test_execute_curve_smoothing_runs_prefers_tail_blend_for_k3z_output(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
     events: list[dict[str, object]] = []
 
     def append_event(_path: str | Path, payload: object) -> None:
@@ -1322,6 +1742,7 @@ def test_build_stratum_fit_run_config_applies_defaults() -> None:
 
     assert isinstance(cfg, StratumFitRunConfig)
     assert cfg.fit_rawdata is True
+    assert cfg.min_stands_per_si_bin == 25
     assert cfg.min_age == 30
     assert cfg.agg_type == "median"
     assert cfg.plot is False
@@ -1897,3 +2318,46 @@ def test_load_vdyp_input_tables_reads_source_by_explicit_map_ids() -> None:
     ]
     assert ply["FEATURE_ID"].tolist() == [1, 2, 3]
     assert lyr["FEATURE_ID"].tolist() == [1, 2, 3]
+
+
+def test_load_vdyp_input_tables_prefers_feature_ids_when_both_inputs_provided() -> None:
+    class _FakeGpd:
+        def __init__(self) -> None:
+            self.read_file_calls: list[tuple[object, int, object | None]] = []
+
+        def read_file(
+            self,
+            path: object,
+            *,
+            layer: int,
+            where: object | None = None,
+            ignore_geometry: bool | None = None,
+            **_kwargs: object,
+        ) -> pd.DataFrame:
+            self.read_file_calls.append((path, layer, where))
+            if where == "FEATURE_ID IN (101,102)":
+                return pd.DataFrame(
+                    {"FEATURE_ID": [101, 102], "MAP_ID": ["092N010", "092N010"]}
+                )
+            return pd.DataFrame({"FEATURE_ID": [], "MAP_ID": []})
+
+    fake_gpd = _FakeGpd()
+    ply, lyr = load_vdyp_input_tables(
+        vdyp_input_pandl_path="input.gdb",
+        vdyp_ply_feather_path="ply.feather",
+        vdyp_lyr_feather_path="lyr.feather",
+        read_from_source=True,
+        source_feature_ids=[101, 102],
+        source_map_ids=["092N010"],
+        source_feature_id_chunk_size=10,
+        source_map_id_chunk_size=10,
+        gpd_module=fake_gpd,
+        message_fn=lambda *_args: None,
+    )
+
+    assert fake_gpd.read_file_calls == [
+        ("input.gdb", 0, "FEATURE_ID IN (101,102)"),
+        ("input.gdb", 1, "FEATURE_ID IN (101,102)"),
+    ]
+    assert ply["FEATURE_ID"].tolist() == [101, 102]
+    assert lyr["FEATURE_ID"].tolist() == [101, 102]

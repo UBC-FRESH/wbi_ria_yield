@@ -34,9 +34,6 @@ import numpy as np
 from femic.pipeline.tsa import (
     DEFAULT_TARGET_NSTRATA,
     MIN_STANDCOUNT,
-    SI_SPLIT_RANGE_SINGLE_LEVEL_MAX,
-    SI_SPLIT_RANGE_TWO_LEVEL_MAX,
-    STRATUM_SI_LEVEL_QUANTILES_OVERRIDE,
     assign_au_ids_from_scsi,
     assign_thlb_raw_from_raster,
     assign_thlb_area_and_flag,
@@ -93,6 +90,7 @@ def test_build_legacy_data_artifact_paths_defaults() -> None:
     )
     assert paths.tipsy_params_columns_path == Path("data/tipsy_params_columns")
     assert paths.stands_shp_dir == Path("data/shp")
+    assert paths.site_prod_bc_gdb_path == Path("data/bc/siteprod/Site_Prod_BC.gdb")
 
 
 def test_resolve_legacy_external_data_paths_prefers_first_existing_vri_root(
@@ -102,14 +100,22 @@ def test_resolve_legacy_external_data_paths_prefers_first_existing_vri_root(
     repo_root.mkdir()
     fallback_data = (repo_root / ".." / "data").resolve()
     (fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb").mkdir(parents=True)
+    (fallback_data / "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb").mkdir(parents=True)
     (fallback_data / "bc/tsa/FADM_TSA.gdb").mkdir(parents=True)
+    (fallback_data / "bc/siteprod/Site_Prod_BC.gdb").mkdir(parents=True)
 
     resolved = resolve_legacy_external_data_paths(repo_root=repo_root)
     assert resolved.external_data_root == fallback_data
     assert resolved.vri_vclr1p_path == (
         fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb"
     )
+    assert resolved.vdyp_input_pandl_path == (
+        fallback_data / "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"
+    )
     assert resolved.tsa_boundaries_path == (fallback_data / "bc/tsa/FADM_TSA.gdb")
+    assert resolved.site_prod_bc_gdb_path == (
+        fallback_data / "bc/siteprod/Site_Prod_BC.gdb"
+    )
 
 
 def test_resolve_legacy_external_data_paths_prefers_root_with_vri_and_tsa(
@@ -121,7 +127,9 @@ def test_resolve_legacy_external_data_paths_prefers_root_with_vri_and_tsa(
     fallback_data = (repo_root / ".." / "data").resolve()
     (primary_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb").mkdir(parents=True)
     (fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb").mkdir(parents=True)
+    (fallback_data / "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb").mkdir(parents=True)
     (fallback_data / "bc/tsa/FADM_TSA.gdb").mkdir(parents=True)
+    (fallback_data / "bc/siteprod/Site_Prod_BC.gdb").mkdir(parents=True)
 
     resolved = resolve_legacy_external_data_paths(repo_root=repo_root)
 
@@ -129,7 +137,41 @@ def test_resolve_legacy_external_data_paths_prefers_root_with_vri_and_tsa(
     assert resolved.vri_vclr1p_path == (
         fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb"
     )
+    assert resolved.vdyp_input_pandl_path == (
+        fallback_data / "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"
+    )
     assert resolved.tsa_boundaries_path == (fallback_data / "bc/tsa/FADM_TSA.gdb")
+    assert resolved.site_prod_bc_gdb_path == (
+        fallback_data / "bc/siteprod/Site_Prod_BC.gdb"
+    )
+
+
+def test_resolve_legacy_external_data_paths_prefers_2024_vri_when_available(
+    tmp_path: Path,
+) -> None:
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    fallback_data = (repo_root / ".." / "data").resolve()
+    (fallback_data / "bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb").mkdir(parents=True)
+    (fallback_data / "bc/vri/2024/VEG_COMP_LYR_R1_POLY_2024.gdb").mkdir(parents=True)
+    (fallback_data / "bc/vri/2024/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb").mkdir(
+        parents=True
+    )
+    (fallback_data / "bc/tsa/FADM_TSA.gdb").mkdir(parents=True)
+    (fallback_data / "bc/siteprod/Site_Prod_BC.gdb").mkdir(parents=True)
+
+    resolved = resolve_legacy_external_data_paths(repo_root=repo_root)
+    assert resolved.external_data_root == fallback_data
+    assert resolved.vri_vclr1p_path == (
+        fallback_data / "bc/vri/2024/VEG_COMP_LYR_R1_POLY_2024.gdb"
+    )
+    assert resolved.vdyp_input_pandl_path == (
+        fallback_data / "bc/vri/2024/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb"
+    )
+    assert resolved.tsa_boundaries_path == (fallback_data / "bc/tsa/FADM_TSA.gdb")
+    assert resolved.site_prod_bc_gdb_path == (
+        fallback_data / "bc/siteprod/Site_Prod_BC.gdb"
+    )
 
 
 def test_tsa_target_nstrata_lookup() -> None:
@@ -214,6 +256,32 @@ def test_build_strata_summary_requires_target_or_tsa_code() -> None:
             stratum_col="stratum",
             pd_module=pd,
         )
+
+
+def test_build_strata_summary_selects_by_target_coverage() -> None:
+    f_table = pd.DataFrame(
+        {
+            "stratum": ["A", "A", "B", "B", "C", "D"],
+            "FEATURE_AREA_SQM": [30.0, 30.0, 20.0, 20.0, 10.0, 5.0],
+            "SITE_INDEX": [10.0, 11.0, 20.0, 21.0, 30.0, 40.0],
+            "FEATURE_ID": [1, 2, 3, 4, 5, 6],
+            "CROWN_CLOSURE": [50.0, 55.0, 60.0, 62.0, 70.0, 75.0],
+        }
+    ).set_index("stratum")
+    f_table["totalarea_p"] = f_table.FEATURE_AREA_SQM / f_table.FEATURE_AREA_SQM.sum()
+
+    strata_df, largestn, _site_index_iqr_mean = build_strata_summary(
+        f_table=f_table,
+        stratum_col="stratum",
+        pd_module=pd,
+        target_nstrata=1,
+        target_coverage=0.90,
+        min_standcount=1,
+    )
+
+    assert list(strata_df.index) == ["A", "B", "C"]
+    assert largestn == ["A", "B", "C"]
+    assert float(strata_df.coverage.sum()) >= 0.90
 
 
 def test_build_stratum_lexmatch_alias_map_prefers_highest_area_on_distance_tie() -> (
@@ -303,7 +371,7 @@ def test_assign_si_levels_from_stratum_quantiles_assigns_levels() -> None:
             "SITE_INDEX": [10.0, 20.0, 30.0, 40.0],
         }
     )
-    si_levelquants = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+    si_levelquants = {"L": [5, 20, 35], "M": [35, 50, 65], "H": [65, 80, 95]}
 
     out, stats = assign_si_levels_from_stratum_quantiles(
         f_table=f_table,
@@ -315,7 +383,7 @@ def test_assign_si_levels_from_stratum_quantiles_assigns_levels() -> None:
     assert set(out["si_level"].dropna().unique()) <= {"L", "M", "H"}
 
 
-def test_resolve_si_level_quantiles_for_stratum_applies_width_rules() -> None:
+def test_resolve_si_level_quantiles_for_stratum_returns_fixed_quantiles() -> None:
     stats = pd.DataFrame(
         {
             "5%": [10.0, 10.0, 10.0],
@@ -323,96 +391,15 @@ def test_resolve_si_level_quantiles_for_stratum_applies_width_rules() -> None:
         },
         index=["NARROW", "MID", "WIDE"],
     )
-    base = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+    base = {"L": [5, 20, 35], "M": [35, 50, 65], "H": [65, 80, 95]}
 
-    narrow = resolve_si_level_quantiles_for_stratum(
-        stratum_si_stats=stats,
-        stratum_code="NARROW",
-        si_levelquants=base,
-    )
-    mid = resolve_si_level_quantiles_for_stratum(
-        stratum_si_stats=stats,
-        stratum_code="MID",
-        si_levelquants=base,
-    )
-    wide = resolve_si_level_quantiles_for_stratum(
-        stratum_si_stats=stats,
-        stratum_code="WIDE",
-        si_levelquants=base,
-    )
-
-    assert SI_SPLIT_RANGE_SINGLE_LEVEL_MAX == 5.0
-    assert SI_SPLIT_RANGE_TWO_LEVEL_MAX == 10.0
-    assert list(narrow.keys()) == ["M"]
-    assert set(mid.keys()) == {"L", "H"}
-    assert set(wide.keys()) == {"L", "M", "H"}
-
-
-def test_resolve_si_level_quantiles_for_stratum_applies_stratum_override() -> None:
-    stats = pd.DataFrame(
-        {
-            "5%": [10.0],
-            "95%": [24.0],
-        },
-        index=["CWH_HW"],
-    )
-    base = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
-
-    out = resolve_si_level_quantiles_for_stratum(
-        stratum_si_stats=stats,
-        stratum_code="CWH_HW",
-        si_levelquants=base,
-    )
-
-    assert out == STRATUM_SI_LEVEL_QUANTILES_OVERRIDE["CWH_HW"]
-
-
-def test_assign_si_levels_from_stratum_quantiles_adapts_split_count_by_width() -> None:
-    f_table = pd.DataFrame(
-        {
-            "stratum_matched": ["N"] * 6 + ["M"] * 8 + ["W"] * 9,
-            "SITE_INDEX": [
-                10.0,
-                10.5,
-                11.0,
-                11.5,
-                12.0,
-                12.2,  # narrow (<5)
-                10.0,
-                11.0,
-                12.0,
-                13.0,
-                14.0,
-                15.0,
-                16.0,
-                17.0,  # medium (~7)
-                10.0,
-                12.0,
-                14.0,
-                16.0,
-                18.0,
-                20.0,
-                22.0,
-                24.0,
-                26.0,  # wide (>10)
-            ],
-        }
-    )
-    base = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
-
-    out, _stats = assign_si_levels_from_stratum_quantiles(
-        f_table=f_table,
-        si_levelquants=base,
-        message_fn=lambda _m: None,
-    )
-    by_stratum = {
-        key: set(group["si_level"].dropna().unique())
-        for key, group in out.groupby("stratum_matched")
-    }
-
-    assert by_stratum["N"] == {"M"}
-    assert by_stratum["M"] == {"L", "H"}
-    assert by_stratum["W"] == {"L", "M", "H"}
+    for code in ("NARROW", "MID", "WIDE"):
+        out = resolve_si_level_quantiles_for_stratum(
+            stratum_si_stats=stats,
+            stratum_code=code,
+            si_levelquants=base,
+        )
+        assert out == {"L": (5, 20, 35), "M": (35, 50, 65), "H": (65, 80, 95)}
 
 
 def test_assign_si_levels_from_stratum_quantiles_respects_allowed_levels() -> None:
@@ -422,7 +409,7 @@ def test_assign_si_levels_from_stratum_quantiles_respects_allowed_levels() -> No
             "SITE_INDEX": [10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0],
         }
     )
-    base = {"L": [0, 20, 35], "M": [35, 50, 65], "H": [65, 80, 100]}
+    base = {"L": [5, 20, 35], "M": [35, 50, 65], "H": [65, 80, 95]}
 
     out, _stats = assign_si_levels_from_stratum_quantiles(
         f_table=f_table,
@@ -444,7 +431,7 @@ def test_assign_si_levels_from_stratum_quantiles_handles_no_matched_rows() -> No
 
     out, stats = assign_si_levels_from_stratum_quantiles(
         f_table=f_table,
-        si_levelquants={"L": [0, 20, 35]},
+        si_levelquants={"L": [5, 20, 35]},
         message_fn=lambda _m: None,
     )
 
@@ -857,12 +844,25 @@ def test_load_pipeline_run_profile_from_yaml(tmp_path: Path) -> None:
                 "  boundary_path: data/bc/cfa/k3z/CFA K3Z Tenure.shp",
                 "  boundary_layer: tenure",
                 "  boundary_code: k3z",
+                "  stratification:",
+                "    bec_grouping: subzone",
+                "    species_combo_count: 2",
+                "    include_tm_species2_for_single: false",
+                "    top_area_coverage: 0.95",
                 "modes:",
                 "  resume: true",
                 "  dry_run: false",
                 "  verbose: true",
                 "  skip_checks: true",
                 "  debug_rows: 25",
+                "  vdyp_sampling_mode: all",
+                "  vdyp_two_pass_rebin: true",
+                "  vdyp_min_stands_per_si_bin: 10",
+                "  managed_curve_mode: vdyp_transform",
+                "  managed_curve_x_scale: 0.8",
+                "  managed_curve_y_scale: 1.2",
+                "  managed_curve_truncate_at_culm: true",
+                "  managed_curve_max_age: 300",
                 "run:",
                 "  run_id: cfg001",
                 "  log_dir: vdyp_io/custom_logs",
@@ -884,6 +884,18 @@ def test_load_pipeline_run_profile_from_yaml(tmp_path: Path) -> None:
     assert profile.boundary_path == Path("data/bc/cfa/k3z/CFA K3Z Tenure.shp")
     assert profile.boundary_layer == "tenure"
     assert profile.boundary_code == "k3z"
+    assert profile.strat_bec_grouping == "subzone"
+    assert profile.strat_species_combo_count == 2
+    assert profile.strat_include_tm_species2_for_single is False
+    assert profile.strat_top_area_coverage == pytest.approx(0.95)
+    assert profile.vdyp_sampling_mode == "all"
+    assert profile.vdyp_two_pass_rebin is True
+    assert profile.vdyp_min_stands_per_si_bin == 10
+    assert profile.managed_curve_mode == "vdyp_transform"
+    assert profile.managed_curve_x_scale == pytest.approx(0.8)
+    assert profile.managed_curve_y_scale == pytest.approx(1.2)
+    assert profile.managed_curve_truncate_at_culm is True
+    assert profile.managed_curve_max_age == 300
 
 
 def test_resolve_effective_run_options_merges_profile_and_cli() -> None:
@@ -911,12 +923,53 @@ def test_resolve_effective_run_options_merges_profile_and_cli() -> None:
     assert resolved.boundary_path is None
     assert resolved.boundary_layer is None
     assert resolved.boundary_code is None
+    assert resolved.strat_bec_grouping is None
+    assert resolved.strat_species_combo_count is None
+    assert resolved.strat_include_tm_species2_for_single is None
+    assert resolved.strat_top_area_coverage is None
+    assert resolved.vdyp_sampling_mode is None
+    assert resolved.vdyp_two_pass_rebin is None
+    assert resolved.vdyp_min_stands_per_si_bin is None
+    assert resolved.managed_curve_mode is None
+    assert resolved.managed_curve_x_scale is None
+    assert resolved.managed_curve_y_scale is None
+    assert resolved.managed_curve_truncate_at_culm is None
+    assert resolved.managed_curve_max_age is None
 
 
 def test_load_pipeline_run_profile_rejects_invalid_root_type(tmp_path: Path) -> None:
     profile_path = tmp_path / "bad.json"
     profile_path.write_text("[]", encoding="utf-8")
     with pytest.raises(ValueError, match="Run config root must be a mapping"):
+        load_pipeline_run_profile(profile_path)
+
+
+def test_load_pipeline_run_profile_rejects_invalid_vdyp_sampling_mode(
+    tmp_path: Path,
+) -> None:
+    profile_path = tmp_path / "run_profile.yaml"
+    profile_path.write_text("modes:\n  vdyp_sampling_mode: zero\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="modes.vdyp_sampling_mode"):
+        load_pipeline_run_profile(profile_path)
+
+
+def test_load_pipeline_run_profile_rejects_non_positive_vdyp_min_stands(
+    tmp_path: Path,
+) -> None:
+    profile_path = tmp_path / "run_profile.yaml"
+    profile_path.write_text(
+        "modes:\n  vdyp_min_stands_per_si_bin: 0\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="modes.vdyp_min_stands_per_si_bin"):
+        load_pipeline_run_profile(profile_path)
+
+
+def test_load_pipeline_run_profile_rejects_invalid_managed_curve_mode(
+    tmp_path: Path,
+) -> None:
+    profile_path = tmp_path / "run_profile.yaml"
+    profile_path.write_text("modes:\n  managed_curve_mode: bogus\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="modes.managed_curve_mode"):
         load_pipeline_run_profile(profile_path)
 
 
@@ -935,6 +988,18 @@ def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> N
         boundary_path=Path("data/bc/cfa/k3z/CFA K3Z Tenure.shp"),
         boundary_layer="tenure",
         boundary_code="k3z",
+        strat_bec_grouping="subzone",
+        strat_species_combo_count=2,
+        strat_include_tm_species2_for_single=False,
+        strat_top_area_coverage=0.95,
+        vdyp_sampling_mode="all",
+        vdyp_two_pass_rebin=True,
+        vdyp_min_stands_per_si_bin=10,
+        managed_curve_mode="vdyp_transform",
+        managed_curve_x_scale=0.8,
+        managed_curve_y_scale=1.2,
+        managed_curve_truncate_at_culm=True,
+        managed_curve_max_age=300,
     )
 
     plan = build_legacy_execution_plan(
@@ -961,6 +1026,18 @@ def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> N
     assert plan.env["FEMIC_BOUNDARY_PATH"] == "data/bc/cfa/k3z/CFA K3Z Tenure.shp"
     assert plan.env["FEMIC_BOUNDARY_LAYER"] == "tenure"
     assert plan.env["FEMIC_BOUNDARY_CODE"] == "k3z"
+    assert plan.env["FEMIC_STRAT_BEC_GROUPING"] == "subzone"
+    assert plan.env["FEMIC_STRAT_SPECIES_COMBO_COUNT"] == "2"
+    assert plan.env["FEMIC_STRAT_INCLUDE_TM_SPECIES2_FOR_SINGLE"] == "0"
+    assert plan.env["FEMIC_STRAT_TOP_AREA_COVERAGE"] == "0.95"
+    assert plan.env["FEMIC_VDYP_SAMPLING_MODE"] == "all"
+    assert plan.env["FEMIC_VDYP_TWO_PASS_REBIN"] == "1"
+    assert plan.env["FEMIC_VDYP_MIN_STANDS_PER_SI_BIN"] == "10"
+    assert plan.env["FEMIC_MANAGED_CURVE_MODE"] == "vdyp_transform"
+    assert plan.env["FEMIC_MANAGED_CURVE_X_SCALE"] == "0.8"
+    assert plan.env["FEMIC_MANAGED_CURVE_Y_SCALE"] == "1.2"
+    assert plan.env["FEMIC_MANAGED_CURVE_TRUNCATE_AT_CULM"] == "1"
+    assert plan.env["FEMIC_MANAGED_CURVE_MAX_AGE"] == "300"
     assert plan.cmd == ["/usr/bin/python3", str(script_path)]
 
 

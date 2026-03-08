@@ -346,6 +346,20 @@ def run_all(
         boundary_path=effective.boundary_path,
         boundary_layer=effective.boundary_layer,
         boundary_code=effective.boundary_code,
+        strat_bec_grouping=effective.strat_bec_grouping,
+        strat_species_combo_count=effective.strat_species_combo_count,
+        strat_include_tm_species2_for_single=(
+            effective.strat_include_tm_species2_for_single
+        ),
+        strat_top_area_coverage=effective.strat_top_area_coverage,
+        vdyp_sampling_mode=effective.vdyp_sampling_mode,
+        vdyp_two_pass_rebin=effective.vdyp_two_pass_rebin,
+        vdyp_min_stands_per_si_bin=effective.vdyp_min_stands_per_si_bin,
+        managed_curve_mode=effective.managed_curve_mode,
+        managed_curve_x_scale=effective.managed_curve_x_scale,
+        managed_curve_y_scale=effective.managed_curve_y_scale,
+        managed_curve_truncate_at_culm=effective.managed_curve_truncate_at_culm,
+        managed_curve_max_age=effective.managed_curve_max_age,
     )
     manifest_path = run_data_prep(pipeline_run_config)
     console.print(f"Run manifest: {manifest_path}")

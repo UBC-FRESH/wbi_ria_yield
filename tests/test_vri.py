@@ -175,6 +175,34 @@ def test_stratify_stand_builds_expected_codes() -> None:
     assert stratify_stand(row, lexmatch=True) == "SBSxSBSxSBSx_SSWSSW+PPL"
 
 
+def test_stratify_stand_supports_bec_subzone_and_species_combos() -> None:
+    row = {
+        "BEC_ZONE_CODE": "CWH",
+        "BEC_SUBZONE": "xm",
+        "BEC_VARIANT": "2",
+        "BEC_PHASE": "a",
+        "BCLCS_LEVEL_4": "XY",
+        "SPECIES_CD_1": "HW",
+        "SPECIES_PCT_1": 35,
+        "SPECIES_CD_2": "CW",
+        "SPECIES_PCT_2": 45,
+        "SPECIES_CD_3": "FD",
+        "SPECIES_PCT_3": 20,
+        "BEC_ZONE_CODE_lexmatch": "CWHx",
+        "SPECIES_CD_1_lexmatch": "HHW",
+        "SPECIES_CD_2_lexmatch": "CCW",
+        "SPECIES_CD_3_lexmatch": "FFD",
+    }
+    assert (
+        stratify_stand(row, bec_grouping="subzone", species_combo_count=2)
+        == "CWHxm_CW+HW"
+    )
+    assert (
+        stratify_stand(row, bec_grouping="phase", species_combo_count=3)
+        == "CWHxm2a_CW+HW+FD"
+    )
+
+
 def test_stratify_stand_supports_attribute_rows() -> None:
     class _Row:
         BEC_ZONE_CODE = "SBS"
@@ -222,6 +250,37 @@ def test_assign_stratum_codes_with_lexmatch_assigns_both_columns() -> None:
     assert out.loc[0, "stratum"] == "SBS_SW+PL"
     assert out.loc[1, "stratum"] == "BWBS_AT"
     assert out.loc[0, "stratum_lexmatch"].startswith("SBSxSBSxSBSx_")
+
+
+def test_assign_stratum_codes_with_lexmatch_supports_species_combo_count() -> None:
+    frame = pd.DataFrame(
+        [
+            {
+                "BEC_ZONE_CODE": "CWH",
+                "BEC_SUBZONE": "xm",
+                "BEC_VARIANT": "2",
+                "BEC_PHASE": "a",
+                "SPECIES_CD_1": "HW",
+                "SPECIES_PCT_1": 40,
+                "SPECIES_CD_2": "CW",
+                "SPECIES_PCT_2": 35,
+                "SPECIES_CD_3": "FD",
+                "SPECIES_PCT_3": 25,
+                "BCLCS_LEVEL_4": "XY",
+            }
+        ]
+    )
+
+    def _row_apply(table: pd.DataFrame, fn: object, axis: int) -> pd.Series:
+        return table.apply(fn, axis=axis)  # type: ignore[arg-type]
+
+    out = assign_stratum_codes_with_lexmatch(
+        f_table=frame,
+        row_apply_fn=_row_apply,
+        bec_grouping="variant",
+        species_combo_count=2,
+    )
+    assert out.loc[0, "stratum"] == "CWHxm2_HW+CW"
 
 
 def test_filter_post_thlb_stands_filters_expected_rows() -> None:

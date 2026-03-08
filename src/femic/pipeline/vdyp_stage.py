@@ -55,6 +55,7 @@ class StratumFitRunConfig:
     """Defaults for pre-VDYP stratum curve-fit compilation runs."""
 
     fit_rawdata: bool
+    min_stands_per_si_bin: int
     min_age: int
     agg_type: str
     plot: bool
@@ -376,6 +377,7 @@ def resolve_vdyp_batch_temp_artifacts(
 def build_stratum_fit_run_config(
     *,
     fit_rawdata: bool = True,
+    min_stands_per_si_bin: int = 25,
     min_age: int = 30,
     agg_type: str = "median",
     plot: bool = False,
@@ -387,6 +389,7 @@ def build_stratum_fit_run_config(
     """Build defaults for pre-VDYP stratum fit stage settings."""
     return StratumFitRunConfig(
         fit_rawdata=bool(fit_rawdata),
+        min_stands_per_si_bin=int(min_stands_per_si_bin),
         min_age=int(min_age),
         agg_type=str(agg_type),
         plot=bool(plot),
@@ -552,20 +555,10 @@ def load_vdyp_input_tables(
                 )
             return pd_mod.concat(chunks, ignore_index=True)
 
-        explicit_map_ids = _normalize_map_ids(source_map_ids) if source_map_ids else []
-        if explicit_map_ids:
-            message_fn(
-                f"VDYP source load: explicit map-id mode (n={len(explicit_map_ids)})"
-            )
-            vdyp_ply = _read_layer_by_map_ids(layer=0, map_ids=explicit_map_ids)
-            vdyp_lyr = _read_layer_by_map_ids(layer=1, map_ids=explicit_map_ids)
-            vdyp_ply.to_feather(vdyp_ply_feather_path)
-            vdyp_lyr.to_feather(vdyp_lyr_feather_path)
-            return vdyp_ply, vdyp_lyr
-
         explicit_feature_ids = (
             _normalize_feature_ids(source_feature_ids) if source_feature_ids else []
         )
+        explicit_map_ids = _normalize_map_ids(source_map_ids) if source_map_ids else []
         if explicit_feature_ids:
             message_fn(
                 f"VDYP source load: explicit feature-id mode "
@@ -577,6 +570,23 @@ def load_vdyp_input_tables(
             vdyp_lyr = _read_layer_by_feature_ids(
                 layer=1, feature_ids=explicit_feature_ids
             )
+            if vdyp_ply.shape[0] == 0 and vdyp_lyr.shape[0] == 0 and explicit_map_ids:
+                message_fn(
+                    "VDYP source load: feature-id lookup returned empty tables; "
+                    f"falling back to map-id mode (n={len(explicit_map_ids)})"
+                )
+                vdyp_ply = _read_layer_by_map_ids(layer=0, map_ids=explicit_map_ids)
+                vdyp_lyr = _read_layer_by_map_ids(layer=1, map_ids=explicit_map_ids)
+            vdyp_ply.to_feather(vdyp_ply_feather_path)
+            vdyp_lyr.to_feather(vdyp_lyr_feather_path)
+            return vdyp_ply, vdyp_lyr
+
+        if explicit_map_ids:
+            message_fn(
+                f"VDYP source load: explicit map-id mode (n={len(explicit_map_ids)})"
+            )
+            vdyp_ply = _read_layer_by_map_ids(layer=0, map_ids=explicit_map_ids)
+            vdyp_lyr = _read_layer_by_map_ids(layer=1, map_ids=explicit_map_ids)
             vdyp_ply.to_feather(vdyp_ply_feather_path)
             vdyp_lyr.to_feather(vdyp_lyr_feather_path)
             return vdyp_ply, vdyp_lyr
@@ -817,6 +827,7 @@ def fit_stratum_curves(
     rawdata_alpha: float = 0.05,
     fitattr_thresh: float = 1.0,
     fit_rawdata: bool = True,
+    min_stands_per_si_bin: int = 25,
     debug: bool = False,
     message_fn: Callable[..., Any] = print,
 ) -> dict[str, Any]:
@@ -856,19 +867,93 @@ def fit_stratum_curves(
         stratum_code=sc,
         si_levelquants=si_levelquants,
     )
-    for i, (si_level, q_values) in enumerate(active_si_levelquants.items()):
-        del i
-        result[si_level] = {}
-        ss = f_table.loc[[sc]].copy()
+    level_order = list(active_si_levelquants.keys())
+    stratum_rows = f_table.loc[[sc]].copy()
+    stratum_rows = stratum_rows[
+        (stratum_rows.PROJ_AGE_1 >= min_age) & (stratum_rows.PROJ_AGE_1 < max_age)
+    ]
+    level_masks: dict[str, Any] = {}
+    level_counts: dict[str, int] = {}
+    for si_level, q_values in active_si_levelquants.items():
         si_lo = stratum_si_stats.loc[sc].loc["%i%%" % q_values[0]]
-        si_md = stratum_si_stats.loc[sc].loc["%i%%" % q_values[1]]
         si_hi = stratum_si_stats.loc[sc].loc["%i%%" % q_values[2]]
-        ss = ss[
-            (ss.SITE_INDEX >= si_lo)
-            & (ss.SITE_INDEX < si_hi)
-            & (ss.PROJ_AGE_1 >= min_age)
-            & (ss.PROJ_AGE_1 < max_age)
-        ]
+        mask = (stratum_rows.SITE_INDEX >= si_lo) & (stratum_rows.SITE_INDEX <= si_hi)
+        level_masks[si_level] = mask
+        level_counts[si_level] = int(mask.sum())
+
+    level_to_rep = {level: level for level in level_order}
+
+    def _rebuild_group_state() -> tuple[
+        list[str], dict[str, list[str]], dict[str, int]
+    ]:
+        rep_order: list[str] = []
+        members_by_rep: dict[str, list[str]] = {}
+        counts_by_rep: dict[str, int] = {}
+        for level in level_order:
+            rep = level_to_rep[level]
+            if rep not in rep_order:
+                rep_order.append(rep)
+            members_by_rep.setdefault(rep, []).append(level)
+            counts_by_rep[rep] = counts_by_rep.get(rep, 0) + level_counts.get(level, 0)
+        return rep_order, members_by_rep, counts_by_rep
+
+    rep_order, rep_members, group_counts = _rebuild_group_state()
+    if int(min_stands_per_si_bin) > 0:
+        while len(rep_order) > 1:
+            sparse_reps = [
+                rep
+                for rep in rep_order
+                if group_counts.get(rep, 0) < int(min_stands_per_si_bin)
+            ]
+            if not sparse_reps:
+                break
+            sparse_rep = min(sparse_reps, key=lambda rep: group_counts.get(rep, 0))
+            sparse_idx = rep_order.index(sparse_rep)
+            neighbor_candidates: list[str] = []
+            if sparse_idx > 0:
+                neighbor_candidates.append(rep_order[sparse_idx - 1])
+            if sparse_idx + 1 < len(rep_order):
+                neighbor_candidates.append(rep_order[sparse_idx + 1])
+            if not neighbor_candidates:
+                break
+            merge_target = max(
+                neighbor_candidates,
+                key=lambda rep: (
+                    group_counts.get(rep, 0),
+                    -abs(rep_order.index(rep) - sparse_idx),
+                ),
+            )
+            for level, rep in list(level_to_rep.items()):
+                if rep == sparse_rep:
+                    level_to_rep[level] = merge_target
+            rep_order, rep_members, group_counts = _rebuild_group_state()
+
+    if len(set(level_to_rep.values())) < len(level_order):
+        collapse_desc = ", ".join(
+            f"{level}->{level_to_rep[level]} ({level_counts.get(level, 0)} stands)"
+            for level in level_order
+            if level_to_rep[level] != level
+        )
+        message_fn("  pre-fit SI bin collapse", sc, collapse_desc)
+
+    rep_payloads: dict[str, dict[str, Any]] = {}
+    for rep_level in rep_order:
+        members = rep_members.get(rep_level, [rep_level])
+        combined_mask = None
+        for member in members:
+            member_mask = level_masks.get(member)
+            if member_mask is None:
+                continue
+            combined_mask = (
+                member_mask if combined_mask is None else (combined_mask | member_mask)
+            )
+        if combined_mask is None:
+            rep_payloads[rep_level] = {
+                "ss": stratum_rows.iloc[0:0].copy(),
+                "species": {},
+            }
+            continue
+        ss = stratum_rows[combined_mask]
         ss = ss.sort_values("PROJ_AGE_1")
         stand_volume_total = ss["LIVE_STAND_VOLUME_125"].sum()
         if stand_volume_total <= 0:
@@ -883,7 +968,8 @@ def fit_stratum_curves(
                 }
             ).sort_values(ascending=False)
             sv = sv[sv > sv_thresh]
-        result[si_level]["ss"] = ss
+        payload: dict[str, Any] = {"ss": ss, "species": {}}
+        si_md = float(ss.SITE_INDEX.median()) if not ss.empty else float("nan")
         if verbose:
             message_fn("sv sum", sv.sum())
         if plot:
@@ -893,22 +979,22 @@ def fit_stratum_curves(
                 sss = ss[ss[fitattr] >= 1]
                 x.append(sss.PROJ_AGE_1.values)
                 y.append(sss[fitattr].values / sv.sum())
-            x = np_module.concatenate(x)
-            y = np_module.concatenate(y)
-            ax_[si_level].scatter(
-                x,
-                y,
-                alpha=rawdata_alpha,
-                label="Raw data (%s SI, %s)" % (si_level, species),
-                color="grey",
-                marker=markers[j],
-            )
-        result[si_level]["species"] = {}
+            if x and y:
+                x = np_module.concatenate(x)
+                y = np_module.concatenate(y)
+                ax_[rep_level].scatter(
+                    x,
+                    y,
+                    alpha=rawdata_alpha,
+                    label="Raw data (%s SI, all spp)" % (rep_level),
+                    color="grey",
+                    marker=".",
+                )
         for j, species in enumerate(sv.index.values):
             if verbose:
                 message_fn(
                     "  fitting SI level %s (%2.1f), species %s"
-                    % (si_level, si_md, species)
+                    % (rep_level, si_md, species)
                 )
             fitattr = f"live_vol_per_ha_125_{species}"
             sss = ss[ss[fitattr] >= fitattr_thresh]
@@ -950,7 +1036,7 @@ def fit_stratum_curves(
                     "stratum",
                     sc,
                     "si",
-                    si_level,
+                    rep_level,
                     "species",
                     species,
                     "n",
@@ -963,11 +1049,11 @@ def fit_stratum_curves(
                 message_fn("popt", popt)
             if plot:
                 if not fit_rawdata:
-                    ax_[si_level].scatter(
+                    ax_[rep_level].scatter(
                         x,
                         y,
                         alpha=0.8,
-                        label="Smoothed data (%s SI, %s)" % (si_level, species),
+                        label="Smoothed data (%s SI, %s)" % (rep_level, species),
                         color="black",
                         marker=markers[j],
                     )
@@ -976,28 +1062,28 @@ def fit_stratum_curves(
                 sns_module.lineplot(
                     x_,
                     y_,
-                    label="func fit (%s SI, %s)" % (si_level, species),
+                    label="func fit (%s SI, %s)" % (rep_level, species),
                     ax=ax[0],
-                    color=palette_[si_level],
+                    color=palette_[rep_level],
                     linestyle=linestyles[j],
                     linewidth=3,
                 )
                 sns_module.lineplot(
                     x_,
                     y_,
-                    label="func fit (%s SI, %s)" % (si_level, species),
-                    ax=ax_[si_level],
-                    color=palette_[si_level],
+                    label="func fit (%s SI, %s)" % (rep_level, species),
+                    ax=ax_[rep_level],
+                    color=palette_[rep_level],
                     linestyle=linestyles[j],
                     linewidth=3,
                 )
-            result[si_level]["species"][species] = {}
-            result[si_level]["species"][species]["si"] = si_md
-            result[si_level]["species"][species]["pct"] = int(
+            payload["species"][species] = {}
+            payload["species"][species]["si"] = si_md
+            payload["species"][species]["pct"] = int(
                 round(100 * sv[species] / sv.sum())
             )
             age = int(round(np_module.min(x) * 1.0))
-            result[si_level]["species"][species]["age"] = (
+            payload["species"][species]["age"] = (
                 age if not np_module.isnan(age) else None
             )
             jj = min(2, j + 1)
@@ -1005,12 +1091,24 @@ def fit_stratum_curves(
                 (sss[f"PROJ_AGE_{jj}"] >= age - 5) & (sss[f"PROJ_AGE_{jj}"] < age + 5)
             ]
             height = ssss[f"PROJ_HEIGHT_{jj}"].median()
-            result[si_level]["species"][species]["height"] = (
+            payload["species"][species]["height"] = (
                 height if not np_module.isnan(height) else None
             )
-            result[si_level]["species"][species]["fit_func"] = fit_func
-            result[si_level]["species"][species]["popt"] = popt
-            result[si_level]["species"][species]["pcov"] = pcov
+            payload["species"][species]["fit_func"] = fit_func
+            payload["species"][species]["popt"] = popt
+            payload["species"][species]["pcov"] = pcov
+        rep_payloads[rep_level] = payload
+    for si_level in level_order:
+        rep_level = level_to_rep.get(si_level, si_level)
+        base_payload = rep_payloads.get(
+            rep_level, {"ss": stratum_rows.iloc[0:0], "species": {}}
+        )
+        payload = dict(base_payload)
+        payload["collapsed_to"] = rep_level
+        payload["collapsed_members"] = tuple(rep_members.get(rep_level, [rep_level]))
+        payload["si_bin_stand_count"] = int(level_counts.get(si_level, 0))
+        payload["si_group_stand_count"] = int(group_counts.get(rep_level, 0))
+        result[si_level] = payload
     if plot:
         ax[0].set_title("Best-fit yield curves (stratum %s)" % sc)
         plt_module.legend(loc="best")
@@ -1040,6 +1138,7 @@ def build_fit_stratum_curves_runner(
     species_list: Sequence[str],
     curve_fit_fn: Callable[..., Any],
     fit_rawdata: bool,
+    min_stands_per_si_bin: int = 25,
     min_age: int,
     agg_type: str,
     plot: bool,
@@ -1071,6 +1170,7 @@ def build_fit_stratum_curves_runner(
             sns_module=sns_module,
             plt_module=plt_module,
             fit_rawdata=fit_rawdata,
+            min_stands_per_si_bin=min_stands_per_si_bin,
             min_age=min_age,
             agg_type=agg_type,
             plot=plot,
@@ -1378,6 +1478,165 @@ def run_vdyp_for_stratum(
         sampling_seed if sampling_seed is not None else _sampling_seed_from_env()
     )
 
+    pd_mod = importlib.import_module("pandas")
+
+    def _normalize_feature_ids(values: Sequence[Any]) -> list[int]:
+        result: list[int] = []
+        for value in values:
+            try:
+                result.append(int(value))
+            except (TypeError, ValueError):
+                continue
+        return result
+
+    def _normalize_polygon_key(value: Any) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, float) and np.isnan(value):
+            return None
+        text = str(value).strip()
+        if not text:
+            return None
+        try:
+            return str(int(float(text)))
+        except (TypeError, ValueError):
+            return text
+
+    sample_feature_to_map_id: dict[int, str] = {}
+    sample_feature_to_map_polygon: dict[int, tuple[str, str]] = {}
+    sample_polygon_column = next(
+        (
+            col
+            for col in ("POLYGON_ID", "POLYGON_NUMBER")
+            if col in sample_table.columns
+        ),
+        None,
+    )
+    if "FEATURE_ID" in sample_table.columns and "MAP_ID" in sample_table.columns:
+        source_pairs = sample_table[["FEATURE_ID", "MAP_ID"]].dropna()
+        for row in source_pairs.itertuples(index=False):
+            try:
+                source_feature_id = int(row.FEATURE_ID)
+            except (TypeError, ValueError):
+                continue
+            map_id = str(row.MAP_ID).strip()
+            if map_id:
+                sample_feature_to_map_id[source_feature_id] = map_id
+        if sample_polygon_column is not None:
+            source_poly_pairs = sample_table[
+                ["FEATURE_ID", "MAP_ID", sample_polygon_column]
+            ].dropna()
+            for row in source_poly_pairs.itertuples(index=False):
+                try:
+                    source_feature_id = int(row.FEATURE_ID)
+                except (TypeError, ValueError):
+                    continue
+                map_id = str(row.MAP_ID).strip()
+                polygon_key = _normalize_polygon_key(
+                    getattr(row, sample_polygon_column)
+                )
+                if map_id and polygon_key:
+                    sample_feature_to_map_polygon[source_feature_id] = (
+                        map_id,
+                        polygon_key,
+                    )
+
+    vdyp_feature_id_set: set[int] = set()
+    vdyp_map_to_feature_ids: dict[str, list[int]] = {}
+    vdyp_map_polygon_to_feature_ids: dict[tuple[str, str], list[int]] = {}
+    vdyp_polygon_column = next(
+        (col for col in ("POLYGON_NUMBER", "POLYGON_ID") if col in vdyp_ply.columns),
+        None,
+    )
+    if "FEATURE_ID" in vdyp_ply.columns:
+        vdyp_feature_series = pd_mod.to_numeric(
+            vdyp_ply["FEATURE_ID"], errors="coerce"
+        ).dropna()
+        vdyp_feature_ids = vdyp_feature_series.astype(int).tolist()
+        vdyp_feature_id_set = set(vdyp_feature_ids)
+        if "MAP_ID" in vdyp_ply.columns:
+            map_series = (
+                vdyp_ply.loc[vdyp_feature_series.index, "MAP_ID"]
+                .astype(str)
+                .str.strip()
+                .tolist()
+            )
+            polygon_series: list[str | None] = []
+            if vdyp_polygon_column is not None:
+                polygon_series = [
+                    _normalize_polygon_key(value)
+                    for value in vdyp_ply.loc[
+                        vdyp_feature_series.index, vdyp_polygon_column
+                    ].tolist()
+                ]
+            for feature_id, map_id in zip(vdyp_feature_ids, map_series):
+                if not map_id:
+                    continue
+                vdyp_map_to_feature_ids.setdefault(map_id, []).append(feature_id)
+            if polygon_series:
+                for feature_id, map_id, polygon_key in zip(
+                    vdyp_feature_ids, map_series, polygon_series
+                ):
+                    if not map_id or not polygon_key:
+                        continue
+                    vdyp_map_polygon_to_feature_ids.setdefault(
+                        (map_id, polygon_key), []
+                    ).append(feature_id)
+            for map_id in list(vdyp_map_to_feature_ids.keys()):
+                vdyp_map_to_feature_ids[map_id] = sorted(
+                    set(vdyp_map_to_feature_ids[map_id])
+                )
+            for map_polygon in list(vdyp_map_polygon_to_feature_ids.keys()):
+                vdyp_map_polygon_to_feature_ids[map_polygon] = sorted(
+                    set(vdyp_map_polygon_to_feature_ids[map_polygon])
+                )
+
+    def _resolve_feature_ids_for_vdyp(
+        source_feature_ids: Sequence[Any],
+    ) -> tuple[list[int], dict[int, list[int]], bool]:
+        source_ids = _normalize_feature_ids(source_feature_ids)
+        if not source_ids:
+            return [], {}, False
+
+        vdyp_to_source: dict[int, list[int]] = {}
+        map_id_offsets: dict[str, int] = {}
+        map_polygon_offsets: dict[tuple[str, str], int] = {}
+        used_map_join = False
+
+        for source_id in source_ids:
+            if source_id in vdyp_feature_id_set:
+                vdyp_to_source.setdefault(source_id, []).append(source_id)
+                continue
+
+            map_polygon = sample_feature_to_map_polygon.get(source_id)
+            if map_polygon:
+                polygon_candidates = vdyp_map_polygon_to_feature_ids.get(map_polygon)
+                if polygon_candidates:
+                    offset = map_polygon_offsets.get(map_polygon, 0)
+                    selected_feature_id = int(
+                        polygon_candidates[offset % len(polygon_candidates)]
+                    )
+                    map_polygon_offsets[map_polygon] = offset + 1
+                    vdyp_to_source.setdefault(selected_feature_id, []).append(source_id)
+                    used_map_join = True
+                    continue
+
+            map_id = sample_feature_to_map_id.get(source_id)
+            if not map_id:
+                continue
+            candidates = vdyp_map_to_feature_ids.get(map_id)
+            if not candidates:
+                continue
+            offset = map_id_offsets.get(map_id, 0)
+            selected_feature_id = int(candidates[offset % len(candidates)])
+            map_id_offsets[map_id] = offset + 1
+            vdyp_to_source.setdefault(selected_feature_id, []).append(source_id)
+            used_map_join = True
+
+        if not vdyp_to_source:
+            return source_ids, {fid: [fid] for fid in source_ids}, False
+        return sorted(vdyp_to_source.keys()), vdyp_to_source, used_map_join
+
     def _run_batch(
         feature_ids: Sequence[Any],
         *,
@@ -1385,8 +1644,11 @@ def run_vdyp_for_stratum(
         cache_hits: int = 0,
         phase: str | None = None,
     ) -> dict[Any, Any]:
-        feature_ids_list = list(feature_ids)
-        feature_count = len(feature_ids_list)
+        source_feature_ids = _normalize_feature_ids(feature_ids)
+        feature_count = len(source_feature_ids)
+        resolved_feature_ids, vdyp_to_source, used_map_join = (
+            _resolve_feature_ids_for_vdyp(source_feature_ids)
+        )
         if feature_count == 0:
             append_jsonl_(
                 vdyp_log_path,
@@ -1411,8 +1673,8 @@ def run_vdyp_for_stratum(
                 context=base_context,
             ),
         )
-        return execute_vdyp_batch_(
-            feature_ids=feature_ids_list,
+        vdyp_out = execute_vdyp_batch_(
+            feature_ids=resolved_feature_ids,
             vdyp_ply=vdyp_ply,
             vdyp_lyr=vdyp_lyr,
             vdyp_binpath=vdyp_binpath,
@@ -1431,6 +1693,75 @@ def run_vdyp_for_stratum(
             append_jsonl_fn=append_jsonl_,
             append_text_fn=append_text_,
         )
+        resolved_feature_id_set = set(resolved_feature_ids)
+        resolved_out: dict[int, Any] = {}
+
+        map_polygon_offsets_out: dict[tuple[str, str], int] = {}
+        for vdyp_table in vdyp_out.values():
+            attrs = getattr(vdyp_table, "attrs", None)
+            if not isinstance(attrs, Mapping):
+                continue
+            map_name_raw = attrs.get("vdyp_map_name")
+            polygon_raw = attrs.get("vdyp_polygon_id")
+            if map_name_raw is None or polygon_raw is None:
+                continue
+            map_name = str(map_name_raw).strip()
+            polygon_key = _normalize_polygon_key(polygon_raw)
+            if not map_name or not polygon_key:
+                continue
+            candidates = vdyp_map_polygon_to_feature_ids.get((map_name, polygon_key))
+            if not candidates:
+                continue
+            candidates = [fid for fid in candidates if fid in resolved_feature_id_set]
+            if not candidates:
+                continue
+            map_polygon = (map_name, polygon_key)
+            offset = map_polygon_offsets_out.get(map_polygon, 0)
+            selected_feature_id = int(candidates[offset % len(candidates)])
+            map_polygon_offsets_out[map_polygon] = offset + 1
+            resolved_out[selected_feature_id] = vdyp_table
+
+        for vdyp_feature_id, vdyp_table in vdyp_out.items():
+            try:
+                vdyp_id_int = int(vdyp_feature_id)
+            except (TypeError, ValueError):
+                continue
+            if (
+                vdyp_id_int in resolved_feature_id_set
+                and vdyp_id_int not in resolved_out
+            ):
+                resolved_out[vdyp_id_int] = vdyp_table
+
+        # Some VDYP builds report Polygon ids in output tables instead of input FEATURE_IDs.
+        # When counts line up exactly, preserve table order and remap to requested ids.
+        used_order_remap = False
+        if len(resolved_out) != len(resolved_feature_ids) and len(vdyp_out) >= len(
+            resolved_feature_ids
+        ):
+            resolved_out = {
+                int(feature_id): table
+                for feature_id, table in zip(
+                    resolved_feature_ids, vdyp_out.values(), strict=False
+                )
+            }
+            used_order_remap = True
+
+        if not resolved_out:
+            return vdyp_out
+
+        if used_order_remap and verbose:
+            message_fn(
+                "VDYP output remap via batch order "
+                f"(requested={len(resolved_feature_ids)} tables={len(vdyp_out)})"
+            )
+
+        source_out: dict[Any, Any] = {}
+        for resolved_id, vdyp_table in resolved_out.items():
+            source_ids = vdyp_to_source.get(resolved_id) or [resolved_id]
+            for source_id in source_ids:
+                source_out[source_id] = vdyp_table
+
+        return source_out or vdyp_out
 
     return run_vdyp_sampling(
         sample_table=sample_table,
@@ -1511,6 +1842,7 @@ def execute_bootstrap_vdyp_runs(
     append_jsonl_fn: Callable[[str | Path, Any], None],
     run_vdyp_fn: Callable[..., dict[Any, Any]],
     vdyp_out_cache: dict[Any, Any] | None = None,
+    nsamples_mode: str | int = "auto",
     verbose: bool = True,
     half_rel_ci: float = 0.01,
     ipp_mode: str | None = None,
@@ -1580,6 +1912,7 @@ def execute_bootstrap_vdyp_runs(
                     )
                 vdyp_out = run_vdyp_fn(
                     si_sample,
+                    nsamples=nsamples_mode,
                     verbose=verbose,
                     half_rel_ci=half_rel_ci,
                     ipp_mode=ipp_mode,
@@ -1619,6 +1952,7 @@ def build_bootstrap_vdyp_results_runner(
     append_jsonl_fn: Callable[[str | Path, Any], None],
     run_vdyp_fn: Callable[..., dict[Any, Any]],
     vdyp_out_cache: dict[Any, Any] | None = None,
+    nsamples_mode: str | int = "auto",
     sampling_seed_base: int | None = None,
     execute_bootstrap_vdyp_runs_fn: Callable[
         ..., dict[int, dict[str, dict[Any, Any]]]
@@ -1636,6 +1970,7 @@ def build_bootstrap_vdyp_results_runner(
             append_jsonl_fn=append_jsonl_fn,
             run_vdyp_fn=run_vdyp_fn,
             vdyp_out_cache=vdyp_out_cache,
+            nsamples_mode=nsamples_mode,
             sampling_seed_base=sampling_seed_base,
         )
 
@@ -2097,6 +2432,60 @@ def execute_curve_smoothing_runs(
         fig.savefig(plot_path, dpi=150)
         plt_module.close(fig)
 
+    def _emit_lmh_overlay_plot(
+        *,
+        tsa_code: str,
+        runs: Sequence[SmoothedCurveResult],
+    ) -> None:
+        if not runs:
+            return
+        plt_module = importlib.import_module("matplotlib.pyplot")
+        plot_root = Path("plots")
+        plot_root.mkdir(parents=True, exist_ok=True)
+        grouped: dict[tuple[int, str], dict[str, SmoothedCurveResult]] = {}
+        for run in runs:
+            key = (int(run.stratumi), str(run.stratum_code))
+            grouped.setdefault(key, {})[str(run.si_level)] = run
+        for (stratumi, stratum_code), level_runs in grouped.items():
+            if not level_runs:
+                continue
+            plot_path = plot_root / (
+                f"vdyp_lmh_tsa{str(tsa_code).zfill(2)}-"
+                f"{str(stratumi).zfill(2)}-{stratum_code}.png"
+            )
+            fig, ax = plt_module.subplots(1, 1, figsize=(8, 5))
+            ymax = 1.0
+            for si_level, color in (
+                ("L", "tab:blue"),
+                ("M", "tab:green"),
+                ("H", "tab:red"),
+            ):
+                level_run = level_runs.get(si_level)
+                if level_run is None:
+                    continue
+                x_vals = np.asarray(level_run.x, dtype=float)
+                y_vals = np.asarray(level_run.y, dtype=float)
+                if x_vals.size == 0 or y_vals.size == 0:
+                    continue
+                ax.plot(
+                    x_vals,
+                    y_vals,
+                    linewidth=2.0,
+                    color=color,
+                    label=f"{si_level} best-fit curve",
+                )
+                ymax = max(ymax, float(np.nanmax(y_vals)))
+            ax.set_title(f"VDYP L/M/H Comparison: {stratum_code}")
+            ax.set_xlabel("Age")
+            ax.set_ylabel("Volume")
+            ax.set_xlim(0, 300)
+            ax.set_ylim(0, ymax * 1.05)
+            ax.grid(alpha=0.25)
+            ax.legend(fontsize=8)
+            fig.tight_layout()
+            fig.savefig(plot_path, dpi=150)
+            plt_module.close(fig)
+
     smoothed_runs: list[SmoothedCurveResult] = []
     for stratumi, sc, _result in results_for_tsa:
         for si_level in si_levels:
@@ -2234,4 +2623,5 @@ def execute_curve_smoothing_runs(
                     vdyp_out=vdyp_out,
                 )
             )
+    _emit_lmh_overlay_plot(tsa_code=tsa, runs=smoothed_runs)
     return smoothed_runs

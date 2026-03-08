@@ -9,12 +9,28 @@ selection:
   # boundary_path: "data/bc/cfa/k3z/CFA K3Z Tenure.shp"
   # boundary_layer: null
   # boundary_code: "k3z"
+  # Optional stratum-key controls for small custom units:
+  # stratification:
+  #   bec_grouping: "subzone"  # one of: zone, subzone, variant, phase
+  #   species_combo_count: 2    # top N species by SPECIES_PCT_1..6
+  #   include_tm_species2_for_single: true
+  #   top_area_coverage: 0.95   # optional cumulative area cutoff for top-N strata
 modes:
   resume: true
   dry_run: false
   verbose: true
   skip_checks: true
   debug_rows: 250
+  # Optional VDYP execution controls:
+  # vdyp_sampling_mode: auto  # auto | all | positive integer sample size
+  # vdyp_two_pass_rebin: false  # re-bin L/M/H using stand-level SI from first-pass VDYP output
+  # vdyp_min_stands_per_si_bin: 25  # collapse sparse SI bins below this stand count
+  # Optional managed-curve synthesis mode (bypasses raw TIPSY yield for managed curves):
+  # managed_curve_mode: tipsy  # tipsy | vdyp_transform
+  # managed_curve_x_scale: 0.8
+  # managed_curve_y_scale: 1.2
+  # managed_curve_truncate_at_culm: true
+  # managed_curve_max_age: 300
 run:
   run_id: "dev-profile"
   log_dir: "vdyp_io/profile_logs"

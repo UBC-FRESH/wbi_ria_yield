@@ -7,7 +7,7 @@ import io
 import importlib
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, cast
 
 
 def write_vdyp_infiles_plylyr(
@@ -42,7 +42,7 @@ def write_vdyp_infiles_plylyr(
 
 
 def import_vdyp_tables(filename: str | Path) -> dict[int, Any]:
-    """Parse VDYP console output tables keyed by polygon id."""
+    """Parse VDYP console output tables keyed by per-run table number."""
     pd = importlib.import_module("pandas")
 
     text = Path(filename).read_text(encoding="utf-8", errors="ignore")
@@ -50,10 +50,18 @@ def import_vdyp_tables(filename: str | Path) -> dict[int, Any]:
     result: dict[int, Any] = {}
     for chunk in chunks:
         lines = chunk.split("\n")
+        table_number_match = re.search(r"Table Number:\s*(\d+)", lines[0])
+        map_name_match = re.search(r"Map Name:\s*([A-Za-z0-9]+)", lines[0])
         polygon_match = re.search(r"(?<=Polygon:.)\d+", lines[0])
-        if polygon_match is None:
+        if table_number_match is None and polygon_match is None:
             continue
-        polygon_id = int(polygon_match.group())
+        table_number = (
+            int(table_number_match.group(1))
+            if table_number_match is not None
+            else int(cast(re.Match[str], polygon_match).group())
+        )
+        polygon_id = int(polygon_match.group()) if polygon_match is not None else None
+        map_name = map_name_match.group(1) if map_name_match is not None else None
         result_ = pd.read_fwf(
             io.StringIO(chunk),
             skiprows=[0, 2],
@@ -61,5 +69,10 @@ def import_vdyp_tables(filename: str | Path) -> dict[int, Any]:
             infer_nrows=200,
         )
         if isinstance(result_, pd.DataFrame):
-            result[polygon_id] = result_
+            if polygon_id is not None:
+                result_.attrs["vdyp_polygon_id"] = polygon_id
+            if map_name is not None:
+                result_.attrs["vdyp_map_name"] = map_name
+            result_.attrs["vdyp_table_number"] = table_number
+            result[table_number] = result_
     return result

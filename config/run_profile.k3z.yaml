@@ -4,12 +4,25 @@ selection:
   boundary_path: "data/bc/cfa/k3z/CFA K3Z Tenure.shp"
   boundary_layer: null
   boundary_code: "k3z"
+  stratification:
+    bec_grouping: "subzone"
+    species_combo_count: 2
+    include_tm_species2_for_single: true
+    top_area_coverage: 0.90
   strata: []
 modes:
   resume: false
   dry_run: false
   verbose: true
   skip_checks: false
+  vdyp_sampling_mode: all
+  vdyp_two_pass_rebin: true
+  vdyp_min_stands_per_si_bin: 10
+  managed_curve_mode: vdyp_transform
+  managed_curve_x_scale: 0.8
+  managed_curve_y_scale: 1.2
+  managed_curve_truncate_at_culm: true
+  managed_curve_max_age: 300
 run:
   run_id: "k3z_20260304"
   log_dir: "vdyp_io/logs"

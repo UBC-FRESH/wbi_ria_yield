@@ -58,3 +58,32 @@ def test_import_vdyp_tables_returns_empty_for_nonmatching_content(
     parsed = import_vdyp_tables(out_path)
 
     assert parsed == {}
+
+
+def test_import_vdyp_tables_uses_table_number_keys_when_polygon_repeats(
+    tmp_path: Path,
+) -> None:
+    out_path = tmp_path / "console.txt"
+    out_path.write_text(
+        (
+            "vvvvvvvvvv Table Number: 1 District: Map Name: 092L053 Polygon: 79 Layer: 1 - Primary\n"
+            " Age  Vdwb\n"
+            " ---- ----\n"
+            "  10   1.0\n"
+            "^\n"
+            "vvvvvvvvvv Table Number: 2 District: Map Name: 092L063 Polygon: 79 Layer: 1 - Primary\n"
+            " Age  Vdwb\n"
+            " ---- ----\n"
+            "  10   2.0\n"
+            "^\n"
+        ),
+        encoding="utf-8",
+    )
+
+    parsed = import_vdyp_tables(out_path)
+
+    assert set(parsed.keys()) == {1, 2}
+    assert parsed[1].attrs["vdyp_polygon_id"] == 79
+    assert parsed[1].attrs["vdyp_map_name"] == "092L053"
+    assert parsed[2].attrs["vdyp_polygon_id"] == 79
+    assert parsed[2].attrs["vdyp_map_name"] == "092L063"

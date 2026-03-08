@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -19,19 +18,6 @@ TARGET_NSTRATA_BY_TSA: dict[str, int] = {
 }
 DEFAULT_TARGET_NSTRATA = 10
 MIN_STANDCOUNT = 1000
-
-SI_SPLIT_RANGE_SINGLE_LEVEL_MAX = 5.0
-SI_SPLIT_RANGE_TWO_LEVEL_MAX = 10.0
-
-# Manual stratum-level SI band overrides for known edge cases.
-# Values are (low_quantile, mid_quantile, high_quantile).
-STRATUM_SI_LEVEL_QUANTILES_OVERRIDE: dict[str, dict[str, tuple[int, int, int]]] = {
-    # K3Z: merge sparse low-SI CWH_HW sample into the M class.
-    "CWH_HW": {
-        "M": (0, 35, 65),
-        "H": (65, 80, 100),
-    }
-}
 
 
 def target_nstrata_for(tsa_code: str) -> int:
@@ -51,18 +37,25 @@ def build_strata_summary(
     pd_module: Any,
     tsa_code: str | None = None,
     target_nstrata: int | None = None,
+    target_coverage: float | None = None,
     min_standcount: int = MIN_STANDCOUNT,
 ) -> tuple[Any, list[str], float]:
-    """Build per-stratum summary table used by legacy TSA orchestration."""
+    """Build per-stratum summary table used by legacy TSA orchestration.
+
+    If ``target_coverage`` is provided, strata are selected by descending area until
+    cumulative coverage reaches the threshold (0 < target_coverage <= 1). Otherwise
+    a fixed top-N selection is used.
+    """
     resolved_target = target_nstrata
     if resolved_target is None:
         if tsa_code is None:
             raise ValueError("either target_nstrata or tsa_code must be provided")
         resolved_target = target_nstrata_for(tsa_code)
+    if target_coverage is not None and not (0.0 < float(target_coverage) <= 1.0):
+        raise ValueError("target_coverage must satisfy 0 < target_coverage <= 1")
 
     strata_gb1 = f_table.groupby(level=stratum_col)
-    totalarea_p_sum = strata_gb1.totalarea_p.sum().nlargest(resolved_target)
-    largestn_strata_codes = list(totalarea_p_sum.index.values)
+    totalarea_p_sum = strata_gb1.totalarea_p.sum().sort_values(ascending=False)
     strata_gb2 = f_table.groupby(level=stratum_col)
     site_index_iqr = strata_gb2.SITE_INDEX.quantile(
         0.75
@@ -80,7 +73,14 @@ def build_strata_summary(
     # empty/NaN summary table.
     if filtered.empty and not strata_df.empty:
         filtered = strata_df.copy()
-    strata_df = filtered.head(resolved_target).copy()
+    if target_coverage is not None and not filtered.empty:
+        cumulative = filtered.coverage.cumsum()
+        selected_n = int((cumulative < float(target_coverage)).sum()) + 1
+        selected_n = min(max(selected_n, 1), int(filtered.shape[0]))
+        strata_df = filtered.head(selected_n).copy()
+    else:
+        strata_df = filtered.head(resolved_target).copy()
+    largestn_strata_codes = list(strata_df.index.values)
     median_si = (
         f_table[f_table.index.isin(largestn_strata_codes)]
         .groupby(level=stratum_col)
@@ -95,45 +95,16 @@ def resolve_si_level_quantiles_for_stratum(
     stratum_si_stats: Any,
     stratum_code: Any,
     si_levelquants: Mapping[str, Sequence[float]],
-    single_level_max_range: float = SI_SPLIT_RANGE_SINGLE_LEVEL_MAX,
-    two_level_max_range: float = SI_SPLIT_RANGE_TWO_LEVEL_MAX,
 ) -> dict[str, tuple[int, int, int]]:
-    """Resolve per-stratum SI bin labels from 5-95 SI width.
+    """Resolve per-stratum SI quantile bands.
 
-    Rules:
-    - width < 5  -> single `M` bin
-    - 5 <= width <= 10 -> `L` + `H` bins
-    - width > 10 -> `L` + `M` + `H` bins
+    The current policy is to apply strict, fixed L/M/H bands for all strata
+    (for example L=5-35, M=35-65, H=65-95) as provided by `si_levelquants`.
     """
-    base = {
+    del stratum_si_stats, stratum_code
+    return {
         level: (int(values[0]), int(values[1]), int(values[2]))
         for level, values in si_levelquants.items()
-    }
-    override = STRATUM_SI_LEVEL_QUANTILES_OVERRIDE.get(str(stratum_code))
-    if override:
-        return {
-            level: (int(values[0]), int(values[1]), int(values[2]))
-            for level, values in override.items()
-        }
-    p5 = stratum_si_stats.loc[stratum_code].get("5%")
-    p95 = stratum_si_stats.loc[stratum_code].get("95%")
-    try:
-        width = float(p95) - float(p5)
-    except (TypeError, ValueError):
-        return base
-    if not math.isfinite(width):
-        return base
-    if width < float(single_level_max_range):
-        return {"M": (0, 50, 100)}
-    if width <= float(two_level_max_range):
-        return {
-            "L": (0, 20, 50),
-            "H": (50, 80, 100),
-        }
-    return {
-        "L": (0, 20, 35),
-        "M": (35, 50, 65),
-        "H": (65, 80, 100),
     }
 
 
@@ -285,9 +256,9 @@ def assign_si_levels_from_stratum_quantiles(
             }
             if allowed:
                 fallback_quantiles = {
-                    "L": (0, 20, 50),
-                    "M": (0, 50, 100),
-                    "H": (50, 80, 100),
+                    "L": (5, 20, 35),
+                    "M": (35, 50, 65),
+                    "H": (65, 80, 95),
                 }
                 restricted: dict[str, tuple[int, int, int]] = {}
                 for level in ("L", "M", "H"):
