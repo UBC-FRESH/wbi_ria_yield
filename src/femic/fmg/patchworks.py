@@ -225,6 +225,13 @@ def _sanitize_curve_points_for_xml(
     return tuple(deduped)
 
 
+def _format_xml_x(x_value: float, *, abs_tol: float = 1e-9) -> str:
+    """Format x for XML using integer ages when effectively integral."""
+    if math.isclose(x_value, round(x_value), rel_tol=0.0, abs_tol=abs_tol):
+        return str(int(round(x_value)))
+    return f"{x_value:.6f}".rstrip("0").rstrip(".")
+
+
 def _gpd_module() -> Any:
     return importlib.import_module("geopandas")
 
@@ -583,11 +590,10 @@ def forestmodel_definition_to_xml_tree(
         elif not points:
             points = (CurvePoint(x=0.0, y=0.0),)
         for point in points:
+            x_val = _format_xml_x(float(point.x))
             if curve_id == "unity":
-                x_val = str(point.x)
                 y_val = str(point.y)
             else:
-                x_val = f"{point.x:.6f}"
                 y_val = f"{point.y:.6f}"
             et.SubElement(
                 curve_node,

@@ -190,10 +190,10 @@ def test_build_forestmodel_xml_tree_adds_species_yield_curves() -> None:
     assert managed_curve is not None
     unmanaged_points = unmanaged_curve.findall("./point")
     managed_points = managed_curve.findall("./point")
-    assert unmanaged_points[0].attrib == {"x": "1.000000", "y": "6.000000"}
-    assert unmanaged_points[1].attrib == {"x": "10.000000", "y": "33.000000"}
-    assert managed_points[0].attrib == {"x": "1.000000", "y": "8.400000"}
-    assert managed_points[1].attrib == {"x": "10.000000", "y": "49.000000"}
+    assert unmanaged_points[0].attrib == {"x": "1", "y": "6.000000"}
+    assert unmanaged_points[1].attrib == {"x": "10", "y": "33.000000"}
+    assert managed_points[0].attrib == {"x": "1", "y": "8.400000"}
+    assert managed_points[1].attrib == {"x": "10", "y": "49.000000"}
 
     xml_text = et.tostring(root, encoding="unicode")
     assert "feature.Yield.unmanaged.HW" in xml_text
@@ -242,13 +242,13 @@ def test_forestmodel_xml_trims_repeated_curve_values_on_both_tails() -> None:
     unmanaged_points = root.findall("./curve[@id='unmanaged_total_1001']/point")
     managed_points = root.findall("./curve[@id='managed_total_21001']/point")
     assert [p.attrib for p in unmanaged_points] == [
-        {"x": "2.000000", "y": "5.000000"},
-        {"x": "10.000000", "y": "40.000000"},
+        {"x": "2", "y": "5.000000"},
+        {"x": "10", "y": "40.000000"},
     ]
     assert [p.attrib for p in managed_points] == [
-        {"x": "5.000000", "y": "7.000000"},
-        {"x": "10.000000", "y": "50.000000"},
-        {"x": "20.000000", "y": "60.000000"},
+        {"x": "5", "y": "7.000000"},
+        {"x": "10", "y": "50.000000"},
+        {"x": "20", "y": "60.000000"},
     ]
 
 
@@ -288,8 +288,8 @@ def test_forestmodel_xml_all_flat_curve_keeps_earliest_point() -> None:
     )
     unmanaged_points = root.findall("./curve[@id='unmanaged_total_1001']/point")
     managed_points = root.findall("./curve[@id='managed_total_21001']/point")
-    assert [p.attrib for p in unmanaged_points] == [{"x": "1.000000", "y": "0.000000"}]
-    assert [p.attrib for p in managed_points] == [{"x": "1.000000", "y": "0.000000"}]
+    assert [p.attrib for p in unmanaged_points] == [{"x": "1", "y": "0.000000"}]
+    assert [p.attrib for p in managed_points] == [{"x": "1", "y": "0.000000"}]
 
 
 def test_forestmodel_xml_sanitizes_nan_point_values() -> None:
@@ -326,7 +326,7 @@ def test_forestmodel_xml_sanitizes_nan_point_values() -> None:
     )
     species_prop = root.find("./curve[@id='managed_prop_HW_21001001']/point")
     assert species_prop is not None
-    assert species_prop.attrib == {"x": "1.000000", "y": "0.000000"}
+    assert species_prop.attrib == {"x": "1", "y": "0.000000"}
 
 
 def test_export_patchworks_package_writes_xml_and_fragments(

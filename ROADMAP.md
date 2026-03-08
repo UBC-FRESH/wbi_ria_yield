@@ -2236,3 +2236,6 @@
 - 2026-03-08: Switched Patchworks XML curve IDs from opaque numeric aliases to
   readable deterministic identifiers (`managed_total_*`, `unmanaged_prop_*`,
   `au_*_managed_yield_*`), while preserving unique idref linkage.
+- 2026-03-08: Updated Patchworks XML point formatting to emit integer age `x`
+  values when age is integral (default case), while preserving float formatting
+  only for genuinely non-integral x values.

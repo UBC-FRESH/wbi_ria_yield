@@ -7,79 +7,79 @@
   <define field="IFM" column="IFM" />
   <define field="treatment" />
   <curve id="unity">
-    <point x="0.0" y="1.0" />
+    <point x="0" y="1.0" />
   </curve>
   <curve id="au_1001_managed_yield_FD">
-    <point x="1.000000" y="1.600000" />
-    <point x="10.000000" y="13.000000" />
+    <point x="1" y="1.600000" />
+    <point x="10" y="13.000000" />
   </curve>
   <curve id="au_1001_managed_yield_PL">
-    <point x="1.000000" y="6.400000" />
-    <point x="10.000000" y="52.000000" />
+    <point x="1" y="6.400000" />
+    <point x="10" y="52.000000" />
   </curve>
   <curve id="au_1001_unmanaged_yield_FD">
-    <point x="1.000000" y="1.500000" />
-    <point x="10.000000" y="12.000000" />
+    <point x="1" y="1.500000" />
+    <point x="10" y="12.000000" />
   </curve>
   <curve id="au_1001_unmanaged_yield_PL">
-    <point x="1.000000" y="3.500000" />
-    <point x="10.000000" y="28.000000" />
+    <point x="1" y="3.500000" />
+    <point x="10" y="28.000000" />
   </curve>
   <curve id="au_1002_managed_yield_AT">
-    <point x="1.000000" y="3.600000" />
-    <point x="10.000000" y="28.800000" />
+    <point x="1" y="3.600000" />
+    <point x="10" y="28.800000" />
   </curve>
   <curve id="au_1002_managed_yield_SW">
-    <point x="1.000000" y="5.400000" />
-    <point x="10.000000" y="43.200000" />
+    <point x="1" y="5.400000" />
+    <point x="10" y="43.200000" />
   </curve>
   <curve id="au_1002_unmanaged_yield_AT">
-    <point x="1.000000" y="2.700000" />
-    <point x="10.000000" y="22.500000" />
+    <point x="1" y="2.700000" />
+    <point x="10" y="22.500000" />
   </curve>
   <curve id="au_1002_unmanaged_yield_SW">
-    <point x="1.000000" y="3.300000" />
-    <point x="10.000000" y="27.500000" />
+    <point x="1" y="3.300000" />
+    <point x="10" y="27.500000" />
   </curve>
   <curve id="managed_prop_AT_21002002">
-    <point x="1.000000" y="0.400000" />
+    <point x="1" y="0.400000" />
   </curve>
   <curve id="managed_prop_FD_21001002">
-    <point x="1.000000" y="0.200000" />
+    <point x="1" y="0.200000" />
   </curve>
   <curve id="managed_prop_PL_21001001">
-    <point x="1.000000" y="0.800000" />
+    <point x="1" y="0.800000" />
   </curve>
   <curve id="managed_prop_SW_21002001">
-    <point x="1.000000" y="0.600000" />
+    <point x="1" y="0.600000" />
   </curve>
   <curve id="managed_total_21001">
-    <point x="1.000000" y="8.000000" />
-    <point x="10.000000" y="65.000000" />
+    <point x="1" y="8.000000" />
+    <point x="10" y="65.000000" />
   </curve>
   <curve id="managed_total_21002">
-    <point x="1.000000" y="9.000000" />
-    <point x="10.000000" y="72.000000" />
+    <point x="1" y="9.000000" />
+    <point x="10" y="72.000000" />
   </curve>
   <curve id="unmanaged_prop_AT_1002002">
-    <point x="1.000000" y="0.450000" />
+    <point x="1" y="0.450000" />
   </curve>
   <curve id="unmanaged_prop_FD_1001002">
-    <point x="1.000000" y="0.300000" />
+    <point x="1" y="0.300000" />
   </curve>
   <curve id="unmanaged_prop_PL_1001001">
-    <point x="1.000000" y="0.700000" />
+    <point x="1" y="0.700000" />
   </curve>
   <curve id="unmanaged_prop_SW_1002001">
-    <point x="1.000000" y="0.550000" />
+    <point x="1" y="0.550000" />
   </curve>
   <curve id="unmanaged_total_1001">
-    <point x="1.000000" y="5.000000" />
-    <point x="10.000000" y="40.000000" />
+    <point x="1" y="5.000000" />
+    <point x="10" y="40.000000" />
   </curve>
   <curve id="unmanaged_total_1002">
-    <point x="1.000000" y="6.000000" />
-    <point x="10.000000" y="50.000000" />
+    <point x="1" y="6.000000" />
+    <point x="10" y="50.000000" />
   </curve>
   <select statement="AU eq '1001' and IFM eq 'unmanaged'">
     <features>

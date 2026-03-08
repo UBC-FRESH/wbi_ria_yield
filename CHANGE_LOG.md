@@ -2191,4 +2191,11 @@
   - `au_<au_id>_<managed|unmanaged>_yield_<SPP>` for derived species-yield curves
 - Updated serializer curve ordering to deterministic lexical ordering
   (`unity` first, then sorted readable ids).
+
+## 2026-03-08 - Integer age formatting for Patchworks curve x-values
+- Updated Patchworks XML point serialization to format integral age `x` values
+  as integers (for example `x="10"` instead of `x="10.000000"`).
+- Kept fallback float formatting for non-integral `x` values to preserve
+  compatibility with transformed or custom curves.
+- Updated fixture baselines and regression expectations accordingly.
 - Updated fixture baselines and tests to assert new id conventions.
