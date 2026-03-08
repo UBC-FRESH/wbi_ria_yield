@@ -2319,3 +2319,13 @@
 - Updated `ROADMAP.md` with a new `Phase 5: Documentation Recovery + Expansion`
   checklist and detailed next-step notes; remaining work in this phase is
   deployment validation (`P5.7`) after push/publish.
+
+## 2026-03-08 - Phase 5 publish validation and docs workflow deploy guard
+- Verified GitHub Pages deployment for Phase 5 guide expansion on `main`:
+  - live landing page now shows both `Guides` and `Reference` navigation blocks;
+  - direct guide URLs under `/guides/*.html` return HTTP 200.
+- Completed roadmap `P5.7` deployment-validation tasks and recorded direct URL
+  checks for all new guide pages.
+- Updated docs workflow deploy condition in `.github/workflows/docs-pages.yml`
+  so deploy runs for both `push` and manual `workflow_dispatch` on `main`
+  (while still excluding pull-request events).

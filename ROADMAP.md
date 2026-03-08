@@ -118,10 +118,10 @@
   - [x] P5.6a Add docs consistency checks for CLI command/options drift
   - [x] P5.6b Add docs acceptance tests for required guide pages and toctree visibility
   - [x] P5.6c Update changelog and roadmap notes for this docs milestone
-- [ ] P5.7 Publish and validate GitHub Pages output
-  - [ ] P5.7a Verify Guides navigation renders in published site
-  - [ ] P5.7b Validate direct URLs for all guide pages in deployed docs
-  - [ ] P5.7c Confirm docs workflow behavior for push/manual dispatch expectations
+- [x] P5.7 Publish and validate GitHub Pages output
+  - [x] P5.7a Verify Guides navigation renders in published site
+  - [x] P5.7b Validate direct URLs for all guide pages in deployed docs
+  - [x] P5.7c Confirm docs workflow behavior for push/manual dispatch expectations
 
 ## Detailed Next Steps Notes
 - Phase 5 docs recovery milestone completed locally: added a new Guides section
@@ -132,8 +132,11 @@
 - Added docs contract tests in `tests/test_docs_contract.py` to enforce guide
   page presence, toctree wiring, notebook markdown coverage completeness, and
   high-value CLI docs drift checks.
-- Remaining Phase 5 work is deployment validation on GitHub Pages
-  (`P5.7`), which requires a push-triggered docs publish and URL verification.
+- Completed GitHub Pages deployment validation (`P5.7`) after push to `main`:
+  verified Guides nav renders and direct guide URLs return HTTP 200.
+- Updated docs workflow deploy guard in `.github/workflows/docs-pages.yml` to
+  allow deployment for both push and manual `workflow_dispatch` runs on `main`
+  (still excludes pull requests).
 - `PYTHONPATH=src python -m femic --help` now works in the venv.
 - `pyproject.toml` defines the `femic` console script; install with `pip install -e .` when ready.
 - Added a legacy workflow wrapper that runs `00_data-prep.py` and honors `--tsa`/`--resume`.
