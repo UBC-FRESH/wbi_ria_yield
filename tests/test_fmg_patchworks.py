@@ -13,6 +13,7 @@ from femic.fmg.patchworks import (
     export_patchworks_package,
     validate_forestmodel_xml_tree,
     validate_fragments_geodataframe,
+    write_forestmodel_xml,
 )
 
 
@@ -229,3 +230,45 @@ def test_validate_fragments_geodataframe_rejects_invalid_ifm() -> None:
 
     with pytest.raises(ValueError, match="IFM contains invalid values"):
         validate_fragments_geodataframe(fragments_gdf=gdf)
+
+
+def test_write_forestmodel_xml_matches_fixture(tmp_path: Path) -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985501000, "x": 10, "y": 55.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+            {"curve_id": 985521000, "x": 10, "y": 70.0},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    out_path = tmp_path / "forestmodel.xml"
+    write_forestmodel_xml(root=root, path=out_path)
+
+    expected = Path("tests/fixtures/fmg/forestmodel_minimal.xml").read_text(
+        encoding="utf-8"
+    )
+    actual = out_path.read_text(encoding="utf-8")
+    assert actual == expected
