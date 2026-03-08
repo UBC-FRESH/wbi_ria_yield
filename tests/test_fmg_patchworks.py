@@ -11,6 +11,8 @@ from shapely.geometry import Polygon
 from femic.fmg.patchworks import (
     build_forestmodel_xml_tree,
     export_patchworks_package,
+    validate_forestmodel_xml_tree,
+    validate_fragments_geodataframe,
 )
 
 
@@ -170,3 +172,60 @@ def test_export_patchworks_package_decodes_wkb_geometry(
     assert gdf.shape[0] == 1
     assert gdf.loc[0, "IFM"] == "unmanaged"
     assert gdf.geometry.iloc[0].geom_type == "Polygon"
+
+
+def test_validate_forestmodel_xml_tree_rejects_missing_curve_ref() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    managed_curve_node = root.find("./curve[@id='C985521000']")
+    assert managed_curve_node is not None
+    root.remove(managed_curve_node)
+
+    with pytest.raises(ValueError, match="idref"):
+        validate_forestmodel_xml_tree(root=root)
+
+
+def test_validate_fragments_geodataframe_rejects_invalid_ifm() -> None:
+    gdf = gpd.GeoDataFrame(
+        {
+            "BLOCK": [1],
+            "AREA_HA": [1.0],
+            "F_AGE": [10],
+            "AU": [100],
+            "IFM": ["bogus"],
+            "TSA": ["k3z"],
+            "geometry": [Polygon([(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)])],
+        },
+        geometry="geometry",
+        crs="EPSG:3005",
+    )
+
+    with pytest.raises(ValueError, match="IFM contains invalid values"):
+        validate_fragments_geodataframe(fragments_gdf=gdf)

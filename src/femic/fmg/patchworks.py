@@ -17,6 +17,16 @@ DEFAULT_HORIZON_YEARS = 300
 DEFAULT_CC_MIN_AGE = 0
 DEFAULT_CC_MAX_AGE = 1000
 DEFAULT_FRAGMENTS_CRS = "EPSG:3005"
+VALID_IFM_VALUES = {"managed", "unmanaged"}
+REQUIRED_FRAGMENT_COLUMNS = {
+    "BLOCK",
+    "AREA_HA",
+    "F_AGE",
+    "AU",
+    "IFM",
+    "TSA",
+    "geometry",
+}
 
 
 @dataclass(frozen=True)
@@ -316,6 +326,69 @@ def write_forestmodel_xml(*, root: et.Element, path: Path) -> None:
     path.write_text(payload, encoding="utf-8")
 
 
+def validate_forestmodel_xml_tree(*, root: et.Element) -> None:
+    """Validate required ForestModel structure and curve references."""
+    issues: list[str] = []
+    if root.tag != "ForestModel":
+        issues.append(f"root tag must be ForestModel (found {root.tag!r})")
+
+    for attr in ("horizon", "year", "match"):
+        if not root.get(attr):
+            issues.append(f"ForestModel missing required attribute: {attr}")
+
+    input_nodes = root.findall("./input")
+    if not input_nodes:
+        issues.append("ForestModel missing <input> node")
+    else:
+        required_input_attrs = {"block", "area", "age"}
+        for attr in required_input_attrs:
+            if not input_nodes[0].get(attr):
+                issues.append(f"<input> missing required attribute: {attr}")
+
+    output_nodes = root.findall("./output")
+    if not output_nodes:
+        issues.append("ForestModel missing <output> node")
+
+    define_fields = {
+        field
+        for node in root.findall("./define")
+        for field in [node.get("field")]
+        if field is not None
+    }
+    for field in ("AU", "IFM", "treatment"):
+        if field not in define_fields:
+            issues.append(f"missing define field: {field}")
+
+    curve_ids = {
+        curve_id
+        for node in root.findall(".//curve")
+        for curve_id in [node.get("id")]
+        if isinstance(curve_id, str)
+    }
+    if "unity" not in curve_ids:
+        issues.append("missing required curve id 'unity'")
+    if not root.findall("./curve[@id='unity']/point"):
+        issues.append("unity curve missing point(s)")
+
+    idrefs = {
+        idref
+        for node in root.findall(".//attribute/curve")
+        for idref in [node.get("idref")]
+        if isinstance(idref, str)
+    }
+    missing_idrefs = sorted(ref for ref in idrefs if ref not in curve_ids)
+    if missing_idrefs:
+        issues.append(
+            f"attribute curve idref(s) missing matching curve: {missing_idrefs}"
+        )
+
+    if not root.findall(".//treatment[@label='CC']"):
+        issues.append("missing required CC treatment definition")
+
+    if issues:
+        raise ValueError("invalid ForestModel XML tree: " + "; ".join(issues))
+
+
 def build_fragments_geodataframe(
     *,
     checkpoint_path: Path,
@@ -383,6 +456,58 @@ def write_fragments_shapefile(*, fragments_gdf: Any, path: Path) -> None:
     fragments_gdf.to_file(path)
 
 
+def validate_fragments_geodataframe(*, fragments_gdf: Any) -> None:
+    """Validate required Patchworks fragments fields and value domains."""
+    issues: list[str] = []
+    missing_columns = sorted(
+        REQUIRED_FRAGMENT_COLUMNS.difference(fragments_gdf.columns)
+    )
+    if missing_columns:
+        issues.append(f"missing required fragments columns: {missing_columns}")
+    if fragments_gdf.empty:
+        issues.append("fragments dataset is empty")
+
+    if fragments_gdf.crs is None:
+        issues.append("fragments CRS is missing")
+
+    if "geometry" in fragments_gdf.columns:
+        if fragments_gdf["geometry"].isna().any():
+            issues.append("fragments contains null geometry")
+        elif fragments_gdf.geometry.is_empty.any():
+            issues.append("fragments contains empty geometry")
+
+    for col in ("BLOCK", "F_AGE", "AU"):
+        if col in fragments_gdf.columns:
+            numeric = pd.to_numeric(fragments_gdf[col], errors="coerce")
+            if numeric.isna().any():
+                issues.append(f"{col} contains non-numeric value(s)")
+            elif (numeric < 0).any():
+                issues.append(f"{col} contains negative value(s)")
+
+    if "BLOCK" in fragments_gdf.columns:
+        block_values = pd.to_numeric(fragments_gdf["BLOCK"], errors="coerce")
+        if block_values.duplicated().any():
+            issues.append("BLOCK values must be unique")
+
+    if "AREA_HA" in fragments_gdf.columns:
+        area = pd.to_numeric(fragments_gdf["AREA_HA"], errors="coerce")
+        if area.isna().any():
+            issues.append("AREA_HA contains non-numeric value(s)")
+        elif (area <= 0).any():
+            issues.append("AREA_HA must be strictly positive")
+
+    if "IFM" in fragments_gdf.columns:
+        ifm_values = set(
+            fragments_gdf["IFM"].astype(str).str.strip().str.lower().unique()
+        )
+        invalid_ifm = sorted(ifm_values.difference(VALID_IFM_VALUES))
+        if invalid_ifm:
+            issues.append(f"IFM contains invalid values: {invalid_ifm}")
+
+    if issues:
+        raise ValueError("invalid fragments dataset: " + "; ".join(issues))
+
+
 def export_patchworks_package(
     *,
     bundle_dir: Path,
@@ -417,6 +542,7 @@ def export_patchworks_package(
         cc_min_age=cc_min_age,
         cc_max_age=cc_max_age,
     )
+    validate_forestmodel_xml_tree(root=root)
     forestmodel_path = output_dir / "forestmodel.xml"
     write_forestmodel_xml(root=root, path=forestmodel_path)
 
@@ -426,6 +552,7 @@ def export_patchworks_package(
         tsa_list=normalized_tsa,
         fragments_crs=fragments_crs,
     )
+    validate_fragments_geodataframe(fragments_gdf=fragments_gdf)
     fragments_path = output_dir / "fragments" / "fragments.shp"
     write_fragments_shapefile(fragments_gdf=fragments_gdf, path=fragments_path)
 

@@ -8,6 +8,8 @@ from .patchworks import (
     DEFAULT_START_YEAR,
     PatchworksExportResult,
     export_patchworks_package,
+    validate_forestmodel_xml_tree,
+    validate_fragments_geodataframe,
 )
 
 __all__ = [
@@ -18,4 +20,6 @@ __all__ = [
     "DEFAULT_START_YEAR",
     "PatchworksExportResult",
     "export_patchworks_package",
+    "validate_forestmodel_xml_tree",
+    "validate_fragments_geodataframe",
 ]
