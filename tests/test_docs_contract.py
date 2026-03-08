@@ -14,6 +14,7 @@ COVERAGE_CSV = GUIDES_ROOT / "legacy_notebook_coverage.csv"
 
 GUIDE_PAGES = [
     "pipeline-overview",
+    "case-onboarding",
     "stage-00-data-prep",
     "stage-01a-vdyp-tipsy-input",
     "stage-01b-post-tipsy",
@@ -117,3 +118,8 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
                 f"CLI no longer exposes expected option {option}"
             )
             assert option in cli_doc, f"CLI docs missing option {option}"
+
+
+def test_case_onboarding_templates_exist() -> None:
+    assert Path("config/run_profile.case_template.yaml").exists()
+    assert Path("config/tipsy/template.case.yaml").exists()

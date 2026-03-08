@@ -17,6 +17,12 @@ Legacy notebook narrative provenance is preserved in:
 - `docs/guides/legacy-traceability.rst`
 - `docs/guides/legacy_notebook_coverage.csv`
 
+New case onboarding starters:
+
+- `docs/guides/case-onboarding.rst`
+- `config/run_profile.case_template.yaml`
+- `config/tipsy/template.case.yaml`
+
 ## CLI
 
 Run the legacy pipeline through the FEMIC CLI: 

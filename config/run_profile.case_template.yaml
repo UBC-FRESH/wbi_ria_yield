@@ -1,0 +1,43 @@
+selection:
+  # TSA mode (set one or more TSA codes):
+  tsa:
+    - "08"
+
+  # Custom-boundary mode (uncomment and set these fields to override TSA mode):
+  # boundary_path: "data/bc/cfa/example/ExampleBoundary.shp"
+  # boundary_layer: null
+  # boundary_code: "example"
+
+  # Optional strata labels for targeted runs (informational in current flow).
+  strata:
+    - "EXAMPLE"
+
+  # Optional stratification controls for small custom units.
+  # stratification:
+  #   bec_grouping: "subzone"  # zone | subzone | variant | phase
+  #   species_combo_count: 2
+  #   include_tm_species2_for_single: true
+  #   top_area_coverage: 0.90
+
+modes:
+  resume: true
+  dry_run: false
+  verbose: true
+  skip_checks: false
+  debug_rows: null
+
+  # Optional VDYP controls:
+  # vdyp_sampling_mode: auto  # auto | all | positive integer
+  # vdyp_two_pass_rebin: false
+  # vdyp_min_stands_per_si_bin: 25
+
+  # Optional managed-curve synthesis controls:
+  # managed_curve_mode: tipsy  # tipsy | vdyp_transform
+  # managed_curve_x_scale: 0.8
+  # managed_curve_y_scale: 1.2
+  # managed_curve_truncate_at_culm: true
+  # managed_curve_max_age: 300
+
+run:
+  run_id: "case-template"
+  log_dir: "vdyp_io/profile_logs"

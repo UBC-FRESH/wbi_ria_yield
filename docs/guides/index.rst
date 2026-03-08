@@ -9,6 +9,7 @@ with the current FEMIC CLI and export modules.
    :maxdepth: 2
 
    pipeline-overview
+   case-onboarding
    stage-00-data-prep
    stage-01a-vdyp-tipsy-input
    stage-01b-post-tipsy
