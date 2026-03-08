@@ -1,0 +1,70 @@
+Pipeline Walkthrough
+====================
+
+Purpose
+-------
+
+FEMIC compiles forest-estate model inputs from BC inventory and growth/yield tools.
+The working pipeline keeps legacy scientific logic but exposes repeatable runtime
+interfaces through ``femic`` CLI commands.
+
+End-to-End Flow
+---------------
+
+1. Run upstream compilation:
+
+   .. code-block:: bash
+
+      PYTHONPATH=src python -m femic run --run-config config/run_profile.<case>.yaml
+
+2. Execute manual BatchTIPSY handoff using generated ``02_input-*.dat``.
+3. Upload ``04_output-*.out`` back into ``data/``.
+4. Run downstream post-TIPSY stages:
+
+   .. code-block:: bash
+
+      PYTHONPATH=src python -m femic tsa post-tipsy --tsa <code> -v
+
+5. Export planning-system packages:
+
+   .. code-block:: bash
+
+      PYTHONPATH=src python -m femic export patchworks --tsa <code>
+      PYTHONPATH=src python -m femic export woodstock --tsa <code>
+
+Stage Boundaries
+----------------
+
+- **Stage 00 (data prep):** ingest/filter inventory, derive strata inputs,
+  compile stand attributes and checkpoints.
+- **Stage 01a (per TSA):** build strata/AUs, run VDYP, smooth curves,
+  generate BatchTIPSY input tables.
+- **Stage 01b (post-TIPSY):** parse TIPSY outputs, compare against VDYP,
+  publish bundle tables and diagnostics.
+
+Key Assumptions
+---------------
+
+- Inventory and growth model inputs are local and version-controlled by path,
+  not fetched dynamically at runtime.
+- TIPSY is a manual Windows GUI boundary (human in the loop).
+- Diagnostic plots are required QA artifacts, not optional cosmetics.
+
+Operator Interpretation Callouts
+--------------------------------
+
+- ``strata-*.png`` should show interpretable abundance and SI distributions
+  before curve fitting is trusted.
+- ``vdyp_fitdiag_*.png`` should track binned medians; large early-age spikes
+  or inverted SI ordering are red flags.
+- ``tipsy_vdyp_*.png`` should be coherent with intended natural/planted story;
+  if not, tune TIPSY config or use configured managed-curve transform mode.
+
+Primary Sources
+---------------
+
+- ``00_data-prep.ipynb``
+- ``01a_run-tsa.ipynb``
+- ``01b_run-tsa.ipynb``
+- ``docs/reference/run-config.rst``
+- ``docs/reference/patchworks-export.rst``

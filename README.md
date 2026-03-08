@@ -2,6 +2,21 @@
 
 [![DOI](https://zenodo.org/badge/430531073.svg)](https://zenodo.org/badge/latestdoi/430531073)
 
+## Documentation
+
+Published docs: `https://ubc-fresh.github.io/wbi_ria_yield/`
+
+The docs are now split into:
+
+- `Guides`: end-to-end workflow narrative recovered from legacy notebook text,
+  with stage assumptions, QA interpretation, and troubleshooting playbooks.
+- `Reference`: CLI and export/run-profile contracts.
+
+Legacy notebook narrative provenance is preserved in:
+
+- `docs/guides/legacy-traceability.rst`
+- `docs/guides/legacy_notebook_coverage.csv`
+
 ## CLI
 
 Run the legacy pipeline through the FEMIC CLI: 
