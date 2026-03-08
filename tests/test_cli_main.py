@@ -408,3 +408,87 @@ def test_export_woodstock_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> Non
     assert called["cc_max_age"] == 500
     assert called["fragments_crs"] == "EPSG:3005"
     assert any("woodstock export completed" in msg for msg in messages)
+
+
+def test_patchworks_preflight_reports_config_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+
+    def _fail_load(_path: Path) -> None:
+        raise FileNotFoundError("missing config")
+
+    monkeypatch.setattr(cli_main, "load_patchworks_runtime_config", _fail_load)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.patchworks_preflight(config=Path("missing.yaml"))
+
+    assert exc_info.value.exit_code == 1
+    assert any("Patchworks config error" in msg for msg in messages)
+
+
+def test_patchworks_preflight_passes(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    runtime_cfg = SimpleNamespace(
+        jar_path=Path("reference/Patchworks/patchworks.jar"),
+        license_env="SPS_LICENSE_SERVER",
+        license_value="frst424@auth.spatial.ca",
+    )
+    monkeypatch.setattr(
+        cli_main, "load_patchworks_runtime_config", lambda _path: runtime_cfg
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "run_patchworks_preflight",
+        lambda **_kwargs: SimpleNamespace(
+            warnings=(),
+            errors=(),
+            wine_executable="/usr/bin/wine64",
+            license_host="auth.spatial.ca",
+            license_host_ip="127.0.0.1",
+        ),
+    )
+
+    cli_main.patchworks_preflight(config=Path("config/patchworks.runtime.yaml"))
+
+    assert any("Patchworks preflight passed" in msg for msg in messages)
+    assert any("license_host=auth.spatial.ca" in msg for msg in messages)
+
+
+def test_patchworks_matrix_build_emits_logs(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    runtime_cfg = SimpleNamespace()
+    monkeypatch.setattr(
+        cli_main, "load_patchworks_runtime_config", lambda _path: runtime_cfg
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "run_patchworks_command",
+        lambda **_kwargs: SimpleNamespace(
+            run_id="pwtest",
+            returncode=0,
+            command=("wine64", "cmd", "/c", "java -jar patchworks.jar"),
+            stdout_log_path=Path(
+                "vdyp_io/logs/patchworks_matrixbuilder_stdout-pwtest.log"
+            ),
+            stderr_log_path=Path(
+                "vdyp_io/logs/patchworks_matrixbuilder_stderr-pwtest.log"
+            ),
+            manifest_path=Path(
+                "vdyp_io/logs/patchworks_matrixbuilder_manifest-pwtest.json"
+            ),
+        ),
+    )
+
+    cli_main.patchworks_matrix_build(
+        config=Path("config/patchworks.runtime.yaml"),
+        log_dir=Path("vdyp_io/logs"),
+        run_id="pwtest",
+        interactive=False,
+    )
+
+    assert any("Patchworks matrix-builder run complete" in msg for msg in messages)
+    assert any("stdout_log:" in msg for msg in messages)

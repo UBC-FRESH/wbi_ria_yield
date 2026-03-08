@@ -22,6 +22,8 @@ GUIDE_PAGES = [
     "diagnostics-playbook",
     "troubleshooting",
     "limitations-and-boundaries",
+    "patchworks-wine-runtime",
+    "ubc-vpn-license-connectivity",
     "legacy-traceability",
 ]
 
@@ -111,6 +113,14 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
         (
             ["export", "patchworks", "--help"],
             ["--bundle-dir", "--checkpoint", "--cc-transition-ifm"],
+        ),
+        (
+            ["patchworks", "preflight", "--help"],
+            ["--config", "--skip-license-reachability"],
+        ),
+        (
+            ["patchworks", "matrix-build", "--help"],
+            ["--config", "--log-dir", "--run-id", "--interactive"],
         ),
     ]
 

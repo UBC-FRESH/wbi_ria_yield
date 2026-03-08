@@ -23,6 +23,15 @@ from femic.fmg import (
     export_patchworks_package,
     export_woodstock_package,
 )
+from femic.patchworks_runtime import (
+    DEFAULT_PATCHWORKS_CONFIG_PATH,
+    DEFAULT_PATCHWORKS_LOG_DIR,
+    PatchworksConfigError,
+    format_command_for_display,
+    load_patchworks_runtime_config,
+    run_patchworks_command,
+    run_patchworks_preflight,
+)
 from femic.pipeline.io import (
     build_pipeline_run_config,
     file_sha256,
@@ -64,6 +73,11 @@ export_app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
     help="Export model artifacts for downstream planning systems.",
+)
+patchworks_app = typer.Typer(
+    add_completion=False,
+    no_args_is_help=True,
+    help="Run proprietary Patchworks Matrix Builder via Wine.",
 )
 console = Console()
 
@@ -204,6 +218,27 @@ EXPORT_WOODSTOCK_OUTPUT_DIR_OPTION = typer.Option(
     DEFAULT_WOODSTOCK_OUTPUT_DIR,
     "--output-dir",
     help="Output directory for Woodstock compatibility CSV files.",
+)
+PATCHWORKS_CONFIG_OPTION = typer.Option(
+    DEFAULT_PATCHWORKS_CONFIG_PATH,
+    "--config",
+    help="Patchworks runtime YAML/JSON config path.",
+)
+PATCHWORKS_LOG_DIR_OPTION = typer.Option(
+    DEFAULT_PATCHWORKS_LOG_DIR,
+    "--log-dir",
+    help="Directory for Patchworks runtime stdout/stderr and manifest logs.",
+)
+PATCHWORKS_RUN_ID_OPTION = typer.Option(
+    None,
+    "--run-id",
+    help="Optional run identifier for Patchworks runtime logs.",
+    show_default=False,
+)
+PATCHWORKS_SKIP_LICENSE_REACHABILITY_OPTION = typer.Option(
+    False,
+    "--skip-license-reachability",
+    help="Skip DNS/TCP reachability test for license server during preflight.",
 )
 VDYP_CURVE_LOG_OPTION = typer.Option(
     Path("vdyp_io/logs/vdyp_curve_events.jsonl"),
@@ -836,8 +871,91 @@ def export_woodstock(
     console.print(f"transitions_csv: {result.transitions_csv_path}")
 
 
+@patchworks_app.command("preflight")
+def patchworks_preflight(
+    config: Path = PATCHWORKS_CONFIG_OPTION,
+    skip_license_reachability: bool = PATCHWORKS_SKIP_LICENSE_REACHABILITY_OPTION,
+) -> None:
+    try:
+        runtime_config = load_patchworks_runtime_config(config)
+    except (
+        FileNotFoundError,
+        PatchworksConfigError,
+        json.JSONDecodeError,
+        yaml.YAMLError,
+    ) as exc:
+        console.print(f"[red]Patchworks config error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    result = run_patchworks_preflight(
+        config=runtime_config,
+        check_license_reachability=not skip_license_reachability,
+    )
+
+    for message in result.warnings:
+        console.print(f"[yellow]Warning:[/yellow] {message}")
+    if result.errors:
+        for message in result.errors:
+            console.print(f"[red]Error:[/red] {message}")
+        raise typer.Exit(code=1)
+
+    console.print(
+        "[green]Patchworks preflight passed[/green] "
+        f"jar={runtime_config.jar_path} "
+        f"wine={result.wine_executable} "
+        f"license={runtime_config.license_env}={runtime_config.license_value}"
+    )
+    if result.license_host:
+        console.print(
+            f"license_host={result.license_host}"
+            + (f" ({result.license_host_ip})" if result.license_host_ip else "")
+        )
+
+
+@patchworks_app.command("matrix-build")
+def patchworks_matrix_build(
+    config: Path = PATCHWORKS_CONFIG_OPTION,
+    log_dir: Path = PATCHWORKS_LOG_DIR_OPTION,
+    run_id: str | None = PATCHWORKS_RUN_ID_OPTION,
+    interactive: bool = typer.Option(
+        False,
+        "--interactive",
+        help="Launch Patchworks app chooser instead of direct Matrix Builder invocation.",
+    ),
+) -> None:
+    try:
+        runtime_config = load_patchworks_runtime_config(config)
+        result = run_patchworks_command(
+            config=runtime_config,
+            interactive=interactive,
+            log_dir=log_dir,
+            run_id=run_id,
+        )
+    except (
+        FileNotFoundError,
+        PatchworksConfigError,
+        json.JSONDecodeError,
+        yaml.YAMLError,
+    ) as exc:
+        console.print(f"[red]Patchworks runtime failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    mode = "appchooser" if interactive else "matrix-builder"
+    console.print(
+        f"[green]Patchworks {mode} run complete[/green] "
+        f"run_id={result.run_id} returncode={result.returncode}"
+    )
+    console.print(f"command: {format_command_for_display(result.command)}")
+    console.print(f"stdout_log: {result.stdout_log_path}")
+    console.print(f"stderr_log: {result.stderr_log_path}")
+    console.print(f"manifest: {result.manifest_path}")
+    if result.returncode != 0:
+        raise typer.Exit(code=result.returncode)
+
+
 app.add_typer(prep_app, name="prep")
 app.add_typer(vdyp_app, name="vdyp")
 app.add_typer(tsa_app, name="tsa")
 app.add_typer(tipsy_app, name="tipsy")
 app.add_typer(export_app, name="export")
+app.add_typer(patchworks_app, name="patchworks")
