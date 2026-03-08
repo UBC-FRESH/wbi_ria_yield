@@ -5,11 +5,11 @@ metadata:
   source_tsr:
     - title: "Williams Lake TSA TSR Data Package"
       year: 2024
-      url: "docs/reference/29ts_dpkg_2024-2.pdf"
+      url: "reference/29ts_dpkg_2024-2.pdf"
       notes: "Section 8.5 TIPSY inputs: planting density, tree improvement, planting delay."
     - title: "Williams Lake TSA TSR Data Package"
       year: 2013
-      url: "docs/reference/williams_lake_tsa_data_package-2.pdf"
+      url: "reference/williams_lake_tsa_data_package-2.pdf"
       notes: "Section 6.3/Table 23 + Tables 24/25 regeneration and genetic gain assumptions."
   author: "codex-provisional"
   created_utc: "2026-03-03T00:00:00Z"

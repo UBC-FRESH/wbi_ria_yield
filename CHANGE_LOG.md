@@ -1575,8 +1575,8 @@
   `data/02_input-tsa29.dat`) from cached pipeline outputs using the tuned ruleset.
 - Upgraded TSA29 parameterization from provisional tuning to TSR-anchored assumptions by extracting
   guidance from Williams Lake TSA data packages:
-  `docs/reference/29ts_dpkg_2024-2.pdf` (Section 8.5) and
-  `docs/reference/williams_lake_tsa_data_package-2.pdf` (Section 6.3 Tables 23–25).
+  `reference/29ts_dpkg_2024-2.pdf` (Section 8.5) and
+  `reference/williams_lake_tsa_data_package-2.pdf` (Section 6.3 Tables 23–25).
 - Reworked `config/tipsy/tsa29.yaml` rule assignments for pine/fir/spruce/balsam pathways with
   explicit planted-vs-natural proportions, regen delays, species mixes, densities, and GW values
   tied to TSR assumptions; retained fallback coverage.
@@ -2206,3 +2206,87 @@
   - normalized/proportion curves are now rounded to at most 5 decimals
 - Updated fixture baselines and tests accordingly.
 - Updated fixture baselines and tests to assert new id conventions.
+
+## 2026-03-08 - CC harvested-volume product consequences (species-wise)
+- Added Patchworks product consequence attributes for CC harvested volume in
+  `src/femic/fmg/patchworks.py`:
+  - `product.HarvestedVolume.managed.Total.CC`
+  - `product.HarvestedVolume.managed.<SPP>.CC`
+- Bound harvested-volume attributes to managed total/species yield curves so
+  per-species harvested volume tracks managed species-yield definitions.
+- Extended regression checks in `tests/test_fmg_patchworks.py` and regenerated
+  deterministic XML fixtures:
+  - `tests/fixtures/fmg/forestmodel_minimal.xml`
+  - `tests/fixtures/fmg/forestmodel_multi_au.xml`
+- Regenerated validated K3Z Patchworks export:
+  `output/patchworks_k3z_validated/forestmodel.xml`.
+
+## 2026-03-08 - Patchworks managed/unmanaged semantics audit and fragment fix
+- Reviewed `reference/UserGuide.pdf` semantics for block-vs-fragment,
+  managed/unmanaged components, and treatment eligibility.
+- Simplified fragments export logic in `src/femic/fmg/patchworks.py` for the
+  K3Z teaching model:
+  - exactly one output row per stand fragment (`1 fragment = 1 block`);
+  - each row is assigned a single IFM state (`managed` or `unmanaged`);
+  - `BLOCK` values are unique per row (no multi-row block components);
+  - IFM assignment uses THLB signal precedence:
+    `thlb` > `thlb_fact` > `thlb_area` > `thlb_raw` (positive => managed).
+- Tightened IFM transition semantics by validating `cc_transition_ifm` to
+  accepted IFM values (`managed` or `unmanaged`).
+- Added/updated regression coverage in `tests/test_fmg_patchworks.py`:
+  - one-row-per-fragment behavior
+  - binary IFM assignment from THLB signals
+  - invalid `cc_transition_ifm` rejection.
+- Updated user-facing docs:
+  - `docs/reference/patchworks-export.rst`
+  - `README.md`
+
+## 2026-03-08 - Remove redundant IFM=managed transition assignment
+- Updated Patchworks treatment export to avoid redundant transition logic:
+  CC tracks no longer emit `assign field="IFM" value="'managed'"` inside managed-only
+  select statements.
+- Changed default `cc_transition_ifm` to unset (`None`), making transition IFM assignment
+  optional.
+- Kept explicit non-redundant transitions supported (for example
+  `--cc-transition-ifm unmanaged`).
+- Updated CLI/docs:
+  - `src/femic/cli/main.py`
+  - `docs/reference/cli.rst`
+  - `docs/reference/patchworks-export.rst`
+- Updated regression coverage in `tests/test_fmg_patchworks.py` and refreshed
+  XML fixture baselines.
+
+## 2026-03-08 - Upstream yield terminology rename to natural/planted
+- Updated upstream bundle table assembly (`src/femic/pipeline/bundle.py`) to use
+  canonical curve terminology:
+  - `curve_type`: `natural` and `planted`
+  - species proportions: `natural_species_prop_<SPP>` and
+    `planted_species_prop_<SPP>`
+- Added canonical AU columns:
+  - `natural_curve_id`
+  - `planted_curve_id`
+- Preserved backward compatibility by still emitting legacy alias columns:
+  - `unmanaged_curve_id`
+  - `managed_curve_id`
+- Updated AU curve assignment defaults to canonical columns with fallback to
+  legacy names when loading older tables.
+- Updated FMG adapter compatibility (`src/femic/fmg/adapters.py`) so it accepts
+  either canonical (`natural/planted`) or legacy (`unmanaged/managed`) curve
+  names and column names.
+- Updated Patchworks curve-id normalization (`src/femic/fmg/patchworks.py`) so
+  canonical upstream curve types map correctly to Patchworks IFM semantics.
+- Updated docs/tests:
+  - `README.md`
+  - `tests/test_bundle.py`
+  - `tests/test_fmg_adapters.py`
+
+## 2026-03-08 - Docs tree cleanup (Sphinx source vs reference assets)
+- Moved non-Sphinx reference assets out of `docs/reference/` into top-level
+  `reference/` (including `reference/vdyp/`) so `docs/` remains documentation
+  source only.
+- Added `reference/README.md` to document purpose and boundaries of the new
+  reference-asset directory.
+- Updated path references that pointed to moved PDFs:
+  - `config/tipsy/tsa29.yaml`
+  - `ROADMAP.md`
+  - `CHANGE_LOG.md`

@@ -9,6 +9,7 @@ import pytest
 from shapely.geometry import Polygon
 
 from femic.fmg.patchworks import (
+    build_fragments_geodataframe,
     build_patchworks_forestmodel_definition,
     build_forestmodel_xml_tree,
     export_patchworks_package,
@@ -94,6 +95,7 @@ def test_build_forestmodel_xml_tree_contains_cc_and_curve_refs() -> None:
     assert 'label="CC"' in xml_text
     assert "feature.Yield.managed.Total" in xml_text
     assert "product.Yield.managed.Total" in xml_text
+    assert "product.HarvestedVolume.managed.Total.CC" in xml_text
     assert "AU eq '985501000'" in xml_text
 
 
@@ -137,9 +139,56 @@ def test_build_patchworks_forestmodel_definition_contains_treatment() -> None:
         s.track_treatment is not None and s.track_treatment.label == "CC"
         for s in treatment_selects
     )
+    assert all(
+        not s.track_treatment.transition_assignments
+        for s in treatment_selects
+        if s.track_treatment is not None
+    )
+
+
+def test_build_patchworks_forestmodel_definition_allows_unmanaged_transition_ifm() -> (
+    None
+):
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+        ]
+    )
+    from femic.fmg.adapters import build_bundle_model_context_from_tables
+
+    context = build_bundle_model_context_from_tables(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+        tsa_list=["k3z"],
+    )
+    definition = build_patchworks_forestmodel_definition(
+        context=context,
+        cc_transition_ifm="unmanaged",
+    )
+    treatment_selects = [s for s in definition.selects if s.track_treatment is not None]
     assert any(
         any(
-            a.field == "IFM" and a.value == "'managed'"
+            a.field == "IFM" and a.value == "'unmanaged'"
             for a in s.track_treatment.transition_assignments
         )
         for s in treatment_selects
@@ -199,6 +248,7 @@ def test_build_forestmodel_xml_tree_adds_species_yield_curves() -> None:
     assert "feature.Yield.unmanaged.HW" in xml_text
     assert "feature.Yield.managed.HW" in xml_text
     assert "product.Yield.managed.HW" in xml_text
+    assert "product.HarvestedVolume.managed.HW.CC" in xml_text
 
 
 def test_forestmodel_xml_trims_repeated_curve_values_on_both_tails() -> None:
@@ -465,6 +515,73 @@ def test_validate_fragments_geodataframe_rejects_invalid_ifm() -> None:
         validate_fragments_geodataframe(fragments_gdf=gdf)
 
 
+def test_build_fragments_geodataframe_emits_one_row_per_stand_fragment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint_path = tmp_path / "checkpoint7.feather"
+    au_table = pd.DataFrame([{"au_id": 985501000}])
+    checkpoint_df = pd.DataFrame(
+        [
+            {
+                "tsa_code": "k3z",
+                "au": 985501000,
+                "PROJ_AGE_1": 80,
+                "FEATURE_AREA_SQM": 100000.0,  # 10 ha
+                "thlb_area": 4.0,  # any positive THLB signal => managed fragment
+                "geometry": Polygon([(0, 0), (100, 0), (100, 100), (0, 100), (0, 0)]),
+            }
+        ]
+    )
+    monkeypatch.setattr(
+        "femic.fmg.patchworks.pd.read_feather", lambda _path: checkpoint_df
+    )
+
+    gdf = build_fragments_geodataframe(
+        checkpoint_path=checkpoint_path,
+        au_table=au_table,
+        tsa_list=["k3z"],
+    )
+
+    assert gdf.shape[0] == 1
+    assert gdf["BLOCK"].nunique() == 1
+    assert gdf.loc[0, "IFM"] == "managed"
+    assert float(gdf.loc[0, "AREA_HA"]) == pytest.approx(10.0)
+
+    validate_fragments_geodataframe(fragments_gdf=gdf)
+
+
+def test_build_fragments_geodataframe_interprets_thlb_raw_as_binary_signal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint_path = tmp_path / "checkpoint7.feather"
+    au_table = pd.DataFrame([{"au_id": 985501000}])
+    checkpoint_df = pd.DataFrame(
+        [
+            {
+                "tsa_code": "k3z",
+                "au": 985501000,
+                "PROJ_AGE_1": 80,
+                "FEATURE_AREA_SQM": 100000.0,  # 10 ha
+                "thlb_raw": 0.0,  # no THLB signal => unmanaged fragment
+                "geometry": Polygon([(0, 0), (100, 0), (100, 100), (0, 100), (0, 0)]),
+            }
+        ]
+    )
+    monkeypatch.setattr(
+        "femic.fmg.patchworks.pd.read_feather", lambda _path: checkpoint_df
+    )
+
+    gdf = build_fragments_geodataframe(
+        checkpoint_path=checkpoint_path,
+        au_table=au_table,
+        tsa_list=["k3z"],
+    )
+
+    assert gdf.shape[0] == 1
+    assert gdf.loc[0, "IFM"] == "unmanaged"
+    assert float(gdf.loc[0, "AREA_HA"]) == pytest.approx(10.0)
+
+
 def test_write_forestmodel_xml_matches_fixture(tmp_path: Path) -> None:
     au_table = pd.DataFrame(
         [
@@ -577,3 +694,46 @@ def test_write_forestmodel_xml_matches_multi_au_fixture(tmp_path: Path) -> None:
     )
     actual = out_path.read_text(encoding="utf-8")
     assert actual == expected
+
+
+def test_build_patchworks_forestmodel_definition_rejects_invalid_transition_ifm() -> (
+    None
+):
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+        ]
+    )
+    from femic.fmg.adapters import build_bundle_model_context_from_tables
+
+    context = build_bundle_model_context_from_tables(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+        tsa_list=["k3z"],
+    )
+
+    with pytest.raises(ValueError, match="cc_transition_ifm"):
+        build_patchworks_forestmodel_definition(
+            context=context,
+            cc_transition_ifm="retained",
+        )

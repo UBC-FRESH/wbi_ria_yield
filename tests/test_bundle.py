@@ -35,7 +35,7 @@ def test_load_write_bundle_tables_and_normalize_tsa(tmp_path: Path) -> None:
     au_table = pd.DataFrame(
         [{"au_id": 800001, "tsa": "8", "stratum_code": "S1", "si_level": "M"}]
     )
-    curve_table = pd.DataFrame([{"curve_id": 1, "curve_type": "unmanaged"}])
+    curve_table = pd.DataFrame([{"curve_id": 1, "curve_type": "natural"}])
     curve_points_table = pd.DataFrame([{"curve_id": 1, "x": 10, "y": 50.0}])
 
     write_bundle_tables(
@@ -52,7 +52,7 @@ def test_load_write_bundle_tables_and_normalize_tsa(tmp_path: Path) -> None:
     )
 
     assert loaded_au.loc[0, "tsa"] == "08"
-    assert loaded_curve.loc[0, "curve_type"] == "unmanaged"
+    assert loaded_curve.loc[0, "curve_type"] == "natural"
     assert loaded_points.loc[0, "y"] == 50.0
 
 
@@ -87,7 +87,7 @@ def test_ensure_au_table_index_noops_when_column_missing() -> None:
     assert out.index.name == "tsa"
 
 
-def test_build_bundle_tables_from_curves_builds_unmanaged_and_managed_rows() -> None:
+def test_build_bundle_tables_from_curves_builds_natural_and_planted_rows() -> None:
     vdyp_curves_smooth = {
         "08": pd.DataFrame(
             [
@@ -118,8 +118,10 @@ def test_build_bundle_tables_from_curves_builds_unmanaged_and_managed_rows() -> 
 
     assert len(out.au_table) == 1
     assert int(out.au_table.loc[0, "au_id"]) == 800005
+    assert int(out.au_table.loc[0, "planted_curve_id"]) == 820005
+    assert int(out.au_table.loc[0, "natural_curve_id"]) == 800005
     assert int(out.au_table.loc[0, "managed_curve_id"]) == 820005
-    assert sorted(out.curve_table["curve_type"].tolist()) == ["managed", "unmanaged"]
+    assert sorted(out.curve_table["curve_type"].tolist()) == ["natural", "planted"]
     assert len(out.curve_points_table) == 4
     assert out.missing_au_curve_mappings.empty
 
@@ -183,16 +185,16 @@ def test_build_bundle_tables_from_curves_adds_species_proportion_curves() -> Non
     )
 
     curve_types = set(out.curve_table["curve_type"].tolist())
-    assert "unmanaged_species_prop_SW" in curve_types
-    assert "unmanaged_species_prop_PL" in curve_types
-    assert "managed_species_prop_SW" in curve_types
-    assert "managed_species_prop_PL" in curve_types
+    assert "natural_species_prop_SW" in curve_types
+    assert "natural_species_prop_PL" in curve_types
+    assert "planted_species_prop_SW" in curve_types
+    assert "planted_species_prop_PL" in curve_types
 
     unmanaged_sw_id = out.curve_table.loc[
-        out.curve_table["curve_type"] == "unmanaged_species_prop_SW", "curve_id"
+        out.curve_table["curve_type"] == "natural_species_prop_SW", "curve_id"
     ].iloc[0]
     managed_sw_id = out.curve_table.loc[
-        out.curve_table["curve_type"] == "managed_species_prop_SW", "curve_id"
+        out.curve_table["curve_type"] == "planted_species_prop_SW", "curve_id"
     ].iloc[0]
     unmanaged_sw_y = out.curve_points_table.loc[
         out.curve_points_table["curve_id"] == unmanaged_sw_id, "y"

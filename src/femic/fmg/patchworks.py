@@ -33,7 +33,7 @@ DEFAULT_START_YEAR = 2026
 DEFAULT_HORIZON_YEARS = 300
 DEFAULT_CC_MIN_AGE = 0
 DEFAULT_CC_MAX_AGE = 1000
-DEFAULT_CC_TRANSITION_IFM = "managed"
+DEFAULT_CC_TRANSITION_IFM: str | None = None
 DEFAULT_FRAGMENTS_CRS = "EPSG:3005"
 VALID_IFM_VALUES = {"managed", "unmanaged"}
 REQUIRED_FRAGMENT_COLUMNS = {
@@ -111,15 +111,29 @@ def _sanitize_id_component(value: str) -> str:
 def _source_curve_ref(*, curve_id: int, curve_type: str) -> str:
     """Build readable, deterministic XML curve id from source metadata."""
     ctype = str(curve_type or "").strip()
-    if ctype == "managed":
+    if ctype in {"managed", "planted"}:
         prefix = "managed_total"
-    elif ctype == "unmanaged":
+    elif ctype in {"unmanaged", "natural"}:
         prefix = "unmanaged_total"
-    elif ctype.startswith("managed_species_prop_"):
-        species = _sanitize_id_component(ctype.removeprefix("managed_species_prop_"))
+    elif ctype.startswith(("managed_species_prop_", "planted_species_prop_")):
+        if ctype.startswith("managed_species_prop_"):
+            species = _sanitize_id_component(
+                ctype.removeprefix("managed_species_prop_")
+            )
+        else:
+            species = _sanitize_id_component(
+                ctype.removeprefix("planted_species_prop_")
+            )
         prefix = f"managed_prop_{species}"
-    elif ctype.startswith("unmanaged_species_prop_"):
-        species = _sanitize_id_component(ctype.removeprefix("unmanaged_species_prop_"))
+    elif ctype.startswith(("unmanaged_species_prop_", "natural_species_prop_")):
+        if ctype.startswith("unmanaged_species_prop_"):
+            species = _sanitize_id_component(
+                ctype.removeprefix("unmanaged_species_prop_")
+            )
+        else:
+            species = _sanitize_id_component(
+                ctype.removeprefix("natural_species_prop_")
+            )
         prefix = f"unmanaged_prop_{species}"
     else:
         prefix = _sanitize_id_component(ctype or "curve")
@@ -348,12 +362,20 @@ def build_patchworks_forestmodel_definition(
     selects: list[SelectDefinition] = []
     transition_assignments: tuple[TreatmentAssignment, ...] = ()
     if cc_transition_ifm is not None and str(cc_transition_ifm).strip():
-        transition_assignments = (
-            TreatmentAssignment(
-                field="IFM",
-                value=_as_quoted_literal(cc_transition_ifm),
-            ),
-        )
+        transition_ifm = str(cc_transition_ifm).strip().lower()
+        if transition_ifm not in VALID_IFM_VALUES:
+            raise ValueError(
+                "cc_transition_ifm must be one of "
+                f"{sorted(VALID_IFM_VALUES)} (received {cc_transition_ifm!r})"
+            )
+        # IFM='managed' inside a managed-only select is redundant/noisy.
+        if transition_ifm != "managed":
+            transition_assignments = (
+                TreatmentAssignment(
+                    field="IFM",
+                    value=_as_quoted_literal(transition_ifm),
+                ),
+            )
     for au in context.analysis_units:
         unmanaged_curve_id = au.unmanaged_curve_id
         managed_curve_id = au.managed_curve_id
@@ -421,6 +443,10 @@ def build_patchworks_forestmodel_definition(
                 label="product.Yield.managed.Total",
                 curve_idref=managed_curve_ref,
             ),
+            AttributeBinding(
+                label="product.HarvestedVolume.managed.Total.CC",
+                curve_idref=managed_curve_ref,
+            ),
         ]
         for species, species_curve_id in sorted(
             context.managed_species_curve_ids.get(managed_curve_id, {}).items()
@@ -449,6 +475,12 @@ def build_patchworks_forestmodel_definition(
                         product_attrs.append(
                             AttributeBinding(
                                 label=f"product.Yield.managed.{species}",
+                                curve_idref=derived_curve_ref,
+                            )
+                        )
+                        product_attrs.append(
+                            AttributeBinding(
+                                label=(f"product.HarvestedVolume.managed.{species}.CC"),
                                 curve_idref=derived_curve_ref,
                             )
                         )
@@ -753,32 +785,53 @@ def build_fragments_geodataframe(
         raise ValueError("no checkpoint rows matched selected TSA/AU export filters")
 
     if "FEATURE_AREA_SQM" in scoped.columns:
-        area_ha = pd.to_numeric(scoped["FEATURE_AREA_SQM"], errors="coerce") * 0.0001
+        total_area_ha = (
+            pd.to_numeric(scoped["FEATURE_AREA_SQM"], errors="coerce") * 0.0001
+        )
     elif "POLYGON_AREA" in scoped.columns:
-        area_ha = pd.to_numeric(scoped["POLYGON_AREA"], errors="coerce") * 0.0001
+        total_area_ha = pd.to_numeric(scoped["POLYGON_AREA"], errors="coerce") * 0.0001
     else:
-        area_ha = None
+        total_area_ha = None
 
-    if "thlb_raw" in scoped.columns:
-        thlb_source = pd.to_numeric(scoped["thlb_raw"], errors="coerce").fillna(0)
+    if total_area_ha is None:
+        gpd = _gpd_module()
+        tmp = gpd.GeoDataFrame(scoped, geometry="geometry", crs=fragments_crs)
+        total_area_ha = pd.to_numeric(tmp.geometry.area * 0.0001, errors="coerce")
+    total_area_ha = (
+        pd.to_numeric(total_area_ha, errors="coerce").fillna(0.0).clip(lower=0.0)
+    )
+
+    if "thlb" in scoped.columns:
+        managed_flag = pd.to_numeric(scoped["thlb"], errors="coerce").fillna(0.0) > 0.0
+    elif "thlb_fact" in scoped.columns:
+        managed_flag = (
+            pd.to_numeric(scoped["thlb_fact"], errors="coerce").fillna(0.0) > 0.0
+        )
+    elif "thlb_area" in scoped.columns:
+        managed_flag = (
+            pd.to_numeric(scoped["thlb_area"], errors="coerce").fillna(0.0) > 0.0
+        )
+    elif "thlb_raw" in scoped.columns:
+        # Legacy checkpoint field; treat any positive THLB signal as managed.
+        managed_flag = (
+            pd.to_numeric(scoped["thlb_raw"], errors="coerce").fillna(0.0) > 0.0
+        )
     else:
-        thlb_source = pd.Series(1.0, index=scoped.index)
+        # If no THLB signal exists, default to fully managed.
+        managed_flag = pd.Series(True, index=scoped.index)
+
     age = pd.to_numeric(scoped["PROJ_AGE_1"], errors="coerce").fillna(0).astype(int)
     out = pd.DataFrame(
         {
             "BLOCK": np.arange(1, len(scoped) + 1, dtype=int),
-            "AREA_HA": area_ha if area_ha is not None else np.nan,
+            "AREA_HA": total_area_ha.astype(float),
             "F_AGE": age,
             "AU": scoped["au"].astype(int),
-            "IFM": np.where(thlb_source > 0, "managed", "unmanaged"),
+            "IFM": np.where(managed_flag, "managed", "unmanaged"),
             "TSA": scoped["tsa_code"].astype(str),
             "geometry": scoped["geometry"],
         }
     )
-    if area_ha is None:
-        gpd = _gpd_module()
-        tmp = gpd.GeoDataFrame(out, geometry="geometry", crs=fragments_crs)
-        out["AREA_HA"] = tmp.geometry.area * 0.0001
     out["AREA_HA"] = pd.to_numeric(out["AREA_HA"], errors="coerce").fillna(0.0)
     gpd = _gpd_module()
     return gpd.GeoDataFrame(out, geometry="geometry", crs=fragments_crs)

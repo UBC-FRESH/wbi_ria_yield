@@ -130,9 +130,6 @@
         <produce>
           <assign field="treatment" value="'CC'" />
         </produce>
-        <transition>
-          <assign field="IFM" value="'managed'" />
-        </transition>
       </treatment>
     </track>
   </select>
@@ -144,13 +141,22 @@
       <attribute label="product.Yield.managed.Total">
         <curve idref="managed_total_21001" />
       </attribute>
+      <attribute label="product.HarvestedVolume.managed.Total.CC">
+        <curve idref="managed_total_21001" />
+      </attribute>
       <attribute label="product.Yield.managed.FD">
+        <curve idref="au_1001_managed_yield_FD" />
+      </attribute>
+      <attribute label="product.HarvestedVolume.managed.FD.CC">
         <curve idref="au_1001_managed_yield_FD" />
       </attribute>
       <attribute label="product.SpeciesProp.managed.FD">
         <curve idref="managed_prop_FD_21001002" />
       </attribute>
       <attribute label="product.Yield.managed.PL">
+        <curve idref="au_1001_managed_yield_PL" />
+      </attribute>
+      <attribute label="product.HarvestedVolume.managed.PL.CC">
         <curve idref="au_1001_managed_yield_PL" />
       </attribute>
       <attribute label="product.SpeciesProp.managed.PL">
@@ -207,9 +213,6 @@
         <produce>
           <assign field="treatment" value="'CC'" />
         </produce>
-        <transition>
-          <assign field="IFM" value="'managed'" />
-        </transition>
       </treatment>
     </track>
   </select>
@@ -221,13 +224,22 @@
       <attribute label="product.Yield.managed.Total">
         <curve idref="managed_total_21002" />
       </attribute>
+      <attribute label="product.HarvestedVolume.managed.Total.CC">
+        <curve idref="managed_total_21002" />
+      </attribute>
       <attribute label="product.Yield.managed.AT">
+        <curve idref="au_1002_managed_yield_AT" />
+      </attribute>
+      <attribute label="product.HarvestedVolume.managed.AT.CC">
         <curve idref="au_1002_managed_yield_AT" />
       </attribute>
       <attribute label="product.SpeciesProp.managed.AT">
         <curve idref="managed_prop_AT_21002002" />
       </attribute>
       <attribute label="product.Yield.managed.SW">
+        <curve idref="au_1002_managed_yield_SW" />
+      </attribute>
+      <attribute label="product.HarvestedVolume.managed.SW.CC">
         <curve idref="au_1002_managed_yield_SW" />
       </attribute>
       <attribute label="product.SpeciesProp.managed.SW">

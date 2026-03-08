@@ -173,7 +173,10 @@ EXPORT_CC_MAX_AGE_OPTION = typer.Option(
 EXPORT_CC_TRANSITION_IFM_OPTION = typer.Option(
     DEFAULT_CC_TRANSITION_IFM,
     "--cc-transition-ifm",
-    help="Post-CC IFM value written in treatment transition assignments.",
+    help=(
+        "Optional post-CC IFM transition assignment (managed|unmanaged). "
+        "By default no IFM transition assign is written."
+    ),
 )
 EXPORT_FRAGMENTS_CRS_OPTION = typer.Option(
     DEFAULT_FRAGMENTS_CRS,

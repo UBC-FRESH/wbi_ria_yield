@@ -6,6 +6,12 @@ Patchworks Export Contract
 - ``forestmodel.xml``
 - ``fragments/fragments.shp`` (plus shapefile sidecars)
 
+Terminology:
+
+- A fragment shapefile row is one stand-fragment record.
+- In this exporter, ``BLOCK`` is one-to-one with fragment rows (one fragment per
+  block id).
+
 ForestModel XML requirements
 ----------------------------
 
@@ -30,6 +36,11 @@ species-yield curve:
 
 - unmanaged: ``feature.Yield.unmanaged.<SPP>``
 - managed: ``feature.Yield.managed.<SPP>`` and ``product.Yield.managed.<SPP>``
+
+For CC treatment consequences, managed product attributes now also include:
+
+- total harvested volume: ``product.HarvestedVolume.managed.Total.CC``
+- species harvested volume: ``product.HarvestedVolume.managed.<SPP>.CC``
 
 Derived species-yield points are computed as:
 
@@ -58,13 +69,23 @@ Fragments shapefile requirements
 
 The exporter validates these required fields before writing:
 
-- ``BLOCK``: unique integer block ID (non-negative)
+- ``BLOCK``: integer block ID (non-negative). A block may have one row
+  (one stand-fragment per block)
 - ``AREA_HA``: numeric area in hectares (strictly positive)
 - ``F_AGE``: numeric forest age (non-negative)
 - ``AU``: numeric analysis-unit ID (non-negative)
 - ``IFM``: management mode, one of ``managed`` or ``unmanaged``
 - ``TSA``: TSA code label
 - ``geometry``: non-null, non-empty geometry
+
+Managed/unmanaged assignment:
+
+- Each fragment row is assigned a single IFM value:
+  ``managed`` or ``unmanaged``.
+- Priority/order for IFM assignment:
+  ``thlb`` (0/1), then ``thlb_fact`` (>0), then ``thlb_area`` (>0), then
+  ``thlb_raw`` (>0).
+- If no THLB signal is present, exporter defaults to ``managed``.
 
 The fragments dataset must also carry a CRS.
 
@@ -84,3 +105,11 @@ Useful overrides:
 - ``--output-dir``: export destination
 - ``--start-year``, ``--horizon-years``, ``--cc-min-age``, ``--cc-max-age``,
   ``--cc-transition-ifm``, ``--fragments-crs``
+
+Transition note:
+
+- By default, CC tracks do not write an IFM transition assignment.
+- If ``--cc-transition-ifm unmanaged`` is provided, CC treatment writes
+  ``<transition><assign field="IFM" value="'unmanaged'"/></transition>``.
+- ``--cc-transition-ifm managed`` is accepted but omitted from XML because it is
+  redundant within managed-only select statements.

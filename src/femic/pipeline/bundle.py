@@ -144,6 +144,10 @@ def build_bundle_tables_from_curves(
         "stratum_code": [],
         "si_level": [],
         "canfi_species": [],
+        # Canonical upstream naming.
+        "natural_curve_id": [],
+        "planted_curve_id": [],
+        # Back-compat aliases used by older checkpoints/exporters.
         "unmanaged_curve_id": [],
         "managed_curve_id": [],
     }
@@ -182,9 +186,11 @@ def build_bundle_tables_from_curves(
             au_table_data["stratum_code"].append(stratum_code)
             au_table_data["si_level"].append(si_level)
             au_table_data["canfi_species"].append(canfi_species_fn(stratum_code))
+            au_table_data["natural_curve_id"].append(unmanaged_curve_id)
+            au_table_data["planted_curve_id"].append(managed_curve_id)
             au_table_data["unmanaged_curve_id"].append(unmanaged_curve_id)
             curve_table_data["curve_id"].append(unmanaged_curve_id)
-            curve_table_data["curve_type"].append("unmanaged")
+            curve_table_data["curve_type"].append("natural")
             vdyp_curve = vdyp_curves_tsa.loc[(stratum_code, si_level)]
             for x, y in zip(vdyp_curve.age, vdyp_curve.volume):
                 curve_points_table_data["curve_id"].append(unmanaged_curve_id)
@@ -200,7 +206,7 @@ def build_bundle_tables_from_curves(
                     species_curve_id = unmanaged_curve_id * 1000 + species_idx
                     curve_table_data["curve_id"].append(species_curve_id)
                     curve_table_data["curve_type"].append(
-                        f"unmanaged_species_prop_{species_code}"
+                        f"natural_species_prop_{species_code}"
                     )
                     curve_points_table_data["curve_id"].append(species_curve_id)
                     curve_points_table_data["x"].append(1)
@@ -210,7 +216,7 @@ def build_bundle_tables_from_curves(
             au_table_data["managed_curve_id"].append(managed_curve_id)
             if is_managed_au:
                 curve_table_data["curve_id"].append(managed_curve_id)
-                curve_table_data["curve_type"].append("managed")
+                curve_table_data["curve_type"].append("planted")
                 tipsy_curve = tipsy_curves_tsa.loc[tipsy_curve_id]
                 for x, y in zip(tipsy_curve.Age, tipsy_curve.Yield):
                     curve_points_table_data["curve_id"].append(managed_curve_id)
@@ -236,7 +242,7 @@ def build_bundle_tables_from_curves(
                         species_curve_id = managed_curve_id * 1000 + species_idx
                         curve_table_data["curve_id"].append(species_curve_id)
                         curve_table_data["curve_type"].append(
-                            f"managed_species_prop_{species_code}"
+                            f"planted_species_prop_{species_code}"
                         )
                         curve_points_table_data["curve_id"].append(species_curve_id)
                         curve_points_table_data["x"].append(1)
@@ -280,17 +286,31 @@ def assign_curve_ids_from_au_table(
     np_module: Any,
     au_col: str = "au",
     proj_age_col: str = "PROJ_AGE_1",
-    managed_curve_col: str = "managed_curve_id",
-    unmanaged_curve_col: str = "unmanaged_curve_id",
+    managed_curve_col: str = "planted_curve_id",
+    unmanaged_curve_col: str = "natural_curve_id",
     curve1_col: str = "curve1",
     curve2_col: str = "curve2",
     managed_age_cutoff: int = 60,
 ) -> Any:
-    """Assign curve ids from AU table for managed/unmanaged curve slots."""
+    """Assign curve ids from AU table for planted/natural curve slots."""
     table = f_table.copy()
     au_indexed = au_table
     if getattr(au_indexed.index, "name", None) != "au_id":
         au_indexed = au_indexed.set_index("au_id")
+
+    # Backward compatibility for older AU table column naming.
+    managed_curve_col_resolved = managed_curve_col
+    unmanaged_curve_col_resolved = unmanaged_curve_col
+    if (
+        managed_curve_col_resolved not in au_indexed.columns
+        and "managed_curve_id" in au_indexed.columns
+    ):
+        managed_curve_col_resolved = "managed_curve_id"
+    if (
+        unmanaged_curve_col_resolved not in au_indexed.columns
+        and "unmanaged_curve_id" in au_indexed.columns
+    ):
+        unmanaged_curve_col_resolved = "unmanaged_curve_id"
 
     def _first_scalar(value: Any) -> Any:
         if hasattr(value, "empty") and hasattr(value, "iloc"):
@@ -316,11 +336,11 @@ def assign_curve_ids_from_au_table(
             continue
         au_row = au_indexed.loc[au_id]
         if hasattr(au_row, "ndim") and au_row.ndim > 1:
-            unmanaged_curve_id = _first_scalar(au_row[unmanaged_curve_col])
-            managed_curve_id = _first_scalar(au_row[managed_curve_col])
+            unmanaged_curve_id = _first_scalar(au_row[unmanaged_curve_col_resolved])
+            managed_curve_id = _first_scalar(au_row[managed_curve_col_resolved])
         else:
-            unmanaged_curve_id = au_row[unmanaged_curve_col]
-            managed_curve_id = au_row[managed_curve_col]
+            unmanaged_curve_id = au_row[unmanaged_curve_col_resolved]
+            managed_curve_id = au_row[managed_curve_col_resolved]
         if proj_age <= managed_age_cutoff and pd_module.notna(managed_curve_id):
             curve1_id = managed_curve_id
         else:

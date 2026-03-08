@@ -54,7 +54,7 @@ This command writes a run manifest to ``vdyp_io/logs/`` (override with ``--log-d
 ``--run-id``).
 When `data/ria_vri_vclr1p_checkpoint8.feather` is available, post-TIPSY bundle assembly also
 adds species-proportion curves for all top-6 VRI species present in the selected TSA(s):
-`unmanaged_species_prop_<SPP>` and `managed_species_prop_<SPP>` (single-point curves at `x=1`).
+`natural_species_prop_<SPP>` and `planted_species_prop_<SPP>` (single-point curves at `x=1`).
 
 6. Export Patchworks starter package (ForestModel XML + fragments shapefile):
 
@@ -66,6 +66,9 @@ By default this command reads bundle tables from `data/model_input_bundle/` and 
 geometry from `data/ria_vri_vclr1p_checkpoint7.feather`, then writes:
 - `output/patchworks/forestmodel.xml`
 - `output/patchworks/fragments/fragments.shp`
+
+In the fragments shapefile, each row is one stand-fragment record. In the current
+exporter, `BLOCK` is one-to-one with these fragment rows.
 
 Patchworks XML now includes species-wise yield attributes derived as
 `TotalVolume(age) * SpeciesProportion(age)` for unmanaged and managed tracks.

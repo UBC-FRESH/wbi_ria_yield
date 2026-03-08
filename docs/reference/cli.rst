@@ -166,7 +166,7 @@ Subcommands
 - ``--horizon-years INTEGER`` (default: ``300``)
 - ``--cc-min-age INTEGER`` (default: ``0``)
 - ``--cc-max-age INTEGER`` (default: ``1000``)
-- ``--cc-transition-ifm TEXT`` (default: ``managed``)
+- ``--cc-transition-ifm TEXT`` (default: unset; no IFM transition assign)
 - ``--fragments-crs TEXT`` (default: ``EPSG:3005``)
 
 ``export woodstock`` options

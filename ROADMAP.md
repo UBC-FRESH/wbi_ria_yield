@@ -1712,8 +1712,8 @@
   assertions from the refreshed outputs.
 - Upgraded TSA29 TIPSY parameter rules to TSR-anchored assumptions using Williams Lake data
   package references:
-  `docs/reference/29ts_dpkg_2024-2.pdf` (Section 8.5) and
-  `docs/reference/williams_lake_tsa_data_package-2.pdf` (Section 6.3 Tables 23–25).
+  `reference/29ts_dpkg_2024-2.pdf` (Section 8.5) and
+  `reference/williams_lake_tsa_data_package-2.pdf` (Section 6.3 Tables 23–25).
 - Updated `config/tipsy/tsa29.yaml` from provisional heuristics to ordered BEC/species pathways
   with explicit planted/natural proportions, regeneration delays, species mixes, densities, and
   genetic-worth values aligned to TSR assumptions, while preserving catch-all coverage.
@@ -2242,3 +2242,32 @@
 - 2026-03-08: Updated Patchworks XML `y` formatting by curve family:
   volume-yield curves now round to 1 decimal place; normalized/proportion
   curves round to at most 5 decimals (avoids excessive precision noise).
+- 2026-03-08: Added CC harvested-volume product consequences in Patchworks XML:
+  each select now includes `product.HarvestedVolume.managed.Total.CC` and
+  species-wise `product.HarvestedVolume.managed.<SPP>.CC` attributes bound to
+  managed total/species yield curves; validated via refreshed fixtures/tests
+  and regenerated `output/patchworks_k3z_validated/forestmodel.xml`.
+- 2026-03-08: Audited Patchworks managed/unmanaged semantics against
+  `reference/UserGuide.pdf` and corrected FMG export assumptions:
+  fragments exporter now writes one stand-fragment row per block (`1 fragment = 1 block`)
+  with binary IFM assignment (`managed`/`unmanaged`) using THLB signal precedence
+  (`thlb` -> `thlb_fact` -> `thlb_area` -> `thlb_raw`), matching the simplified K3Z
+  teaching model requirement.
+- 2026-03-08: Removed redundant Patchworks CC transition IFM assignment:
+  exporter no longer writes `assign IFM='managed'` within managed-only select
+  statements by default; `--cc-transition-ifm` is now optional (unset by default),
+  and only non-redundant transitions (e.g., `unmanaged`) are emitted.
+- 2026-03-08: Renamed upstream bundle yield terminology from
+  `managed/unmanaged` to `planted/natural` to avoid semantic collision with
+  Patchworks IFM keywords. Bundle assembly now emits:
+  - `curve_type` values `planted` / `natural`
+  - species-proportion curve types `planted_species_prop_*` /
+    `natural_species_prop_*`
+  while preserving back-compat aliases (`managed_curve_id` /
+  `unmanaged_curve_id`) and adding canonical AU columns
+  (`planted_curve_id` / `natural_curve_id`).
+- 2026-03-08: Split documentation source from development reference assets:
+  moved non-Sphinx PDFs out of `docs/reference/` into top-level `reference/`
+  (including `reference/vdyp/`), leaving `docs/` as Sphinx source only; updated
+  path references in `config/tipsy/tsa29.yaml`, `ROADMAP.md`, and
+  `CHANGE_LOG.md`, and added `reference/README.md` to document directory intent.
