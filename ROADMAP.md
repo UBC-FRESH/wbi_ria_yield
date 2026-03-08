@@ -60,29 +60,29 @@
 
 ## Phase 4: Patchworks + Woodstock Export (femic.fmg)
 - [ ] P4.1 Patchworks requirements + source governance
-  - [ ] P4.1a Parse Patchworks user guide into a concrete implementation checklist
-  - [ ] P4.1b Add gitignore rules for proprietary reference PDFs (do not republish)
+  - [x] P4.1a Parse Patchworks user guide into a concrete implementation checklist
+  - [x] P4.1b Add gitignore rules for proprietary reference PDFs (do not republish)
   - [ ] P4.1c Document required ForestModel XML elements and fragments schema fields
 - [ ] P4.2 Port legacy `fmg` core to Python 3 under `src/femic/fmg/`
   - [ ] P4.2a Port core model classes (`Curve`, `Treatment`, `ForestModel`, related XML nodes)
   - [ ] P4.2b Preserve deterministic XML serialization behavior with fixture-based parity tests
   - [ ] P4.2c Port Woodstock import/export helpers as a compatibility module
 - [ ] P4.3 Build femic-to-fmg adapters from current pipeline outputs
-  - [ ] P4.3a Map `curve_table`/`curve_points_table` into fmg curve objects
-  - [ ] P4.3b Map AU-to-stand assignments into feature/treatment strata bindings
-  - [ ] P4.3c Auto-create baseline CC treatment and default post-treatment transitions
+  - [x] P4.3a Map `curve_table`/`curve_points_table` into fmg curve objects
+  - [x] P4.3b Map AU-to-stand assignments into feature/treatment strata bindings
+  - [x] P4.3c Auto-create baseline CC treatment and default post-treatment transitions
 - [ ] P4.4 Generate Patchworks ForestModel XML
-  - [ ] P4.4a Add a writer stage that emits valid ForestModel XML for a compiled run
+  - [x] P4.4a Add a writer stage that emits valid ForestModel XML for a compiled run
   - [ ] P4.4b Add schema/structure validation checks and fail-fast diagnostics
-  - [ ] P4.4c Add CLI entrypoint(s) for export (`femic export patchworks ...`)
+  - [x] P4.4c Add CLI entrypoint(s) for export (`femic export patchworks ...`)
 - [ ] P4.5 Generate Patchworks fragments shapefile from BC VRI
-  - [ ] P4.5a Define canonical fragments field map (IDs/themes/area/treatment linkage)
-  - [ ] P4.5b Build shapefile writer with robust CRS/field-type/width handling
-  - [ ] P4.5c Join model themes/curve assignment attributes to stand geometries
+  - [x] P4.5a Define canonical fragments field map (IDs/themes/area/treatment linkage)
+  - [x] P4.5b Build shapefile writer with robust CRS/field-type/width handling
+  - [x] P4.5c Join model themes/curve assignment attributes to stand geometries
 - [ ] P4.6 End-to-end validation and handoff
   - [ ] P4.6a Validate patchworks package build on TSA29 and CFA K3Z test cases
-  - [ ] P4.6b Add regression tests for XML + fragments outputs
-  - [ ] P4.6c Update docs with a Patchworks-first workflow (Woodstock noted as secondary)
+  - [x] P4.6b Add regression tests for XML + fragments outputs
+  - [x] P4.6c Update docs with a Patchworks-first workflow (Woodstock noted as secondary)
 
 ## Detailed Next Steps Notes
 - `PYTHONPATH=src python -m femic --help` now works in the venv.
@@ -2142,3 +2142,22 @@
 - 2026-03-08: Added a new roadmap phase (`Phase 4`) to track `femic.fmg` delivery:
   Patchworks-first ForestModel XML + fragments shapefile generation from current FEMIC outputs,
   with Woodstock portability work carried in parallel but prioritized second.
+- 2026-03-08: Added initial `femic.fmg` implementation in `src/femic/fmg/patchworks.py`:
+  ForestModel XML writer, fragments shapefile builder, and high-level
+  `export_patchworks_package(...)` orchestration wired from bundle/checkpoint artifacts.
+- 2026-03-08: Added `femic export patchworks` CLI command in `src/femic/cli/main.py`
+  with configurable TSA list, bundle/checkpoint paths, planning horizon, CC age window,
+  output directory, and fragments CRS.
+- 2026-03-08: Fixed Patchworks fragments export for feather checkpoints with WKB geometry payloads:
+  exporter now normalizes bytes/memoryview/hex geometries before GeoDataFrame construction.
+- 2026-03-08: Added regression coverage for Patchworks export in
+  `tests/test_fmg_patchworks.py` and `tests/test_cli_main.py` (XML content, fragments fields,
+  CLI wiring, WKB decode case).
+- 2026-03-08: Updated user-facing docs for Patchworks export:
+  `README.md` quickstart and `docs/reference/cli.rst` command reference.
+- 2026-03-08: Ran full milestone validation gates after export implementation:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W` all passing.
+- 2026-03-08 next queue: add ForestModel schema/structure validation (`P4.4b`), run
+  full export validation for TSA29 + K3Z (`P4.6a`), and start Woodstock compatibility
+  port (`P4.2c`) once Patchworks validation is green.

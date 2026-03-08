@@ -2022,3 +2022,24 @@
   - Updated `config/run_profile.k3z.yaml` to use `vdyp_transform` with `x=0.8`, `y=1.2`, truncated post-culmination tail.
 - 2026-03-08: Cleared old plot artifacts and ran a full no-cache K3Z compile with synthetic managed curves (`run_id=k3z_vdyp_managed_20260308_1`), regenerating fresh K3Z strata/fitdiag/LMH/TIPSY-vs-VDYP plots and model-input bundle tables.
 - 2026-03-08: Extended `ROADMAP.md` with a new `Phase 4` for `femic.fmg` delivery, including tracked subtasks for proprietary Patchworks guide handling, Python 3 port of legacy fmg core, Patchworks ForestModel XML generation, fragments shapefile generation from BC VRI, Woodstock carry-over, and end-to-end validation.
+
+## 2026-03-08 - Phase 4 kickoff: Patchworks export path
+- Added new module `src/femic/fmg/patchworks.py` plus `src/femic/fmg/__init__.py` with:
+  `build_forestmodel_xml_tree(...)`, `write_forestmodel_xml(...)`,
+  `build_fragments_geodataframe(...)`, `write_fragments_shapefile(...)`, and
+  `export_patchworks_package(...)`.
+- Added `femic export patchworks` CLI in `src/femic/cli/main.py` for TSA-scoped export of
+  `forestmodel.xml` and `fragments.shp` from existing FEMIC bundle/checkpoint outputs.
+- Fixed checkpoint geometry handling for export: fragments builder now decodes WKB payloads
+  (bytes/memoryview/hex string) before GeoDataFrame construction, resolving smoke-run
+  failures against `data/ria_vri_vclr1p_checkpoint7.feather`.
+- Added regression tests in `tests/test_fmg_patchworks.py` and `tests/test_cli_main.py` for:
+  XML/treatment/curve references, fragments field content, CLI wiring, and WKB geometry decode.
+- Updated docs for the new workflow:
+  `README.md` (Patchworks export quickstart) and `docs/reference/cli.rst` (command reference).
+- Verified with full quality gates:
+  `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+  `pre-commit run --all-files`, and `sphinx-build -b html docs _build/html -W` all passed.
+- Verified runtime smoke export:
+  `PYTHONPATH=src .venv/bin/python -m femic export patchworks --tsa k3z --output-dir output/patchworks_k3z_smoke`
+  completed successfully (`au=14`, `fragments=218`, `curves=54`).
