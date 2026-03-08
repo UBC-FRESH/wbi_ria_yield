@@ -2101,3 +2101,17 @@
   `tests/test_fmg_patchworks.py::test_write_forestmodel_xml_matches_fixture`,
   which asserts serialized XML output is byte-identical to fixture content for
   a stable minimal AU/curve case.
+
+## 2026-03-08 - Core ForestModel/Treatment class migration (P4.2a)
+- Expanded `src/femic/fmg/core.py` with explicit ForestModel/Treatment classes:
+  `ForestModelDefinition`, `SelectDefinition`, `TreatmentDefinition`,
+  `AttributeBinding`, `DefineFieldDefinition`, `TreatmentAssignment`.
+- Refactored `src/femic/fmg/patchworks.py` so XML generation now follows:
+  shared bundle context -> `build_patchworks_forestmodel_definition(...)`
+  -> `forestmodel_definition_to_xml_tree(...)` -> write/validate.
+- Added regression test
+  `tests/test_fmg_patchworks.py::test_build_patchworks_forestmodel_definition_contains_treatment`
+  to assert treatment-bearing select blocks are present in the core definition.
+- Revalidated patchworks export smoke:
+  `PYTHONPATH=src .venv/bin/python -m femic export patchworks --tsa k3z --output-dir output/patchworks_k3z_modelclass_smoke`
+  succeeded (`au=14`, `fragments=218`, `curves=54`).
