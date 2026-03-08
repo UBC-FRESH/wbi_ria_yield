@@ -47,4 +47,4 @@ vdyp_lyr_816_eoi3.csv/
 # Local external references and scratch symlinks (do not publish)
 docs/reference/*.pdf
 docs/reference/vdyp/*.pdf
-fmg
+/fmg

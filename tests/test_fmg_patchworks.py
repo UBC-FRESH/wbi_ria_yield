@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+from pathlib import Path
+import xml.etree.ElementTree as et
+
+import geopandas as gpd
+import pandas as pd
+import pytest
+from shapely.geometry import Polygon
+
+from femic.fmg.patchworks import (
+    build_forestmodel_xml_tree,
+    export_patchworks_package,
+)
+
+
+def _write_bundle_tables(bundle_dir: Path) -> None:
+    bundle_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "canfi_species": 402,
+                "unmanaged_curve_id": 985501000,
+                "managed_curve_id": 985521000,
+            }
+        ]
+    ).to_csv(bundle_dir / "au_table.csv", index=False)
+    pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+            {
+                "curve_id": 985521000001,
+                "curve_type": "managed_species_prop_HW",
+            },
+            {
+                "curve_id": 985501000001,
+                "curve_type": "unmanaged_species_prop_HW",
+            },
+        ]
+    ).to_csv(bundle_dir / "curve_table.csv", index=False)
+    pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985501000, "x": 10, "y": 55.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+            {"curve_id": 985521000, "x": 10, "y": 70.0},
+            {"curve_id": 985521000001, "x": 1, "y": 0.7},
+            {"curve_id": 985501000001, "x": 1, "y": 0.6},
+        ]
+    ).to_csv(bundle_dir / "curve_points_table.csv", index=False)
+
+
+def test_build_forestmodel_xml_tree_contains_cc_and_curve_refs() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    xml_text = et.tostring(root, encoding="unicode")
+    assert "treatment" in xml_text
+    assert 'label="CC"' in xml_text
+    assert "feature.Yield.managed.Total" in xml_text
+    assert "product.Yield.managed.Total" in xml_text
+    assert "AU eq '985501000'" in xml_text
+
+
+def test_export_patchworks_package_writes_xml_and_fragments(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle_dir = tmp_path / "bundle"
+    _write_bundle_tables(bundle_dir)
+    checkpoint_path = tmp_path / "checkpoint7.feather"
+    output_dir = tmp_path / "patchworks_export"
+
+    checkpoint_df = pd.DataFrame(
+        [
+            {
+                "tsa_code": "k3z",
+                "au": 985501000,
+                "PROJ_AGE_1": 74,
+                "FEATURE_AREA_SQM": 12000.0,
+                "thlb_raw": 1,
+                "geometry": Polygon([(0, 0), (100, 0), (100, 100), (0, 100), (0, 0)]),
+            }
+        ]
+    )
+    monkeypatch.setattr(
+        "femic.fmg.patchworks.pd.read_feather", lambda _path: checkpoint_df
+    )
+
+    result = export_patchworks_package(
+        bundle_dir=bundle_dir,
+        checkpoint_path=checkpoint_path,
+        output_dir=output_dir,
+        tsa_list=["k3z"],
+    )
+
+    assert result.forestmodel_xml_path.is_file()
+    assert result.fragments_shapefile_path.is_file()
+    xml_text = result.forestmodel_xml_path.read_text(encoding="utf-8")
+    assert '<!DOCTYPE ForestModel SYSTEM "ForestModel.dtd">' in xml_text
+    assert "feature.Yield.unmanaged.Total" in xml_text
+    gdf = gpd.read_file(result.fragments_shapefile_path)
+    assert set(["BLOCK", "AREA_HA", "F_AGE", "AU", "IFM"]).issubset(gdf.columns)
+    assert int(gdf.loc[0, "AU"]) == 985501000
+    assert gdf.loc[0, "IFM"] == "managed"
+
+
+def test_export_patchworks_package_decodes_wkb_geometry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle_dir = tmp_path / "bundle"
+    _write_bundle_tables(bundle_dir)
+    checkpoint_path = tmp_path / "checkpoint7.feather"
+    output_dir = tmp_path / "patchworks_export"
+
+    geom = Polygon([(0, 0), (40, 0), (40, 40), (0, 40), (0, 0)])
+    checkpoint_df = pd.DataFrame(
+        [
+            {
+                "tsa_code": "k3z",
+                "au": 985501000,
+                "PROJ_AGE_1": 61,
+                "thlb_raw": 0,
+                "geometry": geom.wkb,
+            }
+        ]
+    )
+    monkeypatch.setattr(
+        "femic.fmg.patchworks.pd.read_feather", lambda _path: checkpoint_df
+    )
+
+    result = export_patchworks_package(
+        bundle_dir=bundle_dir,
+        checkpoint_path=checkpoint_path,
+        output_dir=output_dir,
+        tsa_list=["k3z"],
+    )
+
+    gdf = gpd.read_file(result.fragments_shapefile_path)
+    assert gdf.shape[0] == 1
+    assert gdf.loc[0, "IFM"] == "unmanaged"
+    assert gdf.geometry.iloc[0].geom_type == "Polygon"
