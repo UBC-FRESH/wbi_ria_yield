@@ -2364,3 +2364,20 @@
   - boundary-code required failure,
   - strict-warning failure behavior.
 - Extended docs contract checks to include `prep validate-case` option drift.
+
+## 2026-03-08
+- Added Phase 7 roadmap section for Patchworks runtime integration, Wine execution, and UBC VPN-linked licensing checks.
+- Added `reference/Patchworks/` to `.gitignore` so proprietary Patchworks binaries/docs are not published from this repo.
+- Added `src/femic/patchworks_runtime.py` with config loading, Wine path translation, license parsing, preflight checks, deterministic Matrix Builder command assembly, and log/manifest capture.
+- Added new CLI group `femic patchworks` with:
+  - `patchworks preflight` (Wine/Java/jar/input/license checks, optional reachability skip)
+  - `patchworks matrix-build` (direct Matrix Builder or interactive AppChooser mode under Wine)
+- Added baseline runtime config file `config/patchworks.runtime.yaml` for local execution wiring.
+- Added new operator guides:
+  - `docs/guides/patchworks-wine-runtime.rst`
+  - `docs/guides/ubc-vpn-license-connectivity.rst`
+- Updated docs navigation and CLI reference to include Patchworks runtime commands/options.
+- Added tests for Patchworks runtime helpers and CLI wiring:
+  - `tests/test_patchworks_runtime.py`
+  - extended `tests/test_cli_main.py` and `tests/test_docs_contract.py`.
+- Updated README with Patchworks runtime command examples and proprietary-runtime boundary note.

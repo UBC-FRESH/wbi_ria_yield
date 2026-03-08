@@ -141,7 +141,49 @@
   - [ ] P6.4b Validate template-driven run/profile compatibility
   - [ ] P6.4c Add docs checks ensuring onboarding guide + templates remain linked
 
+## Phase 7: Patchworks Runtime Integration + UBC VPN Licensing
+- [ ] P7.1 Protect proprietary Patchworks bundle in git
+  - [x] P7.1a Add `.gitignore` entry for `reference/Patchworks/`
+  - [ ] P7.1b If already tracked, remove from index (`git rm --cached -r reference/Patchworks`)
+  - [x] P7.1c Add docs note that users must provide local Patchworks install separately
+- [x] P7.2 Add Patchworks runtime preflight checks (CLI)
+  - [x] P7.2a Verify `wine64` exists
+  - [x] P7.2b Verify `java` is callable inside Wine context
+  - [x] P7.2c Verify `patchworks.jar` path and readability
+  - [x] P7.2d Verify `SPS_LICENSE_SERVER` is set and parseable
+  - [x] P7.2e Verify required model inputs exist (`forestmodel.xml`, `fragments.dbf`)
+- [x] P7.3 Add deterministic Matrix Builder runner command
+  - [x] P7.3a Add command builder for `ca.spatial.tracks.builder.Process` with 3 args
+  - [x] P7.3b Add path translation (`/home/...` -> `Z:\\home\\...`) for Wine CMD
+  - [x] P7.3c Capture stdout/stderr logs and return exit code
+  - [x] P7.3d Add optional interactive launcher mode (`java -jar patchworks.jar`)
+- [x] P7.4 Add UBC VPN connectivity workflow (host-pass-through primary)
+  - [x] P7.4a Document host-side `openconnect myvpn.ubc.ca` flow (from uploaded PDF)
+  - [x] P7.4b Add preflight checks to test license server reachability before run
+  - [x] P7.4c Add troubleshooting for MFA suffixes (`@app`, `@phone`, optional pool)
+  - [x] P7.4d Add fallback notes for in-container OpenConnect (only if tun/caps available)
+- [x] P7.5 Add docs and operator runbook
+  - [x] P7.5a Add step-by-step “Patchworks under Wine” guide
+  - [x] P7.5b Add “VPN + licensing diagnostics” guide
+  - [x] P7.5c Add known failure signatures and remedies
+- [x] P7.6 Add regression and acceptance tests
+  - [x] P7.6a Unit-test command assembly and path mapping
+  - [x] P7.6b Unit-test env var injection and validation failures
+  - [x] P7.6c Integration smoke test with mocked external calls
+  - [x] P7.6d Docs contract tests for new guides and CLI docs
+
 ## Detailed Next Steps Notes
+- Started Phase 7 runtime integration for proprietary Patchworks tooling:
+  added `femic patchworks preflight` and `femic patchworks matrix-build` command
+  skeletons with config-driven Wine invocation, Matrix Builder command assembly,
+  run log capture, and execution manifest output.
+- Added a baseline Patchworks runtime config (`config/patchworks.runtime.yaml`)
+  for local editing, and gitignored `reference/Patchworks/` to avoid publishing
+  proprietary binaries/API docs.
+- Added Phase 7 docs/test wiring for Patchworks runtime and VPN diagnostics;
+  remaining queued Phase 7 work is P7.1b (drop from git index if proprietary
+  files were previously tracked) plus first live VPN+Wine validation against
+  the real license server environment.
 - Phase 6 kickoff complete: added reusable onboarding assets for new cases:
   `config/run_profile.case_template.yaml`, `config/tipsy/template.case.yaml`,
   and `docs/guides/case-onboarding.rst`.
