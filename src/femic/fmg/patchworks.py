@@ -16,7 +16,16 @@ from .adapters import (
     build_bundle_model_context_from_tables,
     normalize_tsa_code,
 )
-from .core import BundleModelContext
+from .core import (
+    AttributeBinding,
+    BundleModelContext,
+    CurvePoint,
+    DefineFieldDefinition,
+    ForestModelDefinition,
+    SelectDefinition,
+    TreatmentAssignment,
+    TreatmentDefinition,
+)
 
 
 DEFAULT_START_YEAR = 2026
@@ -136,28 +145,124 @@ def build_forestmodel_xml_tree_from_context(
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
 ) -> et.Element:
     """Build a Patchworks ForestModel XML tree from shared FMG context."""
-    managed_species_map = context.managed_species_curve_ids
-    unmanaged_species_map = context.unmanaged_species_curve_ids
-    curves_by_id = context.curves_by_id
+    definition = build_patchworks_forestmodel_definition(
+        context=context,
+        start_year=start_year,
+        horizon_years=horizon_years,
+        cc_min_age=cc_min_age,
+        cc_max_age=cc_max_age,
+    )
+    return forestmodel_definition_to_xml_tree(definition=definition)
 
-    root = et.Element(
-        "ForestModel",
-        {
-            "description": "FEMIC Patchworks export",
-            "horizon": str(int(horizon_years)),
-            "year": str(int(start_year)),
-            "match": "multi",
+
+def build_patchworks_forestmodel_definition(
+    *,
+    context: BundleModelContext,
+    start_year: int = DEFAULT_START_YEAR,
+    horizon_years: int = DEFAULT_HORIZON_YEARS,
+    cc_min_age: int = DEFAULT_CC_MIN_AGE,
+    cc_max_age: int = DEFAULT_CC_MAX_AGE,
+) -> ForestModelDefinition:
+    """Build Patchworks ForestModel core definition from shared context."""
+    curves: dict[str, tuple[CurvePoint, ...]] = {"unity": (CurvePoint(x=0.0, y=1.0),)}
+    for curve_id in sorted(context.curves_by_id):
+        points = context.curves_by_id[curve_id].points
+        if points:
+            curves[f"C{curve_id}"] = points
+
+    selects: list[SelectDefinition] = []
+    for au in context.analysis_units:
+        unmanaged_curve_id = au.unmanaged_curve_id
+        managed_curve_id = au.managed_curve_id
+
+        unmanaged_attrs = [
+            AttributeBinding(label="feature.Area.unmanaged", curve_idref="unity"),
+            AttributeBinding(
+                label="feature.Yield.unmanaged.Total",
+                curve_idref=f"C{unmanaged_curve_id}",
+            ),
+        ]
+        for species, species_curve_id in sorted(
+            context.unmanaged_species_curve_ids.get(unmanaged_curve_id, {}).items()
+        ):
+            unmanaged_attrs.append(
+                AttributeBinding(
+                    label=f"feature.SpeciesProp.unmanaged.{species}",
+                    curve_idref=f"C{species_curve_id}",
+                )
+            )
+        selects.append(
+            SelectDefinition(
+                statement=f"AU eq '{au.au_id}' and IFM eq 'unmanaged'",
+                feature_attributes=tuple(unmanaged_attrs),
+                include_track=True,
+            )
+        )
+
+        managed_attrs = [
+            AttributeBinding(label="feature.Area.managed", curve_idref="unity"),
+            AttributeBinding(
+                label="feature.Yield.managed.Total",
+                curve_idref=f"C{managed_curve_id}",
+            ),
+        ]
+        product_attrs = [
+            AttributeBinding(label="product.Treated.managed.CC", curve_idref="unity"),
+            AttributeBinding(
+                label="product.Yield.managed.Total",
+                curve_idref=f"C{managed_curve_id}",
+            ),
+        ]
+        for species, species_curve_id in sorted(
+            context.managed_species_curve_ids.get(managed_curve_id, {}).items()
+        ):
+            managed_attrs.append(
+                AttributeBinding(
+                    label=f"feature.SpeciesProp.managed.{species}",
+                    curve_idref=f"C{species_curve_id}",
+                )
+            )
+            product_attrs.append(
+                AttributeBinding(
+                    label=f"product.SpeciesProp.managed.{species}",
+                    curve_idref=f"C{species_curve_id}",
+                )
+            )
+
+        selects.append(
+            SelectDefinition(
+                statement=f"AU eq '{au.au_id}' and IFM eq 'managed'",
+                feature_attributes=tuple(managed_attrs),
+                include_track=True,
+                track_treatment=TreatmentDefinition(
+                    label="CC",
+                    min_age=int(cc_min_age),
+                    max_age=int(cc_max_age),
+                    assignments=(TreatmentAssignment(field="treatment", value="'CC'"),),
+                ),
+            )
+        )
+        selects.append(
+            SelectDefinition(
+                statement=(
+                    f"AU eq '{au.au_id}' and IFM eq 'managed' and treatment eq 'CC'"
+                ),
+                product_attributes=tuple(product_attrs),
+            )
+        )
+
+    return ForestModelDefinition(
+        description="FEMIC Patchworks export",
+        horizon=int(horizon_years),
+        year=int(start_year),
+        match="multi",
+        input_attributes={
+            "block": "BLOCK",
+            "area": "AREA_HA",
+            "age": "F_AGE",
+            "exclude": "BLOCK=0",
         },
-    )
-    et.SubElement(
-        root,
-        "input",
-        {"block": "BLOCK", "area": "AREA_HA", "age": "F_AGE", "exclude": "BLOCK=0"},
-    )
-    et.SubElement(
-        root,
-        "output",
-        {
+        output_attributes={
             "messages": "messages.csv",
             "blocks": "blocks.csv",
             "features": "features.csv",
@@ -166,111 +271,122 @@ def build_forestmodel_xml_tree_from_context(
             "curves": "curves.csv",
             "tracknames": "tracknames.csv",
         },
+        define_fields=(
+            DefineFieldDefinition(field="AU", column="AU"),
+            DefineFieldDefinition(field="IFM", column="IFM"),
+            DefineFieldDefinition(field="treatment"),
+        ),
+        curves=curves,
+        selects=tuple(selects),
     )
-    et.SubElement(root, "define", {"field": "AU", "column": "AU"})
-    et.SubElement(root, "define", {"field": "IFM", "column": "IFM"})
-    et.SubElement(root, "define", {"field": "treatment"})
 
-    unity_curve = et.SubElement(root, "curve", {"id": "unity"})
-    et.SubElement(unity_curve, "point", {"x": "0.0", "y": "1.0"})
 
-    curve_ids = sorted(curves_by_id.keys())
+def _append_attribute_bindings(
+    *,
+    parent: et.Element,
+    tag_name: str,
+    bindings: tuple[AttributeBinding, ...],
+) -> None:
+    node = et.SubElement(parent, tag_name)
+    for binding in bindings:
+        attr = et.SubElement(node, "attribute", {"label": binding.label})
+        et.SubElement(attr, "curve", {"idref": binding.curve_idref})
+
+
+def _append_track(
+    *,
+    parent: et.Element,
+    include_track: bool,
+    track_treatment: TreatmentDefinition | None,
+) -> None:
+    if not include_track and track_treatment is None:
+        return
+    track = et.SubElement(parent, "track")
+    if track_treatment is None:
+        return
+    treatment = et.SubElement(
+        track,
+        "treatment",
+        {
+            "label": track_treatment.label,
+            "minage": str(int(track_treatment.min_age)),
+            "maxage": str(int(track_treatment.max_age)),
+        },
+    )
+    if not track_treatment.assignments:
+        return
+    produce = et.SubElement(treatment, "produce")
+    for assignment in track_treatment.assignments:
+        et.SubElement(
+            produce,
+            "assign",
+            {"field": assignment.field, "value": assignment.value},
+        )
+
+
+def forestmodel_definition_to_xml_tree(
+    *,
+    definition: ForestModelDefinition,
+) -> et.Element:
+    """Serialize ForestModel core definition to XML tree."""
+    root = et.Element(
+        "ForestModel",
+        {
+            "description": definition.description,
+            "horizon": str(int(definition.horizon)),
+            "year": str(int(definition.year)),
+            "match": definition.match,
+        },
+    )
+    et.SubElement(root, "input", definition.input_attributes)
+    et.SubElement(root, "output", definition.output_attributes)
+
+    for define_field in definition.define_fields:
+        attrs = {"field": define_field.field}
+        if define_field.column is not None:
+            attrs["column"] = define_field.column
+        et.SubElement(root, "define", attrs)
+
+    curve_ids = ["unity"] if "unity" in definition.curves else []
+    curve_ids.extend(
+        sorted(
+            [cid for cid in definition.curves if cid != "unity"],
+            key=lambda cid: int(cid.removeprefix("C")),
+        )
+    )
     for curve_id in curve_ids:
-        points = curves_by_id[curve_id].points
-        if not points:
-            continue
-        curve = et.SubElement(root, "curve", {"id": f"C{curve_id}"})
-        for point in points:
+        curve_node = et.SubElement(root, "curve", {"id": curve_id})
+        for point in definition.curves[curve_id]:
+            if curve_id == "unity":
+                x_val = str(point.x)
+                y_val = str(point.y)
+            else:
+                x_val = f"{point.x:.6f}"
+                y_val = f"{point.y:.6f}"
             et.SubElement(
-                curve,
+                curve_node,
                 "point",
-                {"x": f"{point.x:.6f}", "y": f"{point.y:.6f}"},
+                {"x": x_val, "y": y_val},
             )
 
-    for au in context.analysis_units:
-        au_id = au.au_id
-        unmanaged_curve_id = au.unmanaged_curve_id
-        managed_curve_id = au.managed_curve_id
-
-        unmanaged_select = et.SubElement(
-            root, "select", {"statement": f"AU eq '{au_id}' and IFM eq 'unmanaged'"}
-        )
-        unmanaged_features = et.SubElement(unmanaged_select, "features")
-        _add_attribute_with_curve_ref(
-            unmanaged_features, label="feature.Area.unmanaged", curve_ref="unity"
-        )
-        _add_attribute_with_curve_ref(
-            unmanaged_features,
-            label="feature.Yield.unmanaged.Total",
-            curve_ref=f"C{unmanaged_curve_id}",
-        )
-        for species, species_curve_id in sorted(
-            unmanaged_species_map.get(unmanaged_curve_id, {}).items()
-        ):
-            _add_attribute_with_curve_ref(
-                unmanaged_features,
-                label=f"feature.SpeciesProp.unmanaged.{species}",
-                curve_ref=f"C{species_curve_id}",
+    for select in definition.selects:
+        select_node = et.SubElement(root, "select", {"statement": select.statement})
+        if select.feature_attributes:
+            _append_attribute_bindings(
+                parent=select_node,
+                tag_name="features",
+                bindings=select.feature_attributes,
             )
-        et.SubElement(unmanaged_select, "track")
-
-        managed_select = et.SubElement(
-            root, "select", {"statement": f"AU eq '{au_id}' and IFM eq 'managed'"}
+        _append_track(
+            parent=select_node,
+            include_track=select.include_track,
+            track_treatment=select.track_treatment,
         )
-        managed_features = et.SubElement(managed_select, "features")
-        _add_attribute_with_curve_ref(
-            managed_features, label="feature.Area.managed", curve_ref="unity"
-        )
-        _add_attribute_with_curve_ref(
-            managed_features,
-            label="feature.Yield.managed.Total",
-            curve_ref=f"C{managed_curve_id}",
-        )
-        for species, species_curve_id in sorted(
-            managed_species_map.get(managed_curve_id, {}).items()
-        ):
-            _add_attribute_with_curve_ref(
-                managed_features,
-                label=f"feature.SpeciesProp.managed.{species}",
-                curve_ref=f"C{species_curve_id}",
-            )
-
-        track = et.SubElement(managed_select, "track")
-        treatment = et.SubElement(
-            track,
-            "treatment",
-            {
-                "label": "CC",
-                "minage": str(int(cc_min_age)),
-                "maxage": str(int(cc_max_age)),
-            },
-        )
-        produce = et.SubElement(treatment, "produce")
-        et.SubElement(produce, "assign", {"field": "treatment", "value": "'CC'"})
-
-        product_select = et.SubElement(
-            root,
-            "select",
-            {
-                "statement": f"AU eq '{au_id}' and IFM eq 'managed' and treatment eq 'CC'"
-            },
-        )
-        products = et.SubElement(product_select, "products")
-        _add_attribute_with_curve_ref(
-            products, label="product.Treated.managed.CC", curve_ref="unity"
-        )
-        _add_attribute_with_curve_ref(
-            products,
-            label="product.Yield.managed.Total",
-            curve_ref=f"C{managed_curve_id}",
-        )
-        for species, species_curve_id in sorted(
-            managed_species_map.get(managed_curve_id, {}).items()
-        ):
-            _add_attribute_with_curve_ref(
-                products,
-                label=f"product.SpeciesProp.managed.{species}",
-                curve_ref=f"C{species_curve_id}",
+        if select.product_attributes:
+            _append_attribute_bindings(
+                parent=select_node,
+                tag_name="products",
+                bindings=select.product_attributes,
             )
 
     return root

@@ -18,9 +18,15 @@ from .adapters import (
 )
 from .core import (
     AnalysisUnitDefinition,
+    AttributeBinding,
     BundleModelContext,
     CurveDefinition,
     CurvePoint,
+    DefineFieldDefinition,
+    ForestModelDefinition,
+    SelectDefinition,
+    TreatmentAssignment,
+    TreatmentDefinition,
 )
 from .woodstock import (
     DEFAULT_WOODSTOCK_OUTPUT_DIR,
@@ -42,6 +48,12 @@ __all__ = [
     "CurveDefinition",
     "AnalysisUnitDefinition",
     "BundleModelContext",
+    "DefineFieldDefinition",
+    "AttributeBinding",
+    "TreatmentAssignment",
+    "TreatmentDefinition",
+    "SelectDefinition",
+    "ForestModelDefinition",
     "normalize_tsa_code",
     "build_bundle_model_context",
     "build_bundle_model_context_from_tables",

@@ -9,6 +9,7 @@ import pytest
 from shapely.geometry import Polygon
 
 from femic.fmg.patchworks import (
+    build_patchworks_forestmodel_definition,
     build_forestmodel_xml_tree,
     export_patchworks_package,
     validate_forestmodel_xml_tree,
@@ -94,6 +95,47 @@ def test_build_forestmodel_xml_tree_contains_cc_and_curve_refs() -> None:
     assert "feature.Yield.managed.Total" in xml_text
     assert "product.Yield.managed.Total" in xml_text
     assert "AU eq '985501000'" in xml_text
+
+
+def test_build_patchworks_forestmodel_definition_contains_treatment() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+        ]
+    )
+    from femic.fmg.adapters import build_bundle_model_context_from_tables
+
+    context = build_bundle_model_context_from_tables(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+        tsa_list=["k3z"],
+    )
+    definition = build_patchworks_forestmodel_definition(context=context)
+    assert definition.define_fields[0].field == "AU"
+    assert any(
+        s.track_treatment is not None and s.track_treatment.label == "CC"
+        for s in definition.selects
+    )
 
 
 def test_export_patchworks_package_writes_xml_and_fragments(

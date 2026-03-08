@@ -44,3 +44,63 @@ class BundleModelContext:
     managed_species_curve_ids: dict[int, dict[str, int]]
     unmanaged_species_curve_ids: dict[int, dict[str, int]]
     curve_row_count: int
+
+
+@dataclass(frozen=True)
+class DefineFieldDefinition:
+    """One `<define>` entry for ForestModel serialization."""
+
+    field: str
+    column: str | None = None
+
+
+@dataclass(frozen=True)
+class AttributeBinding:
+    """Map one feature/product attribute label to a curve reference."""
+
+    label: str
+    curve_idref: str
+
+
+@dataclass(frozen=True)
+class TreatmentAssignment:
+    """One assignment within a treatment produce block."""
+
+    field: str
+    value: str
+
+
+@dataclass(frozen=True)
+class TreatmentDefinition:
+    """Treatment definition used in track blocks."""
+
+    label: str
+    min_age: int
+    max_age: int
+    assignments: tuple[TreatmentAssignment, ...] = ()
+
+
+@dataclass(frozen=True)
+class SelectDefinition:
+    """One select statement plus optional features/products/track treatment."""
+
+    statement: str
+    feature_attributes: tuple[AttributeBinding, ...] = ()
+    product_attributes: tuple[AttributeBinding, ...] = ()
+    include_track: bool = False
+    track_treatment: TreatmentDefinition | None = None
+
+
+@dataclass(frozen=True)
+class ForestModelDefinition:
+    """Core ForestModel representation independent from XML serializer."""
+
+    description: str
+    horizon: int
+    year: int
+    match: str
+    input_attributes: dict[str, str]
+    output_attributes: dict[str, str]
+    define_fields: tuple[DefineFieldDefinition, ...]
+    curves: dict[str, tuple[CurvePoint, ...]]
+    selects: tuple[SelectDefinition, ...]
