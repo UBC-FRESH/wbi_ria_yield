@@ -94,6 +94,18 @@ exporter, `BLOCK` is one-to-one with these fragment rows.
 Patchworks XML now includes species-wise yield attributes derived as
 `TotalVolume(age) * SpeciesProportion(age)` for unmanaged and managed tracks.
 
+8. (Optional) Run proprietary Patchworks Matrix Builder under Wine:
+
+```bash
+PYTHONPATH=src python -m femic patchworks preflight --config config/patchworks.runtime.yaml
+PYTHONPATH=src python -m femic patchworks matrix-build --config config/patchworks.runtime.yaml
+```
+
+Runtime logs/manifests are written to `vdyp_io/logs/` with run-scoped names:
+`patchworks_matrixbuilder_stdout-<run_id>.log`,
+`patchworks_matrixbuilder_stderr-<run_id>.log`, and
+`patchworks_matrixbuilder_manifest-<run_id>.json`.
+
 7. Export Woodstock compatibility CSV package:
 
 ```bash
@@ -227,6 +239,12 @@ Config-driven TIPSY rules now also support deterministic weak-mapping controls:
 - `species_code_overrides` (for example `DR: FD`, `SX: SW`)
 - `siteprod_si_fallback_by_species` (species-specific SI fallback values when siteprod
   values are missing/invalid)
+
+## Patchworks Runtime Boundary
+
+Patchworks software binaries are proprietary and must be supplied locally by users;
+the repository ignores `reference/Patchworks/` by default and does not publish these
+runtime assets.
 
 VDYP fit diagnostics also emit per-stratum L/M/H comparison overlays at:
 `plots/vdyp_lmh_tsa<tsa>-<stratum>-<stratum_code>.png`.

@@ -17,4 +17,6 @@ with the current FEMIC CLI and export modules.
    diagnostics-playbook
    troubleshooting
    limitations-and-boundaries
+   patchworks-wine-runtime
+   ubc-vpn-license-connectivity
    legacy-traceability

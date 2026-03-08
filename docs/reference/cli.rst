@@ -24,6 +24,7 @@ Commands
 - ``tsa``
 - ``tipsy``
 - ``export``
+- ``patchworks``
 
 Run
 ---
@@ -185,3 +186,27 @@ Subcommands
 - ``--cc-min-age INTEGER`` (default: ``0``)
 - ``--cc-max-age INTEGER`` (default: ``1000``)
 - ``--fragments-crs TEXT`` (default: ``EPSG:3005``)
+
+Patchworks Runtime
+------------------
+
+.. code-block:: text
+
+   python -m femic patchworks [OPTIONS] COMMAND [ARGS]...
+
+Subcommands
+
+- ``preflight``: ``python -m femic patchworks preflight [OPTIONS]``
+- ``matrix-build``: ``python -m femic patchworks matrix-build [OPTIONS]``
+
+``patchworks preflight`` options
+
+- ``--config PATH`` (default: ``config/patchworks.runtime.yaml``)
+- ``--skip-license-reachability``
+
+``patchworks matrix-build`` options
+
+- ``--config PATH`` (default: ``config/patchworks.runtime.yaml``)
+- ``--log-dir PATH`` (default: ``vdyp_io/logs``)
+- ``--run-id TEXT``
+- ``--interactive``
