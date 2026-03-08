@@ -201,6 +201,57 @@ def test_build_forestmodel_xml_tree_adds_species_yield_curves() -> None:
     assert "product.Yield.managed.HW" in xml_text
 
 
+def test_forestmodel_xml_trims_repeated_curve_values_on_both_tails() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 1001,
+                "tsa": "29",
+                "stratum_code": "SBPS_PLI",
+                "si_level": "L",
+                "managed_curve_id": 21001,
+                "unmanaged_curve_id": 1001,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 1001, "curve_type": "unmanaged"},
+            {"curve_id": 21001, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 1001, "x": 1, "y": 5.0},
+            {"curve_id": 1001, "x": 2, "y": 5.0},
+            {"curve_id": 1001, "x": 10, "y": 40.0},
+            {"curve_id": 1001, "x": 20, "y": 40.0},
+            {"curve_id": 1001, "x": 30, "y": 40.0},
+            {"curve_id": 21001, "x": 1, "y": 7.0},
+            {"curve_id": 21001, "x": 5, "y": 7.0},
+            {"curve_id": 21001, "x": 10, "y": 50.0},
+            {"curve_id": 21001, "x": 20, "y": 60.0},
+            {"curve_id": 21001, "x": 30, "y": 60.0},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    unmanaged_points = root.findall("./curve[@id='C1001']/point")
+    managed_points = root.findall("./curve[@id='C21001']/point")
+    assert [p.attrib for p in unmanaged_points] == [
+        {"x": "2.000000", "y": "5.000000"},
+        {"x": "10.000000", "y": "40.000000"},
+    ]
+    assert [p.attrib for p in managed_points] == [
+        {"x": "5.000000", "y": "7.000000"},
+        {"x": "10.000000", "y": "50.000000"},
+        {"x": "20.000000", "y": "60.000000"},
+    ]
+
+
 def test_export_patchworks_package_writes_xml_and_fragments(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

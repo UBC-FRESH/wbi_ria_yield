@@ -38,6 +38,10 @@ Derived species-yield points are computed as:
 where species proportions are evaluated at each total-curve age using constant or
 piecewise-linear interpolation of the source species-proportion curve.
 
+To reduce XML size/noise, serializer output trims redundant far-left and far-right
+points when a curve starts/ends with repeated y-values; Patchworks extends
+terminal points horizontally by default.
+
 Fragments shapefile requirements
 --------------------------------
 

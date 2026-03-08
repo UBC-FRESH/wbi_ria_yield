@@ -2163,3 +2163,11 @@
 - Updated docs:
   - `docs/reference/patchworks-export.rst`
   - `README.md`
+
+## 2026-03-08 - Patchworks XML flat-tail deduplication
+- Updated Patchworks XML serialization to remove redundant repeated far-left
+  and far-right y-values for non-`unity` curves while preserving the inner edge
+  points of terminal plateaus.
+- Added regression coverage:
+  `tests/test_fmg_patchworks.py::test_forestmodel_xml_trims_repeated_curve_values_on_both_tails`.
+- Documented behavior in `docs/reference/patchworks-export.rst`.

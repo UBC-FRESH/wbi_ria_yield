@@ -2225,3 +2225,7 @@
 - 2026-03-08: Added coverage for derived species yields in
   `tests/test_fmg_patchworks.py::test_build_forestmodel_xml_tree_adds_species_yield_curves`
   and regenerated deterministic XML fixtures to lock serializer parity.
+- 2026-03-08: Updated Patchworks XML serialization to drop redundant repeated
+  y-values on both far-left and far-right tails for non-`unity` curves (keep
+  the inner edge points of each terminal plateau), matching Patchworks behavior
+  of extending terminal points horizontally.

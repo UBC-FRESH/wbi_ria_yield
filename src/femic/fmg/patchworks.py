@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import importlib
+import math
 from pathlib import Path
 from typing import Any, Iterable
 import xml.etree.ElementTree as et
@@ -137,6 +138,27 @@ def _derived_species_yield_curve_id(
     """Build deterministic synthetic curve ID for derived species-yield curves."""
     suffix = 2 if managed else 1
     return int(species_prop_curve_id) * 10 + suffix
+
+
+def _trim_flat_tail_points(
+    points: tuple[CurvePoint, ...], *, abs_tol: float = 1e-12
+) -> tuple[CurvePoint, ...]:
+    """Drop redundant far-left/far-right points where terminal y-values repeat."""
+    if len(points) <= 1:
+        return points
+    left = 0
+    first_y = float(points[0].y)
+    while left + 1 < len(points) and math.isclose(
+        float(points[left + 1].y), first_y, rel_tol=0.0, abs_tol=abs_tol
+    ):
+        left += 1
+    right = len(points) - 1
+    last_y = float(points[right].y)
+    while right > left and math.isclose(
+        float(points[right - 1].y), last_y, rel_tol=0.0, abs_tol=abs_tol
+    ):
+        right -= 1
+    return points[left : right + 1]
 
 
 def _gpd_module() -> Any:
@@ -480,7 +502,10 @@ def forestmodel_definition_to_xml_tree(
     )
     for curve_id in curve_ids:
         curve_node = et.SubElement(root, "curve", {"id": curve_id})
-        for point in definition.curves[curve_id]:
+        points = definition.curves[curve_id]
+        if curve_id != "unity":
+            points = _trim_flat_tail_points(points)
+        for point in points:
             if curve_id == "unity":
                 x_val = str(point.x)
                 y_val = str(point.y)
