@@ -48,6 +48,10 @@ BROADLEAF_SPECIES_CODES = {
     "WS",
 }
 
+DEFAULT_TIPSY_SPECIES_CODE_OVERRIDES: dict[str, str] = {
+    "SX": "SW",
+}
+
 
 def resolve_tipsy_runtime_options(
     env: Mapping[str, str] | None = None,
@@ -127,6 +131,16 @@ def resolve_tipsy_param_builder(
                 config=cfg,
             )
 
+        setattr(
+            _tipsy_params_from_config,
+            "siteprod_si_fallback_by_species",
+            _resolve_siteprod_si_fallback_by_species(config=cfg),
+        )
+        setattr(
+            _tipsy_params_from_config,
+            "species_code_overrides",
+            _resolve_species_code_overrides(config=cfg),
+        )
         return (
             _tipsy_params_from_config,
             f"using config-driven TIPSY rules from {cfg_path}",
@@ -225,7 +239,57 @@ def _rule_matches(
 
 def _normalize_species_for_tipsy(species: str) -> str:
     """Normalize species codes for TIPSY compatibility where needed."""
-    return "SW" if species == "SX" else species
+    return _normalize_species_for_tipsy_with_overrides(
+        species,
+        species_code_overrides=DEFAULT_TIPSY_SPECIES_CODE_OVERRIDES,
+    )
+
+
+def _normalize_species_for_tipsy_with_overrides(
+    species: str,
+    *,
+    species_code_overrides: Mapping[str, str],
+) -> str:
+    code = str(species).strip().upper()
+    if not code:
+        return code
+    mapped = species_code_overrides.get(code, code)
+    return str(mapped).strip().upper()
+
+
+def _resolve_species_code_overrides(
+    *,
+    config: Mapping[str, Any],
+) -> dict[str, str]:
+    overrides = dict(DEFAULT_TIPSY_SPECIES_CODE_OVERRIDES)
+    configured = config.get("species_code_overrides")
+    if not isinstance(configured, Mapping):
+        return overrides
+    for raw_key, raw_value in configured.items():
+        key = str(raw_key).strip().upper()
+        value = str(raw_value).strip().upper()
+        if key and value:
+            overrides[key] = value
+    return overrides
+
+
+def _resolve_siteprod_si_fallback_by_species(
+    *,
+    config: Mapping[str, Any],
+) -> dict[str, float]:
+    configured = config.get("siteprod_si_fallback_by_species")
+    if not isinstance(configured, Mapping):
+        return {}
+    fallback_map: dict[str, float] = {}
+    for raw_key, raw_value in configured.items():
+        key = str(raw_key).strip().upper()
+        if not key:
+            continue
+        try:
+            fallback_map[key] = float(raw_value)
+        except (TypeError, ValueError):
+            continue
+    return fallback_map
 
 
 def _resolve_assignment_value(
@@ -235,13 +299,17 @@ def _resolve_assignment_value(
     bec: str,
     forest_type: int | None,
     species_ranked: list[tuple[str, float]],
+    species_code_overrides: Mapping[str, str],
 ) -> Any:
     if not isinstance(value, str):
         return value
     if value == "$leading_species":
         return leading_species
     if value == "$leading_species_tipsy":
-        return _normalize_species_for_tipsy(leading_species)
+        return _normalize_species_for_tipsy_with_overrides(
+            leading_species,
+            species_code_overrides=species_code_overrides,
+        )
     if value == "$bec":
         return bec
     if value == "$forest_type":
@@ -250,7 +318,10 @@ def _resolve_assignment_value(
     if match_spp:
         idx = int(match_spp.group(1)) - 1
         if 0 <= idx < len(species_ranked):
-            return _normalize_species_for_tipsy(species_ranked[idx][0])
+            return _normalize_species_for_tipsy_with_overrides(
+                species_ranked[idx][0],
+                species_code_overrides=species_code_overrides,
+            )
         return None
     match_pct = re.fullmatch(r"\$species_pct_(\d+)", value)
     if match_pct:
@@ -268,6 +339,7 @@ def _resolve_assignment_block(
     bec: str,
     forest_type: int | None,
     species_ranked: list[tuple[str, float]],
+    species_code_overrides: Mapping[str, str],
 ) -> dict[str, Any]:
     return {
         key: _resolve_assignment_value(
@@ -276,6 +348,7 @@ def _resolve_assignment_block(
             bec=bec,
             forest_type=forest_type,
             species_ranked=species_ranked,
+            species_code_overrides=species_code_overrides,
         )
         for key, value in block.items()
     }
@@ -304,6 +377,7 @@ def _finalize_species_mix(
     *,
     side_map: dict[str, Any],
     leading_species: str,
+    species_code_overrides: Mapping[str, str],
 ) -> None:
     entries: list[tuple[str, float]] = []
     for idx in range(1, 6):
@@ -321,10 +395,26 @@ def _finalize_species_mix(
             continue
         if pct <= 0:
             continue
-        entries.append((_normalize_species_for_tipsy(str(spp_raw)), pct))
+        entries.append(
+            (
+                _normalize_species_for_tipsy_with_overrides(
+                    str(spp_raw),
+                    species_code_overrides=species_code_overrides,
+                ),
+                pct,
+            )
+        )
 
     if not entries:
-        entries = [(_normalize_species_for_tipsy(leading_species), 100.0)]
+        entries = [
+            (
+                _normalize_species_for_tipsy_with_overrides(
+                    leading_species,
+                    species_code_overrides=species_code_overrides,
+                ),
+                100.0,
+            )
+        ]
 
     # In planted rows, strip broadleaf species and re-allocate their share to a
     # conifer species to avoid BatchTIPSY planted-curve/mapping failures.
@@ -338,7 +428,15 @@ def _finalize_species_mix(
             if spp.upper() not in BROADLEAF_SPECIES_CODES
         ]
         if not entries:
-            entries = [(_normalize_species_for_tipsy(leading_species), broadleaf_pct)]
+            entries = [
+                (
+                    _normalize_species_for_tipsy_with_overrides(
+                        leading_species,
+                        species_code_overrides=species_code_overrides,
+                    ),
+                    broadleaf_pct,
+                )
+            ]
         elif broadleaf_pct > 0:
             spp0, pct0 = entries[0]
             entries[0] = (spp0, pct0 + broadleaf_pct)
@@ -370,6 +468,7 @@ def build_tipsy_params_from_config(
 ) -> dict[str, dict[str, Any]]:
     """Build TIPSY parameter rows using configured rule assignments."""
     tp: dict[str, dict[str, Any]] = {"e": {}, "f": {}}
+    species_code_overrides = _resolve_species_code_overrides(config=config)
     ss = au_data["ss"]
     species = au_data["species"]
     leading_species = list(species.keys())[0]
@@ -396,6 +495,7 @@ def build_tipsy_params_from_config(
                     bec=bec,
                     forest_type=forest_type,
                     species_ranked=species_ranked,
+                    species_code_overrides=species_code_overrides,
                 )
             )
     for rule in config["rules"]:
@@ -413,6 +513,7 @@ def build_tipsy_params_from_config(
                         bec=bec,
                         forest_type=forest_type,
                         species_ranked=species_ranked,
+                        species_code_overrides=species_code_overrides,
                     )
                 )
             break
@@ -444,5 +545,9 @@ def build_tipsy_params_from_config(
         tp[side]["SI"] = round((c1 * si) + c2 + offset, 1)
     tp["e"]["BEC"] = tp["f"]["BEC"] = bec
     tp["e"]["OAF1"] = tp["f"]["OAF1"] = oaf1
-    _finalize_species_mix(side_map=tp["f"], leading_species=leading_species)
+    _finalize_species_mix(
+        side_map=tp["f"],
+        leading_species=leading_species,
+        species_code_overrides=species_code_overrides,
+    )
     return tp

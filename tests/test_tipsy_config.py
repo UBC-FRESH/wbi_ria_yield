@@ -91,6 +91,7 @@ rules:
         use_legacy=False,
     )
     assert "using config-driven TIPSY rules from" in message
+    assert getattr(builder, "siteprod_si_fallback_by_species", {}) == {}
     out = builder(
         3001,
         {
@@ -232,6 +233,41 @@ def test_build_tipsy_params_from_config_resolves_species_token_for_sx() -> None:
     )
     assert out["e"]["SPP_1"] == "SW"
     assert out["f"]["SPP_1"] == "SW"
+
+
+def test_build_tipsy_params_from_config_applies_species_code_overrides() -> None:
+    cfg = {
+        "schema_version": 1,
+        "tsa_code": "08",
+        "species_code_overrides": {"DR": "FD", "SX": "SW"},
+        "defaults": {
+            "e": {"SPP_1": "$leading_species_tipsy"},
+            "f": {"SPP_1": "$leading_species_tipsy"},
+        },
+        "rules": [
+            {
+                "id": "decid_rule",
+                "when": {"leading_species_in": ["DR"]},
+                "assign": {
+                    "e": {"Density": 1000, "PCT_1": 100},
+                    "f": {"Density": 900, "PCT_1": 100},
+                },
+            }
+        ],
+    }
+    au_data = {
+        "ss": pd.DataFrame({"SITE_INDEX": [15.0], "BEC_ZONE_CODE": ["SBS"]}),
+        "species": {"DR": {"pct": 100.0}},
+    }
+    vdyp_out = {1: pd.DataFrame({"SI": [15.0], "% Stk": [90.0]})}
+    out = build_tipsy_params_from_config(
+        au_id=3002,
+        au_data=au_data,
+        vdyp_out=vdyp_out,
+        config=cfg,
+    )
+    assert out["e"]["SPP_1"] == "FD"
+    assert out["f"]["SPP_1"] == "FD"
 
 
 def test_build_tipsy_params_from_config_normalizes_mix_sum_and_order() -> None:

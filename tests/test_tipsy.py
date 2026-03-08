@@ -119,6 +119,32 @@ def test_evaluate_tipsy_candidate_happy_path() -> None:
     assert out.leading_species == "SW"
 
 
+def test_evaluate_tipsy_candidate_uses_species_siteprod_fallback_when_missing() -> None:
+    vdyp_curve_df = pd.DataFrame({"age": [30, 80, 120], "volume": [150, 200, 240]})
+    result_si = {
+        "ss": pd.DataFrame({"SITE_INDEX": [18.0, 19.0], "siteprod": [0.0, 0.0]}),
+        "species": {"DR": {"pct": 60.0}},
+    }
+    exclusion = {
+        "min_vol": lambda _code: 140.0,
+        "min_si": lambda _species: 10.0,
+        "excl_leading_species": [],
+        "excl_bec": [],
+    }
+    out = evaluate_tipsy_candidate(
+        sc="SBS_7A",
+        vdyp_curve_df=vdyp_curve_df,
+        result_si=result_si,
+        exclusion=exclusion,
+        min_operable_years=50,
+        si_iqrlo_quantile=0.5,
+        siteprod_si_fallback_by_species={"DR": 14.5},
+    )
+    assert out.eligible is True
+    assert out.si_spr_med == pytest.approx(14.5)
+    assert out.si_spr_iqrlo == pytest.approx(14.5)
+
+
 def test_build_tipsy_input_table_selects_table_key_and_columns() -> None:
     tipsy_params_for_tsa = {
         1001: {
@@ -168,6 +194,33 @@ def test_write_tipsy_input_exports_writes_excel_and_dat(tmp_path: Path) -> None:
     assert "AU" in Path(dat_path).read_text()
 
 
+def test_write_tipsy_input_exports_fails_fast_on_width_overflow(tmp_path: Path) -> None:
+    table = pd.DataFrame(
+        {
+            "AU": [1001],
+            "TBLno": [1001],
+            "Proportion": [10],  # width is 1 char by BatchTIPSY mapping
+            "Regen_Delay": [2],
+            "Density": [900],
+            "Regen_Method": ["P"],
+            "Util_DBH_cm": [12.5],
+            "OAF1": [0.7],
+            "OAF2": [0.95],
+            "FIZ": ["I"],
+            "SPP_1": ["PL"],
+            "PCT_1": [100],
+            "SI": [20.0],
+        }
+    )
+    with pytest.raises(ValueError, match="value overflow.*Proportion"):
+        write_tipsy_input_exports(
+            tipsy_table=table,
+            tsa="08",
+            tipsy_params_path_prefix=str(tmp_path / "tipsy_params_tsa"),
+            dat_path_template=str(tmp_path / "02_input-tsa{tsa}.dat"),
+        )
+
+
 def test_write_tipsy_input_exports_keeps_regen_method_column_aligned(
     tmp_path: Path,
 ) -> None:
@@ -192,6 +245,62 @@ def test_write_tipsy_input_exports_keeps_regen_method_column_aligned(
     assert len(lines) >= 3
     p_positions = [lines[1].index("P"), lines[2].index("P")]
     assert p_positions[0] == p_positions[1]
+
+
+def test_write_tipsy_input_exports_uses_stable_reference_column_starts(
+    tmp_path: Path,
+) -> None:
+    table = pd.DataFrame(
+        {
+            "AU": [22008],
+            "TBLno": [22008],
+            "BEC": ["CWH"],
+            "Proportion": [1],
+            "Regen_Delay": [2],
+            "Density": [900],
+            "Regen_Method": ["P"],
+            "Util_DBH_cm": [12.5],
+            "OAF1": [0.73],
+            "OAF2": [0.95],
+            "FIZ": ["I"],
+            "SPP_1": ["PLC"],
+            "PCT_1": [70],
+            "SI": [9.7],
+            "GW_1": [""],
+            "GW_age_1": [""],
+            "SPP_2": ["HW"],
+            "PCT_2": [20],
+            "GW_2": [""],
+            "GW_age_2": [""],
+            "SPP_3": ["CW"],
+            "PCT_3": [10],
+            "GW_3": [""],
+            "GW_age_3": [""],
+            "SPP_4": [""],
+            "PCT_4": [""],
+            "GW_4": [""],
+            "GW_age_4": [""],
+            "SPP_5": [""],
+            "PCT_5": [""],
+            "GW_5": [""],
+            "GW_age_5": [""],
+        }
+    )
+    _excel_path, dat_path = write_tipsy_input_exports(
+        tipsy_table=table,
+        tsa="k3z",
+        tipsy_params_path_prefix=str(tmp_path / "tipsy_params_tsa"),
+        dat_path_template=str(tmp_path / "02_input-tsa{tsa}.dat"),
+    )
+    row = Path(dat_path).read_text().splitlines()[1]
+    # Validate against the configured fixed 1-based BatchTIPSY ranges.
+    assert row[96:99].strip() == "PLC"  # SPP_1 (97-99)
+    assert row[60:63].strip() == "70"  # PCT_1 (61-63)
+    assert row[107:111].strip() == "9.7"  # SI (108-111)
+    assert row[128:131].strip() == "HW"  # SPP_2 (129-131)
+    assert row[135:137].strip() == "20"  # PCT_2 (136-137)
+    assert row[154:157].strip() == "CW"  # SPP_3 (155-157)
+    assert row[161:163].strip() == "10"  # PCT_3 (162-163)
 
 
 def test_tipsy_stage_output_paths_uses_expected_naming(tmp_path: Path) -> None:
@@ -372,6 +481,85 @@ def test_build_tipsy_params_for_tsa_skips_missing_fit_si_level() -> None:
     assert scsi_au_tsa == {("SBS_7A", "M"): 2000}
     assert au_scsi_tsa == {2000: ("SBS_7A", "M")}
     assert set(tipsy_params_tsa.keys()) == {2000}
+
+
+def test_build_tipsy_params_for_tsa_merges_adjacent_similar_si_curves() -> None:
+    results_for_tsa = [
+        (
+            0,
+            "SBS_7A",
+            {
+                "L": {
+                    "ss": pd.DataFrame(
+                        {
+                            "SITE_INDEX": [16.0],
+                            "siteprod": [15.0],
+                            "BEC_ZONE_CODE": ["SBS"],
+                        }
+                    ),
+                    "species": {"SW": {"pct": 60.0}},
+                },
+                "M": {
+                    "ss": pd.DataFrame(
+                        {
+                            "SITE_INDEX": [17.0],
+                            "siteprod": [16.0],
+                            "BEC_ZONE_CODE": ["SBS"],
+                        }
+                    ),
+                    "species": {"SW": {"pct": 62.0}},
+                },
+                "H": {
+                    "ss": pd.DataFrame(
+                        {
+                            "SITE_INDEX": [24.0],
+                            "siteprod": [20.0],
+                            "BEC_ZONE_CODE": ["SBS"],
+                        }
+                    ),
+                    "species": {"SW": {"pct": 80.0}},
+                },
+            },
+        )
+    ]
+    vdyp_curves_smooth_tsa = pd.DataFrame(
+        {
+            "stratum_code": ["SBS_7A"] * 6,
+            "si_level": ["L", "L", "M", "M", "H", "H"],
+            "age": [80, 120, 80, 120, 80, 120],
+            "volume": [200.0, 260.0, 204.0, 255.0, 320.0, 410.0],
+        }
+    )
+    exclusion = {
+        "min_vol": lambda _code: 50.0,
+        "min_si": lambda _species: 5.0,
+        "excl_leading_species": [],
+        "excl_bec": [],
+    }
+
+    scsi_au_tsa, au_scsi_tsa, tipsy_params_tsa = build_tipsy_params_for_tsa(
+        tsa="08",
+        results_for_tsa=results_for_tsa,
+        si_levels=["L", "M", "H"],
+        vdyp_curves_smooth_tsa=vdyp_curves_smooth_tsa,
+        vdyp_results_for_tsa={
+            0: {"L": {"dummy": 1}, "M": {"dummy": 2}, "H": {"dummy": 3}}
+        },
+        exclusion=exclusion,
+        tipsy_param_builder=lambda au_id, _au_data, _vdyp_out: {"f": {"TBLno": au_id}},
+        min_operable_years=0.0,
+        si_merge_min_common_ages=2,
+        verbose=False,
+        message_fn=lambda *_args: None,
+    )
+
+    assert scsi_au_tsa == {
+        ("SBS_7A", "L"): 2000,
+        ("SBS_7A", "M"): 2000,
+        ("SBS_7A", "H"): 3000,
+    }
+    assert au_scsi_tsa == {2000: ("SBS_7A", "M"), 3000: ("SBS_7A", "H")}
+    assert set(tipsy_params_tsa.keys()) == {2000, 3000}
 
 
 def test_build_tipsy_params_for_tsa_logs_no_species_candidates_warning() -> None:

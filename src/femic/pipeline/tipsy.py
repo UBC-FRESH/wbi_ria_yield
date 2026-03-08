@@ -11,6 +11,139 @@ import numpy as np
 from femic.pipeline.diagnostics import build_timestamped_event
 
 
+DEFAULT_TIPSY_BATCH_COLUMNS_1BASED: dict[str, tuple[int, int]] = {
+    # Canonical BatchTIPSY GUI ranges from user screenshots.
+    "AU": (1, 6),
+    "TBLno": (7, 12),
+    "BEC": (14, 17),
+    "Proportion": (31, 31),
+    "Regen_Delay": (40, 42),
+    "Density": (47, 51),
+    "PCT_1": (61, 63),
+    "Regen_Method": (64, 64),
+    "Util_DBH_cm": (74, 77),
+    "OAF1": (80, 83),
+    "OAF2": (86, 89),
+    "FIZ": (93, 93),
+    "SPP_1": (97, 99),
+    "SI": (108, 111),
+    "GW_1": (113, 116),
+    "GW_age_1": (123, 125),
+    "SPP_2": (129, 131),
+    "PCT_2": (136, 137),
+    "GW_2": (139, 142),
+    "GW_age_2": (149, 151),
+    "SPP_3": (155, 157),
+    "PCT_3": (162, 163),
+    "GW_3": (165, 168),
+    "GW_age_3": (175, 177),
+    "SPP_4": (181, 183),
+    "PCT_4": (188, 189),
+    "GW_4": (191, 194),
+    "GW_age_4": (201, 203),
+    "SPP_5": (207, 209),
+    "PCT_5": (214, 215),
+    "GW_5": (217, 220),
+    "GW_age_5": (229, 231),
+}
+DEFAULT_TIPSY_DAT_ROW_STARTS: dict[str, int] = {
+    col: start - 1 for col, (start, _end) in DEFAULT_TIPSY_BATCH_COLUMNS_1BASED.items()
+}
+DEFAULT_TIPSY_DAT_ROW_WIDTHS: dict[str, int] = {
+    col: (end - start + 1)
+    for col, (start, end) in DEFAULT_TIPSY_BATCH_COLUMNS_1BASED.items()
+}
+DEFAULT_TIPSY_DAT_HEADER_STARTS: dict[str, int] = {
+    **DEFAULT_TIPSY_DAT_ROW_STARTS,
+    "AU": 3,
+}
+_TIPSY_TEXT_COLUMNS = {
+    "BEC",
+    "Regen_Method",
+    "FIZ",
+    "SPP_1",
+    "SPP_2",
+    "SPP_3",
+    "SPP_4",
+    "SPP_5",
+}
+
+
+def _tipsy_dat_widths_from_starts(starts: Mapping[str, int]) -> dict[str, int]:
+    ordered = sorted(starts.items(), key=lambda kv: kv[1])
+    widths: dict[str, int] = {}
+    for idx, (key, start) in enumerate(ordered):
+        next_start = ordered[idx + 1][1] if idx + 1 < len(ordered) else 231
+        widths[key] = int(next_start - start)
+    return widths
+
+
+DEFAULT_TIPSY_DAT_COL_WIDTHS = DEFAULT_TIPSY_DAT_ROW_WIDTHS.copy()
+DEFAULT_TIPSY_DAT_LINE_LENGTH = 231
+
+
+def _format_tipsy_dat_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, (int, np.integer)):
+        return str(int(value))
+    if isinstance(value, (float, np.floating)):
+        if not np.isfinite(float(value)):
+            return ""
+        if float(value).is_integer():
+            return str(int(value))
+        return str(value)
+    return str(value).strip()
+
+
+def _render_tipsy_dat_line(
+    *,
+    values: Mapping[str, Any],
+    starts: Mapping[str, int],
+    widths: Mapping[str, int],
+    left_align_all: bool = False,
+) -> str:
+    line_len = max(starts[col] + widths[col] for col in starts)
+    chars = [" "] * int(line_len)
+    for col, start in starts.items():
+        width = int(widths[col])
+        text = _format_tipsy_dat_value(values.get(col, ""))[:width]
+        if left_align_all or col in _TIPSY_TEXT_COLUMNS or col in {"AU", "TBLno"}:
+            field = text.ljust(width)
+        else:
+            field = text.rjust(width)
+        chars[start : start + width] = list(field)
+    return "".join(chars)
+
+
+def _validate_tipsy_dat_row(
+    *,
+    line: str,
+    values: Mapping[str, Any],
+    starts: Mapping[str, int],
+    widths: Mapping[str, int],
+) -> None:
+    if len(line) != DEFAULT_TIPSY_DAT_LINE_LENGTH:
+        raise ValueError(
+            f"TIPSY DAT row length {len(line)} != expected {DEFAULT_TIPSY_DAT_LINE_LENGTH}"
+        )
+    for col in starts:
+        expected = _format_tipsy_dat_value(values.get(col, ""))
+        width = int(widths[col])
+        if len(expected) > width:
+            raise ValueError(
+                f"TIPSY DAT value overflow for {col}: {expected!r} exceeds width {width}"
+            )
+        start = int(starts[col])
+        actual = line[start : start + width].strip()
+        if expected != actual:
+            raise ValueError(
+                f"TIPSY DAT slice mismatch for {col}: expected={expected!r}, actual={actual!r}"
+            )
+
+
 @dataclass(frozen=True)
 class TIPSYCandidateEvaluation:
     """Eligibility outcome and derived metrics for one stratum+SI candidate."""
@@ -123,25 +256,49 @@ def write_tipsy_input_exports(
     dat_path_template: str = "./data/02_input-tsa{tsa}.dat",
 ) -> tuple[str, str]:
     """Write TIPSY input exports to XLSX and DAT outputs for one TSA."""
+    table = tipsy_table.copy()
+    unnamed_cols = [col for col in table.columns if str(col).startswith("Unnamed:")]
+    if unnamed_cols:
+        table = table.drop(columns=unnamed_cols)
+
     tipsy_excel_path = f"{tipsy_params_path_prefix}{tsa}.xlsx"
     tipsy_dat_path = dat_path_template.format(tsa=tsa)
-    # Keep fixed-width alignment stable across cases so BatchTIPSY column maps
-    # remain reusable (notably when BEC codes are 3-char like CWH).
-    col_space = {
-        col: width
-        for col, width in {"BEC": 4}.items()
-        if col in set(tipsy_table.columns)
-    }
-    tipsy_table.to_excel(
+    table.to_excel(
         tipsy_excel_path,
         index=False,
         sheet_name="TIPSY_inputTBL",
     )
-    tipsy_table.fillna("").to_string(
-        tipsy_dat_path,
-        index=False,
-        col_space=col_space,
-    )
+    ordered_cols = list(DEFAULT_TIPSY_DAT_ROW_STARTS.keys())
+    for col in ordered_cols:
+        if col not in table.columns:
+            table[col] = ""
+    row_starts = {col: DEFAULT_TIPSY_DAT_ROW_STARTS[col] for col in ordered_cols}
+    row_widths = {col: DEFAULT_TIPSY_DAT_ROW_WIDTHS[col] for col in ordered_cols}
+    header_starts = {col: DEFAULT_TIPSY_DAT_HEADER_STARTS[col] for col in ordered_cols}
+    header_widths = _tipsy_dat_widths_from_starts(header_starts)
+    lines = [
+        _render_tipsy_dat_line(
+            values={col: col for col in ordered_cols},
+            starts=header_starts,
+            widths=header_widths,
+            left_align_all=True,
+        )
+    ]
+    for row in table[ordered_cols].itertuples(index=False):
+        row_map = {col: val for col, val in zip(ordered_cols, row)}
+        row_line = _render_tipsy_dat_line(
+            values=row_map,
+            starts=row_starts,
+            widths=row_widths,
+        )
+        _validate_tipsy_dat_row(
+            line=row_line,
+            values=row_map,
+            starts=row_starts,
+            widths=row_widths,
+        )
+        lines.append(row_line)
+    Path(tipsy_dat_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
     return tipsy_excel_path, tipsy_dat_path
 
 
@@ -175,6 +332,7 @@ def evaluate_tipsy_candidate(
     exclusion: Mapping[str, Any],
     min_operable_years: float,
     si_iqrlo_quantile: float,
+    siteprod_si_fallback_by_species: Mapping[str, float] | None = None,
 ) -> TIPSYCandidateEvaluation:
     """Evaluate whether a stratum+SI candidate is usable for TIPSY parameter generation."""
     sc_tokens = sc.split("_")
@@ -219,9 +377,20 @@ def evaluate_tipsy_candidate(
         )
     ss = result_si["ss"]
     si_vri_iqrlo = float(ss.SITE_INDEX.quantile(si_iqrlo_quantile))
-    si_spr_iqrlo = float(ss.siteprod.quantile(si_iqrlo_quantile))
     si_vri_med = float(ss.SITE_INDEX.median())
-    si_spr_med = float(ss.siteprod.median())
+    siteprod_series = ss.get("siteprod")
+    if siteprod_series is None:
+        si_spr_iqrlo = si_vri_iqrlo
+        si_spr_med = si_vri_med
+    else:
+        siteprod_series = siteprod_series.dropna()
+        siteprod_series = siteprod_series[siteprod_series > 0]
+        if siteprod_series.empty:
+            si_spr_iqrlo = si_vri_iqrlo
+            si_spr_med = si_vri_med
+        else:
+            si_spr_iqrlo = float(siteprod_series.quantile(si_iqrlo_quantile))
+            si_spr_med = float(siteprod_series.median())
     species_map: Mapping[str, Any] = result_si.get("species", {})
     if not species_map:
         return TIPSYCandidateEvaluation(
@@ -240,6 +409,15 @@ def evaluate_tipsy_candidate(
             min_si=None,
         )
     leading_species = list(species_map.keys())[0]
+    if (siteprod_series is None) or siteprod_series.empty:
+        fallback_si = None
+        if siteprod_si_fallback_by_species:
+            fallback_si = siteprod_si_fallback_by_species.get(
+                str(leading_species).upper()
+            )
+        if fallback_si is not None and np.isfinite(float(fallback_si)):
+            si_spr_iqrlo = float(fallback_si)
+            si_spr_med = float(fallback_si)
     min_si = float(exclusion["min_si"](leading_species))
     if min(si_vri_iqrlo, si_spr_iqrlo) < min_si:
         return TIPSYCandidateEvaluation(
@@ -319,6 +497,12 @@ def build_tipsy_params_for_tsa(
     append_jsonl_fn: Any = None,
     min_operable_years: float = 50.0,
     si_iqrlo_quantile: float = 0.50,
+    si_merge_enabled: bool = True,
+    si_merge_max_relative_gap: float = 0.08,
+    si_merge_max_window_nrmse: float = 0.12,
+    si_merge_min_common_ages: int = 5,
+    si_merge_age_min: int = 30,
+    si_merge_age_max: int = 250,
     verbose: bool = True,
     message_fn: Any = print,
 ) -> tuple[
@@ -333,6 +517,48 @@ def build_tipsy_params_for_tsa(
 
     vdyp_indexed = vdyp_curves_smooth_tsa.set_index(["stratum_code", "si_level"])
     vdyp_strata = set(vdyp_indexed.index.get_level_values("stratum_code"))
+    siteprod_si_fallback_by_species = getattr(
+        tipsy_param_builder,
+        "siteprod_si_fallback_by_species",
+        None,
+    )
+    if not isinstance(siteprod_si_fallback_by_species, Mapping):
+        siteprod_si_fallback_by_species = None
+
+    def _curve_df(sc_code: str, si_level: str) -> Any | None:
+        try:
+            df_ = vdyp_indexed.loc[sc_code, si_level]
+        except KeyError:
+            return None
+        if not hasattr(df_, "columns") and hasattr(df_, "to_frame"):
+            df_ = df_.to_frame().T
+        return df_
+
+    def _curve_merge_metrics(df_a: Any, df_b: Any) -> tuple[float, float, float]:
+        series_a = (
+            df_a[(df_a["age"] >= si_merge_age_min) & (df_a["age"] <= si_merge_age_max)]
+            .groupby("age")["volume"]
+            .mean()
+        )
+        series_b = (
+            df_b[(df_b["age"] >= si_merge_age_min) & (df_b["age"] <= si_merge_age_max)]
+            .groupby("age")["volume"]
+            .mean()
+        )
+        common_ages = sorted(set(series_a.index).intersection(series_b.index))
+        if len(common_ages) < int(si_merge_min_common_ages):
+            return float("inf"), float("inf"), float("inf")
+        a_vals = series_a.loc[common_ages].values.astype(float)
+        b_vals = series_b.loc[common_ages].values.astype(float)
+        denom = np.maximum(np.maximum(np.abs(a_vals), np.abs(b_vals)), 1e-9)
+        rel_gap = np.abs(a_vals - b_vals) / denom
+        if rel_gap.size == 0:
+            return float("inf"), float("inf"), float("inf")
+        diff = a_vals - b_vals
+        rmse = float(np.sqrt(np.mean(np.square(diff))))
+        scale = float(np.maximum(np.nanmean(np.maximum(a_vals, b_vals)), 1e-9))
+        nrmse = float(rmse / scale)
+        return float(np.nanmax(rel_gap)), rmse, nrmse
 
     for stratumi, sc, result in results_for_tsa:
         message_fn(sc)
@@ -340,22 +566,78 @@ def build_tipsy_params_for_tsa(
             if verbose:
                 message_fn("  missing vdyp curves for stratum", sc)
             continue
+
+        present_levels = [
+            si_level
+            for si_level in si_levels
+            if _curve_df(sc, si_level) is not None
+            and isinstance(result.get(si_level), Mapping)
+        ]
+        merge_groups: list[list[str]] = []
+        if si_merge_enabled and present_levels:
+            for level in present_levels:
+                if not merge_groups:
+                    merge_groups.append([level])
+                    continue
+                prev_level = merge_groups[-1][-1]
+                prev_df = _curve_df(sc, prev_level)
+                cur_df = _curve_df(sc, level)
+                if prev_df is None or cur_df is None:
+                    merge_groups.append([level])
+                    continue
+                gap, rmse, nrmse = _curve_merge_metrics(prev_df, cur_df)
+                if (gap <= float(si_merge_max_relative_gap)) and (
+                    nrmse <= float(si_merge_max_window_nrmse)
+                ):
+                    merge_groups[-1].append(level)
+                    if verbose:
+                        message_fn(
+                            "    merge metrics",
+                            f"{prev_level}+{level}",
+                            f"gap={gap:0.3f}",
+                            f"rmse={rmse:0.1f}",
+                            f"nrmse={nrmse:0.3f}",
+                        )
+                else:
+                    merge_groups.append([level])
+        elif present_levels:
+            merge_groups = [[level] for level in present_levels]
+
+        if merge_groups:
+            message_fn(
+                "  si-groups",
+                ", ".join("[" + "+".join(group) + "]" for group in merge_groups),
+            )
+
+        # Map all SI levels (including non-representatives) to their group representative.
+        representative_for_level: dict[str, str] = {}
+        group_by_representative: dict[str, list[str]] = {}
+        for group in merge_groups:
+            rep = group[len(group) // 2]
+            group_by_representative[rep] = group
+            for level in group:
+                representative_for_level[level] = rep
+
         for i, si_level in enumerate(si_levels, start=1):
-            au = 1000 * i + stratumi
-            result_si = result.get(si_level)
-            if not isinstance(result_si, Mapping):
+            if si_level not in representative_for_level:
                 if verbose:
                     message_fn("  missing fit result for", sc, si_level)
                 continue
-            try:
-                df = vdyp_indexed.loc[sc, si_level]
-            except KeyError:
-                if verbose:
-                    message_fn("  missing vdyp curves for", sc, si_level)
+            rep_level = representative_for_level[si_level]
+            if si_level != rep_level:
                 continue
-            if not hasattr(df, "columns") and hasattr(df, "to_frame"):
-                # Single-row selection can downcast to Series; normalize to DataFrame.
-                df = df.to_frame().T
+            au = 1000 * i + stratumi
+            group_levels = group_by_representative.get(rep_level, [rep_level])
+            result_si = result.get(rep_level)
+            if not isinstance(result_si, Mapping):
+                if verbose:
+                    message_fn("  missing fit result for", sc, rep_level)
+                continue
+            df = _curve_df(sc, rep_level)
+            if df is None:
+                if verbose:
+                    message_fn("  missing vdyp curves for", sc, rep_level)
+                continue
             try:
                 candidate = evaluate_tipsy_candidate(
                     sc=sc,
@@ -364,6 +646,7 @@ def build_tipsy_params_for_tsa(
                     exclusion=exclusion,
                     min_operable_years=min_operable_years,
                     si_iqrlo_quantile=si_iqrlo_quantile,
+                    siteprod_si_fallback_by_species=siteprod_si_fallback_by_species,
                 )
             except _tipsy_candidate_exception_types():
                 message_fn(sc, si_level)
@@ -406,24 +689,23 @@ def build_tipsy_params_for_tsa(
                     message_fn("  ", si_level, "bad bec", candidate.bec)
                 elif verbose and candidate.reason == "no_species_candidates":
                     message_fn("  ", si_level, "no species candidates after filtering")
-                    if (
-                        append_jsonl_fn is not None
-                        and vdyp_curve_events_path is not None
-                    ):
-                        append_jsonl_fn(
-                            vdyp_curve_events_path,
-                            build_tipsy_warning_event(
-                                tsa=tsa,
-                                stratumi=int(stratumi),
-                                sc=sc,
-                                si_level=si_level,
-                                au=int(au),
-                                reason="no_species_candidates",
-                            ),
-                        )
+                if append_jsonl_fn is not None and vdyp_curve_events_path is not None:
+                    append_jsonl_fn(
+                        vdyp_curve_events_path,
+                        build_tipsy_warning_event(
+                            tsa=tsa,
+                            stratumi=int(stratumi),
+                            sc=sc,
+                            si_level=rep_level,
+                            au=int(au),
+                            reason="no_species_candidates",
+                        ),
+                    )
                 continue
 
-            message_fn("  ", si_level, au)
+            message_fn("  ", rep_level, au)
+            if len(group_levels) > 1:
+                message_fn("    merged si levels", "+".join(group_levels))
             message_fn(
                 "    median SI (VRI)               ",
                 ("%2.1f" % candidate.si_vri_med).rjust(4),
@@ -438,10 +720,10 @@ def build_tipsy_params_for_tsa(
             )
             for species, v in candidate.species_map.items():
                 message_fn("    species", species.ljust(3), "%3.0f" % v["pct"])
-            vdyp_result = vdyp_results_for_tsa.get(stratumi, {}).get(si_level)
+            vdyp_result = vdyp_results_for_tsa.get(stratumi, {}).get(rep_level)
             if not isinstance(vdyp_result, dict):
                 if verbose:
-                    message_fn("    missing vdyp result table for", sc, si_level)
+                    message_fn("    missing vdyp result table for", sc, rep_level)
                 if append_jsonl_fn is not None and vdyp_curve_events_path is not None:
                     append_jsonl_fn(
                         vdyp_curve_events_path,
@@ -449,14 +731,15 @@ def build_tipsy_params_for_tsa(
                             tsa=tsa,
                             stratumi=int(stratumi),
                             sc=sc,
-                            si_level=si_level,
+                            si_level=rep_level,
                             au=int(au),
                             reason="missing_vdyp_output",
                         ),
                     )
                 continue
-            scsi_au_tsa[(sc, si_level)] = au
-            au_scsi_tsa[au] = (sc, si_level)
+            for level in group_levels:
+                scsi_au_tsa[(sc, level)] = au
+            au_scsi_tsa[au] = (sc, rep_level)
             tipsy_params_tsa[au] = tipsy_param_builder(au, result_si, vdyp_result)
             message_fn()
     return scsi_au_tsa, au_scsi_tsa, tipsy_params_tsa

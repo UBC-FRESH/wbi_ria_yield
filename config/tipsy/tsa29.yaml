@@ -15,6 +15,13 @@ metadata:
   created_utc: "2026-03-03T00:00:00Z"
   notes: "TSR-informed provisional rules; final calibration should be RESULTS/SPAR opening-level."
 
+species_code_overrides:
+  SX: SW
+  DR: FD
+
+siteprod_si_fallback_by_species:
+  DR: 14.0
+
 defaults:
   e:
     OAF2: 0.95
