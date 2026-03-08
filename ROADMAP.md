@@ -2190,6 +2190,10 @@
   - Woodstock `k3z` (`yield_rows=16162`, `area_rows=218`)
   - Woodstock `tsa29` from reconstructed validation bundle/checkpoint
     (`yield_rows=10050`, `area_rows=147959`).
+- 2026-03-08: Added initial deterministic Patchworks XML fixture parity coverage
+  (`tests/fixtures/fmg/forestmodel_minimal.xml`,
+  `tests/test_fmg_patchworks.py::test_write_forestmodel_xml_matches_fixture`)
+  as the first concrete step toward `P4.2b`.
 - 2026-03-08 next queue: wire a dedicated fmg adapter layer around shared
   curve/treatment classes (`P4.2a`) and extend the current core model to include
-  treatment/transition definitions, then add XML parity checks against legacy fixtures (`P4.2b`).
+  treatment/transition definitions, then expand XML parity checks to legacy-style fixtures (`P4.2b`).

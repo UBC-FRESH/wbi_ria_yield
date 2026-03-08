@@ -2093,3 +2093,11 @@
   - Patchworks `k3z`: `au=14`, `fragments=218`, `curves=54`
   - Woodstock `k3z`: `yield_rows=16162`, `area_rows=218`
   - Woodstock `tsa29` (validation bundle/checkpoint): `yield_rows=10050`, `area_rows=147959`
+
+## 2026-03-08 - Initial XML fixture parity coverage (P4.2b groundwork)
+- Added deterministic Patchworks XML fixture:
+  `tests/fixtures/fmg/forestmodel_minimal.xml`.
+- Added parity test:
+  `tests/test_fmg_patchworks.py::test_write_forestmodel_xml_matches_fixture`,
+  which asserts serialized XML output is byte-identical to fixture content for
+  a stable minimal AU/curve case.
