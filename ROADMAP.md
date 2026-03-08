@@ -128,10 +128,10 @@
   - [x] P6.1a Add run-profile onboarding template for TSA and custom-boundary modes
   - [x] P6.1b Add TIPSY rule starter template for new case config files
   - [x] P6.1c Publish required-input and acceptance checklist in Guides
-- [ ] P6.2 Add one-command case preflight validation
-  - [ ] P6.2a Validate required paths/configs before long compile runs
-  - [ ] P6.2b Emit clear remediation messages for missing prerequisites
-  - [ ] P6.2c Add regression tests for success/failure preflight scenarios
+- [x] P6.2 Add one-command case preflight validation
+  - [x] P6.2a Validate required paths/configs before long compile runs
+  - [x] P6.2b Emit clear remediation messages for missing prerequisites
+  - [x] P6.2c Add regression tests for success/failure preflight scenarios
 - [ ] P6.3 Add student-facing release packaging workflow
   - [ ] P6.3a Emit versioned output bundle for training deployments
   - [ ] P6.3b Add concise handoff notes with commands and QA expectations
@@ -148,6 +148,14 @@
 - Guides navigation now includes a dedicated onboarding page so new-case setup
   is discoverable in published docs.
 - Next queued work starts at `P6.2` (single-command case preflight validation).
+- Completed `P6.2`: added `femic prep validate-case` to run profile-aware
+  prerequisite checks (boundary/path integrity, TIPSY config presence/validity,
+  external dataset presence, log-dir warnings) with remediation messages and
+  optional `--strict-warnings` failure mode.
+- Added regression coverage in `tests/test_case_preflight_cli.py` for preflight
+  success and key failure paths (missing TIPSY config, missing boundary code,
+  strict warnings), and extended docs drift checks for the new CLI options.
+- Next queued work starts at `P6.3` (student-facing release packaging workflow).
 - Phase 5 docs recovery milestone completed locally: added a new Guides section
   (`docs/guides/*`), a notebook-to-guides coverage matrix
   (`docs/guides/legacy_notebook_coverage.csv`), and a legacy traceability page

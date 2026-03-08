@@ -2343,3 +2343,24 @@
   linked onboarding assets from `README.md`.
 - Extended docs contract checks in `tests/test_docs_contract.py` to assert
   onboarding templates exist and remain part of maintained docs structure.
+
+## 2026-03-08 - Phase 6 P6.2: one-command case preflight validation
+- Added a new CLI command: `femic prep validate-case`.
+- `prep validate-case` now validates case prerequisites from a run profile before
+  long compile runs, including:
+  - run-profile parsing/structure validity,
+  - boundary-mode integrity (`selection.boundary_path` / `selection.boundary_code`),
+  - required case TIPSY config presence/validation,
+  - required external source datasets (VRI, VDYP input, TSA boundaries, siteprod),
+  - log directory readiness warnings.
+- Added explicit remediation-oriented error messages for missing prerequisites.
+- Added `--strict-warnings` mode to fail preflight when warnings are present.
+- Updated CLI reference docs with `prep validate-case` options:
+  - `--run-config`, `--tipsy-config-dir`, `--strict-warnings`.
+- Updated onboarding guide to include the new single-command preflight step.
+- Added regression tests in `tests/test_case_preflight_cli.py` covering:
+  - successful validation,
+  - missing TIPSY config failure,
+  - boundary-code required failure,
+  - strict-warning failure behavior.
+- Extended docs contract checks to include `prep validate-case` option drift.
