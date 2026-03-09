@@ -195,10 +195,21 @@
   performs direct DNS/TCP checks against inferred license ports/hosts.
 - Added required `patchworks.spshome` runtime config support and propagated
   `SPSHOME` injection into Wine subprocess env for `matrix-build` runs.
-- Live preflight re-run with updated runtime config now resolves all local file
-  paths correctly; remaining blockers are environment/runtime only:
-  Java unavailable inside Wine context and license server reachability until
-  active UBC VPN session is established.
+- Live validation (2026-03-09): `patchworks preflight` now passes in-container
+  with `SPSHOME` set to the Wine-visible local Patchworks path, but
+  `patchworks matrix-build` still fails internally despite shell return code 0.
+  Current blockers from stderr are:
+  `no mrsidget2_64 in java.library.path`, GUI/X11 peer creation failures
+  (`$DISPLAY` missing), and final license message
+  `Not licensed or no connection to license server`; no `tracks/` output
+  directory is produced.
+- Next queued Phase 7 work: harden matrix-build success detection beyond process
+  return code (stderr signature + required output artifact checks), then resolve
+  runtime prerequisites (headless/GUI mode compatibility and Patchworks native
+  library path) before re-testing VPN/license pass-through.
+- Live preflight now resolves local file paths and Java-in-Wine checks in this
+  container; remaining blockers are matrix runtime dependencies and effective
+  Patchworks licensing at launch time.
 - Phase 6 kickoff complete: added reusable onboarding assets for new cases:
   `config/run_profile.case_template.yaml`, `config/tipsy/template.case.yaml`,
   and `docs/guides/case-onboarding.rst`.

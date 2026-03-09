@@ -3,7 +3,7 @@ patchworks:
   wine_prefix: null
   license_env: SPS_LICENSE_SERVER
   license_value: frst424@auth.spatial.ca
-  spshome: Z:\Program Files\Spatial Planning Systems\Patchworks
+  spshome: Z:\home\gep\projects\wbi_ria_yield\reference\Patchworks
 
 matrix_builder:
   fragments_path: ../output/patchworks_k3z_validated/fragments/fragments.dbf

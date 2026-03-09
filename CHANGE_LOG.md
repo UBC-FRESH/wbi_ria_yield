@@ -2402,3 +2402,15 @@
   runtime/docs/tests accordingly.
 - Updated operator docs to state license validation is performed by Patchworks
   at launch, not by FEMIC preflight.
+
+## 2026-03-09 - Live Patchworks runtime validation follow-up
+- Committed and ran live `femic patchworks preflight` with updated runtime
+  config; preflight now passes with env/config-only validation and no port
+  probing.
+- Updated `config/patchworks.runtime.yaml` `patchworks.spshome` to the actual
+  Wine-visible local install path:
+  `Z:\\home\\gep\\projects\\wbi_ria_yield\\reference\\Patchworks`.
+- Ran `femic patchworks matrix-build`; command wrapper returned code 0 but
+  Patchworks did not produce `tracks/` output and stderr captured runtime
+  blockers: missing `mrsidget2_64` native library, missing X display peer
+  context, and `Not licensed or no connection to license server`.
