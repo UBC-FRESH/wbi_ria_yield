@@ -623,14 +623,6 @@ def forestmodel_definition_to_xml_tree(
             "match": definition.match,
         },
     )
-    et.SubElement(root, "input", definition.input_attributes)
-    et.SubElement(root, "output", definition.output_attributes)
-
-    for define_field in definition.define_fields:
-        attrs = {"field": define_field.field}
-        if define_field.column is not None:
-            attrs["column"] = define_field.column
-        et.SubElement(root, "define", attrs)
 
     curve_ids = sorted([cid for cid in definition.curves if cid != "unity"])
     if "unity" in definition.curves:
@@ -652,6 +644,15 @@ def forestmodel_definition_to_xml_tree(
                 "point",
                 {"x": x_val, "y": y_val},
             )
+
+    for define_field in definition.define_fields:
+        attrs = {"field": define_field.field}
+        if define_field.column is not None:
+            attrs["column"] = define_field.column
+        et.SubElement(root, "define", attrs)
+
+    et.SubElement(root, "input", definition.input_attributes)
+    et.SubElement(root, "output", definition.output_attributes)
 
     for select in definition.selects:
         select_node = et.SubElement(root, "select", {"statement": select.statement})

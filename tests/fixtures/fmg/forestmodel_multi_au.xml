@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE ForestModel SYSTEM "ForestModel.dtd">
 <ForestModel description="FEMIC Patchworks export" horizon="300" year="2026" match="multi">
-  <input block="BLOCK" area="AREA_HA" age="F_AGE" exclude="BLOCK=0" />
-  <output messages="messages.csv" blocks="blocks.csv" features="features.csv" products="products.csv" treatments="treatments.csv" curves="curves.csv" tracknames="tracknames.csv" />
-  <define field="AU" column="AU" />
-  <define field="IFM" column="IFM" />
-  <define field="treatment" />
   <curve id="unity">
     <point x="0" y="1.0" />
   </curve>
@@ -81,6 +76,11 @@
     <point x="1" y="6.0" />
     <point x="10" y="50.0" />
   </curve>
+  <define field="AU" column="AU" />
+  <define field="IFM" column="IFM" />
+  <define field="treatment" />
+  <input block="BLOCK" area="AREA_HA" age="F_AGE" exclude="BLOCK=0" />
+  <output messages="messages.csv" blocks="blocks.csv" features="features.csv" products="products.csv" treatments="treatments.csv" curves="curves.csv" tracknames="tracknames.csv" />
   <select statement="AU eq '1001' and IFM eq 'unmanaged'">
     <features>
       <attribute label="feature.Area.unmanaged">

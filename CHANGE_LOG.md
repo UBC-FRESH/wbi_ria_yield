@@ -2431,3 +2431,15 @@
   explicit and actionable (`Not licensed or no connection to license server`,
   `IP Helper Library GetAdaptersAddresses function failed`, and missing
   output artifacts), instead of silent return-code-only success.
+
+## 2026-03-09 - ForestModel schema-order fix for Matrix Builder
+- User-run Matrix Builder on Windows surfaced a ForestModel parse error:
+  top-level `<input>` placement invalid for the current schema implementation.
+- Updated Patchworks XML serialization order in
+  `src/femic/fmg/patchworks.py` to emit root children as:
+  `curve*`, `define*`, `input`, `output`, `select*`.
+- Regenerated deterministic Patchworks XML fixtures:
+  - `tests/fixtures/fmg/forestmodel_minimal.xml`
+  - `tests/fixtures/fmg/forestmodel_multi_au.xml`
+- Re-exported `output/patchworks_k3z_validated/forestmodel.xml` with corrected
+  element ordering for immediate external Matrix Builder retest.

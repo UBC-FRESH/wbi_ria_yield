@@ -217,6 +217,14 @@
   `Not licensed or no connection to license server`,
   `IP Helper Library GetAdaptersAddresses function failed`, and missing
   matrix output artifacts.
+- Matrix Builder validation from user Windows workstation identified a
+  ForestModel schema-order issue (`<input>` unexpectedly encountered near top of
+  document). Exporter now emits ForestModel child elements in schema-compatible
+  order aligned with current Patchworks samples:
+  curves -> define -> input/output -> select.
+- Regenerated Patchworks fixtures and re-exported
+  `output/patchworks_k3z_validated/forestmodel.xml` with corrected ordering for
+  external Matrix Builder retest.
 - Live preflight now resolves local file paths and Java-in-Wine checks in this
   container; remaining blockers are matrix runtime dependencies and effective
   Patchworks licensing at launch time.
