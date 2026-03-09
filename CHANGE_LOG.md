@@ -2443,3 +2443,13 @@
   - `tests/fixtures/fmg/forestmodel_multi_au.xml`
 - Re-exported `output/patchworks_k3z_validated/forestmodel.xml` with corrected
   element ordering for immediate external Matrix Builder retest.
+
+## 2026-03-09 - Patchworks select-statement AU type fix
+- User Matrix Builder run on Windows surfaced expression typing failure:
+  `AU` (integer) compared against quoted string literal in `<select statement>`.
+- Updated Patchworks exporter to emit numeric AU predicates:
+  `AU eq <integer>` (no quotes), while preserving quoted string comparisons
+  for categorical fields (`IFM`, `treatment`).
+- Regenerated Patchworks fixtures and re-exported
+  `output/patchworks_k3z_validated/forestmodel.xml` with corrected select
+  statement typing.

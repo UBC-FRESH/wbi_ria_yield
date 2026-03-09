@@ -99,6 +99,10 @@ def _as_quoted_literal(value: str) -> str:
     return f"'{text}'"
 
 
+def _au_eq_statement(au_id: int | str) -> str:
+    return f"AU eq {int(au_id)}"
+
+
 def _sanitize_id_component(value: str) -> str:
     text = str(value).strip()
     if not text:
@@ -424,7 +428,7 @@ def build_patchworks_forestmodel_definition(
                 )
         selects.append(
             SelectDefinition(
-                statement=f"AU eq '{au.au_id}' and IFM eq 'unmanaged'",
+                statement=f"{_au_eq_statement(au.au_id)} and IFM eq 'unmanaged'",
                 feature_attributes=tuple(unmanaged_attrs),
                 include_track=True,
             )
@@ -500,7 +504,7 @@ def build_patchworks_forestmodel_definition(
 
         selects.append(
             SelectDefinition(
-                statement=f"AU eq '{au.au_id}' and IFM eq 'managed'",
+                statement=f"{_au_eq_statement(au.au_id)} and IFM eq 'managed'",
                 feature_attributes=tuple(managed_attrs),
                 include_track=True,
                 track_treatment=TreatmentDefinition(
@@ -520,7 +524,7 @@ def build_patchworks_forestmodel_definition(
         selects.append(
             SelectDefinition(
                 statement=(
-                    f"AU eq '{au.au_id}' and IFM eq 'managed' and treatment eq 'CC'"
+                    f"{_au_eq_statement(au.au_id)} and IFM eq 'managed' and treatment eq 'CC'"
                 ),
                 product_attributes=tuple(product_attrs),
             )

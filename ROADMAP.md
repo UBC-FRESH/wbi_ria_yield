@@ -225,6 +225,12 @@
 - Regenerated Patchworks fixtures and re-exported
   `output/patchworks_k3z_validated/forestmodel.xml` with corrected ordering for
   external Matrix Builder retest.
+- Follow-up Windows Matrix Builder parse error identified select expression type
+  mismatch (`AU` integer column compared to string literal). Exporter now emits
+  numeric AU predicates (`AU eq 985501000`) while keeping quoted string
+  predicates for `IFM`/`treatment`.
+- Re-exported K3Z ForestModel XML with numeric AU expressions for immediate
+  external retest.
 - Live preflight now resolves local file paths and Java-in-Wine checks in this
   container; remaining blockers are matrix runtime dependencies and effective
   Patchworks licensing at launch time.

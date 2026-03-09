@@ -81,7 +81,7 @@
   <define field="treatment" />
   <input block="BLOCK" area="AREA_HA" age="F_AGE" exclude="BLOCK=0" />
   <output messages="messages.csv" blocks="blocks.csv" features="features.csv" products="products.csv" treatments="treatments.csv" curves="curves.csv" tracknames="tracknames.csv" />
-  <select statement="AU eq '1001' and IFM eq 'unmanaged'">
+  <select statement="AU eq 1001 and IFM eq 'unmanaged'">
     <features>
       <attribute label="feature.Area.unmanaged">
         <curve idref="unity" />
@@ -104,7 +104,7 @@
     </features>
     <track />
   </select>
-  <select statement="AU eq '1001' and IFM eq 'managed'">
+  <select statement="AU eq 1001 and IFM eq 'managed'">
     <features>
       <attribute label="feature.Area.managed">
         <curve idref="unity" />
@@ -133,7 +133,7 @@
       </treatment>
     </track>
   </select>
-  <select statement="AU eq '1001' and IFM eq 'managed' and treatment eq 'CC'">
+  <select statement="AU eq 1001 and IFM eq 'managed' and treatment eq 'CC'">
     <products>
       <attribute label="product.Treated.managed.CC">
         <curve idref="unity" />
@@ -164,7 +164,7 @@
       </attribute>
     </products>
   </select>
-  <select statement="AU eq '1002' and IFM eq 'unmanaged'">
+  <select statement="AU eq 1002 and IFM eq 'unmanaged'">
     <features>
       <attribute label="feature.Area.unmanaged">
         <curve idref="unity" />
@@ -187,7 +187,7 @@
     </features>
     <track />
   </select>
-  <select statement="AU eq '1002' and IFM eq 'managed'">
+  <select statement="AU eq 1002 and IFM eq 'managed'">
     <features>
       <attribute label="feature.Area.managed">
         <curve idref="unity" />
@@ -216,7 +216,7 @@
       </treatment>
     </track>
   </select>
-  <select statement="AU eq '1002' and IFM eq 'managed' and treatment eq 'CC'">
+  <select statement="AU eq 1002 and IFM eq 'managed' and treatment eq 'CC'">
     <products>
       <attribute label="product.Treated.managed.CC">
         <curve idref="unity" />

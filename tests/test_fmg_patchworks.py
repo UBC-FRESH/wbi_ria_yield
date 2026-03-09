@@ -96,7 +96,7 @@ def test_build_forestmodel_xml_tree_contains_cc_and_curve_refs() -> None:
     assert "feature.Yield.managed.Total" in xml_text
     assert "product.Yield.managed.Total" in xml_text
     assert "product.HarvestedVolume.managed.Total.CC" in xml_text
-    assert "AU eq '985501000'" in xml_text
+    assert "AU eq 985501000" in xml_text
 
 
 def test_build_patchworks_forestmodel_definition_contains_treatment() -> None:
