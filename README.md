@@ -105,6 +105,10 @@ Runtime logs/manifests are written to `vdyp_io/logs/` with run-scoped names:
 `patchworks_matrixbuilder_stdout-<run_id>.log`,
 `patchworks_matrixbuilder_stderr-<run_id>.log`, and
 `patchworks_matrixbuilder_manifest-<run_id>.json`.
+Set both `SPS_LICENSE_SERVER` and `SPSHOME` (or define `patchworks.license_value`
+and `patchworks.spshome` in `config/patchworks.runtime.yaml`). FEMIC preflight
+validates runtime/config state only; Patchworks performs license-server checks
+during launch.
 
 7. Export Woodstock compatibility CSV package:
 

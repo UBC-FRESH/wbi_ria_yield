@@ -8,7 +8,6 @@ import json
 import os
 from pathlib import Path
 import shlex
-import socket
 import subprocess
 from typing import Any
 
@@ -18,7 +17,6 @@ DEFAULT_LICENSE_ENV = "SPS_LICENSE_SERVER"
 DEFAULT_PATCHWORKS_JAR_PATH = Path("reference/Patchworks/patchworks.jar")
 DEFAULT_PATCHWORKS_CONFIG_PATH = Path("config/patchworks.runtime.yaml")
 DEFAULT_PATCHWORKS_LOG_DIR = Path("vdyp_io/logs")
-DEFAULT_LICENSE_PORT = 27000
 
 
 @dataclass(frozen=True)
@@ -30,6 +28,7 @@ class PatchworksRuntimeConfig:
     wine_prefix: Path | None
     license_env: str
     license_value: str
+    spshome: str
     fragments_path: Path
     matrix_output_dir: Path
     forestmodel_xml_path: Path
@@ -42,7 +41,6 @@ class PatchworksPreflightResult:
     config: PatchworksRuntimeConfig
     wine_executable: str | None
     license_host: str | None
-    license_host_ip: str | None
     errors: tuple[str, ...]
     warnings: tuple[str, ...]
 
@@ -134,6 +132,11 @@ def load_patchworks_runtime_config(path: Path) -> PatchworksRuntimeConfig:
             "Missing license value: set patchworks.license_value or export "
             f"{license_env} in environment"
         )
+    spshome = str(patchworks.get("spshome", os.environ.get("SPSHOME", ""))).strip()
+    if not spshome:
+        raise PatchworksConfigError(
+            "Missing Patchworks install home: set patchworks.spshome or export SPSHOME"
+        )
 
     fragments_path = _as_path(
         matrix_builder.get("fragments_path"),
@@ -157,6 +160,7 @@ def load_patchworks_runtime_config(path: Path) -> PatchworksRuntimeConfig:
         wine_prefix=wine_prefix,
         license_env=license_env,
         license_value=license_value,
+        spshome=spshome,
         fragments_path=fragments_path,
         matrix_output_dir=matrix_output_dir,
         forestmodel_xml_path=forestmodel_xml_path,
@@ -233,8 +237,6 @@ def build_appchooser_command_string(config: PatchworksRuntimeConfig) -> str:
 def run_patchworks_preflight(
     *,
     config: PatchworksRuntimeConfig,
-    check_license_reachability: bool = True,
-    license_port: int = DEFAULT_LICENSE_PORT,
 ) -> PatchworksPreflightResult:
     """Run preflight checks before Wine-based Patchworks execution."""
 
@@ -255,7 +257,6 @@ def run_patchworks_preflight(
         errors.append(f"ForestModel XML not found: {config.forestmodel_xml_path}")
 
     license_host: str | None = None
-    license_host_ip: str | None = None
     try:
         _, license_host = parse_license_server(config.license_value)
     except PatchworksConfigError as exc:
@@ -275,29 +276,10 @@ def run_patchworks_preflight(
                 "(command `java -version` failed)"
             )
 
-    if check_license_reachability and license_host:
-        try:
-            license_host_ip = socket.gethostbyname(license_host)
-        except OSError as exc:
-            errors.append(
-                f"License host DNS lookup failed for {license_host}: {exc}. "
-                "Check UBC VPN connectivity first."
-            )
-        else:
-            try:
-                with socket.create_connection((license_host, license_port), timeout=3):
-                    pass
-            except OSError as exc:
-                errors.append(
-                    f"License host {license_host}:{license_port} unreachable: {exc}. "
-                    "Connect to UBC myVPN and retry."
-                )
-
     return PatchworksPreflightResult(
         config=config,
         wine_executable=wine_executable,
         license_host=license_host,
-        license_host_ip=license_host_ip,
         errors=tuple(errors),
         warnings=tuple(warnings),
     )
@@ -306,6 +288,7 @@ def run_patchworks_preflight(
 def _build_base_env(config: PatchworksRuntimeConfig) -> dict[str, str]:
     env = dict(os.environ)
     env[config.license_env] = config.license_value
+    env["SPSHOME"] = config.spshome
     if config.wine_prefix is not None:
         env["WINEPREFIX"] = str(config.wine_prefix)
     return env
@@ -327,9 +310,7 @@ def run_patchworks_command(
 ) -> PatchworksExecutionResult:
     """Execute Patchworks command under Wine and capture logs+manifest."""
 
-    preflight = run_patchworks_preflight(
-        config=config, check_license_reachability=False
-    )
+    preflight = run_patchworks_preflight(config=config)
     if not preflight.ok:
         raise PatchworksConfigError(
             "Patchworks preflight failed prior to execution: "
@@ -381,6 +362,7 @@ def run_patchworks_command(
             "jar_path": str(config.jar_path),
             "license_env": config.license_env,
             "license_value": config.license_value,
+            "spshome": config.spshome,
             "wine_prefix": str(config.wine_prefix) if config.wine_prefix else None,
         },
         "inputs": {

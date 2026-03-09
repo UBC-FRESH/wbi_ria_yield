@@ -2389,3 +2389,16 @@
 - Added tests for release packaging and CLI wiring (`tests/test_release_packaging.py`, `tests/test_cli_main.py`) and expanded docs CLI contract coverage.
 - Updated export workflow docs to include release package generation step.
 - Re-ran `femic patchworks preflight` after runtime-config path fix: artifact-path errors resolved; remaining failures are environment-dependent (`java -version` in Wine and license host reachability without active UBC VPN).
+
+## 2026-03-09 - Patchworks licensing behavior fix (no direct reachability probe)
+- Refactored Patchworks runtime preflight so FEMIC validates environment/config
+  only and no longer performs DNS/TCP reachability probes against license host
+  or inferred ports.
+- Added required `patchworks.spshome` config support (with `SPSHOME` env
+  fallback) and fail-fast validation when missing.
+- Ensured `SPSHOME` is injected into the Wine subprocess environment for
+  `femic patchworks matrix-build` alongside `SPS_LICENSE_SERVER`.
+- Removed CLI `patchworks preflight --skip-license-reachability` and updated
+  runtime/docs/tests accordingly.
+- Updated operator docs to state license validation is performed by Patchworks
+  at launch, not by FEMIC preflight.

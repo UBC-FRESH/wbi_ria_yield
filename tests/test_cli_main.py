@@ -488,6 +488,7 @@ def test_patchworks_preflight_passes(monkeypatch: pytest.MonkeyPatch) -> None:
         jar_path=Path("reference/Patchworks/patchworks.jar"),
         license_env="SPS_LICENSE_SERVER",
         license_value="frst424@auth.spatial.ca",
+        spshome="Z:\\Patchworks",
     )
     monkeypatch.setattr(
         cli_main, "load_patchworks_runtime_config", lambda _path: runtime_cfg
@@ -500,7 +501,6 @@ def test_patchworks_preflight_passes(monkeypatch: pytest.MonkeyPatch) -> None:
             errors=(),
             wine_executable="/usr/bin/wine64",
             license_host="auth.spatial.ca",
-            license_host_ip="127.0.0.1",
         ),
     )
 

@@ -28,6 +28,7 @@ def _write_runtime_config(tmp_path: Path) -> Path:
                 "  wine_prefix: null",
                 "  license_env: SPS_LICENSE_SERVER",
                 "  license_value: frst424@auth.spatial.ca",
+                "  spshome: Z:\\Patchworks",
                 "matrix_builder:",
                 "  fragments_path: data/fragments.dbf",
                 "  output_dir: output/tracks",
@@ -72,6 +73,7 @@ def test_load_patchworks_runtime_config_handles_parent_relative_paths(
                 "  jar_path: ../reference/Patchworks/patchworks.jar",
                 "  license_env: SPS_LICENSE_SERVER",
                 "  license_value: frst424@auth.spatial.ca",
+                "  spshome: Z:\\Patchworks",
                 "matrix_builder:",
                 "  fragments_path: ../output/patchworks_k3z_validated/fragments/fragments.dbf",
                 "  output_dir: ../output/patchworks_k3z_validated/tracks",
@@ -137,10 +139,33 @@ def test_run_patchworks_preflight_reports_missing_assets(
 
     monkeypatch.setattr("femic.patchworks_runtime.find_wine_executable", lambda: None)
 
-    result = run_patchworks_preflight(config=cfg, check_license_reachability=False)
+    result = run_patchworks_preflight(config=cfg)
     assert not result.ok
     assert any("wine64/wine not found" in msg for msg in result.errors)
     assert any("Patchworks jar not found" in msg for msg in result.errors)
+
+
+def test_load_patchworks_runtime_config_requires_spshome(tmp_path: Path) -> None:
+    cfg = tmp_path / "patchworks.runtime.yaml"
+    cfg.write_text(
+        "\n".join(
+            [
+                "patchworks:",
+                "  jar_path: patchworks/patchworks.jar",
+                "  wine_prefix: null",
+                "  license_env: SPS_LICENSE_SERVER",
+                "  license_value: frst424@auth.spatial.ca",
+                "matrix_builder:",
+                "  fragments_path: data/fragments.dbf",
+                "  output_dir: output/tracks",
+                "  forestmodel_xml_path: output/forestmodel.xml",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(PatchworksConfigError, match="Missing Patchworks install home"):
+        load_patchworks_runtime_config(cfg)
 
 
 def test_run_patchworks_command_writes_logs_and_manifest(
@@ -161,7 +186,11 @@ def test_run_patchworks_command_writes_logs_and_manifest(
         "femic.patchworks_runtime.find_wine_executable", lambda: "/usr/bin/wine64"
     )
 
+    observed_env: dict[str, str] = {}
+
     def _fake_subprocess_run(*_args, **_kwargs):
+        nonlocal observed_env
+        observed_env = dict(_kwargs.get("env", {}))
         return SimpleNamespace(returncode=0, stdout="ok", stderr="")
 
     monkeypatch.setattr("femic.patchworks_runtime.subprocess.run", _fake_subprocess_run)
@@ -182,3 +211,6 @@ def test_run_patchworks_command_writes_logs_and_manifest(
     assert manifest["run_id"] == "pwtest"
     assert manifest["returncode"] == 0
     assert "ca.spatial.tracks.builder.Process" in manifest["command_string"]
+    assert manifest["runtime"]["spshome"] == "Z:\\Patchworks"
+    assert observed_env["SPS_LICENSE_SERVER"] == "frst424@auth.spatial.ca"
+    assert observed_env["SPSHOME"] == "Z:\\Patchworks"

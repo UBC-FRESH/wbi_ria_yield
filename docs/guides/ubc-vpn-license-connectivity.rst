@@ -41,10 +41,10 @@ Diagnostic Steps
 
       PYTHONPATH=src python -m femic patchworks preflight --config config/patchworks.runtime.yaml
 
-3. If reachability fails, verify:
+3. If preflight fails, verify:
 
-   - DNS resolution for license host
-   - TCP reachability to license service port
+   - ``SPS_LICENSE_SERVER`` is in ``<user>@<server>`` format
+   - ``SPSHOME`` is set to the Patchworks install path visible to Wine
    - Correct VPN profile/pool and MFA suffix
 
 Failure Signatures
@@ -54,10 +54,16 @@ Failure Signatures
   install Wine runtime in the execution environment.
 - ``Java runtime unavailable inside Wine context``:
   install/configure Windows Java runtime available to Wine.
-- ``License host ... unreachable``:
-  connect/reconnect UBC VPN and retry preflight.
 - ``License value must use '<username>@<server>' format``:
   fix ``patchworks.license_value`` or exported env var content.
+- ``Missing Patchworks install home``:
+  set ``patchworks.spshome`` in runtime config or export ``SPSHOME``.
+
+License Reachability Ownership
+------------------------------
+
+FEMIC preflight validates environment/config only. Patchworks itself performs
+license-server communication at launch time.
 
 Fallback Path
 -------------

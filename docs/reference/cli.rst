@@ -214,7 +214,6 @@ Subcommands
 ``patchworks preflight`` options
 
 - ``--config PATH`` (default: ``config/patchworks.runtime.yaml``)
-- ``--skip-license-reachability``
 
 ``patchworks matrix-build`` options
 

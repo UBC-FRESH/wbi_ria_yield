@@ -189,6 +189,12 @@
   verified `reference/Patchworks/` is now ignored and not tracked in git index;
   remaining queued Phase 7 work is first live VPN+Wine validation against the
   real license server environment.
+- Updated Patchworks runtime licensing behavior to match real Patchworks
+  ownership: `femic patchworks preflight` now validates env/config only
+  (`SPS_LICENSE_SERVER`, `SPSHOME`, Wine/Java/jar/input paths) and no longer
+  performs direct DNS/TCP checks against inferred license ports/hosts.
+- Added required `patchworks.spshome` runtime config support and propagated
+  `SPSHOME` injection into Wine subprocess env for `matrix-build` runs.
 - Live preflight re-run with updated runtime config now resolves all local file
   paths correctly; remaining blockers are environment/runtime only:
   Java unavailable inside Wine context and license server reachability until

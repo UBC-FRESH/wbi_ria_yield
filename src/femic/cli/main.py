@@ -274,11 +274,6 @@ PATCHWORKS_RUN_ID_OPTION = typer.Option(
     help="Optional run identifier for Patchworks runtime logs.",
     show_default=False,
 )
-PATCHWORKS_SKIP_LICENSE_REACHABILITY_OPTION = typer.Option(
-    False,
-    "--skip-license-reachability",
-    help="Skip DNS/TCP reachability test for license server during preflight.",
-)
 VDYP_CURVE_LOG_OPTION = typer.Option(
     Path("vdyp_io/logs/vdyp_curve_events.jsonl"),
     "--curve-log",
@@ -948,7 +943,6 @@ def export_release(
 @patchworks_app.command("preflight")
 def patchworks_preflight(
     config: Path = PATCHWORKS_CONFIG_OPTION,
-    skip_license_reachability: bool = PATCHWORKS_SKIP_LICENSE_REACHABILITY_OPTION,
 ) -> None:
     try:
         runtime_config = load_patchworks_runtime_config(config)
@@ -961,10 +955,7 @@ def patchworks_preflight(
         console.print(f"[red]Patchworks config error:[/red] {exc}")
         raise typer.Exit(code=1) from exc
 
-    result = run_patchworks_preflight(
-        config=runtime_config,
-        check_license_reachability=not skip_license_reachability,
-    )
+    result = run_patchworks_preflight(config=runtime_config)
 
     for message in result.warnings:
         console.print(f"[yellow]Warning:[/yellow] {message}")
@@ -977,13 +968,11 @@ def patchworks_preflight(
         "[green]Patchworks preflight passed[/green] "
         f"jar={runtime_config.jar_path} "
         f"wine={result.wine_executable} "
-        f"license={runtime_config.license_env}={runtime_config.license_value}"
+        f"license={runtime_config.license_env}={runtime_config.license_value} "
+        f"spshome={runtime_config.spshome}"
     )
     if result.license_host:
-        console.print(
-            f"license_host={result.license_host}"
-            + (f" ({result.license_host_ip})" if result.license_host_ip else "")
-        )
+        console.print(f"license_host={result.license_host}")
 
 
 @patchworks_app.command("matrix-build")

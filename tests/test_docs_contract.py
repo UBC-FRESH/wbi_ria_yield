@@ -126,7 +126,7 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
         ),
         (
             ["patchworks", "preflight", "--help"],
-            ["--config", "--skip-license-reachability"],
+            ["--config"],
         ),
         (
             ["patchworks", "matrix-build", "--help"],
