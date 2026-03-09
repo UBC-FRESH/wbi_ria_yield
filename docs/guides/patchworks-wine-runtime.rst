@@ -14,6 +14,7 @@ Prerequisites
 - UBC VPN connectivity if Patchworks license validation requires campus IP.
 - ``SPSHOME`` must point to the Patchworks install root in a Wine-visible
   Windows path (for example ``Z:\\...``).
+- If ``patchworks.use_xvfb: true``, ``xvfb-run`` must be installed on PATH.
 
 Config File
 -----------
@@ -28,6 +29,7 @@ Use ``config/patchworks.runtime.yaml``:
      license_env: SPS_LICENSE_SERVER
      license_value: frst424@auth.spatial.ca
      spshome: Z:\\Program Files\\Spatial Planning Systems\\Patchworks
+     use_xvfb: false
 
    matrix_builder:
      fragments_path: output/patchworks_k3z_validated/fragments/fragments.dbf
@@ -67,6 +69,9 @@ Each run writes:
 - ``vdyp_io/logs/patchworks_matrixbuilder_manifest-<run_id>.json``
 
 The manifest includes command string, return code, config paths, and log paths.
+Matrix runs now fail hard when fatal runtime signatures are detected in process
+output (for example licensing/native-library failures) or when matrix output
+artifacts are missing/empty.
 
 Notes
 -----
@@ -75,5 +80,7 @@ Notes
   artifacts and repository source control.
 - FEMIC preflight validates environment/config only; Patchworks performs license
   server checks during launch.
+- When running in headless Linux, set ``patchworks.use_xvfb: true`` to wrap
+  Wine invocation in ``xvfb-run -a``.
 - Wine path translation uses the ``Z:`` drive mapping (for example
   ``/home/gep/...`` -> ``Z:\\home\\gep\\...``).

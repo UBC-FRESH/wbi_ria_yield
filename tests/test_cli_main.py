@@ -533,6 +533,7 @@ def test_patchworks_matrix_build_emits_logs(monkeypatch: pytest.MonkeyPatch) -> 
             manifest_path=Path(
                 "vdyp_io/logs/patchworks_matrixbuilder_manifest-pwtest.json"
             ),
+            failures=(),
         ),
     )
 

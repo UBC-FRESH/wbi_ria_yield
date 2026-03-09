@@ -17,6 +17,14 @@ DEFAULT_LICENSE_ENV = "SPS_LICENSE_SERVER"
 DEFAULT_PATCHWORKS_JAR_PATH = Path("reference/Patchworks/patchworks.jar")
 DEFAULT_PATCHWORKS_CONFIG_PATH = Path("config/patchworks.runtime.yaml")
 DEFAULT_PATCHWORKS_LOG_DIR = Path("vdyp_io/logs")
+FATAL_MATRIX_STDERR_PATTERNS = (
+    "no mrsidget2_64 in java.library.path",
+    "not licensed or no connection to license server",
+    "couldn't create component peer",
+    "$display is set correctly",
+    "sps home directory not found, installation not complete",
+    "ip helper library getadaptersaddresses function failed",
+)
 
 
 @dataclass(frozen=True)
@@ -29,6 +37,7 @@ class PatchworksRuntimeConfig:
     license_env: str
     license_value: str
     spshome: str
+    use_xvfb: bool
     fragments_path: Path
     matrix_output_dir: Path
     forestmodel_xml_path: Path
@@ -60,6 +69,7 @@ class PatchworksExecutionResult:
     stdout_log_path: Path
     stderr_log_path: Path
     manifest_path: Path
+    failures: tuple[str, ...]
 
 
 class PatchworksConfigError(ValueError):
@@ -137,6 +147,7 @@ def load_patchworks_runtime_config(path: Path) -> PatchworksRuntimeConfig:
         raise PatchworksConfigError(
             "Missing Patchworks install home: set patchworks.spshome or export SPSHOME"
         )
+    use_xvfb = bool(patchworks.get("use_xvfb", False))
 
     fragments_path = _as_path(
         matrix_builder.get("fragments_path"),
@@ -161,6 +172,7 @@ def load_patchworks_runtime_config(path: Path) -> PatchworksRuntimeConfig:
         license_env=license_env,
         license_value=license_value,
         spshome=spshome,
+        use_xvfb=use_xvfb,
         fragments_path=fragments_path,
         matrix_output_dir=matrix_output_dir,
         forestmodel_xml_path=forestmodel_xml_path,
@@ -220,9 +232,14 @@ def build_matrix_builder_command_string(config: PatchworksRuntimeConfig) -> str:
     fragments = to_wine_windows_path(config.fragments_path)
     output_dir = to_wine_windows_path(config.matrix_output_dir)
     forestmodel_xml = to_wine_windows_path(config.forestmodel_xml_path)
+    spshome = config.spshome
+    lib_dir = f"{spshome}\\lib"
     return (
         f"cd /d {jar_dir} && "
-        "java -jar patchworks.jar ca.spatial.tracks.builder.Process "
+        f'set "SPSHOME={spshome}" && '
+        f'set "PATH=%PATH%;{spshome};{lib_dir}" && '
+        f'java -Djava.library.path="{lib_dir}" -jar patchworks.jar '
+        "ca.spatial.tracks.builder.Process "
         f'"{fragments}" "{output_dir}" "{forestmodel_xml}"'
     )
 
@@ -231,7 +248,14 @@ def build_appchooser_command_string(config: PatchworksRuntimeConfig) -> str:
     """Build Windows CMD command to open Patchworks app chooser."""
 
     jar_dir = to_wine_windows_path(config.jar_path.parent)
-    return f"cd /d {jar_dir} && java -jar patchworks.jar"
+    spshome = config.spshome
+    lib_dir = f"{spshome}\\lib"
+    return (
+        f"cd /d {jar_dir} && "
+        f'set "SPSHOME={spshome}" && '
+        f'set "PATH=%PATH%;{spshome};{lib_dir}" && '
+        f'java -Djava.library.path="{lib_dir}" -jar patchworks.jar'
+    )
 
 
 def run_patchworks_preflight(
@@ -294,6 +318,34 @@ def _build_base_env(config: PatchworksRuntimeConfig) -> dict[str, str]:
     return env
 
 
+def _build_launch_command(
+    *,
+    wine_executable: str,
+    command_string: str,
+    use_xvfb: bool,
+) -> tuple[str, ...]:
+    command: tuple[str, ...] = (wine_executable, "cmd", "/c", command_string)
+    if use_xvfb:
+        xvfb_run = shutil_which("xvfb-run")
+        if xvfb_run is None:
+            raise PatchworksConfigError(
+                "patchworks.use_xvfb=true but xvfb-run is not available on PATH"
+            )
+        command = (xvfb_run, "-a", *command)
+    return command
+
+
+def _matrix_output_ready(path: Path) -> bool:
+    return path.exists() and any(path.iterdir())
+
+
+def _detect_fatal_output(output_text: str) -> tuple[str, ...]:
+    stderr_lower = output_text.lower()
+    return tuple(
+        pattern for pattern in FATAL_MATRIX_STDERR_PATTERNS if pattern in stderr_lower
+    )
+
+
 def _resolve_run_id(run_id: str | None) -> str:
     if run_id and run_id.strip():
         return run_id.strip()
@@ -337,7 +389,11 @@ def run_patchworks_command(
         if interactive
         else build_matrix_builder_command_string(config)
     )
-    command = (preflight.wine_executable, "cmd", "/c", command_string)
+    command = _build_launch_command(
+        wine_executable=preflight.wine_executable,
+        command_string=command_string,
+        use_xvfb=config.use_xvfb,
+    )
 
     proc = subprocess.run(
         list(command),
@@ -350,19 +406,34 @@ def run_patchworks_command(
     stdout_log.write_text(proc.stdout or "", encoding="utf-8")
     stderr_log.write_text(proc.stderr or "", encoding="utf-8")
 
+    failures: list[str] = []
+    output_for_scan = (proc.stderr or "") + "\n" + (proc.stdout or "")
+    fatal_stderr_matches = _detect_fatal_output(output_for_scan)
+    if fatal_stderr_matches:
+        failures.append(
+            "fatal stderr signatures detected: " + ", ".join(fatal_stderr_matches)
+        )
+    if not interactive and not _matrix_output_ready(config.matrix_output_dir):
+        failures.append(
+            f"matrix output directory missing or empty: {config.matrix_output_dir}"
+        )
+
+    effective_returncode = proc.returncode if not failures else 1
+
     manifest_payload = {
         "run_id": effective_run_id,
         "timestamp_utc": datetime.now(UTC).isoformat(),
         "interactive": interactive,
         "command": list(command),
         "command_string": command_string,
-        "returncode": proc.returncode,
+        "returncode": effective_returncode,
         "runtime": {
             "wine_executable": preflight.wine_executable,
             "jar_path": str(config.jar_path),
             "license_env": config.license_env,
             "license_value": config.license_value,
             "spshome": config.spshome,
+            "use_xvfb": config.use_xvfb,
             "wine_prefix": str(config.wine_prefix) if config.wine_prefix else None,
         },
         "inputs": {
@@ -374,6 +445,7 @@ def run_patchworks_command(
             "stdout": str(stdout_log),
             "stderr": str(stderr_log),
         },
+        "failures": failures,
     }
     manifest_path.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
 
@@ -381,10 +453,11 @@ def run_patchworks_command(
         run_id=effective_run_id,
         command=command,
         command_string=command_string,
-        returncode=proc.returncode,
+        returncode=effective_returncode,
         stdout_log_path=stdout_log,
         stderr_log_path=stderr_log,
         manifest_path=manifest_path,
+        failures=tuple(failures),
     )
 
 

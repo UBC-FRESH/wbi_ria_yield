@@ -207,6 +207,16 @@
   return code (stderr signature + required output artifact checks), then resolve
   runtime prerequisites (headless/GUI mode compatibility and Patchworks native
   library path) before re-testing VPN/license pass-through.
+- Completed matrix-build hardening pass:
+  - `patchworks.use_xvfb` config support (wraps launch with `xvfb-run -a`);
+  - Windows-side `SPSHOME`/`PATH` injection plus `-Djava.library.path` in
+    java launch command;
+  - deterministic failure promotion when fatal runtime signatures are found in
+    process output or when matrix output directory is missing/empty.
+- Live rerun now fails deterministically with explicit blockers:
+  `Not licensed or no connection to license server`,
+  `IP Helper Library GetAdaptersAddresses function failed`, and missing
+  matrix output artifacts.
 - Live preflight now resolves local file paths and Java-in-Wine checks in this
   container; remaining blockers are matrix runtime dependencies and effective
   Patchworks licensing at launch time.

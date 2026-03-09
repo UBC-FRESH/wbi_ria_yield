@@ -1012,6 +1012,8 @@ def patchworks_matrix_build(
     console.print(f"stdout_log: {result.stdout_log_path}")
     console.print(f"stderr_log: {result.stderr_log_path}")
     console.print(f"manifest: {result.manifest_path}")
+    for failure in result.failures:
+        console.print(f"[red]Runtime failure:[/red] {failure}")
     if result.returncode != 0:
         raise typer.Exit(code=result.returncode)
 

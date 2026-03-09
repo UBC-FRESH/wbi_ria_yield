@@ -128,7 +128,8 @@ def test_build_appchooser_command_string_points_to_patchworks_jar(
     cfg_path = _write_runtime_config(tmp_path)
     cfg = load_patchworks_runtime_config(cfg_path)
     cmd = build_appchooser_command_string(cfg)
-    assert "java -jar patchworks.jar" in cmd
+    assert "java -Djava.library.path=" in cmd
+    assert "-jar patchworks.jar" in cmd
 
 
 def test_run_patchworks_preflight_reports_missing_assets(
@@ -181,6 +182,7 @@ def test_run_patchworks_command_writes_logs_and_manifest(
     cfg.forestmodel_xml_path.parent.mkdir(parents=True, exist_ok=True)
     cfg.forestmodel_xml_path.touch()
     cfg.matrix_output_dir.mkdir(parents=True, exist_ok=True)
+    (cfg.matrix_output_dir / "tracks.bin").write_text("ok", encoding="utf-8")
 
     monkeypatch.setattr(
         "femic.patchworks_runtime.find_wine_executable", lambda: "/usr/bin/wine64"
@@ -214,3 +216,37 @@ def test_run_patchworks_command_writes_logs_and_manifest(
     assert manifest["runtime"]["spshome"] == "Z:\\Patchworks"
     assert observed_env["SPS_LICENSE_SERVER"] == "frst424@auth.spatial.ca"
     assert observed_env["SPSHOME"] == "Z:\\Patchworks"
+    assert not result.failures
+
+
+def test_run_patchworks_command_fails_on_fatal_stderr_signature(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cfg_path = _write_runtime_config(tmp_path)
+    cfg = load_patchworks_runtime_config(cfg_path)
+    cfg.jar_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.jar_path.touch()
+    cfg.fragments_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.fragments_path.touch()
+    cfg.forestmodel_xml_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.forestmodel_xml_path.touch()
+    cfg.matrix_output_dir.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setattr(
+        "femic.patchworks_runtime.find_wine_executable", lambda: "/usr/bin/wine64"
+    )
+
+    def _fake_subprocess_run(*_args, **_kwargs):
+        return SimpleNamespace(
+            returncode=0,
+            stdout="",
+            stderr="Not licensed or no connection to license server",
+        )
+
+    monkeypatch.setattr("femic.patchworks_runtime.subprocess.run", _fake_subprocess_run)
+
+    result = run_patchworks_command(
+        config=cfg, interactive=False, log_dir=tmp_path / "logs", run_id="pwfatal"
+    )
+    assert result.returncode == 1
+    assert any("fatal stderr signatures detected" in x for x in result.failures)

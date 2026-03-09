@@ -2414,3 +2414,20 @@
   Patchworks did not produce `tracks/` output and stderr captured runtime
   blockers: missing `mrsidget2_64` native library, missing X display peer
   context, and `Not licensed or no connection to license server`.
+
+## 2026-03-09 - Patchworks matrix-build hardening + headless launch support
+- Added `patchworks.use_xvfb` runtime config support; when enabled FEMIC wraps
+  Wine launch with `xvfb-run -a` for headless environments.
+- Updated Patchworks command assembly to inject Windows-side runtime vars before
+  Java launch:
+  - `set "SPSHOME=..."`
+  - `set "PATH=%PATH%;<SPSHOME>;<SPSHOME>\\lib"`
+  - `java -Djava.library.path="<SPSHOME>\\lib" -jar patchworks.jar ...`
+- Added deterministic matrix-build failure detection:
+  - scan combined process output for fatal signatures (licensing/native runtime
+    failures),
+  - require non-empty matrix output directory for non-interactive runs.
+- Installed `xvfb` in the container and re-ran matrix-build; failure is now
+  explicit and actionable (`Not licensed or no connection to license server`,
+  `IP Helper Library GetAdaptersAddresses function failed`, and missing
+  output artifacts), instead of silent return-code-only success.
