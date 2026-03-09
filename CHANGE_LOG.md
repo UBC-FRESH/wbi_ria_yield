@@ -2453,3 +2453,12 @@
 - Regenerated Patchworks fixtures and re-exported
   `output/patchworks_k3z_validated/forestmodel.xml` with corrected select
   statement typing.
+
+## 2026-03-09 - Patchworks XML header mode alignment (XSD over DTD)
+- Updated Patchworks XML writer to emit the XSD model hint used by current
+  Patchworks sample models:
+  `<?xml-model href="https://www.spatial.ca/ForestModel.xsd"?>`.
+- Removed legacy DTD DOCTYPE header emission from generated ForestModel XML to
+  avoid parser-mode/order conflicts observed in Matrix Builder.
+- Regenerated K3Z ForestModel export and updated tests expecting XML header
+  content accordingly.

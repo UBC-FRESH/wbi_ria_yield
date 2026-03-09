@@ -231,6 +231,10 @@
   predicates for `IFM`/`treatment`.
 - Re-exported K3Z ForestModel XML with numeric AU expressions for immediate
   external retest.
+- Additional Windows Matrix Builder validation shows schema engine mismatch with
+  legacy DTD header expectations. Exporter now emits Patchworks XSD model hint
+  header (`<?xml-model href="https://www.spatial.ca/ForestModel.xsd"?>`) in
+  place of the old DOCTYPE line to align with 2024/2025 sample model format.
 - Live preflight now resolves local file paths and Java-in-Wine checks in this
   container; remaining blockers are matrix runtime dependencies and effective
   Patchworks licensing at launch time.

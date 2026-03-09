@@ -413,7 +413,7 @@ def test_export_patchworks_package_writes_xml_and_fragments(
     assert result.forestmodel_xml_path.is_file()
     assert result.fragments_shapefile_path.is_file()
     xml_text = result.forestmodel_xml_path.read_text(encoding="utf-8")
-    assert '<!DOCTYPE ForestModel SYSTEM "ForestModel.dtd">' in xml_text
+    assert '<?xml-model href="https://www.spatial.ca/ForestModel.xsd"?>' in xml_text
     assert "feature.Yield.unmanaged.Total" in xml_text
     gdf = gpd.read_file(result.fragments_shapefile_path)
     assert set(["BLOCK", "AREA_HA", "F_AGE", "AU", "IFM"]).issubset(gdf.columns)

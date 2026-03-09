@@ -682,14 +682,14 @@ def forestmodel_definition_to_xml_tree(
 
 
 def write_forestmodel_xml(*, root: et.Element, path: Path) -> None:
-    """Write ForestModel XML tree with Patchworks DTD header."""
+    """Write ForestModel XML tree with Patchworks XSD model hint."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tree = et.ElementTree(root)
     et.indent(tree, space="  ")
     xml_body = et.tostring(root, encoding="unicode")
     payload = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<!DOCTYPE ForestModel SYSTEM "ForestModel.dtd">\n'
+        '<?xml-model href="https://www.spatial.ca/ForestModel.xsd"?>\n'
         f"{xml_body}\n"
     )
     path.write_text(payload, encoding="utf-8")
