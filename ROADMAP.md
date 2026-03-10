@@ -208,7 +208,7 @@
   - [x] P9.1a Update visible project title strings (README/docs/CITATION) to `femic`
   - [x] P9.1b Add explicit transition note ("formerly `wbi_ria_yield`") where needed
   - [x] P9.1c Preserve historical provenance references in roadmap/changelog entries
-- [ ] P9.2 Update URL and publication endpoints to new repository slug
+- [x] P9.2 Update URL and publication endpoints to new repository slug
   - [x] P9.2a Update in-repo GitHub links to `github.com/UBC-FRESH/femic`
   - [x] P9.2b Update published docs URL references to `ubc-fresh.github.io/femic`
   - [x] P9.2c Validate GitHub Pages deployment behavior after rename cutover
@@ -216,10 +216,10 @@
   - [x] P9.3a Replace `wbi_ria_yield` absolute path references with config-relative/env-driven paths
   - [x] P9.3b Revalidate Patchworks runtime preflight/build commands using updated paths
   - [x] P9.3c Add/adjust regression checks for path portability expectations
-- [ ] P9.4 Perform legacy-slug sweep and cleanup policy enforcement
-  - [ ] P9.4a Clear non-historical `wbi_ria_yield` references from source/docs/config
-  - [ ] P9.4b Define notebook output cleanup policy for stale absolute-path traces
-  - [ ] P9.4c Keep historical slug mentions only where audit trail requires them
+- [x] P9.4 Perform legacy-slug sweep and cleanup policy enforcement
+  - [x] P9.4a Clear non-historical `wbi_ria_yield` references from source/docs/config
+  - [x] P9.4b Define notebook output cleanup policy for stale absolute-path traces
+  - [x] P9.4c Keep historical slug mentions only where audit trail requires them
 - [x] P9.5 Execute cutover workflow and release validation
   - [x] P9.5a Start rebrand work on dedicated branch `feature/rebrand-femic`
   - [x] P9.5b Run full validation gates before merge
@@ -2752,3 +2752,14 @@
     `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true`.
   - Upgraded `actions/upload-pages-artifact` from `@v3` to `@v4`.
   - Marked `P9.2c` complete.
+- 2026-03-10 (Phase 9 closure pass): completed legacy-slug sweep enforcement
+  and notebook-output cleanup policy so rebrand phase can be closed.
+  - Added `Notebook Output Cleanup Policy` section to
+    `docs/guides/legacy-traceability.rst` with explicit output-clearing guidance
+    and `nbconvert --clear-output` command.
+  - Added docs contract checks in `tests/test_docs_contract.py` for:
+    - required notebook cleanup policy section presence,
+    - legacy slug reference restrictions (allowed in audit-trail files only).
+  - Removed remaining transition slug mention from `README.md` to keep active
+    user-facing docs/config free of historical slug references.
+  - Marked complete: `P9.2`, `P9.4a`, `P9.4b`, `P9.4c`, and parent `P9.4`.

@@ -46,3 +46,25 @@ Retired Guidance
 Rows marked ``retired`` capture legacy exploratory notes (for example explicitly
 failed historical attempts) that are preserved for context but not recommended
 as active workflow.
+
+Notebook Output Cleanup Policy
+------------------------------
+
+Legacy notebooks can embed host-local absolute paths (for example user home
+paths captured in traceback/output cells). To keep the repository portable and
+avoid stale machine-specific leakage:
+
+- Treat notebook outputs as ephemeral by default.
+- Before committing notebook edits, clear outputs and execution counts unless an
+  output snapshot is intentionally required for provenance.
+- If a provenance snapshot is intentionally retained, sanitize host-local path
+  fragments when practical and document the reason in ``CHANGE_LOG.md``.
+- Keep legacy slug/path history in audit-trail documents only
+  (for example ``ROADMAP.md`` and ``CHANGE_LOG.md``), not in active runtime
+  config or user-facing workflow instructions.
+
+Recommended cleanup command:
+
+.. code-block:: bash
+
+   jupyter nbconvert --clear-output --inplace 00_data-prep.ipynb 01a_run-tsa.ipynb 01b_run-tsa.ipynb

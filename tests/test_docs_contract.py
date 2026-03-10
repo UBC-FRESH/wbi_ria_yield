@@ -37,6 +37,7 @@ NOTEBOOKS = [
     Path("01a_run-tsa.ipynb"),
     Path("01b_run-tsa.ipynb"),
 ]
+LEGACY_SLUG = "wbi_ria_yield"
 
 runner = CliRunner()
 
@@ -218,3 +219,51 @@ def test_k3z_sample_model_docs_keep_required_sections() -> None:
         assert heading in lineage_text, (
             f"k3z-metadata-lineage.rst missing required section: {heading}"
         )
+
+
+def test_legacy_traceability_docs_include_notebook_cleanup_policy() -> None:
+    traceability_text = (GUIDES_ROOT / "legacy-traceability.rst").read_text()
+    assert "Notebook Output Cleanup Policy" in traceability_text
+    assert "jupyter nbconvert --clear-output --inplace" in traceability_text
+
+
+def test_legacy_slug_references_are_limited_to_audit_trail_files() -> None:
+    allowed_paths = {
+        Path("ROADMAP.md"),
+        Path("CHANGE_LOG.md"),
+    }
+    candidate_files = [
+        Path("README.md"),
+        Path("CITATION.cff"),
+        Path("pyproject.toml"),
+        Path(".github/workflows/docs-pages.yml"),
+    ]
+    allowed_suffixes = {
+        ".py",
+        ".rst",
+        ".md",
+        ".yaml",
+        ".yml",
+        ".toml",
+        ".cff",
+        ".json",
+        ".txt",
+    }
+    for root in (Path("src"), Path("docs"), Path("config")):
+        candidate_files.extend(
+            path
+            for path in root.rglob("*")
+            if path.is_file() and path.suffix.lower() in allowed_suffixes
+        )
+
+    offenders: list[str] = []
+    for path in candidate_files:
+        if path in allowed_paths:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if LEGACY_SLUG in text:
+            offenders.append(str(path))
+
+    assert not offenders, "legacy slug appears outside audit-trail files: " + ", ".join(
+        offenders
+    )

@@ -2861,3 +2861,18 @@
   - upgrading `actions/upload-pages-artifact` from `@v3` to `@v4`.
 - Updated roadmap status:
   - marked `P9.2c` complete.
+
+## 2026-03-10 - Phase 9 closure pass (legacy-slug sweep + notebook policy)
+- Completed final rebrand cleanup and policy enforcement to close Phase 9:
+  - removed residual transition slug mention from `README.md` so active
+    user-facing docs/config no longer reference `wbi_ria_yield`,
+  - added `Notebook Output Cleanup Policy` to
+    `docs/guides/legacy-traceability.rst` with explicit
+    `jupyter nbconvert --clear-output --inplace ...` guidance,
+  - added docs contract checks in `tests/test_docs_contract.py` to enforce:
+    - presence of the notebook cleanup policy section,
+    - legacy slug references restricted to audit-trail files only
+      (`ROADMAP.md`, `CHANGE_LOG.md`).
+- Updated roadmap status:
+  - marked `P9.2` complete,
+  - marked `P9.4a`, `P9.4b`, `P9.4c`, and parent `P9.4` complete.

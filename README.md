@@ -1,7 +1,5 @@
 # femic
 
-Formerly `wbi_ria_yield` (repository rename transition in progress).
-
 [![DOI](https://zenodo.org/badge/430531073.svg)](https://zenodo.org/badge/latestdoi/430531073)
 
 ## Documentation
