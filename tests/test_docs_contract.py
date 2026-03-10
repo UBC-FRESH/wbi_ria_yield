@@ -112,7 +112,14 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
         (["tsa", "post-tipsy", "--help"], ["--tsa", "--run-id", "--log-dir"]),
         (
             ["export", "patchworks", "--help"],
-            ["--bundle-dir", "--checkpoint", "--cc-transition-ifm"],
+            [
+                "--bundle-dir",
+                "--checkpoint",
+                "--cc-transition-ifm",
+                "--ifm-source-col",
+                "--ifm-threshold",
+                "--ifm-target-managed-share",
+            ],
         ),
         (
             ["export", "release", "--help"],
@@ -131,6 +138,17 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
         (
             ["patchworks", "matrix-build", "--help"],
             ["--config", "--log-dir", "--run-id", "--interactive"],
+        ),
+        (
+            ["patchworks", "build-blocks", "--help"],
+            [
+                "--config",
+                "--model-dir",
+                "--fragments-shp",
+                "--topology-radius",
+                "--with-topology",
+                "--no-topology",
+            ],
         ),
     ]
 

@@ -18,6 +18,10 @@ from femic.fmg import (
     DEFAULT_CC_TRANSITION_IFM,
     DEFAULT_FRAGMENTS_CRS,
     DEFAULT_HORIZON_YEARS,
+    DEFAULT_IFM_SOURCE_COL,
+    DEFAULT_IFM_TARGET_MANAGED_SHARE,
+    DEFAULT_IFM_THRESHOLD,
+    DEFAULT_SERAL_STAGE_CONFIG_PATH,
     DEFAULT_START_YEAR,
     DEFAULT_WOODSTOCK_OUTPUT_DIR,
     export_patchworks_package,
@@ -27,6 +31,7 @@ from femic.patchworks_runtime import (
     DEFAULT_PATCHWORKS_CONFIG_PATH,
     DEFAULT_PATCHWORKS_LOG_DIR,
     PatchworksConfigError,
+    build_patchworks_blocks_dataset,
     format_command_for_display,
     load_patchworks_runtime_config,
     run_patchworks_command,
@@ -78,7 +83,7 @@ export_app = typer.Typer(
 patchworks_app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
-    help="Run proprietary Patchworks Matrix Builder via Wine.",
+    help="Run proprietary Patchworks Matrix Builder (Wine on Linux, native on Windows).",
 )
 console = Console()
 
@@ -215,6 +220,42 @@ EXPORT_FRAGMENTS_CRS_OPTION = typer.Option(
     "--fragments-crs",
     help="CRS assigned to exported fragments shapefile.",
 )
+EXPORT_IFM_SOURCE_COL_OPTION = typer.Option(
+    DEFAULT_IFM_SOURCE_COL,
+    "--ifm-source-col",
+    help=(
+        "Optional checkpoint column to use for managed/unmanaged assignment "
+        "(for example: thlb_raw)."
+    ),
+    show_default=False,
+)
+EXPORT_IFM_THRESHOLD_OPTION = typer.Option(
+    DEFAULT_IFM_THRESHOLD,
+    "--ifm-threshold",
+    help=(
+        "Optional numeric threshold applied to the IFM source column "
+        "(managed when value > threshold)."
+    ),
+    show_default=False,
+)
+EXPORT_IFM_TARGET_MANAGED_SHARE_OPTION = typer.Option(
+    DEFAULT_IFM_TARGET_MANAGED_SHARE,
+    "--ifm-target-managed-share",
+    help=(
+        "Optional target managed fraction by stand count (0<share<1). "
+        "When set, top-N stands by IFM source value are marked managed."
+    ),
+    show_default=False,
+)
+EXPORT_SERAL_STAGE_CONFIG_OPTION = typer.Option(
+    DEFAULT_SERAL_STAGE_CONFIG_PATH,
+    "--seral-stage-config",
+    help=(
+        "Optional YAML file defining per-AU seral-stage age boundaries for "
+        "ForestModel export."
+    ),
+    show_default=False,
+)
 EXPORT_WOODSTOCK_OUTPUT_DIR_OPTION = typer.Option(
     DEFAULT_WOODSTOCK_OUTPUT_DIR,
     "--output-dir",
@@ -273,6 +314,32 @@ PATCHWORKS_RUN_ID_OPTION = typer.Option(
     "--run-id",
     help="Optional run identifier for Patchworks runtime logs.",
     show_default=False,
+)
+PATCHWORKS_MODEL_DIR_OPTION = typer.Option(
+    None,
+    "--model-dir",
+    help=(
+        "Patchworks model root folder. Defaults to an inferred root based on "
+        "runtime config paths."
+    ),
+    show_default=False,
+)
+PATCHWORKS_FRAGMENTS_SHP_OPTION = typer.Option(
+    None,
+    "--fragments-shp",
+    help=(
+        "Fragments shapefile used to derive blocks. Defaults to "
+        "matrix_builder.fragments_path with .shp suffix."
+    ),
+    show_default=False,
+)
+PATCHWORKS_TOPOLOGY_RADIUS_OPTION = typer.Option(
+    200.0,
+    "--topology-radius",
+    help=(
+        "Neighbour search radius (map units/metres) for generated "
+        "topology_blocks_<radius>r.csv."
+    ),
 )
 VDYP_CURVE_LOG_OPTION = typer.Option(
     Path("vdyp_io/logs/vdyp_curve_events.jsonl"),
@@ -822,6 +889,10 @@ def export_patchworks(
     cc_max_age: int = EXPORT_CC_MAX_AGE_OPTION,
     cc_transition_ifm: str | None = EXPORT_CC_TRANSITION_IFM_OPTION,
     fragments_crs: str = EXPORT_FRAGMENTS_CRS_OPTION,
+    ifm_source_col: str | None = EXPORT_IFM_SOURCE_COL_OPTION,
+    ifm_threshold: float | None = EXPORT_IFM_THRESHOLD_OPTION,
+    ifm_target_managed_share: float | None = (EXPORT_IFM_TARGET_MANAGED_SHARE_OPTION),
+    seral_stage_config: Path | None = EXPORT_SERAL_STAGE_CONFIG_OPTION,
 ) -> None:
     targets = (
         [str(v).zfill(2) if str(v).isdigit() else str(v).lower() for v in tsa]
@@ -845,6 +916,10 @@ def export_patchworks(
             cc_max_age=cc_max_age,
             cc_transition_ifm=cc_transition_ifm,
             fragments_crs=fragments_crs,
+            ifm_source_col=ifm_source_col,
+            ifm_threshold=ifm_threshold,
+            ifm_target_managed_share=ifm_target_managed_share,
+            seral_stage_config_path=seral_stage_config,
         )
     except (FileNotFoundError, ValueError) as exc:
         console.print(f"[red]Patchworks export failed:[/red] {exc}")
@@ -967,7 +1042,7 @@ def patchworks_preflight(
     console.print(
         "[green]Patchworks preflight passed[/green] "
         f"jar={runtime_config.jar_path} "
-        f"wine={result.wine_executable} "
+        f"launcher={result.launcher_executable} "
         f"license={runtime_config.license_env}={runtime_config.license_value} "
         f"spshome={runtime_config.spshome}"
     )
@@ -1012,10 +1087,76 @@ def patchworks_matrix_build(
     console.print(f"stdout_log: {result.stdout_log_path}")
     console.print(f"stderr_log: {result.stderr_log_path}")
     console.print(f"manifest: {result.manifest_path}")
+    if not interactive:
+        try:
+            manifest_payload = json.loads(
+                result.manifest_path.read_text(encoding="utf-8")
+            )
+            accounts_sync = manifest_payload.get("accounts_sync", {})
+            if isinstance(accounts_sync, dict):
+                status = str(accounts_sync.get("status", "")).strip()
+                if status == "synced":
+                    console.print(
+                        "accounts_sync: synced "
+                        f"proto={accounts_sync.get('protoaccounts_path')} "
+                        f"accounts={accounts_sync.get('accounts_path')} "
+                        f"backup={accounts_sync.get('backup_path')}"
+                    )
+                elif status:
+                    console.print(f"accounts_sync: {status}")
+        except (OSError, json.JSONDecodeError):
+            pass
     for failure in result.failures:
         console.print(f"[red]Runtime failure:[/red] {failure}")
     if result.returncode != 0:
         raise typer.Exit(code=result.returncode)
+
+
+@patchworks_app.command("build-blocks")
+def patchworks_build_blocks(
+    config: Path = PATCHWORKS_CONFIG_OPTION,
+    model_dir: Path | None = PATCHWORKS_MODEL_DIR_OPTION,
+    fragments_shp: Path | None = PATCHWORKS_FRAGMENTS_SHP_OPTION,
+    topology_radius: float = PATCHWORKS_TOPOLOGY_RADIUS_OPTION,
+    with_topology: bool = typer.Option(
+        True,
+        "--with-topology/--no-topology",
+        help="Write blocks/topology_blocks_<radius>r.csv alongside blocks.shp.",
+    ),
+) -> None:
+    try:
+        runtime_config = load_patchworks_runtime_config(config)
+        result = build_patchworks_blocks_dataset(
+            config=runtime_config,
+            model_dir=model_dir,
+            fragments_shapefile_path=fragments_shp,
+            topology_radius_m=topology_radius,
+            build_topology=with_topology,
+        )
+    except (
+        FileNotFoundError,
+        ModuleNotFoundError,
+        PatchworksConfigError,
+        json.JSONDecodeError,
+        yaml.YAMLError,
+    ) as exc:
+        console.print(f"[red]Patchworks block build failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        "[green]Patchworks blocks build complete[/green] "
+        f"model_dir={result.model_dir} blocks={result.block_count}"
+    )
+    console.print(
+        f"blocks_shapefile: {result.blocks_shapefile_path} "
+        f"(BLOCK <- {result.stand_id_field})"
+    )
+    if result.topology_csv_path is not None:
+        console.print(
+            "topology_csv: "
+            f"{result.topology_csv_path} edges={result.topology_edge_count} "
+            f"radius={result.topology_radius_m}"
+        )
 
 
 app.add_typer(prep_app, name="prep")

@@ -177,6 +177,10 @@ Subcommands
 - ``--cc-max-age INTEGER`` (default: ``1000``)
 - ``--cc-transition-ifm TEXT`` (default: unset; no IFM transition assign)
 - ``--fragments-crs TEXT`` (default: ``EPSG:3005``)
+- ``--ifm-source-col TEXT`` (optional; explicit checkpoint THLB signal column)
+- ``--ifm-threshold FLOAT`` (optional; managed when source value > threshold)
+- ``--ifm-target-managed-share FLOAT`` (optional; top-N managed by source value)
+- ``--seral-stage-config PATH`` (optional; YAML per-AU seral-stage boundaries)
 
 ``export woodstock`` options
 
@@ -209,6 +213,7 @@ Patchworks Runtime
 Subcommands
 
 - ``preflight``: ``python -m femic patchworks preflight [OPTIONS]``
+- ``build-blocks``: ``python -m femic patchworks build-blocks [OPTIONS]``
 - ``matrix-build``: ``python -m femic patchworks matrix-build [OPTIONS]``
 
 ``patchworks preflight`` options
@@ -221,3 +226,11 @@ Subcommands
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
 - ``--run-id TEXT``
 - ``--interactive``
+
+``patchworks build-blocks`` options
+
+- ``--config PATH`` (default: ``config/patchworks.runtime.yaml``)
+- ``--model-dir PATH`` (optional; inferred from runtime config when omitted)
+- ``--fragments-shp PATH`` (optional; defaults to runtime fragments ``.shp``)
+- ``--topology-radius FLOAT`` (default: ``200.0``)
+- ``--with-topology / --no-topology`` (default: ``--with-topology``)

@@ -68,6 +68,11 @@ Each run writes:
 - ``vdyp_io/logs/patchworks_matrixbuilder_stderr-<run_id>.log``
 - ``vdyp_io/logs/patchworks_matrixbuilder_manifest-<run_id>.json``
 
+For non-interactive matrix builds, FEMIC now also promotes
+``tracks/protoaccounts.csv`` to ``tracks/accounts.csv`` when present.
+If ``accounts.csv`` already exists, it is moved to a timestamped backup
+(``accounts_backup_YYYYMMDD_HHMMSS.csv``) before replacement.
+
 The manifest includes command string, return code, config paths, and log paths.
 Matrix runs now fail hard when fatal runtime signatures are detected in process
 output (for example licensing/native-library failures) or when matrix output

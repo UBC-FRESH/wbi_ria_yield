@@ -1,0 +1,12 @@
+﻿patchworks:
+  jar_path: C:/Program Files/Spatial Planning Systems/Patchworks/patchworks.jar
+  wine_prefix: null
+  license_env: SPS_LICENSE_SERVER
+  license_value: frst424@auth.spatial.ca
+  spshome: C:\Program Files\Spatial Planning Systems\Patchworks
+  use_xvfb: false
+
+matrix_builder:
+  fragments_path: C:/Users/gep/Documents/msfm/msfm2025/k3z_patchworks_model/data/fragments.dbf
+  output_dir: C:/Users/gep/Documents/msfm/msfm2025/k3z_patchworks_model/tracks
+  forestmodel_xml_path: C:/Users/gep/Documents/msfm/msfm2025/k3z_patchworks_model/yield/forestmodel.xml

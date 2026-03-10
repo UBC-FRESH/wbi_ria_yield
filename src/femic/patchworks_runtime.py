@@ -1,13 +1,16 @@
-"""Patchworks runtime helpers for Wine + Matrix Builder execution."""
+"""Patchworks runtime helpers for Patchworks Matrix Builder execution."""
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import importlib
 import json
 import os
 from pathlib import Path
 import shlex
+import shutil
 import subprocess
 from typing import Any
 
@@ -48,7 +51,8 @@ class PatchworksPreflightResult:
     """Preflight report for Patchworks runtime execution."""
 
     config: PatchworksRuntimeConfig
-    wine_executable: str | None
+    launcher_executable: str | None
+    host_mode: str
     license_host: str | None
     errors: tuple[str, ...]
     warnings: tuple[str, ...]
@@ -60,7 +64,7 @@ class PatchworksPreflightResult:
 
 @dataclass(frozen=True)
 class PatchworksExecutionResult:
-    """Execution outputs for a Wine-launched Patchworks command."""
+    """Execution outputs for a Patchworks command launch."""
 
     run_id: str
     command: tuple[str, ...]
@@ -70,6 +74,20 @@ class PatchworksExecutionResult:
     stderr_log_path: Path
     manifest_path: Path
     failures: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PatchworksBlocksBuildResult:
+    """Outputs from preparing a 1:1 stand:block blocks dataset."""
+
+    model_dir: Path
+    fragments_shapefile_path: Path
+    blocks_shapefile_path: Path
+    topology_csv_path: Path | None
+    block_count: int
+    stand_id_field: str
+    topology_edge_count: int
+    topology_radius_m: float
 
 
 class PatchworksConfigError(ValueError):
@@ -197,8 +215,14 @@ def parse_license_server(value: str) -> tuple[str, str]:
     return username, host
 
 
+def is_windows_host() -> bool:
+    """Return true when running on native Windows."""
+
+    return os.name == "nt"
+
+
 def find_wine_executable() -> str | None:
-    """Return preferred wine executable path/name on PATH."""
+    """Return preferred Wine executable path/name on PATH."""
 
     for candidate in ("wine64", "wine"):
         found = shutil_which(candidate)
@@ -216,13 +240,49 @@ def shutil_which(name: str) -> str | None:
 
 
 def to_wine_windows_path(path: Path) -> str:
-    """Map absolute POSIX path to Wine's Z: drive path."""
+    """Map absolute path to a Windows-style path for command arguments."""
 
     text = str(path)
     if len(text) >= 2 and text[1] == ":":
         return text
     normalized = str(path.expanduser().resolve())
     return "Z:" + normalized.replace("/", "\\")
+
+
+def infer_patchworks_model_dir(config: PatchworksRuntimeConfig) -> Path:
+    """Infer Patchworks model root from runtime input/output paths."""
+
+    known_model_subdirs = {
+        "analysis",
+        "blocks",
+        "data",
+        "imagery",
+        "misc",
+        "roads",
+        "scenarios",
+        "scripts",
+        "tracks",
+        "yield",
+    }
+    candidates: list[Path] = []
+    for candidate in (
+        config.fragments_path.parent,
+        config.matrix_output_dir,
+        config.forestmodel_xml_path.parent,
+    ):
+        if candidate.name.lower() in known_model_subdirs:
+            candidates.append(candidate.parent)
+        else:
+            candidates.append(candidate)
+
+    unique_candidates = {path.resolve() for path in candidates}
+    if len(unique_candidates) == 1:
+        return next(iter(unique_candidates))
+
+    common = Path(os.path.commonpath([str(path) for path in unique_candidates]))
+    if common.name.lower() in known_model_subdirs:
+        return common.parent
+    return common
 
 
 def build_matrix_builder_command_string(config: PatchworksRuntimeConfig) -> str:
@@ -235,10 +295,10 @@ def build_matrix_builder_command_string(config: PatchworksRuntimeConfig) -> str:
     spshome = config.spshome
     lib_dir = f"{spshome}\\lib"
     return (
-        f"cd /d {jar_dir} && "
+        f'cd /d "{jar_dir}" && '
         f'set "SPSHOME={spshome}" && '
         f'set "PATH=%PATH%;{spshome};{lib_dir}" && '
-        f'java -Djava.library.path="{lib_dir}" -jar patchworks.jar '
+        f'java "-Djava.library.path={lib_dir}" -jar patchworks.jar '
         "ca.spatial.tracks.builder.Process "
         f'"{fragments}" "{output_dir}" "{forestmodel_xml}"'
     )
@@ -251,34 +311,65 @@ def build_appchooser_command_string(config: PatchworksRuntimeConfig) -> str:
     spshome = config.spshome
     lib_dir = f"{spshome}\\lib"
     return (
-        f"cd /d {jar_dir} && "
+        f'cd /d "{jar_dir}" && '
         f'set "SPSHOME={spshome}" && '
         f'set "PATH=%PATH%;{spshome};{lib_dir}" && '
-        f'java -Djava.library.path="{lib_dir}" -jar patchworks.jar'
+        f'java "-Djava.library.path={lib_dir}" -jar patchworks.jar'
+    )
+
+
+def build_beanshell_command_string(
+    *,
+    config: PatchworksRuntimeConfig,
+    script_path: Path,
+    script_args: tuple[str, ...] = (),
+) -> str:
+    """Build Windows CMD command to run a BeanShell script via IProperties."""
+
+    jar_dir = to_wine_windows_path(config.jar_path.parent)
+    script = to_wine_windows_path(script_path)
+    spshome = config.spshome
+    lib_dir = f"{spshome}\\lib"
+    args_fragment = " ".join(f'"{arg}"' for arg in script_args)
+    return (
+        f'cd /d "{jar_dir}" && '
+        f'set "SPSHOME={spshome}" && '
+        f'set "PATH=%PATH%;{spshome};{lib_dir}" && '
+        f'java "-Djava.library.path={lib_dir}" -jar patchworks.jar '
+        f'ca.spatial.util.IProperties BeanShell "{script}"'
+        f" {args_fragment}".rstrip()
     )
 
 
 def run_patchworks_preflight(
     *,
     config: PatchworksRuntimeConfig,
+    require_matrix_inputs: bool = True,
 ) -> PatchworksPreflightResult:
-    """Run preflight checks before Wine-based Patchworks execution."""
+    """Run preflight checks before Patchworks execution."""
 
     errors: list[str] = []
     warnings: list[str] = []
 
-    wine_executable = find_wine_executable()
-    if wine_executable is None:
-        errors.append("wine64/wine not found on PATH")
+    windows_host = is_windows_host()
+    launcher_executable = (
+        shutil_which("java") if windows_host else find_wine_executable()
+    )
+    if launcher_executable is None:
+        if windows_host:
+            errors.append("java not found on PATH")
+        else:
+            errors.append("wine64/wine not found on PATH")
 
     if not config.jar_path.exists():
         errors.append(f"Patchworks jar not found: {config.jar_path}")
 
-    if not config.fragments_path.exists():
-        errors.append(f"Fragments dataset not found: {config.fragments_path}")
+    if require_matrix_inputs:
+        if not config.fragments_path.exists():
+            errors.append(f"Fragments dataset not found: {config.fragments_path}")
 
-    if not config.forestmodel_xml_path.exists():
-        errors.append(f"ForestModel XML not found: {config.forestmodel_xml_path}")
+        if not config.forestmodel_xml_path.exists():
+            errors.append(f"ForestModel XML not found: {config.forestmodel_xml_path}")
 
     license_host: str | None = None
     try:
@@ -286,23 +377,34 @@ def run_patchworks_preflight(
     except PatchworksConfigError as exc:
         errors.append(str(exc))
 
-    if wine_executable is not None:
+    if launcher_executable is not None:
+        java_check_cmd = (
+            [launcher_executable, "-version"]
+            if windows_host
+            else [launcher_executable, "cmd", "/c", "java -version"]
+        )
         java_check = subprocess.run(
-            [wine_executable, "cmd", "/c", "java -version"],
+            java_check_cmd,
             capture_output=True,
             text=True,
             env=_build_base_env(config),
             check=False,
         )
         if java_check.returncode != 0:
-            errors.append(
-                "Java runtime unavailable inside Wine context "
-                "(command `java -version` failed)"
-            )
+            if windows_host:
+                errors.append(
+                    "Java runtime unavailable on host (command `java -version` failed)"
+                )
+            else:
+                errors.append(
+                    "Java runtime unavailable inside Wine context "
+                    "(command `java -version` failed)"
+                )
 
     return PatchworksPreflightResult(
         config=config,
-        wine_executable=wine_executable,
+        launcher_executable=launcher_executable,
+        host_mode="windows" if windows_host else "wine",
         license_host=license_host,
         errors=tuple(errors),
         warnings=tuple(warnings),
@@ -313,18 +415,62 @@ def _build_base_env(config: PatchworksRuntimeConfig) -> dict[str, str]:
     env = dict(os.environ)
     env[config.license_env] = config.license_value
     env["SPSHOME"] = config.spshome
+    lib_dir = f"{config.spshome}\\lib"
+    env["PATH"] = env.get("PATH", "") + f";{config.spshome};{lib_dir}"
     if config.wine_prefix is not None:
         env["WINEPREFIX"] = str(config.wine_prefix)
     return env
 
 
+def _build_windows_java_command(
+    *, launcher_executable: str, config: PatchworksRuntimeConfig, interactive: bool
+) -> tuple[str, ...]:
+    lib_dir = f"{config.spshome}\\lib"
+    base = (
+        launcher_executable,
+        f"-Djava.library.path={lib_dir}",
+        "-jar",
+        "patchworks.jar",
+    )
+    if interactive:
+        return base
+    return (
+        *base,
+        "ca.spatial.tracks.builder.Process",
+        str(config.fragments_path),
+        str(config.matrix_output_dir),
+        str(config.forestmodel_xml_path),
+    )
+
+
+def _build_windows_beanshell_command(
+    *,
+    launcher_executable: str,
+    config: PatchworksRuntimeConfig,
+    script_path: Path,
+    script_args: tuple[str, ...],
+) -> tuple[str, ...]:
+    lib_dir = f"{config.spshome}\\lib"
+    return (
+        launcher_executable,
+        f"-Djava.library.path={lib_dir}",
+        "-jar",
+        "patchworks.jar",
+        "ca.spatial.util.IProperties",
+        "BeanShell",
+        str(script_path),
+        *script_args,
+    )
+
+
 def _build_launch_command(
     *,
-    wine_executable: str,
+    launcher_executable: str,
+    host_mode: str,
     command_string: str,
     use_xvfb: bool,
 ) -> tuple[str, ...]:
-    command: tuple[str, ...] = (wine_executable, "cmd", "/c", command_string)
+    command: tuple[str, ...] = (launcher_executable, "cmd", "/c", command_string)
     if use_xvfb:
         xvfb_run = shutil_which("xvfb-run")
         if xvfb_run is None:
@@ -353,6 +499,39 @@ def _resolve_run_id(run_id: str | None) -> str:
     return f"patchworks_{stamp}"
 
 
+def _resolve_accounts_backup_path(*, tracks_dir: Path) -> Path:
+    stamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    candidate = tracks_dir / f"accounts_backup_{stamp}.csv"
+    if not candidate.exists():
+        return candidate
+    for idx in range(1, 1000):
+        alt = tracks_dir / f"accounts_backup_{stamp}_{idx:03d}.csv"
+        if not alt.exists():
+            return alt
+    raise PatchworksConfigError(
+        "Unable to allocate unique accounts backup filename in tracks directory"
+    )
+
+
+def _promote_protoaccounts_to_accounts(
+    *,
+    matrix_output_dir: Path,
+) -> tuple[Path | None, Path | None, Path]:
+    tracks_dir = matrix_output_dir.expanduser().resolve()
+    protoaccounts_path = tracks_dir / "protoaccounts.csv"
+    accounts_path = tracks_dir / "accounts.csv"
+    if not protoaccounts_path.exists():
+        return None, None, protoaccounts_path
+
+    backup_path: Path | None = None
+    if accounts_path.exists():
+        backup_path = _resolve_accounts_backup_path(tracks_dir=tracks_dir)
+        accounts_path.replace(backup_path)
+
+    shutil.copy2(protoaccounts_path, accounts_path)
+    return accounts_path, backup_path, protoaccounts_path
+
+
 def run_patchworks_command(
     *,
     config: PatchworksRuntimeConfig,
@@ -360,19 +539,21 @@ def run_patchworks_command(
     log_dir: Path,
     run_id: str | None = None,
 ) -> PatchworksExecutionResult:
-    """Execute Patchworks command under Wine and capture logs+manifest."""
+    """Execute Patchworks command and capture logs+manifest."""
 
-    preflight = run_patchworks_preflight(config=config)
+    preflight = run_patchworks_preflight(config=config, require_matrix_inputs=True)
     if not preflight.ok:
         raise PatchworksConfigError(
             "Patchworks preflight failed prior to execution: "
             + "; ".join(preflight.errors)
         )
-    assert preflight.wine_executable is not None
+    assert preflight.launcher_executable is not None
 
     effective_run_id = _resolve_run_id(run_id)
     resolved_log_dir = log_dir.expanduser().resolve()
     resolved_log_dir.mkdir(parents=True, exist_ok=True)
+    if not interactive:
+        config.matrix_output_dir.mkdir(parents=True, exist_ok=True)
 
     stdout_log = (
         resolved_log_dir / f"patchworks_matrixbuilder_stdout-{effective_run_id}.log"
@@ -389,17 +570,29 @@ def run_patchworks_command(
         if interactive
         else build_matrix_builder_command_string(config)
     )
-    command = _build_launch_command(
-        wine_executable=preflight.wine_executable,
-        command_string=command_string,
-        use_xvfb=config.use_xvfb,
+    command = (
+        _build_windows_java_command(
+            launcher_executable=preflight.launcher_executable,
+            config=config,
+            interactive=interactive,
+        )
+        if preflight.host_mode == "windows"
+        else _build_launch_command(
+            launcher_executable=preflight.launcher_executable,
+            host_mode=preflight.host_mode,
+            command_string=command_string,
+            use_xvfb=config.use_xvfb,
+        )
     )
+    if preflight.host_mode == "windows":
+        command_string = format_command_for_display(command)
 
     proc = subprocess.run(
         list(command),
         capture_output=True,
         text=True,
         env=_build_base_env(config),
+        cwd=config.jar_path.parent if preflight.host_mode == "windows" else None,
         check=False,
     )
 
@@ -407,6 +600,10 @@ def run_patchworks_command(
     stderr_log.write_text(proc.stderr or "", encoding="utf-8")
 
     failures: list[str] = []
+    accounts_synced_path: Path | None = None
+    accounts_backup_path: Path | None = None
+    protoaccounts_path: Path | None = None
+    accounts_sync_status = "not_requested"
     output_for_scan = (proc.stderr or "") + "\n" + (proc.stdout or "")
     fatal_stderr_matches = _detect_fatal_output(output_for_scan)
     if fatal_stderr_matches:
@@ -417,8 +614,26 @@ def run_patchworks_command(
         failures.append(
             f"matrix output directory missing or empty: {config.matrix_output_dir}"
         )
+    if not interactive and not failures:
+        (
+            accounts_synced_path,
+            accounts_backup_path,
+            protoaccounts_path,
+        ) = _promote_protoaccounts_to_accounts(
+            matrix_output_dir=config.matrix_output_dir
+        )
+        if accounts_synced_path is not None:
+            accounts_sync_status = "synced"
+        elif protoaccounts_path is not None:
+            accounts_sync_status = "skipped_missing_protoaccounts"
 
-    effective_returncode = proc.returncode if not failures else 1
+    if failures:
+        effective_returncode = 1
+    elif not interactive and _matrix_output_ready(config.matrix_output_dir):
+        # Process.main(...) may dispatch background work and not return a stable process code.
+        effective_returncode = 0
+    else:
+        effective_returncode = proc.returncode
 
     manifest_payload = {
         "run_id": effective_run_id,
@@ -426,9 +641,11 @@ def run_patchworks_command(
         "interactive": interactive,
         "command": list(command),
         "command_string": command_string,
+        "raw_returncode": proc.returncode,
         "returncode": effective_returncode,
         "runtime": {
-            "wine_executable": preflight.wine_executable,
+            "launcher_executable": preflight.launcher_executable,
+            "host_mode": preflight.host_mode,
             "jar_path": str(config.jar_path),
             "license_env": config.license_env,
             "license_value": config.license_value,
@@ -440,6 +657,18 @@ def run_patchworks_command(
             "fragments_path": str(config.fragments_path),
             "matrix_output_dir": str(config.matrix_output_dir),
             "forestmodel_xml_path": str(config.forestmodel_xml_path),
+        },
+        "accounts_sync": {
+            "status": accounts_sync_status,
+            "protoaccounts_path": (
+                str(protoaccounts_path) if protoaccounts_path is not None else None
+            ),
+            "accounts_path": (
+                str(accounts_synced_path) if accounts_synced_path is not None else None
+            ),
+            "backup_path": (
+                str(accounts_backup_path) if accounts_backup_path is not None else None
+            ),
         },
         "logs": {
             "stdout": str(stdout_log),
@@ -458,6 +687,337 @@ def run_patchworks_command(
         stderr_log_path=stderr_log,
         manifest_path=manifest_path,
         failures=tuple(failures),
+    )
+
+
+def run_patchworks_beanshell_script(
+    *,
+    config: PatchworksRuntimeConfig,
+    script_path: Path,
+    script_args: tuple[str, ...],
+    log_dir: Path,
+    run_id: str | None = None,
+) -> PatchworksExecutionResult:
+    """Execute a Patchworks BeanShell script via IProperties."""
+
+    preflight = run_patchworks_preflight(config=config, require_matrix_inputs=False)
+    if not preflight.ok:
+        raise PatchworksConfigError(
+            "Patchworks preflight failed prior to execution: "
+            + "; ".join(preflight.errors)
+        )
+    assert preflight.launcher_executable is not None
+
+    resolved_script_path = script_path.expanduser().resolve()
+    if not resolved_script_path.exists():
+        raise FileNotFoundError(f"BeanShell script not found: {resolved_script_path}")
+    if resolved_script_path.is_dir():
+        raise PatchworksConfigError(
+            f"BeanShell script path is a directory: {resolved_script_path}"
+        )
+
+    effective_run_id = _resolve_run_id(run_id)
+    resolved_log_dir = log_dir.expanduser().resolve()
+    resolved_log_dir.mkdir(parents=True, exist_ok=True)
+
+    stdout_log = (
+        resolved_log_dir / f"patchworks_beanshell_stdout-{effective_run_id}.log"
+    )
+    stderr_log = (
+        resolved_log_dir / f"patchworks_beanshell_stderr-{effective_run_id}.log"
+    )
+    manifest_path = (
+        resolved_log_dir / f"patchworks_beanshell_manifest-{effective_run_id}.json"
+    )
+
+    command_string = build_beanshell_command_string(
+        config=config,
+        script_path=resolved_script_path,
+        script_args=script_args,
+    )
+    command = (
+        _build_windows_beanshell_command(
+            launcher_executable=preflight.launcher_executable,
+            config=config,
+            script_path=resolved_script_path,
+            script_args=script_args,
+        )
+        if preflight.host_mode == "windows"
+        else _build_launch_command(
+            launcher_executable=preflight.launcher_executable,
+            host_mode=preflight.host_mode,
+            command_string=command_string,
+            use_xvfb=config.use_xvfb,
+        )
+    )
+    if preflight.host_mode == "windows":
+        command_string = format_command_for_display(command)
+
+    proc = subprocess.run(
+        list(command),
+        capture_output=True,
+        text=True,
+        env=_build_base_env(config),
+        cwd=config.jar_path.parent if preflight.host_mode == "windows" else None,
+        check=False,
+    )
+
+    stdout_log.write_text(proc.stdout or "", encoding="utf-8")
+    stderr_log.write_text(proc.stderr or "", encoding="utf-8")
+
+    failures: list[str] = []
+    output_for_scan = (proc.stderr or "") + "\n" + (proc.stdout or "")
+    fatal_stderr_matches = _detect_fatal_output(output_for_scan)
+    if fatal_stderr_matches:
+        failures.append(
+            "fatal stderr signatures detected: " + ", ".join(fatal_stderr_matches)
+        )
+    effective_returncode = 1 if failures else proc.returncode
+
+    manifest_payload = {
+        "run_id": effective_run_id,
+        "timestamp_utc": datetime.now(UTC).isoformat(),
+        "interactive": False,
+        "mode": "beanshell",
+        "command": list(command),
+        "command_string": command_string,
+        "raw_returncode": proc.returncode,
+        "returncode": effective_returncode,
+        "runtime": {
+            "launcher_executable": preflight.launcher_executable,
+            "host_mode": preflight.host_mode,
+            "jar_path": str(config.jar_path),
+            "license_env": config.license_env,
+            "license_value": config.license_value,
+            "spshome": config.spshome,
+            "use_xvfb": config.use_xvfb,
+            "wine_prefix": str(config.wine_prefix) if config.wine_prefix else None,
+        },
+        "inputs": {
+            "script_path": str(resolved_script_path),
+            "script_args": list(script_args),
+        },
+        "logs": {
+            "stdout": str(stdout_log),
+            "stderr": str(stderr_log),
+        },
+        "failures": failures,
+    }
+    manifest_path.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
+
+    return PatchworksExecutionResult(
+        run_id=effective_run_id,
+        command=command,
+        command_string=command_string,
+        returncode=effective_returncode,
+        stdout_log_path=stdout_log,
+        stderr_log_path=stderr_log,
+        manifest_path=manifest_path,
+        failures=tuple(failures),
+    )
+
+
+def _import_geopandas() -> Any:
+    try:
+        return importlib.import_module("geopandas")
+    except ModuleNotFoundError as exc:
+        raise PatchworksConfigError(
+            "geopandas is required for `femic patchworks build-blocks`"
+        ) from exc
+
+
+def _import_pandas() -> Any:
+    try:
+        return importlib.import_module("pandas")
+    except ModuleNotFoundError as exc:
+        raise PatchworksConfigError(
+            "pandas is required for `femic patchworks build-blocks`"
+        ) from exc
+
+
+def _import_shapely_unary_union() -> Any:
+    try:
+        ops = importlib.import_module("shapely.ops")
+        return ops.unary_union
+    except ModuleNotFoundError as exc:
+        raise PatchworksConfigError(
+            "shapely is required for `femic patchworks build-blocks`"
+        ) from exc
+
+
+def _resolve_fragments_shapefile_path(
+    *,
+    config: PatchworksRuntimeConfig,
+    fragments_shapefile_path: Path | None,
+) -> Path:
+    if fragments_shapefile_path is not None:
+        candidate = fragments_shapefile_path.expanduser().resolve()
+    elif config.fragments_path.suffix.lower() == ".dbf":
+        candidate = config.fragments_path.with_suffix(".shp")
+    else:
+        candidate = config.fragments_path
+    return candidate.expanduser().resolve()
+
+
+def _resolve_blocks_model_dir(
+    *,
+    config: PatchworksRuntimeConfig,
+    model_dir: Path | None,
+) -> Path:
+    if model_dir is not None:
+        return model_dir.expanduser().resolve()
+    return infer_patchworks_model_dir(config)
+
+
+def _select_stand_id_field(columns: list[str]) -> str:
+    for candidate in ("FEATURE_ID", "FRAGS_ID", "BLOCK"):
+        if candidate in columns:
+            return candidate
+    raise PatchworksConfigError(
+        "No stand identifier field found in fragments. "
+        "Expected FEATURE_ID, FRAGS_ID, or BLOCK."
+    )
+
+
+def _build_topology_rows(
+    *,
+    blocks_gdf: Any,
+    topology_radius_m: float,
+) -> list[tuple[int, int, float, float]]:
+    if topology_radius_m < 0:
+        raise PatchworksConfigError("topology_radius_m must be >= 0")
+
+    records: list[tuple[int, int, float, float]] = []
+    seen_pairs: set[tuple[int, int]] = set()
+
+    geometries = list(blocks_gdf.geometry)
+    block_ids = [int(value) for value in blocks_gdf["BLOCK"]]
+    sindex = blocks_gdf.sindex
+
+    for left_idx, (left_block, left_geom) in enumerate(zip(block_ids, geometries)):
+        if left_geom is None or left_geom.is_empty:
+            continue
+        candidate_bounds = left_geom.buffer(topology_radius_m).bounds
+        for right_idx in sindex.intersection(candidate_bounds):
+            if right_idx <= left_idx:
+                continue
+            right_geom = geometries[right_idx]
+            if right_geom is None or right_geom.is_empty:
+                continue
+            distance = float(left_geom.distance(right_geom))
+            if distance > topology_radius_m + 1e-9:
+                continue
+            right_block = block_ids[right_idx]
+            block1 = min(left_block, right_block)
+            block2 = max(left_block, right_block)
+            pair = (block1, block2)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            if distance <= 1e-9:
+                edge_length = float(
+                    left_geom.boundary.intersection(right_geom.boundary).length
+                )
+                records.append((block1, block2, 0.0, edge_length))
+            else:
+                records.append((block1, block2, distance, 0.0))
+
+    unary_union = _import_shapely_unary_union()
+    model_boundary = unary_union(geometries).boundary
+    for block_id, geom in zip(block_ids, geometries):
+        if geom is None or geom.is_empty:
+            continue
+        perimeter_on_exterior = float(geom.boundary.intersection(model_boundary).length)
+        if perimeter_on_exterior > 0:
+            records.append((-9999, block_id, 0.0, perimeter_on_exterior))
+            continue
+        distance_to_exterior = float(geom.distance(model_boundary))
+        if distance_to_exterior <= topology_radius_m + 1e-9:
+            records.append((-9999, block_id, distance_to_exterior, 0.0))
+
+    records.sort(key=lambda row: (row[0], row[1]))
+    return records
+
+
+def build_patchworks_blocks_dataset(
+    *,
+    config: PatchworksRuntimeConfig,
+    model_dir: Path | None = None,
+    fragments_shapefile_path: Path | None = None,
+    topology_radius_m: float = 200.0,
+    build_topology: bool = True,
+) -> PatchworksBlocksBuildResult:
+    """Build 1:1 stand:block `blocks.shp` (and optional topology CSV)."""
+
+    gpd = _import_geopandas()
+    pd = _import_pandas()
+
+    resolved_model_dir = _resolve_blocks_model_dir(config=config, model_dir=model_dir)
+    resolved_fragments_shp = _resolve_fragments_shapefile_path(
+        config=config,
+        fragments_shapefile_path=fragments_shapefile_path,
+    )
+    if not resolved_fragments_shp.exists():
+        raise FileNotFoundError(
+            f"Fragments shapefile not found: {resolved_fragments_shp}"
+        )
+    if resolved_fragments_shp.suffix.lower() != ".shp":
+        raise PatchworksConfigError(
+            "fragments_shapefile_path must point to a .shp file"
+        )
+
+    fragments_gdf = gpd.read_file(resolved_fragments_shp)
+    if fragments_gdf.empty:
+        raise PatchworksConfigError(
+            f"Fragments shapefile has no records: {resolved_fragments_shp}"
+        )
+    if "geometry" not in fragments_gdf.columns:
+        raise PatchworksConfigError(
+            f"Fragments shapefile missing geometry column: {resolved_fragments_shp}"
+        )
+
+    stand_id_field = _select_stand_id_field(list(fragments_gdf.columns))
+    stand_series = pd.to_numeric(fragments_gdf[stand_id_field], errors="raise")
+    if stand_series.isna().any():
+        raise PatchworksConfigError(
+            f"Stand identifier field contains null values: {stand_id_field}"
+        )
+
+    blocks_gdf = fragments_gdf.copy()
+    blocks_gdf["BLOCK"] = stand_series.astype("int64")
+
+    blocks_dir = resolved_model_dir / "blocks"
+    blocks_dir.mkdir(parents=True, exist_ok=True)
+    blocks_shp_path = (blocks_dir / "blocks.shp").resolve()
+    blocks_gdf.to_file(blocks_shp_path, index=False)
+
+    topology_path: Path | None = None
+    topology_edge_count = 0
+    if build_topology:
+        rounded_radius = int(round(topology_radius_m))
+        topology_path = (
+            blocks_dir / f"topology_blocks_{rounded_radius}r.csv"
+        ).resolve()
+        topology_rows = _build_topology_rows(
+            blocks_gdf=blocks_gdf,
+            topology_radius_m=topology_radius_m,
+        )
+        with topology_path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(("BLOCK1", "BLOCK2", "DISTANCE", "LENGTH"))
+            for block1, block2, distance, length in topology_rows:
+                writer.writerow((block1, block2, f"{distance:.3f}", f"{length:.3f}"))
+        topology_edge_count = len(topology_rows)
+
+    return PatchworksBlocksBuildResult(
+        model_dir=resolved_model_dir,
+        fragments_shapefile_path=resolved_fragments_shp,
+        blocks_shapefile_path=blocks_shp_path,
+        topology_csv_path=topology_path,
+        block_count=len(blocks_gdf),
+        stand_id_field=stand_id_field,
+        topology_edge_count=topology_edge_count,
+        topology_radius_m=topology_radius_m,
     )
 
 

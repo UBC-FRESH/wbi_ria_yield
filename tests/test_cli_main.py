@@ -294,6 +294,10 @@ def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> No
         cc_max_age,
         cc_transition_ifm,
         fragments_crs,
+        ifm_source_col,
+        ifm_threshold,
+        ifm_target_managed_share,
+        seral_stage_config_path,
     ):
         called.update(
             {
@@ -307,6 +311,10 @@ def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> No
                 "cc_max_age": cc_max_age,
                 "cc_transition_ifm": cc_transition_ifm,
                 "fragments_crs": fragments_crs,
+                "ifm_source_col": ifm_source_col,
+                "ifm_threshold": ifm_threshold,
+                "ifm_target_managed_share": ifm_target_managed_share,
+                "seral_stage_config_path": seral_stage_config_path,
             }
         )
         return SimpleNamespace(
@@ -333,11 +341,18 @@ def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> No
         cc_max_age=500,
         cc_transition_ifm="managed",
         fragments_crs="EPSG:3005",
+        ifm_source_col="thlb_raw",
+        ifm_threshold=0.2,
+        ifm_target_managed_share=None,
+        seral_stage_config=Path("config/seral.k3z.yaml"),
     )
 
     assert called["tsa_list"] == ["k3z"]
     assert called["cc_max_age"] == 500
     assert called["cc_transition_ifm"] == "managed"
+    assert called["ifm_source_col"] == "thlb_raw"
+    assert called["ifm_threshold"] == pytest.approx(0.2)
+    assert called["seral_stage_config_path"] == Path("config/seral.k3z.yaml")
     assert any("patchworks export completed" in msg for msg in messages)
 
 
@@ -499,7 +514,8 @@ def test_patchworks_preflight_passes(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda **_kwargs: SimpleNamespace(
             warnings=(),
             errors=(),
-            wine_executable="/usr/bin/wine64",
+            launcher_executable="/usr/bin/wine64",
+            host_mode="wine",
             license_host="auth.spatial.ca",
         ),
     )
@@ -546,3 +562,63 @@ def test_patchworks_matrix_build_emits_logs(monkeypatch: pytest.MonkeyPatch) -> 
 
     assert any("Patchworks matrix-builder run complete" in msg for msg in messages)
     assert any("stdout_log:" in msg for msg in messages)
+
+
+def test_patchworks_build_blocks_emits_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    runtime_cfg = SimpleNamespace()
+    monkeypatch.setattr(
+        cli_main, "load_patchworks_runtime_config", lambda _path: runtime_cfg
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "build_patchworks_blocks_dataset",
+        lambda **_kwargs: SimpleNamespace(
+            model_dir=Path("C:/model"),
+            blocks_shapefile_path=Path("C:/model/blocks/blocks.shp"),
+            topology_csv_path=Path("C:/model/blocks/topology_blocks_200r.csv"),
+            block_count=218,
+            stand_id_field="FEATURE_ID",
+            topology_edge_count=1024,
+            topology_radius_m=200.0,
+        ),
+    )
+
+    cli_main.patchworks_build_blocks(
+        config=Path("config/patchworks.runtime.yaml"),
+        model_dir=None,
+        fragments_shp=None,
+        topology_radius=200.0,
+        with_topology=True,
+    )
+
+    assert any("Patchworks blocks build complete" in msg for msg in messages)
+    assert any("blocks_shapefile:" in msg for msg in messages)
+    assert any("topology_csv:" in msg for msg in messages)
+
+
+def test_patchworks_build_blocks_reports_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+
+    def _fail_load(_path: Path) -> None:
+        raise FileNotFoundError("missing config")
+
+    monkeypatch.setattr(cli_main, "load_patchworks_runtime_config", _fail_load)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.patchworks_build_blocks(
+            config=Path("missing.yaml"),
+            model_dir=None,
+            fragments_shp=None,
+            topology_radius=200.0,
+            with_topology=True,
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert any("Patchworks block build failed" in msg for msg in messages)
