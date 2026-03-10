@@ -251,6 +251,191 @@ def test_build_forestmodel_xml_tree_adds_species_yield_curves() -> None:
     assert "product.HarvestedVolume.managed.HW.CC" in xml_text
 
 
+def test_build_forestmodel_xml_tree_sets_cc_min_age_from_cmai_minus_20() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 0.0},
+            {"curve_id": 985521000, "x": 1, "y": 1.0},
+            {"curve_id": 985521000, "x": 20, "y": 100.0},
+            {"curve_id": 985521000, "x": 40, "y": 300.0},
+            {"curve_id": 985521000, "x": 60, "y": 600.0},
+            {"curve_id": 985521000, "x": 80, "y": 700.0},
+        ]
+    )
+
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    treatment = root.find(".//treatment[@label='CC']")
+    assert treatment is not None
+    assert treatment.get("minage") == "40"
+
+
+def test_build_forestmodel_xml_tree_cc_min_age_ignores_higher_cli_floor() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 0.0},
+            {"curve_id": 985521000, "x": 1, "y": 1.0},
+            {"curve_id": 985521000, "x": 20, "y": 100.0},
+            {"curve_id": 985521000, "x": 40, "y": 300.0},
+            {"curve_id": 985521000, "x": 60, "y": 600.0},
+            {"curve_id": 985521000, "x": 80, "y": 700.0},
+        ]
+    )
+
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+        cc_min_age=80,
+    )
+    treatment = root.find(".//treatment[@label='CC']")
+    assert treatment is not None
+    assert treatment.get("minage") == "40"
+
+
+def test_build_forestmodel_xml_tree_adds_seral_curves_and_attributes() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 0.0},
+            {"curve_id": 985521000, "x": 1, "y": 1.0},
+            {"curve_id": 985521000, "x": 20, "y": 100.0},
+            {"curve_id": 985521000, "x": 40, "y": 300.0},
+            {"curve_id": 985521000, "x": 60, "y": 600.0},
+            {"curve_id": 985521000, "x": 80, "y": 700.0},
+        ]
+    )
+
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+        seral_stage_config={},
+    )
+    xml_text = et.tostring(root, encoding="unicode")
+    assert "feature.Seral.regenerating" in xml_text
+    assert "feature.Seral.young" in xml_text
+    assert "feature.Seral.immature" in xml_text
+    assert "feature.Seral.mature" in xml_text
+    assert "feature.Seral.overmature" in xml_text
+    assert "product.Seral.regenerating" not in xml_text
+    assert "product.Seral.area.regenerating.985501000.CC" in xml_text
+
+    mature_curve = root.find("./curve[@id='au_985501000_seral_mature']")
+    assert mature_curve is not None
+    mature_points = [point.attrib for point in mature_curve.findall("./point")]
+    assert {"x": "60", "y": "0.0"} in mature_points
+    assert {"x": "61", "y": "1.0"} in mature_points
+    assert {"x": "80", "y": "1.0"} in mature_points
+    assert {"x": "81", "y": "0.0"} in mature_points
+
+
+def test_build_forestmodel_xml_tree_respects_per_au_seral_overrides() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 0.0},
+            {"curve_id": 985521000, "x": 1, "y": 1.0},
+            {"curve_id": 985521000, "x": 20, "y": 100.0},
+            {"curve_id": 985521000, "x": 40, "y": 300.0},
+            {"curve_id": 985521000, "x": 60, "y": 600.0},
+            {"curve_id": 985521000, "x": 80, "y": 700.0},
+        ]
+    )
+
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+        seral_stage_config={
+            "au_overrides": {
+                "985501000": {
+                    "mature": {"max_age": 70},
+                    "overmature": {"min_age": 71},
+                }
+            }
+        },
+    )
+    mature_curve = root.find("./curve[@id='au_985501000_seral_mature']")
+    assert mature_curve is not None
+    mature_points = [point.attrib for point in mature_curve.findall("./point")]
+    assert {"x": "70", "y": "1.0"} in mature_points
+    assert {"x": "71", "y": "0.0"} in mature_points
+
+
 def test_forestmodel_xml_trims_repeated_curve_values_on_both_tails() -> None:
     au_table = pd.DataFrame(
         [
@@ -580,6 +765,122 @@ def test_build_fragments_geodataframe_interprets_thlb_raw_as_binary_signal(
     assert gdf.shape[0] == 1
     assert gdf.loc[0, "IFM"] == "unmanaged"
     assert float(gdf.loc[0, "AREA_HA"]) == pytest.approx(10.0)
+
+
+def test_build_fragments_geodataframe_allows_ifm_threshold_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint_path = tmp_path / "checkpoint7.feather"
+    au_table = pd.DataFrame([{"au_id": 985501000}])
+    checkpoint_df = pd.DataFrame(
+        [
+            {
+                "tsa_code": "k3z",
+                "au": 985501000,
+                "PROJ_AGE_1": 70,
+                "FEATURE_AREA_SQM": 10000.0,
+                "thlb_raw": 0.15,
+                "geometry": Polygon([(0, 0), (10, 0), (10, 10), (0, 10), (0, 0)]),
+            },
+            {
+                "tsa_code": "k3z",
+                "au": 985501000,
+                "PROJ_AGE_1": 70,
+                "FEATURE_AREA_SQM": 10000.0,
+                "thlb_raw": 0.85,
+                "geometry": Polygon([(20, 0), (30, 0), (30, 10), (20, 10), (20, 0)]),
+            },
+        ]
+    )
+    monkeypatch.setattr(
+        "femic.fmg.patchworks.pd.read_feather", lambda _path: checkpoint_df
+    )
+
+    gdf = build_fragments_geodataframe(
+        checkpoint_path=checkpoint_path,
+        au_table=au_table,
+        tsa_list=["k3z"],
+        ifm_source_col="thlb_raw",
+        ifm_threshold=0.2,
+    )
+
+    assert gdf.shape[0] == 2
+    assert sorted(gdf["IFM"].tolist()) == ["managed", "unmanaged"]
+
+
+def test_build_fragments_geodataframe_allows_ifm_target_managed_share(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint_path = tmp_path / "checkpoint7.feather"
+    au_table = pd.DataFrame([{"au_id": 985501000}])
+    checkpoint_df = pd.DataFrame(
+        [
+            {
+                "tsa_code": "k3z",
+                "au": 985501000,
+                "PROJ_AGE_1": 70,
+                "FEATURE_AREA_SQM": 10000.0,
+                "thlb_raw": value,
+                "geometry": Polygon(
+                    [
+                        (idx * 20, 0),
+                        (idx * 20 + 10, 0),
+                        (idx * 20 + 10, 10),
+                        (idx * 20, 10),
+                        (idx * 20, 0),
+                    ]
+                ),
+            }
+            for idx, value in enumerate([0.1, 0.2, 0.3, 0.4, 0.5])
+        ]
+    )
+    monkeypatch.setattr(
+        "femic.fmg.patchworks.pd.read_feather", lambda _path: checkpoint_df
+    )
+
+    gdf = build_fragments_geodataframe(
+        checkpoint_path=checkpoint_path,
+        au_table=au_table,
+        tsa_list=["k3z"],
+        ifm_source_col="thlb_raw",
+        ifm_target_managed_share=0.8,
+    )
+
+    assert gdf.shape[0] == 5
+    assert (gdf["IFM"] == "managed").sum() == 4
+    assert (gdf["IFM"] == "unmanaged").sum() == 1
+
+
+def test_build_fragments_geodataframe_rejects_conflicting_ifm_options(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkpoint_path = tmp_path / "checkpoint7.feather"
+    au_table = pd.DataFrame([{"au_id": 985501000}])
+    checkpoint_df = pd.DataFrame(
+        [
+            {
+                "tsa_code": "k3z",
+                "au": 985501000,
+                "PROJ_AGE_1": 80,
+                "FEATURE_AREA_SQM": 100000.0,
+                "thlb_raw": 0.8,
+                "geometry": Polygon([(0, 0), (100, 0), (100, 100), (0, 100), (0, 0)]),
+            }
+        ]
+    )
+    monkeypatch.setattr(
+        "femic.fmg.patchworks.pd.read_feather", lambda _path: checkpoint_df
+    )
+
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        build_fragments_geodataframe(
+            checkpoint_path=checkpoint_path,
+            au_table=au_table,
+            tsa_list=["k3z"],
+            ifm_source_col="thlb_raw",
+            ifm_threshold=0.2,
+            ifm_target_managed_share=0.8,
+        )
 
 
 def test_write_forestmodel_xml_matches_fixture(tmp_path: Path) -> None:

@@ -11,6 +11,7 @@ import xml.etree.ElementTree as et
 
 import numpy as np
 import pandas as pd
+import yaml
 
 from .adapters import (
     build_bundle_model_context,
@@ -35,6 +36,10 @@ DEFAULT_CC_MIN_AGE = 0
 DEFAULT_CC_MAX_AGE = 1000
 DEFAULT_CC_TRANSITION_IFM: str | None = None
 DEFAULT_FRAGMENTS_CRS = "EPSG:3005"
+DEFAULT_IFM_SOURCE_COL: str | None = None
+DEFAULT_IFM_THRESHOLD: float | None = None
+DEFAULT_IFM_TARGET_MANAGED_SHARE: float | None = None
+DEFAULT_SERAL_STAGE_CONFIG_PATH: Path | None = None
 VALID_IFM_VALUES = {"managed", "unmanaged"}
 REQUIRED_FRAGMENT_COLUMNS = {
     "BLOCK",
@@ -45,6 +50,14 @@ REQUIRED_FRAGMENT_COLUMNS = {
     "TSA",
     "geometry",
 }
+IFM_SIGNAL_PRIORITY = ("thlb", "thlb_fact", "thlb_area", "thlb_raw")
+SERAL_STAGE_ORDER = (
+    "regenerating",
+    "young",
+    "immature",
+    "mature",
+    "overmature",
+)
 
 
 @dataclass(frozen=True)
@@ -191,6 +204,245 @@ def _derived_species_yield_curve_ref(*, au_id: int, managed: bool, species: str)
     return f"au_{int(au_id)}_{mode}_yield_{species_token}"
 
 
+def _seral_curve_ref(*, au_id: int, stage: str) -> str:
+    return f"au_{int(au_id)}_seral_{_sanitize_id_component(stage)}"
+
+
+def _load_seral_stage_config(
+    *,
+    seral_stage_config_path: Path | None,
+) -> dict[str, Any] | None:
+    if seral_stage_config_path is None:
+        return None
+    resolved = seral_stage_config_path.expanduser().resolve()
+    if not resolved.exists():
+        raise FileNotFoundError(f"Seral stage config not found: {resolved}")
+    payload = yaml.safe_load(resolved.read_text(encoding="utf-8"))
+    if payload is None:
+        return {}
+    if not isinstance(payload, dict):
+        raise ValueError(
+            "Seral stage config must contain a top-level mapping/object "
+            f"(found {type(payload).__name__})"
+        )
+    return payload
+
+
+def _evaluate_curve_on_integer_ages(
+    *,
+    points: tuple[CurvePoint, ...],
+    max_age: int,
+) -> list[tuple[int, float]]:
+    if max_age < 1:
+        return [(1, 0.0)]
+    values: list[tuple[int, float]] = []
+    for age in range(1, int(max_age) + 1):
+        y = max(0.0, float(_curve_value_at_x(points=points, x=float(age))))
+        values.append((age, y))
+    return values
+
+
+def _derive_default_seral_bounds(
+    *,
+    managed_total_curve_points: tuple[CurvePoint, ...],
+    horizon_years: int,
+) -> dict[str, tuple[int, int | None]]:
+    cmai_age, peak_yield_age = _derive_curve_metrics(
+        managed_total_curve_points=managed_total_curve_points,
+        horizon_years=horizon_years,
+    )
+    # Keep stage ordering sane even if CMAI happens unusually early.
+    cmai_for_bounds = max(cmai_age, 25)
+    mature_upper = min(peak_yield_age, 200)
+    mature_min = cmai_for_bounds + 1
+    mature_upper = max(mature_upper, mature_min)
+
+    return {
+        "regenerating": (0, 5),
+        "young": (6, 25),
+        "immature": (26, cmai_for_bounds),
+        "mature": (mature_min, mature_upper),
+        "overmature": (mature_upper + 1, None),
+    }
+
+
+def _derive_curve_metrics(
+    *,
+    managed_total_curve_points: tuple[CurvePoint, ...],
+    horizon_years: int,
+) -> tuple[int, int]:
+    finite_x = [
+        float(point.x)
+        for point in managed_total_curve_points
+        if math.isfinite(float(point.x))
+    ]
+    max_curve_age = int(max(finite_x, default=float(horizon_years)))
+    max_eval_age = max(200, int(horizon_years), max_curve_age, 1)
+    evaluated = _evaluate_curve_on_integer_ages(
+        points=managed_total_curve_points,
+        max_age=max_eval_age,
+    )
+    peak_yield_age = max(evaluated, key=lambda item: item[1])[0]
+    cmai_age = max(
+        evaluated,
+        key=lambda item: (item[1] / float(item[0])) if item[0] > 0 else -1.0,
+    )[0]
+    return int(cmai_age), int(peak_yield_age)
+
+
+def _resolve_seral_age_value(
+    *,
+    value: Any,
+    token_values: dict[str, int | None],
+    key_name: str,
+) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        token = value.strip().lower()
+        if token in token_values:
+            resolved = token_values[token]
+            if resolved is None:
+                return None
+            return int(resolved)
+    try:
+        as_int = int(float(value))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Invalid seral stage boundary value for {key_name}: {value!r}"
+        ) from exc
+    return as_int
+
+
+def _extract_stage_overrides(
+    *,
+    payload: dict[str, Any],
+    au_id: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    defaults = payload.get("default")
+    if not isinstance(defaults, dict):
+        defaults = payload.get("defaults")
+    if not isinstance(defaults, dict):
+        defaults = payload.get("stages")
+    if not isinstance(defaults, dict):
+        defaults = {}
+
+    au_overrides = payload.get("au_overrides")
+    if not isinstance(au_overrides, dict):
+        au_overrides = payload.get("aus")
+    if not isinstance(au_overrides, dict):
+        au_overrides = payload.get("au")
+    if not isinstance(au_overrides, dict):
+        au_overrides = {}
+
+    by_au = au_overrides.get(str(int(au_id)))
+    if by_au is None:
+        by_au = au_overrides.get(int(au_id))
+    if isinstance(by_au, dict) and isinstance(by_au.get("stages"), dict):
+        by_au = by_au.get("stages")
+    if not isinstance(by_au, dict):
+        by_au = {}
+
+    return defaults, by_au
+
+
+def _resolve_seral_bounds_for_au(
+    *,
+    au_id: int,
+    managed_total_curve_points: tuple[CurvePoint, ...],
+    horizon_years: int,
+    seral_stage_config: dict[str, Any],
+) -> dict[str, tuple[int, int | None]]:
+    resolved = _derive_default_seral_bounds(
+        managed_total_curve_points=managed_total_curve_points,
+        horizon_years=horizon_years,
+    )
+    default_overrides, au_overrides = _extract_stage_overrides(
+        payload=seral_stage_config,
+        au_id=au_id,
+    )
+
+    for stage in SERAL_STAGE_ORDER:
+        stage_defaults = default_overrides.get(stage)
+        stage_au = au_overrides.get(stage)
+        min_age, max_age = resolved[stage]
+        token_values: dict[str, int | None] = {
+            "cmai": resolved["immature"][1],
+            "cmai_plus_1": (resolved["immature"][1] or 0) + 1,
+            "peak_yield_age": resolved["mature"][1],
+            "min_peak_or_200": resolved["mature"][1],
+            "mature_plus_1": ((resolved["mature"][1] or min_age) + 1),
+        }
+        if isinstance(stage_defaults, dict):
+            if "min_age" in stage_defaults:
+                resolved_min = _resolve_seral_age_value(
+                    value=stage_defaults["min_age"],
+                    token_values=token_values,
+                    key_name=f"default.{stage}.min_age",
+                )
+                if resolved_min is not None:
+                    min_age = resolved_min
+            if "max_age" in stage_defaults:
+                max_age = _resolve_seral_age_value(
+                    value=stage_defaults["max_age"],
+                    token_values=token_values,
+                    key_name=f"default.{stage}.max_age",
+                )
+        token_values["mature_plus_1"] = (resolved["mature"][1] or min_age) + 1
+        if isinstance(stage_au, dict):
+            if "min_age" in stage_au:
+                resolved_min = _resolve_seral_age_value(
+                    value=stage_au["min_age"],
+                    token_values=token_values,
+                    key_name=f"au_overrides.{au_id}.{stage}.min_age",
+                )
+                if resolved_min is not None:
+                    min_age = resolved_min
+            if "max_age" in stage_au:
+                max_age = _resolve_seral_age_value(
+                    value=stage_au["max_age"],
+                    token_values=token_values,
+                    key_name=f"au_overrides.{au_id}.{stage}.max_age",
+                )
+
+        if max_age is not None and max_age < min_age:
+            raise ValueError(
+                f"Invalid seral stage bounds for AU {au_id}, stage {stage}: "
+                f"min_age={min_age}, max_age={max_age}"
+            )
+        resolved[stage] = (int(min_age), None if max_age is None else int(max_age))
+
+    return resolved
+
+
+def _build_seral_curve_points(
+    *,
+    min_age: int,
+    max_age: int | None,
+    horizon_years: int,
+    managed_total_curve_points: tuple[CurvePoint, ...],
+) -> tuple[CurvePoint, ...]:
+    finite_x = [
+        float(point.x)
+        for point in managed_total_curve_points
+        if math.isfinite(float(point.x))
+    ]
+    max_curve_age = int(max(finite_x, default=float(horizon_years)))
+    max_age_eval = max(max_curve_age, int(horizon_years), 200)
+    points: list[CurvePoint] = []
+    for age in range(0, max_age_eval + 1):
+        if age < int(min_age):
+            y = 0.0
+        elif max_age is None:
+            y = 1.0
+        elif age <= int(max_age):
+            y = 1.0
+        else:
+            y = 0.0
+        points.append(CurvePoint(x=float(age), y=y))
+    return tuple(points)
+
+
 def _trim_flat_tail_points(
     points: tuple[CurvePoint, ...], *, abs_tol: float = 1e-12
 ) -> tuple[CurvePoint, ...]:
@@ -303,6 +555,7 @@ def build_forestmodel_xml_tree(
     cc_min_age: int = DEFAULT_CC_MIN_AGE,
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
     cc_transition_ifm: str | None = DEFAULT_CC_TRANSITION_IFM,
+    seral_stage_config: dict[str, Any] | None = None,
 ) -> et.Element:
     """Build a Patchworks ForestModel XML tree from FEMIC bundle tables."""
     context = build_bundle_model_context_from_tables(
@@ -318,6 +571,7 @@ def build_forestmodel_xml_tree(
         cc_min_age=cc_min_age,
         cc_max_age=cc_max_age,
         cc_transition_ifm=cc_transition_ifm,
+        seral_stage_config=seral_stage_config,
     )
 
 
@@ -329,6 +583,7 @@ def build_forestmodel_xml_tree_from_context(
     cc_min_age: int = DEFAULT_CC_MIN_AGE,
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
     cc_transition_ifm: str | None = DEFAULT_CC_TRANSITION_IFM,
+    seral_stage_config: dict[str, Any] | None = None,
 ) -> et.Element:
     """Build a Patchworks ForestModel XML tree from shared FMG context."""
     definition = build_patchworks_forestmodel_definition(
@@ -338,6 +593,7 @@ def build_forestmodel_xml_tree_from_context(
         cc_min_age=cc_min_age,
         cc_max_age=cc_max_age,
         cc_transition_ifm=cc_transition_ifm,
+        seral_stage_config=seral_stage_config,
     )
     return forestmodel_definition_to_xml_tree(definition=definition)
 
@@ -350,6 +606,7 @@ def build_patchworks_forestmodel_definition(
     cc_min_age: int = DEFAULT_CC_MIN_AGE,
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
     cc_transition_ifm: str | None = DEFAULT_CC_TRANSITION_IFM,
+    seral_stage_config: dict[str, Any] | None = None,
 ) -> ForestModelDefinition:
     """Build Patchworks ForestModel core definition from shared context."""
     curves: dict[str, tuple[CurvePoint, ...]] = {"unity": (CurvePoint(x=0.0, y=1.0),)}
@@ -387,6 +644,14 @@ def build_patchworks_forestmodel_definition(
         managed_curve_ref = source_curve_ref_by_id[managed_curve_id]
         unmanaged_total_curve = context.curves_by_id.get(unmanaged_curve_id)
         managed_total_curve = context.curves_by_id.get(managed_curve_id)
+        effective_cc_min_age = int(cc_min_age)
+        if managed_total_curve is not None:
+            cmai_age, _ = _derive_curve_metrics(
+                managed_total_curve_points=managed_total_curve.points,
+                horizon_years=horizon_years,
+            )
+            effective_cc_min_age = int(cmai_age - 20)
+        effective_cc_min_age = max(0, min(effective_cc_min_age, int(cc_max_age)))
 
         unmanaged_attrs = [
             AttributeBinding(label="feature.Area.unmanaged", curve_idref="unity"),
@@ -426,14 +691,6 @@ def build_patchworks_forestmodel_definition(
                         curve_idref=species_curve_ref,
                     )
                 )
-        selects.append(
-            SelectDefinition(
-                statement=f"{_au_eq_statement(au.au_id)} and IFM eq 'unmanaged'",
-                feature_attributes=tuple(unmanaged_attrs),
-                include_track=True,
-            )
-        )
-
         managed_attrs = [
             AttributeBinding(label="feature.Area.managed", curve_idref="unity"),
             AttributeBinding(
@@ -502,6 +759,57 @@ def build_patchworks_forestmodel_definition(
                     )
                 )
 
+        if seral_stage_config is not None:
+            seral_source_curve = managed_total_curve
+            if seral_source_curve is None:
+                seral_source_curve = unmanaged_total_curve
+            seral_points = (
+                seral_source_curve.points
+                if seral_source_curve is not None
+                else (CurvePoint(x=0.0, y=0.0),)
+            )
+            seral_bounds = _resolve_seral_bounds_for_au(
+                au_id=au.au_id,
+                managed_total_curve_points=seral_points,
+                horizon_years=horizon_years,
+                seral_stage_config=seral_stage_config,
+            )
+            for stage in SERAL_STAGE_ORDER:
+                stage_min, stage_max = seral_bounds[stage]
+                curve_ref = _seral_curve_ref(au_id=au.au_id, stage=stage)
+                curves[curve_ref] = _build_seral_curve_points(
+                    min_age=stage_min,
+                    max_age=stage_max,
+                    horizon_years=horizon_years,
+                    managed_total_curve_points=seral_points,
+                )
+                feature_label = f"feature.Seral.{stage}"
+                unmanaged_attrs.append(
+                    AttributeBinding(
+                        label=feature_label,
+                        curve_idref=curve_ref,
+                    )
+                )
+                managed_attrs.append(
+                    AttributeBinding(
+                        label=feature_label,
+                        curve_idref=curve_ref,
+                    )
+                )
+                product_attrs.append(
+                    AttributeBinding(
+                        label=(f"product.Seral.area.{stage}.{int(au.au_id)}.CC"),
+                        curve_idref=curve_ref,
+                    )
+                )
+
+        selects.append(
+            SelectDefinition(
+                statement=f"{_au_eq_statement(au.au_id)} and IFM eq 'unmanaged'",
+                feature_attributes=tuple(unmanaged_attrs),
+                include_track=True,
+            )
+        )
         selects.append(
             SelectDefinition(
                 statement=f"{_au_eq_statement(au.au_id)} and IFM eq 'managed'",
@@ -509,7 +817,7 @@ def build_patchworks_forestmodel_definition(
                 include_track=True,
                 track_treatment=TreatmentDefinition(
                     label="CC",
-                    min_age=int(cc_min_age),
+                    min_age=effective_cc_min_age,
                     max_age=int(cc_max_age),
                     assignments=(
                         TreatmentAssignment(
@@ -764,6 +1072,9 @@ def build_fragments_geodataframe(
     au_table: pd.DataFrame,
     tsa_list: Iterable[str],
     fragments_crs: str = DEFAULT_FRAGMENTS_CRS,
+    ifm_source_col: str | None = DEFAULT_IFM_SOURCE_COL,
+    ifm_threshold: float | None = DEFAULT_IFM_THRESHOLD,
+    ifm_target_managed_share: float | None = DEFAULT_IFM_TARGET_MANAGED_SHARE,
 ) -> Any:
     """Build Patchworks fragments GeoDataFrame from FEMIC checkpoint output."""
     df = pd.read_feather(checkpoint_path)
@@ -806,24 +1117,12 @@ def build_fragments_geodataframe(
         pd.to_numeric(total_area_ha, errors="coerce").fillna(0.0).clip(lower=0.0)
     )
 
-    if "thlb" in scoped.columns:
-        managed_flag = pd.to_numeric(scoped["thlb"], errors="coerce").fillna(0.0) > 0.0
-    elif "thlb_fact" in scoped.columns:
-        managed_flag = (
-            pd.to_numeric(scoped["thlb_fact"], errors="coerce").fillna(0.0) > 0.0
-        )
-    elif "thlb_area" in scoped.columns:
-        managed_flag = (
-            pd.to_numeric(scoped["thlb_area"], errors="coerce").fillna(0.0) > 0.0
-        )
-    elif "thlb_raw" in scoped.columns:
-        # Legacy checkpoint field; treat any positive THLB signal as managed.
-        managed_flag = (
-            pd.to_numeric(scoped["thlb_raw"], errors="coerce").fillna(0.0) > 0.0
-        )
-    else:
-        # If no THLB signal exists, default to fully managed.
-        managed_flag = pd.Series(True, index=scoped.index)
+    managed_flag = _resolve_managed_flag(
+        scoped=scoped,
+        ifm_source_col=ifm_source_col,
+        ifm_threshold=ifm_threshold,
+        ifm_target_managed_share=ifm_target_managed_share,
+    )
 
     age = pd.to_numeric(scoped["PROJ_AGE_1"], errors="coerce").fillna(0).astype(int)
     out = pd.DataFrame(
@@ -846,6 +1145,54 @@ def write_fragments_shapefile(*, fragments_gdf: Any, path: Path) -> None:
     """Write fragments shapefile (directory + sidecar files)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fragments_gdf.to_file(path)
+
+
+def _resolve_ifm_signal_col(
+    *, scoped: pd.DataFrame, ifm_source_col: str | None
+) -> str | None:
+    if ifm_source_col is not None and ifm_source_col.strip():
+        candidate = ifm_source_col.strip()
+        if candidate not in scoped.columns:
+            raise ValueError(
+                f"ifm_source_col {candidate!r} was requested but not found in checkpoint"
+            )
+        return candidate
+    for candidate in IFM_SIGNAL_PRIORITY:
+        if candidate in scoped.columns:
+            return candidate
+    return None
+
+
+def _resolve_managed_flag(
+    *,
+    scoped: pd.DataFrame,
+    ifm_source_col: str | None,
+    ifm_threshold: float | None,
+    ifm_target_managed_share: float | None,
+) -> pd.Series:
+    if ifm_threshold is not None and ifm_target_managed_share is not None:
+        raise ValueError(
+            "ifm_threshold and ifm_target_managed_share are mutually exclusive"
+        )
+    signal_col = _resolve_ifm_signal_col(scoped=scoped, ifm_source_col=ifm_source_col)
+    if signal_col is None:
+        # If no THLB signal exists, default to fully managed.
+        return pd.Series(True, index=scoped.index)
+
+    signal = pd.to_numeric(scoped[signal_col], errors="coerce").fillna(0.0)
+    if ifm_target_managed_share is not None:
+        share = float(ifm_target_managed_share)
+        if not 0.0 < share < 1.0:
+            raise ValueError("ifm_target_managed_share must be between 0 and 1")
+        target_count = int(np.ceil(len(signal) * share))
+        managed = pd.Series(False, index=scoped.index)
+        if target_count > 0:
+            ranked = signal.sort_values(ascending=False, kind="mergesort")
+            managed.loc[ranked.index[:target_count]] = True
+        return managed
+
+    threshold = float(ifm_threshold) if ifm_threshold is not None else 0.0
+    return signal > threshold
 
 
 def validate_fragments_geodataframe(*, fragments_gdf: Any) -> None:
@@ -912,6 +1259,10 @@ def export_patchworks_package(
     cc_max_age: int = DEFAULT_CC_MAX_AGE,
     cc_transition_ifm: str | None = DEFAULT_CC_TRANSITION_IFM,
     fragments_crs: str = DEFAULT_FRAGMENTS_CRS,
+    ifm_source_col: str | None = DEFAULT_IFM_SOURCE_COL,
+    ifm_threshold: float | None = DEFAULT_IFM_THRESHOLD,
+    ifm_target_managed_share: float | None = DEFAULT_IFM_TARGET_MANAGED_SHARE,
+    seral_stage_config_path: Path | None = DEFAULT_SERAL_STAGE_CONFIG_PATH,
 ) -> PatchworksExportResult:
     """Export Patchworks package artifacts from FEMIC outputs."""
     normalized_tsa = sorted({normalize_tsa_code(tsa) for tsa in tsa_list})
@@ -922,6 +1273,9 @@ def export_patchworks_package(
         tsa_list=normalized_tsa,
     )
     au_table = _context_to_au_table(context)
+    seral_stage_config = _load_seral_stage_config(
+        seral_stage_config_path=seral_stage_config_path,
+    )
 
     root = build_forestmodel_xml_tree_from_context(
         context=context,
@@ -930,6 +1284,7 @@ def export_patchworks_package(
         cc_min_age=cc_min_age,
         cc_max_age=cc_max_age,
         cc_transition_ifm=cc_transition_ifm,
+        seral_stage_config=seral_stage_config,
     )
     validate_forestmodel_xml_tree(root=root)
     forestmodel_path = output_dir / "forestmodel.xml"
@@ -940,6 +1295,9 @@ def export_patchworks_package(
         au_table=au_table,
         tsa_list=normalized_tsa,
         fragments_crs=fragments_crs,
+        ifm_source_col=ifm_source_col,
+        ifm_threshold=ifm_threshold,
+        ifm_target_managed_share=ifm_target_managed_share,
     )
     validate_fragments_geodataframe(fragments_gdf=fragments_gdf)
     fragments_path = output_dir / "fragments" / "fragments.shp"

@@ -57,6 +57,55 @@ Curve IDs are emitted as readable tokens (for example
 ``managed_total_<id>``, ``managed_prop_<SPP>_<id>``,
 ``au_<au_id>_managed_yield_<SPP>``) while remaining unique within the XML file.
 
+CC treatment minimum age is now resolved per AU as:
+
+``CMAI(managed_total_curve) - 20``
+
+where CMAI is the age with maximum mean annual increment
+(``managed_volume(age) / age``) on the managed total-yield curve. The result is
+clamped to ``[0, --cc-max-age]``.
+
+Seral-stage attributes (optional)
+---------------------------------
+
+When ``--seral-stage-config`` is provided, the exporter emits per-AU binary
+seral curves and binds these attributes:
+
+- ``feature.Seral.regenerating``
+- ``feature.Seral.young``
+- ``feature.Seral.immature``
+- ``feature.Seral.mature``
+- ``feature.Seral.overmature``
+- CC-treatment consequence area accounts by stage/AU:
+  ``product.Seral.area.<stage>.<au_id>.CC``
+
+Default boundaries are derived per AU from managed total-yield CMAI and peak
+yield age:
+
+- regenerating: ``0-5``
+- young: ``6-25``
+- immature: ``26-CMAI`` (CMAI floor of 25 applied for ordering stability)
+- mature: ``CMAI+1`` to ``min(peak_yield_age, 200)``
+- overmature: ``mature_upper+1`` and older
+
+YAML supports optional per-AU stage overrides:
+
+.. code-block:: yaml
+
+   default:
+     mature:
+       max_age: min_peak_or_200
+   au_overrides:
+     "985501000":
+       mature:
+         max_age: 170
+       overmature:
+         min_age: 171
+
+Recognized token values for ``min_age``/``max_age`` are:
+``cmai``, ``cmai_plus_1``, ``peak_yield_age``, ``min_peak_or_200``,
+``mature_plus_1``.
+
 Point formatting policy:
 
 - ``x``: integer age strings when integral (default case)
@@ -86,6 +135,12 @@ Managed/unmanaged assignment:
   ``thlb`` (0/1), then ``thlb_fact`` (>0), then ``thlb_area`` (>0), then
   ``thlb_raw`` (>0).
 - If no THLB signal is present, exporter defaults to ``managed``.
+- You can override the source column with ``--ifm-source-col``.
+- ``--ifm-threshold <value>`` marks stands as managed when source value exceeds
+  the threshold.
+- ``--ifm-target-managed-share <share>`` marks top-N stands as managed to hit the
+  requested stand-count share.
+- ``--ifm-threshold`` and ``--ifm-target-managed-share`` are mutually exclusive.
 
 The fragments dataset must also carry a CRS.
 
@@ -104,7 +159,8 @@ Useful overrides:
 - ``--checkpoint``: alternate stand checkpoint feather (must include geometry, TSA, AU, age)
 - ``--output-dir``: export destination
 - ``--start-year``, ``--horizon-years``, ``--cc-min-age``, ``--cc-max-age``,
-  ``--cc-transition-ifm``, ``--fragments-crs``
+  ``--cc-transition-ifm``, ``--fragments-crs``, ``--seral-stage-config``
+- ``--ifm-source-col``, ``--ifm-threshold``, ``--ifm-target-managed-share``
 
 Transition note:
 

@@ -1,0 +1,24 @@
+default:
+  regenerating:
+    min_age: 0
+    max_age: 5
+  young:
+    min_age: 6
+    max_age: 25
+  immature:
+    min_age: 26
+    max_age: cmai
+  mature:
+    min_age: cmai_plus_1
+    max_age: min_peak_or_200
+  overmature:
+    min_age: mature_plus_1
+    max_age: null
+
+au_overrides:
+  # Override per AU as needed. Example:
+  # "985501000":
+  #   mature:
+  #     max_age: 170
+  #   overmature:
+  #     min_age: 171
