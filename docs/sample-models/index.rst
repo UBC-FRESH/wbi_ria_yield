@@ -8,3 +8,4 @@ repository.
    :maxdepth: 2
 
    k3z
+   k3z-metadata-lineage

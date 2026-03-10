@@ -22,6 +22,8 @@ Authoritative Location and Provenance
   ``config/patchworks.runtime.windows.yaml``
 - Layout target: mirrors the Patchworks sample-model folder pattern
   (same top-level model directories).
+- Detailed metadata lineage: ``docs/sample-models/k3z-metadata-lineage.rst``
+  and ``models/k3z_patchworks_model/metadata/lineage_registry.yaml``.
 
 Model Anatomy
 -------------
@@ -147,6 +149,36 @@ Where to change assumptions:
 - seral account validation logic: ``scripts/targets/seralStages.bsh``.
 - Patchworks UI/map/target wiring: ``analysis/base.pin``.
 
+Parameter Risk and Suggested Ranges
+-----------------------------------
+
+Use these as practical guardrails for student experimentation:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Suggested range
+     - Risk if pushed outside range
+   * - IFM managed share (via ``--ifm-target-managed-share``)
+     - ``0.6`` to ``0.95`` for teaching scenarios
+     - Very low values collapse managed area; very high values remove unmanaged contrast.
+   * - IFM threshold (via ``--ifm-threshold``)
+     - tuned to observed checkpoint signal distribution
+     - Wrong threshold can silently misclassify most stands.
+   * - Topology radius (``--topology-radius``)
+     - ``100`` to ``400`` metres
+     - Too small fragments adjacency graph; too large over-connects blocks.
+   * - Seral stage boundaries (YAML)
+     - keep monotonic non-overlapping age intervals
+     - Invalid boundaries break semantic interpretation and may produce sparse accounts.
+   * - CC min age override
+     - prefer exporter default (``CMAI-20`` logic)
+     - Manual hard-coded values can create unrealistic early/late harvest eligibility.
+   * - Horizon in PIN
+     - maintain period width consistency with account/target logic
+     - Changing horizon without target script updates can distort NDY/even-flow behavior.
+
 Edit Policy: Safe vs Generated
 ------------------------------
 
@@ -168,6 +200,22 @@ Edit with care (authoritative inputs):
 - ``data/fragments.*`` is an upstream model input; treat it as source data and
   rebuild dependent artifacts afterward.
 
+Backup and Recovery Conventions
+-------------------------------
+
+- Keep matrix-build manifests and logs under ``vdyp_io/logs`` for every
+  rebuild run id.
+- Rely on automatic account backup during matrix rebuild:
+  existing ``tracks/accounts.csv`` is moved to
+  ``tracks/accounts_backup_<timestamp>.csv`` before overwrite.
+- Before high-impact model edits (PIN/scripts/XML), create a git checkpoint
+  commit so rollback stays one command away.
+- If a generated family looks inconsistent, regenerate from upstream inputs
+  instead of manual CSV surgery:
+  export patchworks -> build blocks -> matrix build.
+- For release candidates, treat ``models/k3z_patchworks_model/metadata`` docs
+  and registry as required artifacts, not optional notes.
+
 Seral-Stage Account Semantics
 -----------------------------
 
@@ -185,6 +233,71 @@ This lets students answer both:
 
 The PIN also defines a Seral Stages map layer using ``DitherTheme`` over
 ``feature.Seral.*`` in ``analysis/base.pin``.
+
+Scenario Comparison Guidance
+----------------------------
+
+Use this workflow for classroom interpretation of trajectory changes.
+
+Within-scenario trajectory checks:
+
+1. Track inventory-stage area over time using ``feature.Seral.*`` accounts.
+2. Track treatment-consequence area over time using
+   ``product.Seral.area.<stage>.<au_id>.CC`` accounts.
+3. Compare early vs late horizon periods for harvest pressure shift:
+   overmature-focused vs immature/mature-focused CC area.
+
+Cross-scenario comparison checks:
+
+1. Keep model structure fixed (same horizon, PIN wiring, account schema).
+2. Change only intended levers (for example IFM tuning or seral boundaries).
+3. Compare period-aligned trajectories for:
+   - total CC area by stage (sum of ``product.Seral.area.<stage>.*.CC``),
+   - AU-level stage mix in treatment consequences,
+   - standing inventory stage mix via ``feature.Seral.*``.
+
+Report templates (minimum set):
+
+.. list-table::
+   :header-rows: 1
+
+   * - Report question
+     - Account source
+     - Suggested aggregation
+   * - Is harvest shifting into younger forest over time?
+     - ``product.Seral.area.<stage>.<au_id>.CC``
+     - Sum by stage per period; compare stage shares across time.
+   * - Are scenarios preserving more mature/overmature inventory?
+     - ``feature.Seral.mature`` and ``feature.Seral.overmature``
+     - Period-level totals and percent of total managed area.
+   * - Which AUs drive the trajectory change?
+     - ``product.Seral.area.<stage>.<au_id>.CC``
+     - Pivot by AU and stage; rank delta between scenarios.
+   * - Is total harvest pressure stable while stage mix changes?
+     - ``product.HarvestedVolume.managed.Total.CC`` plus seral area accounts
+     - Compare total harvested volume with stage-specific CC area shares.
+
+Release Readiness Checklist
+---------------------------
+
+Use this checklist before distributing a K3Z model revision to students:
+
+1. Rebuild artifacts in order:
+   export patchworks -> build blocks -> matrix-build.
+2. Confirm expected model inputs exist and are current:
+   ``data/fragments.*``, ``yield/forestmodel.xml``, ``blocks/blocks.*``,
+   ``blocks/topology_blocks_200r.csv``.
+3. Confirm matrix outputs and account sync:
+   ``tracks/protoaccounts.csv`` and ``tracks/accounts.csv`` present, with
+   any prior account customizations preserved in timestamped backup files.
+4. Verify PIN loads cleanly and map/targets initialize without runtime errors.
+5. Verify metadata docs are current:
+   ``docs/sample-models/k3z.rst``,
+   ``docs/sample-models/k3z-metadata-lineage.rst``, and
+   ``models/k3z_patchworks_model/metadata/lineage_registry.yaml``.
+6. Capture run evidence and update repo records:
+   append `ROADMAP.md` Detailed Next Steps note and matching `CHANGE_LOG.md`
+   entry for the release build.
 
 Troubleshooting
 ---------------

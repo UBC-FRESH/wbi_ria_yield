@@ -376,4 +376,14 @@ def derive_species_list_from_slots(
             for idx in range(1, int(species_slot_count) + 1)
         ]
     )
-    return [species for species in values if species is not None]
+    output: list[str] = []
+    for species in values:
+        if species is None:
+            continue
+        try:
+            if species != species:
+                continue
+        except Exception:
+            pass
+        output.append(species)
+    return output

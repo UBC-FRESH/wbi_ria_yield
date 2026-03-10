@@ -147,7 +147,7 @@ def build_release_package(
         rel = path.relative_to(release_dir)
         file_entries.append(
             {
-                "path": str(rel),
+                "path": rel.as_posix(),
                 "bytes": path.stat().st_size,
                 "sha256": _sha256(path),
             }

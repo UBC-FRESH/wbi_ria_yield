@@ -1,0 +1,122 @@
+schema_version: 1
+model_id: k3z_patchworks_model
+model_root: models/k3z_patchworks_model
+runtime_config: config/patchworks.runtime.windows.yaml
+
+artifact_inventory:
+  data:
+    fragments_shapefile:
+      path: models/k3z_patchworks_model/data/fragments.shp
+      sidecars:
+        - models/k3z_patchworks_model/data/fragments.dbf
+        - models/k3z_patchworks_model/data/fragments.shx
+        - models/k3z_patchworks_model/data/fragments.prj
+        - models/k3z_patchworks_model/data/fragments.cpg
+      built_by:
+        command: >
+          PYTHONPATH=src python -m femic export patchworks --tsa k3z
+          --seral-stage-config config/seral.k3z.yaml
+      upstream_inputs:
+        - data/model_input_bundle/au_table.csv
+        - data/model_input_bundle/curve_table.csv
+        - data/model_input_bundle/curve_points_table.csv
+        - data/ria_vri_vclr1p_checkpoint7.feather
+      notes:
+        - can override checkpoint with --checkpoint
+        - can tune IFM assignment with --ifm-source-col/--ifm-threshold/--ifm-target-managed-share
+
+  yield:
+    forestmodel_xml:
+      path: models/k3z_patchworks_model/yield/forestmodel.xml
+      built_by:
+        command: >
+          PYTHONPATH=src python -m femic export patchworks --tsa k3z
+          --seral-stage-config config/seral.k3z.yaml
+      upstream_inputs:
+        - data/model_input_bundle/au_table.csv
+        - data/model_input_bundle/curve_table.csv
+        - data/model_input_bundle/curve_points_table.csv
+        - config/seral.k3z.yaml
+      notes:
+        - export writes output/patchworks/forestmodel.xml, then model sync copies into yield/
+
+  blocks:
+    blocks_shapefile:
+      path: models/k3z_patchworks_model/blocks/blocks.shp
+      sidecars:
+        - models/k3z_patchworks_model/blocks/blocks.dbf
+        - models/k3z_patchworks_model/blocks/blocks.shx
+        - models/k3z_patchworks_model/blocks/blocks.prj
+        - models/k3z_patchworks_model/blocks/blocks.cpg
+      built_by:
+        command: >
+          PYTHONPATH=src python -m femic patchworks build-blocks
+          --config config/patchworks.runtime.windows.yaml --topology-radius 200
+      upstream_inputs:
+        - models/k3z_patchworks_model/data/fragments.shp
+      notes:
+        - stand:block identity mode, BLOCK copied from stand id field
+
+    topology_csv:
+      path: models/k3z_patchworks_model/blocks/topology_blocks_200r.csv
+      built_by:
+        command: >
+          PYTHONPATH=src python -m femic patchworks build-blocks
+          --config config/patchworks.runtime.windows.yaml --topology-radius 200
+      upstream_inputs:
+        - models/k3z_patchworks_model/blocks/blocks.shp
+      notes:
+        - schema BLOCK1,BLOCK2,DISTANCE,LENGTH
+
+  tracks:
+    matrix_outputs:
+      path_glob: models/k3z_patchworks_model/tracks/*.csv
+      built_by:
+        command: >
+          PYTHONPATH=src python -m femic patchworks matrix-build
+          --config config/patchworks.runtime.windows.yaml
+      upstream_inputs:
+        - models/k3z_patchworks_model/data/fragments.dbf
+        - models/k3z_patchworks_model/yield/forestmodel.xml
+      notes:
+        - completion is artifact-driven
+        - protoaccounts.csv is promoted to accounts.csv with timestamped backup
+
+lineage_chain:
+  - step: build bundle/checkpoint inputs
+    outputs:
+      - data/model_input_bundle/au_table.csv
+      - data/model_input_bundle/curve_table.csv
+      - data/model_input_bundle/curve_points_table.csv
+      - data/ria_vri_vclr1p_checkpoint7.feather
+  - step: export patchworks package
+    command: >
+      PYTHONPATH=src python -m femic export patchworks --tsa k3z
+      --seral-stage-config config/seral.k3z.yaml
+    outputs:
+      - output/patchworks/forestmodel.xml
+      - output/patchworks/fragments/fragments.shp
+  - step: sync export outputs into tracked model
+    outputs:
+      - models/k3z_patchworks_model/yield/forestmodel.xml
+      - models/k3z_patchworks_model/data/fragments.shp
+  - step: build blocks and topology
+    command: >
+      PYTHONPATH=src python -m femic patchworks build-blocks
+      --config config/patchworks.runtime.windows.yaml --topology-radius 200
+    outputs:
+      - models/k3z_patchworks_model/blocks/blocks.shp
+      - models/k3z_patchworks_model/blocks/topology_blocks_200r.csv
+  - step: rebuild matrix tracks
+    command: >
+      PYTHONPATH=src python -m femic patchworks matrix-build
+      --config config/patchworks.runtime.windows.yaml
+    outputs:
+      - models/k3z_patchworks_model/tracks/protoaccounts.csv
+      - models/k3z_patchworks_model/tracks/accounts.csv
+
+provenance_policy:
+  - use run-scoped manifests and logs in vdyp_io/logs for each rebuild
+  - update this registry whenever input paths, commands, or model structure changes
+  - do not hand-edit generated artifacts; regenerate from upstream inputs
+  - update roadmap detailed notes and changelog in the same milestone as lineage edits

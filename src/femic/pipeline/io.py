@@ -733,7 +733,7 @@ def build_legacy_execution_plan(
     if run_config.run_config_sha256 is not None:
         env["FEMIC_RUN_CONFIG_SHA256"] = run_config.run_config_sha256
     if run_config.boundary_path is not None:
-        env["FEMIC_BOUNDARY_PATH"] = str(run_config.boundary_path)
+        env["FEMIC_BOUNDARY_PATH"] = run_config.boundary_path.as_posix()
     if run_config.boundary_layer:
         env["FEMIC_BOUNDARY_LAYER"] = run_config.boundary_layer
     if run_config.boundary_code:

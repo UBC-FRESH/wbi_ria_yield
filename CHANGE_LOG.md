@@ -2697,3 +2697,93 @@
   - `python -m femic prep validate-case`.
 - Updated `ROADMAP.md` checklist status:
   - `P6.4`, `P6.4a`, `P6.4b`, and `P6.4c` are now checked complete.
+
+## 2026-03-10 - Completed P8.1 K3Z metadata inventory + lineage baseline
+- Added new Sample Models docs page:
+  `docs/sample-models/k3z-metadata-lineage.rst`.
+- Documented:
+  - source dataset inventory feeding `data/`, `yield/`, and `blocks/`,
+  - transformation lineage chain from FEMIC bundle/checkpoint through
+    export/sync/build-blocks/matrix-build,
+  - provenance versioning policy for future model refreshes.
+- Added machine-readable lineage registry under the tracked model:
+  `models/k3z_patchworks_model/metadata/lineage_registry.yaml` with:
+  - artifact-to-source mappings,
+  - canonical build commands,
+  - notes on account sync and generated-artifact handling.
+- Updated docs navigation and linking:
+  - added `k3z-metadata-lineage` to `docs/sample-models/index.rst`,
+  - linked metadata lineage references from `docs/sample-models/k3z.rst`.
+- Updated `ROADMAP.md`:
+  - marked `P8.1`, `P8.1a`, `P8.1b`, and `P8.1c` complete,
+  - appended matching Detailed Next Steps Notes entry.
+
+## 2026-03-10 - Completed P8.2c and P8.4c in K3Z guide
+- Expanded `docs/sample-models/k3z.rst` with a new
+  `Parameter Risk and Suggested Ranges` section documenting practical guardrails
+  and risk notes for key student-tuned controls:
+  - IFM managed share/threshold behavior,
+  - topology radius sensitivity,
+  - seral boundary consistency expectations,
+  - CC min-age override risks,
+  - horizon/target-coupling caution.
+- Added `Backup and Recovery Conventions` section to the same guide covering:
+  - run-log/manifest retention,
+  - automatic `tracks/accounts.csv` timestamp backup behavior during matrix-build,
+  - git checkpoint discipline before high-impact edits,
+  - regeneration-first recovery flow for generated artifact families.
+- Updated roadmap status:
+  - `P8.2c` and `P8.4c` checked complete,
+  - parent items `P8.2` and `P8.4` now fully complete.
+
+## 2026-03-10 - Completed P8.5 scenario interpretation guidance
+- Expanded `docs/sample-models/k3z.rst` with a new
+  `Scenario Comparison Guidance` section for teaching use.
+- Added within-scenario and cross-scenario interpretation workflow for:
+  - inventory-stage trajectories (`feature.Seral.*`),
+  - treatment-stage trajectories (`product.Seral.area.<stage>.<au_id>.CC`).
+- Added a minimum report-template matrix linking core classroom questions to:
+  - account sources,
+  - suggested period/stage/AU aggregations.
+- Updated roadmap status:
+  - `P8.5a`, `P8.5b`, and `P8.5c` checked complete,
+  - parent item `P8.5` now fully complete.
+
+## 2026-03-10 - Completed P8.7 docs QA and release-readiness checks
+- Extended docs contract coverage in `tests/test_docs_contract.py`:
+  - verifies Sample Models navigation wiring from `docs/index.rst` and
+    `docs/sample-models/index.rst`,
+  - enforces required K3Z guide sections in `docs/sample-models/k3z.rst`,
+  - enforces required metadata-lineage sections in
+    `docs/sample-models/k3z-metadata-lineage.rst`.
+- Added `Release Readiness Checklist` section to
+  `docs/sample-models/k3z.rst` for student/collaborator distribution workflow.
+- Updated roadmap status:
+  - `P8.7a`, `P8.7b`, and `P8.7c` checked complete,
+  - parent item `P8.7` now fully complete.
+
+## 2026-03-10 - Queued K3Z plot integration follow-up in roadmap
+- Added pending roadmap item `P8.6d`:
+  `Roll regenerated strata/AU build plots into user-facing K3Z docs`.
+- Added matching Detailed Next Steps note in `ROADMAP.md`, appended at the end
+  of the running chronological list.
+
+## 2026-03-10 - Validation gate unblock and cross-platform path/runtime fixes
+- Resolved 8 Windows validation failures that were blocking full quality-gate
+  completion:
+  - normalized selected serialized path outputs to POSIX form for stable
+    cross-platform contract behavior:
+    - `FEMIC_BOUNDARY_PATH` in legacy execution env payload,
+    - `release_manifest.json` file `path` entries,
+    - VDYP run context path fields and batch command IO dir segment,
+    - stand shapefile export target path string.
+  - made VDYP diagnostic/overlay plot emitters no-op when `matplotlib` is not
+    installed (instead of failing smoothing execution).
+  - updated species-slot derivation to filter NaN-like entries.
+- Validation gates now pass in this environment:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`403 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`

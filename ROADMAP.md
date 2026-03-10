@@ -173,36 +173,78 @@
   - [x] P7.6d Docs contract tests for new guides and CLI docs
 
 ## Phase 8: K3Z Metadata + Student-Facing How-To Documentation Program
-- [ ] P8.1 Build a full metadata inventory and lineage record for K3Z
-  - [ ] P8.1a Catalog every source dataset feeding `data/`, `yield/`, and `blocks/`
-  - [ ] P8.1b Record transformation lineage from FEMIC bundle/checkpoints to model artifacts
-  - [ ] P8.1c Add provenance versioning policy for future model refreshes
-- [ ] P8.2 Publish a parameter/assumption registry for K3Z
+- [x] P8.1 Build a full metadata inventory and lineage record for K3Z
+  - [x] P8.1a Catalog every source dataset feeding `data/`, `yield/`, and `blocks/`
+  - [x] P8.1b Record transformation lineage from FEMIC bundle/checkpoints to model artifacts
+  - [x] P8.1c Add provenance versioning policy for future model refreshes
+- [x] P8.2 Publish a parameter/assumption registry for K3Z
   - [x] P8.2a Enumerate every operational default (IFM, seral, CC age, topology, horizon)
   - [x] P8.2b Map each parameter to its controlling file/CLI flag
-  - [ ] P8.2c Define acceptable ranges and risk notes for student edits
+  - [x] P8.2c Define acceptable ranges and risk notes for student edits
 - [ ] P8.3 Document component-to-function mapping for the full model
   - [x] P8.3a Map each directory/file to Patchworks runtime behavior
   - [x] P8.3b Add account/target traceability (`forestmodel.xml` -> tracks -> PIN targets)
   - [x] P8.3c Add map-layer and report-wiring traceability in `analysis/base.pin`
-- [ ] P8.4 Define a user edit-policy matrix (editable vs generated artifacts)
+- [x] P8.4 Define a user edit-policy matrix (editable vs generated artifacts)
   - [x] P8.4a Mark "safe to edit", "regenerate", and "do not hand-edit" assets
   - [x] P8.4b Add regeneration runbooks for each generated artifact family
-  - [ ] P8.4c Add backup/recovery conventions for learner experiments
-- [ ] P8.5 Add scenario interpretation guidance for teaching use
-  - [ ] P8.5a Explain seral trajectory interpretation within and across scenarios
-  - [ ] P8.5b Explain treatment-shift interpretation using `product.Seral.area.*.*.CC`
-  - [ ] P8.5c Add report/table templates for classroom comparisons
+  - [x] P8.4c Add backup/recovery conventions for learner experiments
+- [x] P8.5 Add scenario interpretation guidance for teaching use
+  - [x] P8.5a Explain seral trajectory interpretation within and across scenarios
+  - [x] P8.5b Explain treatment-shift interpretation using `product.Seral.area.*.*.CC`
+  - [x] P8.5c Add report/table templates for classroom comparisons
 - [ ] P8.6 Expand "Sample Models/K3Z" docs to complete user-facing how-to coverage
   - [x] P8.6a Add end-to-end onboarding checklist for first-run users
   - [x] P8.6b Add failure-signature cookbook with deterministic remediation steps
   - [x] P8.6c Add change-management notes for collaborators extending the model
-- [ ] P8.7 Add docs QA and acceptance checks for K3Z documentation completeness
-  - [ ] P8.7a Add contract tests for new Sample Models navigation/pages
-  - [ ] P8.7b Add required-section checks for K3Z metadata/how-to docs
-  - [ ] P8.7c Add a release-readiness checklist for student distribution
+  - [ ] P8.6d Roll regenerated strata/AU build plots into user-facing K3Z docs
+- [x] P8.7 Add docs QA and acceptance checks for K3Z documentation completeness
+  - [x] P8.7a Add contract tests for new Sample Models navigation/pages
+  - [x] P8.7b Add required-section checks for K3Z metadata/how-to docs
+  - [x] P8.7c Add a release-readiness checklist for student distribution
 
 ## Detailed Next Steps Notes
+- 2026-03-10 (P8.7 docs QA + acceptance checks): added automated docs
+  contract coverage for Sample Models navigation and required K3Z sections,
+  and added a release-readiness checklist for student distribution.
+  - Extended `tests/test_docs_contract.py` with:
+    - Sample Models toctree/page existence checks (`k3z`, `k3z-metadata-lineage`),
+    - required heading checks for `docs/sample-models/k3z.rst`,
+    - required heading checks for
+      `docs/sample-models/k3z-metadata-lineage.rst`.
+  - Added `Release Readiness Checklist` section to
+    `docs/sample-models/k3z.rst`.
+  - Marked `P8.7a/P8.7b/P8.7c` complete.
+- 2026-03-10 (P8.5 scenario interpretation guidance): completed trajectory
+  interpretation guidance for classroom scenario analysis in K3Z docs.
+  - Added `Scenario Comparison Guidance` to `docs/sample-models/k3z.rst`
+    covering within-scenario and cross-scenario comparison workflow.
+  - Added explicit treatment-shift interpretation guidance using
+    `product.Seral.area.<stage>.<au_id>.CC` trajectories.
+  - Added a minimum report-template matrix mapping analytical questions to
+    account sources and aggregation patterns for student exercises.
+  - Marked `P8.5a/P8.5b/P8.5c` complete.
+- 2026-03-10 (P8.2c + P8.4c completion): expanded K3Z guide with explicit
+  student-facing parameter risk ranges and backup/recovery conventions.
+  - Added `Parameter Risk and Suggested Ranges` section to
+    `docs/sample-models/k3z.rst` covering IFM share/threshold tuning,
+    topology radius, seral boundaries, CC min-age behavior, and horizon risk.
+  - Added `Backup and Recovery Conventions` section to document run-log
+    retention, automatic `accounts.csv` timestamp backups, and regeneration-
+    first recovery practices.
+  - Marked `P8.2c` and `P8.4c` complete; with this, `P8.2` and `P8.4` are
+    now fully complete.
+- 2026-03-10 (P8.1 metadata + lineage baseline): completed initial K3Z
+  metadata lineage capture for student-facing use and future rebuild governance.
+  - Added docs page `docs/sample-models/k3z-metadata-lineage.rst` with:
+    source inventory for `data/`, `yield/`, `blocks/`, explicit lineage chain,
+    and a provenance versioning policy/checklist.
+  - Added machine-readable registry
+    `models/k3z_patchworks_model/metadata/lineage_registry.yaml` encoding
+    artifact-to-source mappings, builder commands, and provenance rules.
+  - Wired metadata page into Sample Models docs navigation
+    (`docs/sample-models/index.rst`) and linked from K3Z guide.
+  - Marked `P8.1a/P8.1b/P8.1c` complete.
 - 2026-03-10 (P6.4 onboarding regression scenarios): completed the queued
   onboarding regression test slice by adding template-driven case preflight and
   docs-linkage contract coverage.
@@ -2619,3 +2661,21 @@
     point at `../models/k3z_patchworks_model/...` (config-relative paths).
   - Verified `femic patchworks preflight` and `femic patchworks matrix-build`
     run successfully against the in-repo model (`run_id=repo_model_move_verify_20260310`).
+- 2026-03-10 (plot docs follow-up): queued a docs enhancement to include the
+  regenerated K3Z strata/AU plots in the student-facing Sample Models guide
+  after the next full pipeline rerun refreshes those artifacts.
+  - Added pending roadmap item `P8.6d`:
+    `Roll regenerated strata/AU build plots into user-facing K3Z docs`.
+- 2026-03-10 (validation gate unblock for docs checkpoint): resolved
+  cross-platform/runtime regressions so full repository quality gates pass in
+  this Windows environment.
+  - Normalized selected emitted path strings to POSIX form where tests and
+    downstream interchange contracts require stable separators
+    (`legacy env boundary path`, `release manifest paths`, VDYP context/command
+    payload strings, stand export file target path string).
+  - Added graceful no-op behavior for VDYP diagnostic plotting when
+    `matplotlib` is unavailable.
+  - Hardened species slot derivation to exclude NaN-like species tokens.
+  - Re-ran required gates successfully:
+    `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+    `pre-commit run --all-files`, `sphinx-build -b html docs _build/html -W`.

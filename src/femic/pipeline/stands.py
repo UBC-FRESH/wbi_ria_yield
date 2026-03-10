@@ -145,4 +145,4 @@ def export_stands_shapefiles(
             au_table=au_table,
             pd_module=pd_mod,
         )
-        out.to_file(tsa_dir / "stands.shp")
+        out.to_file((tsa_dir / "stands.shp").as_posix())

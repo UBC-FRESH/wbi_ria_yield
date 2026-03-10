@@ -215,7 +215,7 @@ def build_vdyp_batch_command(
     vdyp_err_txt: str,
 ) -> str:
     """Build legacy VDYP command text used for execution and logging metadata."""
-    vdyp_io_dir_str = str(_as_path(vdyp_io_dir))
+    vdyp_io_dir_str = _as_path(vdyp_io_dir).as_posix()
     args = "wine %s -p %s -ip .\\\\%s\\\\%s -il .\\\\%s\\\\%s" % (
         vdyp_binpath,
         vdyp_params_infile,
@@ -271,19 +271,29 @@ def build_vdyp_run_context(
     vdyp_params: str | Path | None = None,
 ) -> dict[str, Any]:
     """Build VDYP run context payload while preserving caller-provided values."""
+
+    def _normalize_context_path(value: str | Path) -> str:
+        if isinstance(value, Path):
+            return value.as_posix()
+        return str(value)
+
     context = dict(base_context or {})
     if tsa is not None:
         context.setdefault("tsa", tsa)
     if run_id is not None:
         context.setdefault("run_id", run_id)
     if vdyp_stdout_log_path is not None:
-        context.setdefault("vdyp_stdout_log", str(vdyp_stdout_log_path))
+        context.setdefault(
+            "vdyp_stdout_log", _normalize_context_path(vdyp_stdout_log_path)
+        )
     if vdyp_stderr_log_path is not None:
-        context.setdefault("vdyp_stderr_log", str(vdyp_stderr_log_path))
+        context.setdefault(
+            "vdyp_stderr_log", _normalize_context_path(vdyp_stderr_log_path)
+        )
     if vdyp_binpath is not None:
-        context.setdefault("vdyp_binpath", str(vdyp_binpath))
+        context.setdefault("vdyp_binpath", _normalize_context_path(vdyp_binpath))
     if vdyp_params is not None:
-        context.setdefault("vdyp_params", str(vdyp_params))
+        context.setdefault("vdyp_params", _normalize_context_path(vdyp_params))
     return context
 
 
@@ -2323,7 +2333,10 @@ def execute_curve_smoothing_runs(
         candidate_curves: Mapping[str, tuple[Sequence[float], Sequence[float]]],
         fit_metrics: Mapping[str, Mapping[str, float]],
     ) -> None:
-        plt_module = importlib.import_module("matplotlib.pyplot")
+        try:
+            plt_module = importlib.import_module("matplotlib.pyplot")
+        except ModuleNotFoundError:
+            return
         plot_root = Path("plots")
         plot_root.mkdir(parents=True, exist_ok=True)
         plot_path = plot_root / (
@@ -2439,7 +2452,10 @@ def execute_curve_smoothing_runs(
     ) -> None:
         if not runs:
             return
-        plt_module = importlib.import_module("matplotlib.pyplot")
+        try:
+            plt_module = importlib.import_module("matplotlib.pyplot")
+        except ModuleNotFoundError:
+            return
         plot_root = Path("plots")
         plot_root.mkdir(parents=True, exist_ok=True)
         grouped: dict[tuple[int, str], dict[str, SmoothedCurveResult]] = {}

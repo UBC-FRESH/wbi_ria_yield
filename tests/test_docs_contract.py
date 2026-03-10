@@ -10,6 +10,7 @@ from femic.cli.main import app
 
 DOCS_ROOT = Path("docs")
 GUIDES_ROOT = DOCS_ROOT / "guides"
+SAMPLE_MODELS_ROOT = DOCS_ROOT / "sample-models"
 COVERAGE_CSV = GUIDES_ROOT / "legacy_notebook_coverage.csv"
 
 GUIDE_PAGES = [
@@ -25,6 +26,10 @@ GUIDE_PAGES = [
     "patchworks-wine-runtime",
     "ubc-vpn-license-connectivity",
     "legacy-traceability",
+]
+SAMPLE_MODEL_PAGES = [
+    "k3z",
+    "k3z-metadata-lineage",
 ]
 
 NOTEBOOKS = [
@@ -172,3 +177,44 @@ def test_case_onboarding_guide_keeps_template_and_preflight_links() -> None:
     assert "config/run_profile.case_template.yaml" in guide_text
     assert "config/tipsy/template.case.yaml" in guide_text
     assert "python -m femic prep validate-case" in guide_text
+
+
+def test_sample_model_pages_are_in_docs_tree() -> None:
+    assert (DOCS_ROOT / "index.rst").exists()
+    index_text = (DOCS_ROOT / "index.rst").read_text()
+    assert "sample-models/index" in index_text
+
+    sample_models_index = (SAMPLE_MODELS_ROOT / "index.rst").read_text()
+    for slug in SAMPLE_MODEL_PAGES:
+        page_path = SAMPLE_MODELS_ROOT / f"{slug}.rst"
+        assert page_path.exists(), f"missing sample-model page: {page_path}"
+        assert slug in sample_models_index, f"missing toctree entry for {slug}"
+
+
+def test_k3z_sample_model_docs_keep_required_sections() -> None:
+    k3z_text = (SAMPLE_MODELS_ROOT / "k3z.rst").read_text()
+    required_k3z_sections = [
+        "Purpose and Scope",
+        "Model Anatomy",
+        "Build and Rebuild Workflow",
+        "Parameter Risk and Suggested Ranges",
+        "Edit Policy: Safe vs Generated",
+        "Backup and Recovery Conventions",
+        "Scenario Comparison Guidance",
+        "Release Readiness Checklist",
+        "Troubleshooting",
+    ]
+    for heading in required_k3z_sections:
+        assert heading in k3z_text, f"k3z.rst missing required section: {heading}"
+
+    lineage_text = (SAMPLE_MODELS_ROOT / "k3z-metadata-lineage.rst").read_text()
+    required_lineage_sections = [
+        "Inventory: Upstream Sources -> Model Artifacts",
+        "Build-Lineage Chain",
+        "Provenance Versioning Policy",
+        "Acceptance Checklist for Lineage Updates",
+    ]
+    for heading in required_lineage_sections:
+        assert heading in lineage_text, (
+            f"k3z-metadata-lineage.rst missing required section: {heading}"
+        )
