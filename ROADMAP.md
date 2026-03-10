@@ -211,7 +211,7 @@
 - [ ] P9.2 Update URL and publication endpoints to new repository slug
   - [x] P9.2a Update in-repo GitHub links to `github.com/UBC-FRESH/femic`
   - [x] P9.2b Update published docs URL references to `ubc-fresh.github.io/femic`
-  - [ ] P9.2c Validate GitHub Pages deployment behavior after rename cutover
+  - [x] P9.2c Validate GitHub Pages deployment behavior after rename cutover
 - [x] P9.3 Remove hard-coded old-slug local path assumptions from runtime config
   - [x] P9.3a Replace `wbi_ria_yield` absolute path references with config-relative/env-driven paths
   - [x] P9.3b Revalidate Patchworks runtime preflight/build commands using updated paths
@@ -2744,3 +2744,11 @@
     missing `SPSHOME` indicates install/registration may be incomplete.
   - Added regression test:
     `tests/test_patchworks_runtime.py::test_run_patchworks_preflight_warns_when_env_spshome_missing`.
+- 2026-03-10 (Pages post-rename verification + Node 24 readiness): confirmed
+  docs are live under the renamed repo/docs URL and updated workflow defaults
+  to avoid pending Node 20 action deprecation risk.
+  - Confirmed GitHub Pages publish target is now `https://ubc-fresh.github.io/femic/`.
+  - Updated `.github/workflows/docs-pages.yml` to set:
+    `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true`.
+  - Upgraded `actions/upload-pages-artifact` from `@v3` to `@v4`.
+  - Marked `P9.2c` complete.

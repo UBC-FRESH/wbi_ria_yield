@@ -9,6 +9,9 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 permissions:
   contents: read
   pages: write
@@ -43,7 +46,7 @@ jobs:
         run: sphinx-build -b html docs _build/html -W
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _build/html
 

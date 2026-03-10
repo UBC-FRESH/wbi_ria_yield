@@ -2851,3 +2851,13 @@
 - Added regression coverage:
   - `tests/test_patchworks_runtime.py::test_run_patchworks_preflight_warns_when_env_spshome_missing`.
 - Full validation gates re-run and passing after this change.
+
+## 2026-03-10 - GitHub Pages rename verification + Node 24 action opt-in
+- Confirmed docs deployment after repo rename is live at:
+  `https://ubc-fresh.github.io/femic/`.
+- Addressed GitHub Actions Node 20 deprecation warning in docs workflow by:
+  - setting `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` in
+    `.github/workflows/docs-pages.yml`,
+  - upgrading `actions/upload-pages-artifact` from `@v3` to `@v4`.
+- Updated roadmap status:
+  - marked `P9.2c` complete.
