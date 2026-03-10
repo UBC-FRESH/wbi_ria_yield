@@ -11,6 +11,12 @@ Forest Estate Model Input Compiler (FEMIC) documentation.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Sample Models
+
+   sample-models/index
+
+.. toctree::
+   :maxdepth: 2
    :caption: Reference
 
    reference/cli

@@ -165,3 +165,10 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
 def test_case_onboarding_templates_exist() -> None:
     assert Path("config/run_profile.case_template.yaml").exists()
     assert Path("config/tipsy/template.case.yaml").exists()
+
+
+def test_case_onboarding_guide_keeps_template_and_preflight_links() -> None:
+    guide_text = (GUIDES_ROOT / "case-onboarding.rst").read_text()
+    assert "config/run_profile.case_template.yaml" in guide_text
+    assert "config/tipsy/template.case.yaml" in guide_text
+    assert "python -m femic prep validate-case" in guide_text

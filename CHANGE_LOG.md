@@ -2642,3 +2642,58 @@
   - `python -m femic patchworks preflight --config config/patchworks.runtime.windows.yaml`
   - `python -m femic patchworks matrix-build --config config/patchworks.runtime.windows.yaml --run-id repo_model_move_verify_20260310`
   - matrix build completed with `returncode=0` and accounts sync.
+
+## 2026-03-10 - Added Sample Models docs section and detailed K3Z guide
+- Added a new top-level Sphinx docs navigation section in `docs/index.rst`:
+  `Sample Models`.
+- Added `docs/sample-models/index.rst` and wired it into the docs toctree.
+- Added a detailed K3Z user-facing guide at `docs/sample-models/k3z.rst`
+  covering:
+  - model purpose/scope and authoritative source path
+    (`models/k3z_patchworks_model`),
+  - full model anatomy mapping (`analysis/`, `blocks/`, `data/`, `scripts/`,
+    `tracks/`, `yield/` and supporting folders),
+  - repo-based rebuild workflow (`preflight`, `build-blocks`, `matrix-build`)
+    with expected artifacts and runtime log/manifest paths,
+  - runtime config pathing notes for
+    `config/patchworks.runtime.windows.yaml`,
+  - matrix-builder account sync behavior
+    (`protoaccounts.csv -> accounts.csv` + timestamped backup),
+  - current assumptions/parameters, safe-to-edit vs regenerate guidance,
+    seral semantics, and common troubleshooting signatures.
+- Added new planning phase to `ROADMAP.md`:
+  `Phase 8: K3Z Metadata + Student-Facing How-To Documentation Program`,
+  including explicit sub-steps for metadata lineage, assumption registry,
+  component mapping, edit policy matrix, scenario guidance, and docs QA.
+- Updated `ROADMAP.md` Detailed Next Steps Notes with a matching entry tied to
+  the current in-repo K3Z model state.
+
+## 2026-03-10 - Roadmap progress checkboxes updated for delivered K3Z docs work
+- Updated `ROADMAP.md` Phase 8 checklist statuses so completed items are
+  visibly checked off instead of all pending.
+- Marked completed starter tasks:
+  - `P8.2a/P8.2b` (defaults + file/CLI mapping),
+  - `P8.3a/P8.3b/P8.3c` (component traceability and PIN map/report wiring),
+  - `P8.4a/P8.4b` (edit-policy matrix + regeneration runbooks),
+  - `P8.6a/P8.6b/P8.6c` (onboarding/checklist, troubleshooting cookbook,
+    collaborator change-management notes).
+- Left deeper metadata and QA items pending (`P8.1*`, `P8.2c`, `P8.4c`,
+  `P8.5*`, `P8.7*`) to reflect remaining scope accurately.
+
+## 2026-03-10 - Completed P6.4 onboarding regression scenario tests
+- Added new-case onboarding smoke coverage in
+  `tests/test_case_preflight_cli.py`:
+  - instantiate run-profile from `config/run_profile.case_template.yaml`,
+  - instantiate TIPSY config from `config/tipsy/template.case.yaml`,
+  - validate the derived case with `femic prep validate-case`.
+- Added template-driven boundary-mode compatibility coverage:
+  - derived profile with `selection.boundary_path` + `selection.boundary_code`,
+  - matching `tsa<boundary_code>.yaml` TIPSY config,
+  - successful `prep validate-case` preflight.
+- Added docs linkage contract in `tests/test_docs_contract.py` to enforce that
+  `docs/guides/case-onboarding.rst` continues to reference:
+  - `config/run_profile.case_template.yaml`,
+  - `config/tipsy/template.case.yaml`,
+  - `python -m femic prep validate-case`.
+- Updated `ROADMAP.md` checklist status:
+  - `P6.4`, `P6.4a`, `P6.4b`, and `P6.4c` are now checked complete.

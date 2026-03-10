@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from typer.testing import CliRunner
+import yaml
 
 from femic.cli import main as cli_main
 from femic.cli.main import app
@@ -200,3 +201,117 @@ def test_prep_validate_case_strict_warnings_fails(tmp_path: Path, monkeypatch) -
 
     assert result.exit_code == 1
     assert "strict warning mode enabled" in result.stdout
+
+
+def test_prep_validate_case_smoke_from_instantiated_templates(
+    tmp_path: Path, monkeypatch
+) -> None:
+    run_profile_template = Path("config/run_profile.case_template.yaml")
+    tipsy_template = Path("config/tipsy/template.case.yaml")
+
+    profile_payload = yaml.safe_load(run_profile_template.read_text(encoding="utf-8"))
+    assert isinstance(profile_payload, dict)
+    selection = profile_payload.setdefault("selection", {})
+    run = profile_payload.setdefault("run", {})
+    assert isinstance(selection, dict)
+    assert isinstance(run, dict)
+    selection["tsa"] = ["40"]
+    run["log_dir"] = (tmp_path / "logs").as_posix()
+
+    profile = tmp_path / "run_profile.newcase.yaml"
+    profile.write_text(
+        yaml.safe_dump(profile_payload, sort_keys=False), encoding="utf-8"
+    )
+
+    tipsy_payload = yaml.safe_load(tipsy_template.read_text(encoding="utf-8"))
+    assert isinstance(tipsy_payload, dict)
+    tipsy_payload["tsa_code"] = "40"
+    cfg_dir = tmp_path / "tipsy"
+    cfg_dir.mkdir()
+    (cfg_dir / "tsa40.yaml").write_text(
+        yaml.safe_dump(tipsy_payload, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(cli_main, "_preflight_checks", lambda *, resume: None)
+    monkeypatch.setattr(
+        cli_main,
+        "resolve_legacy_external_data_paths",
+        lambda **_: _mock_external_paths(tmp_path),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "prep",
+            "validate-case",
+            "--run-config",
+            str(profile),
+            "--tipsy-config-dir",
+            str(cfg_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Case preflight passed" in result.stdout
+    assert "targets=[40]" in result.stdout
+
+
+def test_prep_validate_case_template_boundary_mode_compatibility(
+    tmp_path: Path, monkeypatch
+) -> None:
+    boundary = tmp_path / "boundary.shp"
+    boundary.touch()
+    run_profile_template = Path("config/run_profile.case_template.yaml")
+    tipsy_template = Path("config/tipsy/template.case.yaml")
+
+    profile_payload = yaml.safe_load(run_profile_template.read_text(encoding="utf-8"))
+    assert isinstance(profile_payload, dict)
+    selection = profile_payload.setdefault("selection", {})
+    run = profile_payload.setdefault("run", {})
+    assert isinstance(selection, dict)
+    assert isinstance(run, dict)
+    selection["tsa"] = []
+    selection["boundary_path"] = boundary.as_posix()
+    selection["boundary_layer"] = None
+    selection["boundary_code"] = "k3z"
+    run["log_dir"] = (tmp_path / "logs").as_posix()
+
+    profile = tmp_path / "run_profile.k3z.yaml"
+    profile.write_text(
+        yaml.safe_dump(profile_payload, sort_keys=False), encoding="utf-8"
+    )
+
+    tipsy_payload = yaml.safe_load(tipsy_template.read_text(encoding="utf-8"))
+    assert isinstance(tipsy_payload, dict)
+    tipsy_payload["tsa_code"] = "k3z"
+    cfg_dir = tmp_path / "tipsy"
+    cfg_dir.mkdir()
+    (cfg_dir / "tsak3z.yaml").write_text(
+        yaml.safe_dump(tipsy_payload, sort_keys=False),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(cli_main, "_preflight_checks", lambda *, resume: None)
+    monkeypatch.setattr(
+        cli_main,
+        "resolve_legacy_external_data_paths",
+        lambda **_: _mock_external_paths(tmp_path),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "prep",
+            "validate-case",
+            "--run-config",
+            str(profile),
+            "--tipsy-config-dir",
+            str(cfg_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Case preflight passed" in result.stdout
+    assert "targets=" in result.stdout
+    assert "Missing TIPSY config" not in result.stdout

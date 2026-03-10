@@ -136,10 +136,10 @@
   - [x] P6.3a Emit versioned output bundle for training deployments
   - [x] P6.3b Add concise handoff notes with commands and QA expectations
   - [x] P6.3c Add acceptance checks for package completeness
-- [ ] P6.4 Add onboarding regression scenario tests
-  - [ ] P6.4a Add smoke case for new-case template instantiation
-  - [ ] P6.4b Validate template-driven run/profile compatibility
-  - [ ] P6.4c Add docs checks ensuring onboarding guide + templates remain linked
+- [x] P6.4 Add onboarding regression scenario tests
+  - [x] P6.4a Add smoke case for new-case template instantiation
+  - [x] P6.4b Validate template-driven run/profile compatibility
+  - [x] P6.4c Add docs checks ensuring onboarding guide + templates remain linked
 
 ## Phase 7: Patchworks Runtime Integration + UBC VPN Licensing
 - [x] P7.1 Protect proprietary Patchworks bundle in git
@@ -172,7 +172,66 @@
   - [x] P7.6c Integration smoke test with mocked external calls
   - [x] P7.6d Docs contract tests for new guides and CLI docs
 
+## Phase 8: K3Z Metadata + Student-Facing How-To Documentation Program
+- [ ] P8.1 Build a full metadata inventory and lineage record for K3Z
+  - [ ] P8.1a Catalog every source dataset feeding `data/`, `yield/`, and `blocks/`
+  - [ ] P8.1b Record transformation lineage from FEMIC bundle/checkpoints to model artifacts
+  - [ ] P8.1c Add provenance versioning policy for future model refreshes
+- [ ] P8.2 Publish a parameter/assumption registry for K3Z
+  - [x] P8.2a Enumerate every operational default (IFM, seral, CC age, topology, horizon)
+  - [x] P8.2b Map each parameter to its controlling file/CLI flag
+  - [ ] P8.2c Define acceptable ranges and risk notes for student edits
+- [ ] P8.3 Document component-to-function mapping for the full model
+  - [x] P8.3a Map each directory/file to Patchworks runtime behavior
+  - [x] P8.3b Add account/target traceability (`forestmodel.xml` -> tracks -> PIN targets)
+  - [x] P8.3c Add map-layer and report-wiring traceability in `analysis/base.pin`
+- [ ] P8.4 Define a user edit-policy matrix (editable vs generated artifacts)
+  - [x] P8.4a Mark "safe to edit", "regenerate", and "do not hand-edit" assets
+  - [x] P8.4b Add regeneration runbooks for each generated artifact family
+  - [ ] P8.4c Add backup/recovery conventions for learner experiments
+- [ ] P8.5 Add scenario interpretation guidance for teaching use
+  - [ ] P8.5a Explain seral trajectory interpretation within and across scenarios
+  - [ ] P8.5b Explain treatment-shift interpretation using `product.Seral.area.*.*.CC`
+  - [ ] P8.5c Add report/table templates for classroom comparisons
+- [ ] P8.6 Expand "Sample Models/K3Z" docs to complete user-facing how-to coverage
+  - [x] P8.6a Add end-to-end onboarding checklist for first-run users
+  - [x] P8.6b Add failure-signature cookbook with deterministic remediation steps
+  - [x] P8.6c Add change-management notes for collaborators extending the model
+- [ ] P8.7 Add docs QA and acceptance checks for K3Z documentation completeness
+  - [ ] P8.7a Add contract tests for new Sample Models navigation/pages
+  - [ ] P8.7b Add required-section checks for K3Z metadata/how-to docs
+  - [ ] P8.7c Add a release-readiness checklist for student distribution
+
 ## Detailed Next Steps Notes
+- 2026-03-10 (P6.4 onboarding regression scenarios): completed the queued
+  onboarding regression test slice by adding template-driven case preflight and
+  docs-linkage contract coverage.
+  - Added `tests/test_case_preflight_cli.py` scenarios for:
+    - smoke instantiation from `config/run_profile.case_template.yaml` +
+      `config/tipsy/template.case.yaml` (new TSA code) passing
+      `femic prep validate-case`;
+    - boundary-mode compatibility using template-derived profile
+      (`selection.boundary_path`/`selection.boundary_code`) with matching
+      `tsa<boundary_code>.yaml` config.
+  - Added docs contract check in `tests/test_docs_contract.py` requiring
+    `docs/guides/case-onboarding.rst` to keep links to both onboarding
+    templates plus the `femic prep validate-case` command.
+  - Marked `P6.4a/P6.4b/P6.4c` complete.
+- 2026-03-10 (Sample Models docs + K3Z deep-dive launch): added a new
+  top-level Sphinx "Sample Models" section and published a detailed K3Z guide at
+  `docs/sample-models/k3z.rst`, anchored to the in-repo authoritative model
+  state at `models/k3z_patchworks_model/`.
+  - Documented purpose/scope, provenance, full component mapping, rebuild
+    commands, runtime pathing, and matrix-builder artifact expectations.
+  - Explicitly documented post-build accounts promotion behavior:
+    `tracks/protoaccounts.csv -> tracks/accounts.csv` with timestamped backup.
+  - Added user guidance for assumptions/parameters, edit policy, seral account
+    semantics, and common troubleshooting signatures.
+  - Added new planning phase `Phase 8` to drive full student-facing K3Z
+    metadata/how-to documentation to completion.
+  - Marked completed Phase 8 starter tasks in checklist form (`P8.2a/P8.2b`,
+    `P8.3a/P8.3b/P8.3c`, `P8.4a/P8.4b`, `P8.6a/P8.6b/P8.6c`) so roadmap
+    progress reflects delivered docs work.
 - 2026-03-09 (THLB/IFM tuning for Patchworks export): confirmed legacy 00 THLB
   assignment logic is still in effect (`assign_thlb_area_and_flag` with fixed
   thresholds 93/69/50 and `thlb_raw` expected on percent-like scale), and added
