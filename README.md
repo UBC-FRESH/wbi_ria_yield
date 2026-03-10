@@ -135,6 +135,9 @@ tracks output artifacts and fatal-log signatures rather than JVM exit code alone
 `femic patchworks build-blocks` creates a 1:1 stand:block dataset at
 `<model>/blocks/blocks.shp` (with `BLOCK` copied from `FEATURE_ID`/`FRAGS_ID`)
 and, by default, writes `<model>/blocks/topology_blocks_200r.csv` for PIN wiring.
+The tracked teaching prototype model now lives in-repo at
+`models/k3z_patchworks_model/`, and `config/patchworks.runtime.windows.yaml`
+points to this location.
 
 7. Export Woodstock compatibility CSV package:
 

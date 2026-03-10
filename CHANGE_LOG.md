@@ -2631,3 +2631,14 @@
   `C:\Users\gep\Documents\msfm\msfm2025\k3z_patchworks_model\analysis\base.pin`
   using sample-style `DitherTheme` config (`feature.Seral.*` themes with
   legend title `Seral Stages`).
+
+## 2026-03-10 - Moved K3Z Patchworks prototype model into repo for tracking
+- Added in-repo tracked prototype model at:
+  `models/k3z_patchworks_model/` (analysis/blocks/data/scripts/tracks/yield).
+- Updated `config/patchworks.runtime.windows.yaml` matrix builder paths to use
+  config-relative in-repo locations:
+  `../models/k3z_patchworks_model/...`.
+- Verified runtime against the in-repo model:
+  - `python -m femic patchworks preflight --config config/patchworks.runtime.windows.yaml`
+  - `python -m femic patchworks matrix-build --config config/patchworks.runtime.windows.yaml --run-id repo_model_move_verify_20260310`
+  - matrix build completed with `returncode=0` and accounts sync.

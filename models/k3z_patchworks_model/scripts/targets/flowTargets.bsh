@@ -1,0 +1,69 @@
+/*************************************************************
+ *
+ * Configure flow ratio accounts for managed yield accounts.
+ *
+ * - Even flow on all product.Yield.managed.* accounts.
+ * - NDY flow on all feature.Yield.managed.* accounts.
+ *
+ *************************************************************/
+
+_resolveAccountsFile() {
+   File accountsFile = AttributeStore.absoluteFile("../tracks/accounts.csv");
+   if (accountsFile == null) {
+      accountsFile = new File("../tracks/accounts.csv").getAbsoluteFile();
+   }
+   return accountsFile;
+}
+
+_collectAccounts(String prefix) {
+   TreeSet out = new TreeSet();
+   File accountsFile = _resolveAccountsFile();
+   if (!accountsFile.exists()) {
+      throw new IllegalStateException("Missing tracks/accounts.csv: "+accountsFile.getPath());
+   }
+
+   BufferedReader reader = new BufferedReader(new FileReader(accountsFile));
+   try {
+      String line = null;
+      boolean first = true;
+      while ((line = reader.readLine()) != null) {
+         if (first) {
+            first = false;
+            continue;
+         }
+         String[] parts = line.split(",");
+         if (parts.length < 3) {
+            continue;
+         }
+         String account = parts[2].trim();
+         if (account.startsWith(prefix)) {
+            out.add(account);
+         }
+      }
+   } finally {
+      reader.close();
+   }
+
+   return out;
+}
+
+setupYieldFlowTargets(control, int periods) {
+   FlowSpec evenflow = new FlowSpec().even();
+   int ndyStart = Math.max(1, periods - 9);
+   FlowSpec ndyflow = new FlowSpec().ndy(ndyStart, periods, -1);
+
+   TreeSet productAccounts = _collectAccounts("product.Yield.managed.");
+   TreeSet featureAccounts = _collectAccounts("feature.Yield.managed.");
+
+   for (Iterator it = productAccounts.iterator(); it.hasNext();) {
+      String account = (String)it.next();
+      control.addFlowRatioAccount("flow.even."+account, account, evenflow, 100);
+   }
+
+   for (Iterator it = featureAccounts.iterator(); it.hasNext();) {
+      String account = (String)it.next();
+      control.addFlowRatioAccount("flow.ndy."+account, account, ndyflow, 100);
+   }
+
+   print("Configured flow targets: even="+productAccounts.size()+" ndy="+featureAccounts.size());
+}

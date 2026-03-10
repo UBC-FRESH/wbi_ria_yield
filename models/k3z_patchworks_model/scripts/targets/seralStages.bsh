@@ -1,0 +1,62 @@
+/*************************************************************
+ *
+ * Validate seral-stage attributes compiled by Matrix Builder.
+ *
+ *************************************************************/
+
+_resolveAccountsFile() {
+   File accountsFile = AttributeStore.absoluteFile("../tracks/accounts.csv");
+   if (accountsFile == null) {
+      accountsFile = new File("../tracks/accounts.csv").getAbsoluteFile();
+   }
+   return accountsFile;
+}
+
+validateSeralStageAttributes() {
+   File accountsFile = _resolveAccountsFile();
+   if (!accountsFile.exists()) {
+      throw new IllegalStateException("Missing tracks/accounts.csv: "+accountsFile.getPath());
+   }
+
+   String[] required = new String[] {
+      "feature.Seral.regenerating",
+      "feature.Seral.young",
+      "feature.Seral.immature",
+      "feature.Seral.mature",
+      "feature.Seral.overmature"
+   };
+
+   HashSet found = new HashSet();
+   boolean missing = false;
+   BufferedReader reader = new BufferedReader(new FileReader(accountsFile));
+   try {
+      String line = null;
+      boolean first = true;
+      while ((line = reader.readLine()) != null) {
+         if (first) {
+            first = false;
+            continue;
+         }
+         String[] parts = line.split(",");
+         if (parts.length < 3) {
+            continue;
+         }
+         found.add(parts[2].trim());
+      }
+   } finally {
+      reader.close();
+   }
+
+   for (int i = 0; i < required.length; i++) {
+      if (!found.contains(required[i])) {
+         print("Warning: missing seral account in tracks/accounts.csv: "+required[i]);
+         missing = true;
+      }
+   }
+
+   if (missing) {
+      print("Seral stage account check completed with warnings");
+   } else {
+      print("Seral stage accounts validated in tracks/accounts.csv");
+   }
+}

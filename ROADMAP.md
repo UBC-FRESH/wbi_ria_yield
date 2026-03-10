@@ -2552,3 +2552,11 @@
     `CMAI(managed_total_curve) - 20` per AU (clamped to `0..cc_max_age`).
   - `cc_min_age` remains as a fallback only when managed yield curve metadata is
     unavailable for an AU.
+- 2026-03-10 (tracked K3Z prototype model moved in-repo):
+  - Moved/copy-synced the active K3Z Patchworks prototype model into the repo at
+    `models/k3z_patchworks_model/` so it can be versioned and shared with
+    students/collaborators.
+  - Updated `config/patchworks.runtime.windows.yaml` matrix builder paths to
+    point at `../models/k3z_patchworks_model/...` (config-relative paths).
+  - Verified `femic patchworks preflight` and `femic patchworks matrix-build`
+    run successfully against the in-repo model (`run_id=repo_model_move_verify_20260310`).
