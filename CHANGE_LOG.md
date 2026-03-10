@@ -2462,3 +2462,172 @@
   avoid parser-mode/order conflicts observed in Matrix Builder.
 - Regenerated K3Z ForestModel export and updated tests expecting XML header
   content accordingly.
+
+## 2026-03-09 - Native Windows Patchworks runtime + artifact-based completion
+- Added native Windows support for `femic patchworks` runtime execution:
+  - preflight now uses host `java` on Windows (no Wine requirement),
+  - matrix-build now launches `java -jar patchworks.jar ...` directly on
+    Windows with `cwd` set to the Patchworks install directory.
+- Kept Linux behavior unchanged (`wine cmd /c ...`) so existing container
+  runtime paths continue to work.
+- Hardened non-interactive matrix-build preconditions and completion semantics:
+  - create matrix output directory before launch,
+  - evaluate success using output artifact presence + fatal-log signatures,
+    not JVM return code alone (matches observed Patchworks `Process.main(argv)`
+    background-thread behavior).
+- Extended runtime manifest payload with both `raw_returncode` and effective
+  FEMIC `returncode` for clearer operator diagnostics.
+- Updated docs and tests:
+  - `README.md` Patchworks runtime notes now describe native Windows behavior
+    and artifact-based completion checks,
+  - expanded `tests/test_patchworks_runtime.py` coverage for Windows preflight
+    launcher selection and artifact-driven success handling.
+
+## 2026-03-09 - K3Z Patchworks model folder reorganization (sample-aligned)
+- Created a new sample-aligned K3Z model root at:
+  `C:\Users\gep\Desktop\msfm2025\k3z_patchworks_model`
+  with top-level folders matching Patchworks `sample_2024` conventions
+  (`analysis`, `blocks`, `data`, `imagery`, `misc`, `roads`, `scenarios`,
+  `scripts`, `tracks`, `yield`).
+- Mapped current K3Z artifacts into the reorganized layout:
+  - `fragments.*` -> `...\data\`
+  - `forestmodel.xml` -> `...\yield\forestmodel.xml`
+  - seeded `...\scripts\` from `reference/Patchworks-202502/sample_2024/scripts`.
+- Updated Windows runtime config to target the new structure:
+  `config/patchworks.runtime.windows.yaml` now points matrix-builder inputs/
+  outputs at `...\k3z_patchworks_model\data`, `...\yield`, and `...\tracks`.
+- Verified end-to-end on Windows with:
+  `femic patchworks matrix-build --run-id win_native_k3z_reorg_20260309`
+  completing with `returncode=0` and refreshed track CSV outputs under the new
+  `tracks/` folder.
+
+## 2026-03-09 - Adapted K3Z `prepareBlocks.bsh` for FEMIC workflow
+- Replaced the copied sample script at
+  `C:\Users\gep\Desktop\msfm2025\k3z_patchworks_model\scripts\dataPrep\prepareBlocks.bsh`
+  with a FEMIC-specific adaptation.
+- Updated script assumptions/paths to K3Z model layout:
+  - fragments: `data/fragments.*`
+  - ForestModel XML: `yield/forestmodel.xml` (required; no sample fallback)
+  - tracks output: `tracks/`.
+- Switched matrix build invocation to direct API usage:
+  `new ca.spatial.tracks.builder.Process(...).execute(false)` plus
+  synchronized wait for completion (instead of `AppChooser.invoke(...)`).
+- Kept legacy C5 dissolve/join logic as optional toggles, with safe skip
+  behavior when `data/fragments_blocks_lu.csv` is absent.
+
+## 2026-03-09 - Added `patchworks build-blocks` (1:1 stand:block + topology)
+- Added a new CLI command:
+  `python -m femic patchworks build-blocks --config <runtime.yaml>`
+  that prepares Patchworks block artifacts directly from fragments for PIN setup.
+- Added runtime helpers in `src/femic/patchworks_runtime.py`:
+  - infer model root from runtime config paths,
+  - build `blocks/blocks.shp` in strict 1:1 mode (`BLOCK <- FEATURE_ID/FRAGS_ID`),
+  - optionally generate `blocks/topology_blocks_<radius>r.csv`
+    with schema `BLOCK1,BLOCK2,DISTANCE,LENGTH`, including exterior `-9999` rows.
+- Added CLI wiring + options in `src/femic/cli/main.py`:
+  - `--model-dir`
+  - `--fragments-shp`
+  - `--topology-radius` (default `200.0`)
+  - `--with-topology/--no-topology`
+- Updated docs:
+  - `README.md` Patchworks runtime workflow now includes `build-blocks`
+  - `docs/reference/cli.rst` includes the new subcommand and options.
+- Added regression coverage:
+  - `tests/test_patchworks_runtime.py` for model-root inference and
+    blocks/topology artifact generation.
+  - `tests/test_cli_main.py` for `patchworks build-blocks` CLI success/failure.
+  - `tests/test_docs_contract.py` for CLI/docs option drift checks.
+- Updated `config/patchworks.runtime.windows.yaml` to point to active K3Z model
+  under `C:\Users\gep\Documents\msfm\msfm2025\k3z_patchworks_model`.
+- Live run verification:
+  - Command: `python -m femic patchworks build-blocks --config config/patchworks.runtime.windows.yaml --topology-radius 200`
+  - Output: `blocks/blocks.shp` and `blocks/topology_blocks_200r.csv`
+    created with `218` blocks and `928` topology rows.
+
+## 2026-03-09 - Patchworks IFM tuning controls for THLB `[0,1]` checkpoints
+- Confirmed legacy THLB assignment path remains unchanged in 00 pipeline parity:
+  `assign_thlb_area_and_flag` still uses fixed thresholds (`93` for TSA08,
+  `69` for TSA24, else `50`) and percent-style `thlb_raw` semantics.
+- Added explicit export-time controls so operators can tune IFM assignment
+  deterministically when checkpoint THLB signals are continuous/binary:
+  - `--ifm-source-col` (select signal column, e.g. `thlb_raw`)
+  - `--ifm-threshold` (managed when signal > threshold)
+  - `--ifm-target-managed-share` (top-N stands managed by signal rank)
+  - with validation that threshold/share options are mutually exclusive.
+- Wired options through:
+  - `src/femic/fmg/patchworks.py`
+  - `src/femic/fmg/__init__.py`
+  - `src/femic/cli/main.py`
+- Updated docs:
+  - `README.md`
+  - `docs/reference/cli.rst`
+  - `docs/reference/patchworks-export.rst`
+- Added regression coverage:
+  - `tests/test_fmg_patchworks.py` (threshold override, target-share mode,
+    conflicting-option validation)
+  - `tests/test_cli_main.py` (CLI wiring)
+  - `tests/test_docs_contract.py` (help/docs option contract)
+- Validation:
+  - `ruff format src tests` passed
+  - `ruff check src tests` passed
+  - `mypy src` passed
+  - targeted tests passed (`tests/test_fmg_patchworks.py`,
+    `tests/test_cli_main.py`, `tests/test_docs_contract.py`)
+  - `sphinx -b html docs _build/html -W` passed
+  - full `pytest` still has pre-existing unrelated failures in this Windows env
+    (path-separator expectations, optional plotting deps, and `derive_species`
+    NaN handling outside this change set).
+
+## 2026-03-10 - Patchworks accounts sync, seral export support, and CC min-age update
+- Added automatic matrix-build account promotion in
+  `src/femic/patchworks_runtime.py`: when `tracks/protoaccounts.csv` exists,
+  FEMIC now writes `tracks/accounts.csv` after build and creates a timestamped
+  backup (`accounts_backup_<timestamp>.csv`) if an existing `accounts.csv` is
+  present.
+- Added matrix-build manifest/CLI reporting for the account-sync step
+  (`accounts_sync.status`, source/target paths, and optional backup path).
+- Added optional `--seral-stage-config` support to
+  `femic export patchworks` (wired through CLI and exporter) so ForestModel XML
+  can emit per-AU seral curves and bind `feature.Seral.*` and
+  `product.Seral.*` attributes with default and per-AU YAML overrides.
+- Added `config/seral.k3z.yaml` as a starter K3Z seral-stage config.
+- Updated Patchworks CC treatment `minage` semantics to use
+  `CMAI(managed_total_curve) - 20` per AU (clamped to `0..--cc-max-age`);
+  fallback to `--cc-min-age` applies only when no managed curve is available.
+- Updated docs (`README.md`, `docs/reference/patchworks-export.rst`,
+  CLI/docs references) and tests (`tests/test_fmg_patchworks.py`,
+  `tests/test_patchworks_runtime.py`, `tests/test_cli_main.py`) to match the
+  new behavior.
+
+## 2026-03-09 - Seral account semantics fix (`feature` only, no `product.Seral`)
+- Corrected Patchworks seral export semantics: removed `product.Seral.*`
+  attribute emission from `src/femic/fmg/patchworks.py`.
+- Kept seral-stage inventory/state attributes as `feature.Seral.*` only.
+- Updated regression coverage in `tests/test_fmg_patchworks.py` to assert
+  `product.Seral.*` is not present in exported XML.
+- Updated docs in `docs/reference/patchworks-export.rst` to remove
+  `product.Seral.*` guidance.
+- Repaired live K3Z model XML at
+  `C:\Users\gep\Documents\msfm\msfm2025\k3z_patchworks_model\yield\forestmodel.xml`
+  and re-ran Matrix Builder (`run_id=feature_seral_only_20260310`), confirming
+  `tracks/protoaccounts.csv` and `tracks/accounts.csv` now include
+  `feature.Seral.*` accounts only.
+
+## 2026-03-09 - Added seral treatment-area consequence accounts and map layer
+- Added Patchworks exporter support for treatment-consequence seral area
+  accounts in CC product tracks:
+  `product.Seral.area.<stage>.<au_id>.CC`.
+- Updated `tests/test_fmg_patchworks.py` and
+  `docs/reference/patchworks-export.rst` to reflect the semantic split:
+  `feature.Seral.*` for inventory state and `product.Seral.area.*.*.CC` for
+  treatment consequences.
+- Patched live K3Z ForestModel XML to add
+  `product.Seral.area.<stage>.<au_id>.CC` attributes and re-ran
+  `femic patchworks matrix-build` (`run_id=seral_area_accounts_20260310`);
+  verified these accounts now appear in:
+  - `tracks/protoaccounts.csv`
+  - `tracks/accounts.csv`.
+- Added a Seral Stages map layer to live model PIN:
+  `C:\Users\gep\Documents\msfm\msfm2025\k3z_patchworks_model\analysis\base.pin`
+  using sample-style `DitherTheme` config (`feature.Seral.*` themes with
+  legend title `Seral Stages`).

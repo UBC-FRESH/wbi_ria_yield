@@ -93,11 +93,31 @@ exporter, `BLOCK` is one-to-one with these fragment rows.
 
 Patchworks XML now includes species-wise yield attributes derived as
 `TotalVolume(age) * SpeciesProportion(age)` for unmanaged and managed tracks.
+CC treatment minimum age is now resolved per AU as
+`CMAI(managed_total_curve)-20` (clamped to `0..--cc-max-age`).
+
+If your checkpoint carries continuous THLB signal values (for example `thlb_raw`
+in `[0, 1]`), you can tune managed/unmanaged assignment at export time:
+
+```bash
+PYTHONPATH=src python -m femic export patchworks --tsa k3z --ifm-source-col thlb_raw --ifm-target-managed-share 0.8
+```
+
+To include seral-stage attributes in ForestModel output, provide a YAML config:
+
+```bash
+PYTHONPATH=src python -m femic export patchworks --tsa k3z --seral-stage-config config/seral.k3z.yaml
+```
+
+With seral config enabled, export writes inventory-state accounts
+(`feature.Seral.*`) plus CC-treatment consequence area accounts with AU/stage
+specific labels (`product.Seral.area.<stage>.<au_id>.CC`).
 
 8. (Optional) Run proprietary Patchworks Matrix Builder under Wine:
 
 ```bash
 PYTHONPATH=src python -m femic patchworks preflight --config config/patchworks.runtime.yaml
+PYTHONPATH=src python -m femic patchworks build-blocks --config config/patchworks.runtime.yaml
 PYTHONPATH=src python -m femic patchworks matrix-build --config config/patchworks.runtime.yaml
 ```
 
@@ -109,6 +129,12 @@ Set both `SPS_LICENSE_SERVER` and `SPSHOME` (or define `patchworks.license_value
 and `patchworks.spshome` in `config/patchworks.runtime.yaml`). FEMIC preflight
 validates runtime/config state only; Patchworks performs license-server checks
 during launch.
+On native Windows hosts, `femic patchworks` launches Patchworks directly via the
+local `java` runtime (no Wine). Matrix-build completion is validated by expected
+tracks output artifacts and fatal-log signatures rather than JVM exit code alone.
+`femic patchworks build-blocks` creates a 1:1 stand:block dataset at
+`<model>/blocks/blocks.shp` (with `BLOCK` copied from `FEATURE_ID`/`FRAGS_ID`)
+and, by default, writes `<model>/blocks/topology_blocks_200r.csv` for PIN wiring.
 
 7. Export Woodstock compatibility CSV package:
 

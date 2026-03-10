@@ -173,6 +173,65 @@
   - [x] P7.6d Docs contract tests for new guides and CLI docs
 
 ## Detailed Next Steps Notes
+- 2026-03-09 (THLB/IFM tuning for Patchworks export): confirmed legacy 00 THLB
+  assignment logic is still in effect (`assign_thlb_area_and_flag` with fixed
+  thresholds 93/69/50 and `thlb_raw` expected on percent-like scale), and added
+  explicit export-time IFM tuning controls to avoid guesswork when checkpoints
+  carry continuous THLB values (for example `[0,1]`).
+  - New `femic export patchworks` options:
+    - `--ifm-source-col` (explicit THLB signal column, e.g. `thlb_raw`)
+    - `--ifm-threshold` (managed when signal > threshold)
+    - `--ifm-target-managed-share` (top-N stands managed by signal rank)
+  - `--ifm-threshold` and `--ifm-target-managed-share` are mutually exclusive.
+  - This keeps legacy defaults unchanged unless an operator opts into tuning.
+- 2026-03-09 (1:1 blocks + topology pipeline step): added
+  `femic patchworks build-blocks` to compile a sample-aligned blocks package
+  from `data/fragments.shp` with strict stand:block identity (`BLOCK` copied
+  from `FEATURE_ID`/`FRAGS_ID`) and optional topology generation.
+  - Output contract:
+    - `<model>/blocks/blocks.shp`
+    - `<model>/blocks/topology_blocks_<radius>r.csv` (default radius `200`)
+  - Topology CSV schema matches Patchworks sample usage:
+    `BLOCK1,BLOCK2,DISTANCE,LENGTH`, including exterior `-9999` rows for PIN
+    `control.inputTopology(...)` wiring.
+  - Live validation completed on
+    `C:\Users\gep\Documents\msfm\msfm2025\k3z_patchworks_model` with
+    `blocks=218` and `edges=928` at `200m` radius.
+- 2026-03-09 (Windows runtime config path correction): updated
+  `config/patchworks.runtime.windows.yaml` paths from stale Desktop location to
+  active model root under
+  `C:\Users\gep\Documents\msfm\msfm2025\k3z_patchworks_model`.
+- 2026-03-09 (K3Z script adaptation): replaced
+  `C:\Users\gep\Desktop\msfm2025\k3z_patchworks_model\scripts\dataPrep\prepareBlocks.bsh`
+  with a FEMIC-aligned variant that:
+  - targets `data/fragments.*`, `yield/forestmodel.xml`, and `tracks/`,
+  - requires `yield/forestmodel.xml` explicitly (no C5 fallback filename),
+  - runs Matrix Builder through `new ca.spatial.tracks.builder.Process(...).execute(false)`,
+    then waits on the process object for completion,
+  - keeps C5-style dissolve/join steps as optional toggles and skips safely when
+    lookup inputs are missing.
+- 2026-03-09 (K3Z Patchworks model layout reorg): created
+  `C:\Users\gep\Desktop\msfm2025\k3z_patchworks_model` with top-level folders
+  mirroring Patchworks `sample_2024` structure (`analysis`, `blocks`, `data`,
+  `imagery`, `misc`, `roads`, `scenarios`, `scripts`, `tracks`, `yield`).
+- Copied K3Z runtime artifacts into sample-aligned locations:
+  - fragments shapefile set -> `...\k3z_patchworks_model\data\fragments.*`
+  - ForestModel XML -> `...\k3z_patchworks_model\yield\forestmodel.xml`
+  - seeded scripts from `reference/Patchworks-202502/sample_2024/scripts/`.
+- Updated `config/patchworks.runtime.windows.yaml` matrix builder paths to use
+  the new K3Z model root and verified a successful matrix build run
+  (`run_id=win_native_k3z_reorg_20260309`, `returncode=0`) writing tracks to
+  `...\k3z_patchworks_model\tracks`.
+- 2026-03-09 (Windows-first Patchworks runtime): updated
+  `femic patchworks` to support native Windows launch (`java -jar ...`) in
+  addition to Linux/Wine, instead of hard-requiring Wine on all hosts.
+- 2026-03-09 (matrix-build completion semantics): aligned with Patchworks
+  `Process.main(argv)` behavior by treating non-interactive run success as
+  artifact-driven (tracks output present + no fatal signatures), recording both
+  raw JVM return code and effective FEMIC return code in run manifests.
+- 2026-03-09 (matrix output precondition): matrix output directory is now
+  created automatically before non-interactive launch to satisfy Patchworks
+  constructor requirements (`outName` must exist).
 - Completed `P6.3`: added `femic export release` for versioned student-facing
   bundle packaging with strict required-artifact checks, release manifest
   (`release_manifest.json`), and operator handoff notes (`HANDOFF.md`).
@@ -2451,3 +2510,45 @@
   (including `reference/vdyp/`), leaving `docs/` as Sphinx source only; updated
   path references in `config/tipsy/tsa29.yaml`, `ROADMAP.md`, and
   `CHANGE_LOG.md`, and added `reference/README.md` to document directory intent.
+- 2026-03-09 (seral semantics correction; feature-only accounts):
+  - Confirmed Patchworks model semantics issue: `product.Seral.*` attributes are
+    conceptually invalid for inventory state and should not be exported.
+  - Removed `product.Seral.*` emission from
+    `build_patchworks_forestmodel_definition(...)`; seral output now remains
+    `feature.Seral.*` only.
+  - Updated tests/docs to enforce and document feature-only seral attributes.
+  - Live K3Z model repair:
+    - removed `product.Seral.*` attributes from
+      `C:\Users\gep\Documents\msfm\msfm2025\k3z_patchworks_model\yield\forestmodel.xml`,
+    - re-ran `femic patchworks matrix-build` and verified both
+      `protoaccounts.csv` and `accounts.csv` now contain `feature.Seral.*` only.
+- 2026-03-09 (seral treatment-area consequence accounts + map layer):
+  - Added Patchworks exporter support for treatment-consequence seral area
+    accounts in CC product tracks with labels:
+    `product.Seral.area.<stage>.<au_id>.CC`.
+  - Updated docs/tests to reflect this semantic split:
+    - inventory/state: `feature.Seral.*`
+    - treatment consequences: `product.Seral.area.*.*.CC`.
+  - Live K3Z model update:
+    - injected `product.Seral.area.*.*.CC` attributes in
+      `yield/forestmodel.xml`,
+    - re-ran `femic patchworks matrix-build` and verified accounts appear in
+      `protoaccounts.csv` and `accounts.csv`.
+  - Added Seral Stages map layer to
+    `analysis/base.pin` using sample-style `DitherTheme` configuration
+    (`feature.Seral.*`, caption `Dithered Seral Stage`, layer title
+    `Seral Stages`).
+- 2026-03-10 (Patchworks matrix-build account sync + seral wiring):
+  - Added post-build `tracks/protoaccounts.csv -> tracks/accounts.csv` sync in
+    `femic patchworks matrix-build`, with timestamped backup of existing
+    `accounts.csv` before overwrite and manifest/CLI reporting of sync status.
+  - Added optional `--seral-stage-config` YAML support to
+    `femic export patchworks` to emit per-AU seral curves and
+    `feature.Seral.*` / `product.Seral.*` attributes with default or per-AU
+    override boundaries.
+  - Added `config/seral.k3z.yaml` starter config for K3Z seral stage setup.
+- 2026-03-10 (CC treatment min age logic update):
+  - Updated Patchworks exporter so CC `minage` resolves to
+    `CMAI(managed_total_curve) - 20` per AU (clamped to `0..cc_max_age`).
+  - `cc_min_age` remains as a fallback only when managed yield curve metadata is
+    unavailable for an AU.
