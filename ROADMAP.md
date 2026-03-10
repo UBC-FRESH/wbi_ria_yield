@@ -203,6 +203,28 @@
   - [x] P8.7b Add required-section checks for K3Z metadata/how-to docs
   - [x] P8.7c Add a release-readiness checklist for student distribution
 
+## Phase 9: Repository + Project Rebrand (`wbi_ria_yield` -> `femic`)
+- [ ] P9.1 Rebrand canonical project metadata and naming surface
+  - [ ] P9.1a Update visible project title strings (README/docs/CITATION) to `femic`
+  - [ ] P9.1b Add explicit transition note ("formerly `wbi_ria_yield`") where needed
+  - [ ] P9.1c Preserve historical provenance references in roadmap/changelog entries
+- [ ] P9.2 Update URL and publication endpoints to new repository slug
+  - [ ] P9.2a Update in-repo GitHub links to `github.com/UBC-FRESH/femic`
+  - [ ] P9.2b Update published docs URL references to `ubc-fresh.github.io/femic`
+  - [ ] P9.2c Validate GitHub Pages deployment behavior after rename cutover
+- [ ] P9.3 Remove hard-coded old-slug local path assumptions from runtime config
+  - [ ] P9.3a Replace `wbi_ria_yield` absolute path references with config-relative/env-driven paths
+  - [ ] P9.3b Revalidate Patchworks runtime preflight/build commands using updated paths
+  - [ ] P9.3c Add/adjust regression checks for path portability expectations
+- [ ] P9.4 Perform legacy-slug sweep and cleanup policy enforcement
+  - [ ] P9.4a Clear non-historical `wbi_ria_yield` references from source/docs/config
+  - [ ] P9.4b Define notebook output cleanup policy for stale absolute-path traces
+  - [ ] P9.4c Keep historical slug mentions only where audit trail requires them
+- [ ] P9.5 Execute cutover workflow and release validation
+  - [x] P9.5a Start rebrand work on dedicated branch `feature/rebrand-femic`
+  - [ ] P9.5b Run full validation gates before merge
+  - [ ] P9.5c Confirm post-rename install/docs/CLI smoke checks
+
 ## Detailed Next Steps Notes
 - 2026-03-10 (P8.7 docs QA + acceptance checks): added automated docs
   contract coverage for Sample Models navigation and required K3Z sections,
@@ -2679,3 +2701,8 @@
   - Re-ran required gates successfully:
     `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
     `pre-commit run --all-files`, `sphinx-build -b html docs _build/html -W`.
+- 2026-03-10 (Phase 9 rebrand planning kickoff): added a dedicated rebrand
+  phase to move repository/project naming from `wbi_ria_yield` to `femic`,
+  covering metadata, URLs, runtime path cleanup, slug sweep policy, and cutover
+  validation workflow.
+  - Created branch `feature/rebrand-femic` and marked `P9.5a` complete.

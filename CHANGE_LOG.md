@@ -2787,3 +2787,15 @@
   - `pytest` (`403 passed`)
   - `pre-commit run --all-files`
   - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-10 - Added Phase 9 rebrand roadmap (`wbi_ria_yield` -> `femic`)
+- Added new `ROADMAP.md` phase:
+  `Phase 9: Repository + Project Rebrand (wbi_ria_yield -> femic)`.
+- Planned checklist scope includes:
+  - metadata/title rebrand (`README`, docs title, citation metadata),
+  - URL endpoint updates (GitHub repo slug + GitHub Pages URL),
+  - runtime config cleanup for old absolute path assumptions,
+  - legacy-slug sweep policy and notebook-output handling,
+  - cutover validation gates and post-rename smoke checks.
+- Created dedicated branch for rebrand work:
+  `feature/rebrand-femic` (and marked `P9.5a` complete in roadmap).
