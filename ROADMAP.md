@@ -204,16 +204,16 @@
   - [x] P8.7c Add a release-readiness checklist for student distribution
 
 ## Phase 9: Repository + Project Rebrand (`wbi_ria_yield` -> `femic`)
-- [ ] P9.1 Rebrand canonical project metadata and naming surface
-  - [ ] P9.1a Update visible project title strings (README/docs/CITATION) to `femic`
-  - [ ] P9.1b Add explicit transition note ("formerly `wbi_ria_yield`") where needed
-  - [ ] P9.1c Preserve historical provenance references in roadmap/changelog entries
+- [x] P9.1 Rebrand canonical project metadata and naming surface
+  - [x] P9.1a Update visible project title strings (README/docs/CITATION) to `femic`
+  - [x] P9.1b Add explicit transition note ("formerly `wbi_ria_yield`") where needed
+  - [x] P9.1c Preserve historical provenance references in roadmap/changelog entries
 - [ ] P9.2 Update URL and publication endpoints to new repository slug
-  - [ ] P9.2a Update in-repo GitHub links to `github.com/UBC-FRESH/femic`
-  - [ ] P9.2b Update published docs URL references to `ubc-fresh.github.io/femic`
+  - [x] P9.2a Update in-repo GitHub links to `github.com/UBC-FRESH/femic`
+  - [x] P9.2b Update published docs URL references to `ubc-fresh.github.io/femic`
   - [ ] P9.2c Validate GitHub Pages deployment behavior after rename cutover
 - [ ] P9.3 Remove hard-coded old-slug local path assumptions from runtime config
-  - [ ] P9.3a Replace `wbi_ria_yield` absolute path references with config-relative/env-driven paths
+  - [x] P9.3a Replace `wbi_ria_yield` absolute path references with config-relative/env-driven paths
   - [ ] P9.3b Revalidate Patchworks runtime preflight/build commands using updated paths
   - [ ] P9.3c Add/adjust regression checks for path portability expectations
 - [ ] P9.4 Perform legacy-slug sweep and cleanup policy enforcement
@@ -222,7 +222,7 @@
   - [ ] P9.4c Keep historical slug mentions only where audit trail requires them
 - [ ] P9.5 Execute cutover workflow and release validation
   - [x] P9.5a Start rebrand work on dedicated branch `feature/rebrand-femic`
-  - [ ] P9.5b Run full validation gates before merge
+  - [x] P9.5b Run full validation gates before merge
   - [ ] P9.5c Confirm post-rename install/docs/CLI smoke checks
 
 ## Detailed Next Steps Notes
@@ -2706,3 +2706,14 @@
   covering metadata, URLs, runtime path cleanup, slug sweep policy, and cutover
   validation workflow.
   - Created branch `feature/rebrand-femic` and marked `P9.5a` complete.
+- 2026-03-10 (Phase 9 implementation slice 1): completed the first rebrand
+  implementation pass across canonical metadata and operator-facing config/docs.
+  - Updated project naming/title surfaces to `femic` in:
+    `README.md`, `docs/conf.py`, `docs/index.rst`, and `CITATION.cff`.
+  - Added explicit transition note in `README.md`:
+    formerly `wbi_ria_yield`.
+  - Updated target URLs to new slug endpoints:
+    `github.com/UBC-FRESH/femic` and `ubc-fresh.github.io/femic`.
+  - Removed old hard-coded slug path from `config/patchworks.runtime.yaml`;
+    runtime now relies on `SPSHOME` env for install-home resolution.
+  - Marked complete: `P9.1`, `P9.2a`, `P9.2b`, `P9.3a`, `P9.5b`.

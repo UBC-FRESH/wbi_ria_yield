@@ -2799,3 +2799,23 @@
   - cutover validation gates and post-rename smoke checks.
 - Created dedicated branch for rebrand work:
   `feature/rebrand-femic` (and marked `P9.5a` complete in roadmap).
+
+## 2026-03-10 - Phase 9 implementation slice 1 (metadata/docs/config rebrand)
+- Updated canonical project naming surfaces to `femic`:
+  - `README.md` title,
+  - `docs/conf.py` project name,
+  - `docs/index.rst` landing title,
+  - `CITATION.cff` title.
+- Added explicit transition marker in `README.md`:
+  formerly `wbi_ria_yield`.
+- Updated target publication/repository URLs to new slug:
+  - `https://ubc-fresh.github.io/femic/`
+  - `https://github.com/UBC-FRESH/femic`
+- Removed old hard-coded local repo-slug assumption from
+  `config/patchworks.runtime.yaml` by dropping static `patchworks.spshome`
+  path; runtime now resolves install home from `SPSHOME` env when needed.
+- Updated roadmap status:
+  - marked `P9.1` complete (`P9.1a/P9.1b/P9.1c`),
+  - marked `P9.2a` and `P9.2b` complete,
+  - marked `P9.3a` complete,
+  - marked `P9.5b` complete.

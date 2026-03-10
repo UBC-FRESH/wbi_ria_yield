@@ -3,7 +3,7 @@ patchworks:
   wine_prefix: null
   license_env: SPS_LICENSE_SERVER
   license_value: frst424@auth.spatial.ca
-  spshome: Z:\home\gep\projects\wbi_ria_yield\reference\Patchworks
+  # Prefer `SPSHOME` environment variable to avoid host-specific absolute paths.
   use_xvfb: true
 
 matrix_builder:
