@@ -2841,3 +2841,13 @@
 - Observed in GitHub Actions that the latest `docs-pages` deployment record
   still points to `https://ubc-fresh.github.io/wbi_ria_yield/`; a new
   main-branch deploy is still required to confirm the `.../femic/` endpoint.
+
+## 2026-03-10 - Patchworks preflight warns on missing SPSHOME env
+- Updated Patchworks preflight semantics to surface install-registration
+  confidence explicitly:
+  - when `SPSHOME` is absent from the current process environment,
+    `run_patchworks_preflight(...)` now emits a warning that Patchworks may not
+    be correctly installed/registered on the host.
+- Added regression coverage:
+  - `tests/test_patchworks_runtime.py::test_run_patchworks_preflight_warns_when_env_spshome_missing`.
+- Full validation gates re-run and passing after this change.

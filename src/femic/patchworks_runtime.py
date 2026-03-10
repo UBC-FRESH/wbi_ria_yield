@@ -350,6 +350,11 @@ def run_patchworks_preflight(
 
     errors: list[str] = []
     warnings: list[str] = []
+    if not str(os.environ.get("SPSHOME", "")).strip():
+        warnings.append(
+            "SPSHOME environment variable is not set; this usually indicates "
+            "Patchworks is not correctly installed/registered on this host."
+        )
 
     windows_host = is_windows_host()
     launcher_executable = (

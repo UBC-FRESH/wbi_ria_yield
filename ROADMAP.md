@@ -2736,3 +2736,11 @@
     main-branch deploy to confirm transition to `.../femic/`.
   - `P9.2c` remains pending until a post-merge docs-pages deployment confirms
     the new published URL target after rename.
+- 2026-03-10 (Patchworks install-registration heuristic): updated preflight to
+  explicitly warn when `SPSHOME` is missing from the process environment,
+  reflecting the operational assumption that a correct Patchworks install should
+  set `SPSHOME`.
+  - Added warning text in `run_patchworks_preflight(...)`:
+    missing `SPSHOME` indicates install/registration may be incomplete.
+  - Added regression test:
+    `tests/test_patchworks_runtime.py::test_run_patchworks_preflight_warns_when_env_spshome_missing`.
