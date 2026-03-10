@@ -178,6 +178,35 @@ def test_load_patchworks_runtime_config_requires_spshome(
         load_patchworks_runtime_config(cfg)
 
 
+def test_load_patchworks_runtime_config_uses_env_spshome_when_field_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SPSHOME", "Z:\\PatchworksEnv")
+    cfg = tmp_path / "patchworks.runtime.yaml"
+    cfg.write_text(
+        "\n".join(
+            [
+                "patchworks:",
+                "  jar_path: patchworks/patchworks.jar",
+                "  wine_prefix: null",
+                "  license_env: SPS_LICENSE_SERVER",
+                "  license_value: frst424@auth.spatial.ca",
+                "matrix_builder:",
+                "  fragments_path: data/fragments.dbf",
+                "  output_dir: output/tracks",
+                "  forestmodel_xml_path: output/forestmodel.xml",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_patchworks_runtime_config(cfg)
+    assert loaded.spshome == "Z:\\PatchworksEnv"
+    command = build_matrix_builder_command_string(loaded)
+    assert 'set "SPSHOME=Z:\\PatchworksEnv"' in command
+
+
 def test_run_patchworks_command_writes_logs_and_manifest(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

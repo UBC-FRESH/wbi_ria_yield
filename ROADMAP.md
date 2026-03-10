@@ -212,18 +212,18 @@
   - [x] P9.2a Update in-repo GitHub links to `github.com/UBC-FRESH/femic`
   - [x] P9.2b Update published docs URL references to `ubc-fresh.github.io/femic`
   - [ ] P9.2c Validate GitHub Pages deployment behavior after rename cutover
-- [ ] P9.3 Remove hard-coded old-slug local path assumptions from runtime config
+- [x] P9.3 Remove hard-coded old-slug local path assumptions from runtime config
   - [x] P9.3a Replace `wbi_ria_yield` absolute path references with config-relative/env-driven paths
-  - [ ] P9.3b Revalidate Patchworks runtime preflight/build commands using updated paths
-  - [ ] P9.3c Add/adjust regression checks for path portability expectations
+  - [x] P9.3b Revalidate Patchworks runtime preflight/build commands using updated paths
+  - [x] P9.3c Add/adjust regression checks for path portability expectations
 - [ ] P9.4 Perform legacy-slug sweep and cleanup policy enforcement
   - [ ] P9.4a Clear non-historical `wbi_ria_yield` references from source/docs/config
   - [ ] P9.4b Define notebook output cleanup policy for stale absolute-path traces
   - [ ] P9.4c Keep historical slug mentions only where audit trail requires them
-- [ ] P9.5 Execute cutover workflow and release validation
+- [x] P9.5 Execute cutover workflow and release validation
   - [x] P9.5a Start rebrand work on dedicated branch `feature/rebrand-femic`
   - [x] P9.5b Run full validation gates before merge
-  - [ ] P9.5c Confirm post-rename install/docs/CLI smoke checks
+  - [x] P9.5c Confirm post-rename install/docs/CLI smoke checks
 
 ## Detailed Next Steps Notes
 - 2026-03-10 (P8.7 docs QA + acceptance checks): added automated docs
@@ -2717,3 +2717,22 @@
   - Removed old hard-coded slug path from `config/patchworks.runtime.yaml`;
     runtime now relies on `SPSHOME` env for install-home resolution.
   - Marked complete: `P9.1`, `P9.2a`, `P9.2b`, `P9.3a`, `P9.5b`.
+- 2026-03-10 (Phase 9 implementation slice 2): validated post-rename runtime
+  smoke behavior and locked env-driven Patchworks install-home handling with
+  regression coverage.
+  - Runtime checks:
+    - `python -m femic --help` succeeds (CLI smoke).
+    - `sphinx-build -b html docs _build/html -W` succeeds (docs smoke).
+    - `femic patchworks preflight --config config/patchworks.runtime.windows.yaml`
+      succeeds on this host.
+    - `femic patchworks preflight --config config/patchworks.runtime.yaml`
+      now fails only on missing local artifacts (jar/fragments/xml), not
+      `SPSHOME` lookup when env is provided.
+  - Added regression test in `tests/test_patchworks_runtime.py`:
+    `test_load_patchworks_runtime_config_uses_env_spshome_when_field_missing`.
+  - Marked complete: `P9.3b`, `P9.3c`, `P9.5c`.
+  - GitHub Actions observation: latest `docs-pages` deployment currently
+    advertises `https://ubc-fresh.github.io/wbi_ria_yield/`; need a post-merge
+    main-branch deploy to confirm transition to `.../femic/`.
+  - `P9.2c` remains pending until a post-merge docs-pages deployment confirms
+    the new published URL target after rename.

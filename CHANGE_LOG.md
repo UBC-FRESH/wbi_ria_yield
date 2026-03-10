@@ -2819,3 +2819,25 @@
   - marked `P9.2a` and `P9.2b` complete,
   - marked `P9.3a` complete,
   - marked `P9.5b` complete.
+
+## 2026-03-10 - Phase 9 implementation slice 2 (runtime/post-rename smoke)
+- Confirmed new repository remote + branch publication on renamed origin:
+  - origin URL now `https://github.com/UBC-FRESH/femic.git`
+  - pushed `feature/rebrand-femic` with upstream tracking.
+- Performed post-rename smoke checks:
+  - `python -m femic --help` succeeds.
+  - `sphinx-build -b html docs _build/html -W` succeeds.
+  - `femic patchworks preflight --config config/patchworks.runtime.windows.yaml`
+    succeeds on this host.
+  - `femic patchworks preflight --config config/patchworks.runtime.yaml` now
+    reports missing local artifacts (jar/fragments/xml) without requiring
+    hard-coded `spshome` in config.
+- Added regression coverage for env-driven install-home resolution:
+  - `tests/test_patchworks_runtime.py::test_load_patchworks_runtime_config_uses_env_spshome_when_field_missing`.
+- Updated roadmap status:
+  - marked `P9.3b`, `P9.3c`, and `P9.5c` complete.
+  - kept `P9.2c` pending until a post-merge docs-pages deploy verifies the
+    renamed published URL endpoint.
+- Observed in GitHub Actions that the latest `docs-pages` deployment record
+  still points to `https://ubc-fresh.github.io/wbi_ria_yield/`; a new
+  main-branch deploy is still required to confirm the `.../femic/` endpoint.
