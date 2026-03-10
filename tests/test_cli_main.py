@@ -89,7 +89,10 @@ def test_preflight_checks_exit_when_data_root_missing(
     monkeypatch.setattr(cli_main.shutil, "which", lambda _: "/usr/bin/wine")
 
     with pytest.raises(typer.Exit) as exc_info:
-        cli_main._preflight_checks(resume=False)
+        cli_main._preflight_checks(
+            resume=False,
+            instance_context=SimpleNamespace(root=tmp_path / "repo"),
+        )
 
     assert exc_info.value.exit_code == 1
     assert any("Missing data directory" in msg for msg in messages)
@@ -105,7 +108,10 @@ def test_preflight_checks_resume_warns_when_wine_missing(
     monkeypatch.setattr(cli_main.console, "print", messages.append)
     monkeypatch.setattr(cli_main.shutil, "which", lambda _: None)
 
-    cli_main._preflight_checks(resume=True)
+    cli_main._preflight_checks(
+        resume=True,
+        instance_context=SimpleNamespace(root=repo_root),
+    )
 
     assert any("wine not found on PATH" in msg for msg in messages)
     assert not any("[red]Error:" in msg for msg in messages)
@@ -124,7 +130,10 @@ def test_preflight_checks_fails_for_specific_missing_required_file(
     monkeypatch.setattr(cli_main.shutil, "which", lambda _: "/usr/bin/wine")
 
     with pytest.raises(typer.Exit) as exc_info:
-        cli_main._preflight_checks(resume=False)
+        cli_main._preflight_checks(
+            resume=False,
+            instance_context=SimpleNamespace(root=repo_root),
+        )
 
     assert exc_info.value.exit_code == 1
     error_messages = [msg for msg in messages if "[red]Error:" in msg]
@@ -224,11 +233,13 @@ def test_tsa_post_tipsy_calls_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
     called: dict[str, object] = {}
 
     def _fake_run_post_tipsy_bundle_with_manifest(
-        *, tsa_list, run_id, log_dir, message_fn
+        *, tsa_list, run_id, log_dir, repo_root, data_root, message_fn
     ):
         called["tsa_list"] = tsa_list
         called["run_id"] = run_id
         called["log_dir"] = log_dir
+        called["repo_root"] = repo_root
+        called["data_root"] = data_root
         message_fn("fake-progress")
         return SimpleNamespace(
             manifest_path=Path("vdyp_io/logs/run_manifest-post_tipsy_test.json"),
@@ -260,7 +271,9 @@ def test_tsa_post_tipsy_calls_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert called["tsa_list"] == ["29"]
     assert called["run_id"] == "post_tipsy_test"
-    assert called["log_dir"] == Path("vdyp_io/logs")
+    assert Path(called["log_dir"]).as_posix().endswith("vdyp_io/logs")
+    assert isinstance(called["repo_root"], Path)
+    assert isinstance(called["data_root"], Path)
     assert any("post-tipsy completed" in msg for msg in messages)
     assert any("Run manifest:" in msg for msg in messages)
     assert any("fake-progress" in msg for msg in messages)
@@ -352,7 +365,11 @@ def test_export_patchworks_calls_exporter(monkeypatch: pytest.MonkeyPatch) -> No
     assert called["cc_transition_ifm"] == "managed"
     assert called["ifm_source_col"] == "thlb_raw"
     assert called["ifm_threshold"] == pytest.approx(0.2)
-    assert called["seral_stage_config_path"] == Path("config/seral.k3z.yaml")
+    assert (
+        Path(called["seral_stage_config_path"])
+        .as_posix()
+        .endswith("config/seral.k3z.yaml")
+    )
     assert any("patchworks export completed" in msg for msg in messages)
 
 
@@ -622,3 +639,47 @@ def test_patchworks_build_blocks_reports_errors(
 
     assert exc_info.value.exit_code == 1
     assert any("Patchworks block build failed" in msg for msg in messages)
+
+
+def test_instance_init_calls_bootstrap(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    called: dict[str, object] = {}
+
+    def _fake_bootstrap_instance_workspace(
+        *,
+        instance_root,
+        overwrite,
+        include_bc_vri_download,
+        message_fn,
+    ):
+        called["instance_root"] = instance_root
+        called["overwrite"] = overwrite
+        called["include_bc_vri_download"] = include_bc_vri_download
+        message_fn("download simulation")
+        return SimpleNamespace(
+            instance_root=instance_root,
+            created_dirs=(),
+            written_files=(instance_root / "QUICKSTART.md",),
+            skipped_files=(),
+            downloaded_archives=(),
+            extracted_dirs=(),
+        )
+
+    monkeypatch.setattr(
+        cli_main,
+        "bootstrap_instance_workspace",
+        _fake_bootstrap_instance_workspace,
+    )
+
+    cli_main.instance_init(
+        instance_root=Path("instance"),
+        overwrite=True,
+        download_bc_vri=False,
+        yes=True,
+    )
+
+    assert called["instance_root"].name == "instance"
+    assert called["overwrite"] is True
+    assert called["include_bc_vri_download"] is False
+    assert any("instance init completed" in msg for msg in messages)

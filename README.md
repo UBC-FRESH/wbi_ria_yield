@@ -41,31 +41,40 @@ For each TSA, raw VDYP process streams are also captured to:
 
 ### Quickstart (End-to-End)
 
-1. Validate base install:
+1. Initialize a deployment instance workspace:
+
+```bash
+femic instance init
+```
+
+This scaffolds `config/`, `data/`, `output/`, and `vdyp_io/logs/` under the
+current directory, and prompts to download standard BC VRI 2024 datasets.
+
+2. Validate base install:
 
 ```bash
 PYTHONPATH=src python -m femic --help
 ```
 
-2. Validate TIPSY config handoff files:
+3. Validate TIPSY config handoff files:
 
 ```bash
 PYTHONPATH=src python -m femic tipsy validate --config-dir config/tipsy --tsa 08
 ```
 
-3. Run one TSA with resume enabled:
+4. Run one TSA with resume enabled:
 
 ```bash
 PYTHONPATH=src python -m femic run --tsa 08 --resume
 ```
 
-4. Summarize VDYP diagnostics:
+5. Summarize VDYP diagnostics:
 
 ```bash
 PYTHONPATH=src python -m femic vdyp report
 ```
 
-5. After manual BatchTIPSY output is uploaded, run downstream stages only (01b + bundle):
+6. After manual BatchTIPSY output is uploaded, run downstream stages only (01b + bundle):
 
 ```bash
 PYTHONPATH=src python -m femic tsa post-tipsy --tsa 29 -v
@@ -77,7 +86,7 @@ When `data/ria_vri_vclr1p_checkpoint8.feather` is available, post-TIPSY bundle a
 adds species-proportion curves for all top-6 VRI species present in the selected TSA(s):
 `natural_species_prop_<SPP>` and `planted_species_prop_<SPP>` (single-point curves at `x=1`).
 
-6. Export Patchworks starter package (ForestModel XML + fragments shapefile):
+7. Export Patchworks starter package (ForestModel XML + fragments shapefile):
 
 ```bash
 PYTHONPATH=src python -m femic export patchworks --tsa k3z
@@ -139,7 +148,7 @@ The tracked teaching prototype model now lives in-repo at
 `models/k3z_patchworks_model/`, and `config/patchworks.runtime.windows.yaml`
 points to this location.
 
-7. Export Woodstock compatibility CSV package:
+9. Export Woodstock compatibility CSV package:
 
 ```bash
 PYTHONPATH=src python -m femic export woodstock --tsa k3z

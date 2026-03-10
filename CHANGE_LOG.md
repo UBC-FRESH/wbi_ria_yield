@@ -2876,3 +2876,48 @@
 - Updated roadmap status:
   - marked `P9.2` complete,
   - marked `P9.4a`, `P9.4b`, `P9.4c`, and parent `P9.4` complete.
+
+## 2026-03-10 - Phase 10 slice 1: instance decoupling + deployment bootstrap
+- Added first-class instance-root resolution in `src/femic/instance_context.py`
+  with precedence:
+  - `--instance-root`
+  - `FEMIC_INSTANCE_ROOT`
+  - current working directory
+  and legacy repo-root fallback warnings for transition compatibility.
+- Added shared `--instance-root` option wiring across operational CLI surfaces:
+  `run`, `prep validate-case`, `tipsy validate`, `tsa post-tipsy`,
+  `export patchworks|woodstock|release`, and
+  `patchworks preflight|matrix-build|build-blocks`.
+- Added `femic instance init` command (`instance` CLI namespace) to scaffold
+  filesystem-first deployment workspaces with:
+  - `config/`, `config/tipsy/`, `data/`, `output/`, `vdyp_io/logs/`,
+    workspace `.gitignore`, and `QUICKSTART.md`.
+- Added built-in BC dataset bootstrap URLs and optional download/extract flow
+  (default prompt `Y/n`) for:
+  - `VEG_COMP_LYR_R1_POLY_2024.gdb.zip`
+  - `VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb.zip`
+  into standard instance paths under `data/`.
+- Added package-owned resources under `src/femic/resources/`:
+  - instance templates (`resources/instance/...`)
+  - legacy scripts (`resources/legacy/00_data-prep.py`,
+    `01a_run-tsa.py`, `01b_run-tsa.py`).
+- Updated legacy workflow runtime to execute packaged legacy scripts by default
+  (`src/femic/workflows/legacy_resources.py` + `src/femic/workflows/legacy.py`),
+  removing hard dependency on repo-root script paths.
+- Updated `pyproject.toml` package-data configuration so instance templates and
+  legacy scripts ship with installed wheels.
+- Added docs updates for the new workflow:
+  - `docs/guides/deployment-instances.rst`
+  - `docs/guides/case-onboarding.rst`
+  - `docs/reference/cli.rst`
+  - `README.md` quickstart.
+- Added/updated tests:
+  - `tests/test_instance_context.py`
+  - `tests/test_instance_bootstrap.py`
+  - `tests/test_legacy_resources.py`
+  - `tests/test_cli_main.py`
+  - `tests/test_pipeline_helpers.py`
+- Extended Phase 10 roadmap scope with a dedicated DataLad dataset-repo
+  workstream for "public but not directly accessible" dependencies
+  (including archived HectaresBC `misc*.tif` layers), plus planned Git
+  submodule linkage back into FEMIC.

@@ -73,7 +73,7 @@ def build_run_manifest_payload(
         "exit_code": exit_code,
         "command": execution_plan.cmd,
         "script_path": str(execution_plan.script_path),
-        "cwd": str(execution_plan.script_path.parent),
+        "cwd": str(execution_plan.working_dir),
         "log_dir": str(execution_plan.run_paths.log_dir),
         "tsa_list": execution_plan.tsa_list,
         "options": {
@@ -140,18 +140,15 @@ def build_run_manifest_payload(
         },
         "runtime_versions": collect_runtime_versions(),
         "paths": {
-            "repo_root": str(execution_plan.script_path.parent),
-            "data_dir": str((execution_plan.script_path.parent / "data").resolve()),
+            "repo_root": str(execution_plan.working_dir),
+            "data_dir": str((execution_plan.working_dir / "data").resolve()),
             "output_dir": str(output_root),
             "vdyp_cfg_dir": str(
-                (execution_plan.script_path.parent / "vdyp_io" / "VDYP_CFG").resolve()
+                (execution_plan.working_dir / "vdyp_io" / "VDYP_CFG").resolve()
             ),
             "vdyp_executable": str(
                 (
-                    execution_plan.script_path.parent
-                    / "VDYP7"
-                    / "VDYP7"
-                    / "VDYP7Console.exe"
+                    execution_plan.working_dir / "VDYP7" / "VDYP7" / "VDYP7Console.exe"
                 ).resolve()
             ),
         },

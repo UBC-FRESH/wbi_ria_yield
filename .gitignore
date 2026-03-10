@@ -22,6 +22,8 @@ vdyp_io/VDYP_CFG/vdyp7.log
 .vscode
 tmp/
 _build/
+build/
+dist/
 output/
 outputs/
 

@@ -106,6 +106,7 @@ class PipelineRunConfig:
     managed_curve_y_scale: float | None = None
     managed_curve_truncate_at_culm: bool | None = None
     managed_curve_max_age: int | None = None
+    instance_root: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -185,6 +186,7 @@ class LegacyExecutionPlan:
     run_config_sha256: str | None
     env: dict[str, str]
     cmd: list[str]
+    working_dir: Path
 
 
 @dataclass(frozen=True)
@@ -639,8 +641,17 @@ def resolve_effective_run_options(
     )
 
 
-def resolve_run_paths(*, script_path: Path, log_dir: Path | None = None) -> RunPaths:
-    repo_root = script_path.parent.resolve()
+def resolve_run_paths(
+    *,
+    script_path: Path,
+    instance_root: Path | None = None,
+    log_dir: Path | None = None,
+) -> RunPaths:
+    repo_root = (
+        instance_root.expanduser().resolve()
+        if instance_root is not None
+        else script_path.parent.resolve()
+    )
     return RunPaths(
         repo_root=repo_root,
         script_path=script_path.resolve(),
@@ -673,6 +684,7 @@ def build_pipeline_run_config(
     managed_curve_y_scale: float | None = None,
     managed_curve_truncate_at_culm: bool | None = None,
     managed_curve_max_age: int | None = None,
+    instance_root: Path | None = None,
 ) -> PipelineRunConfig:
     """Create normalized pipeline run configuration from CLI inputs."""
     normalized_tsas = normalize_tsa_list(tsa_list)
@@ -700,6 +712,7 @@ def build_pipeline_run_config(
         managed_curve_y_scale=managed_curve_y_scale,
         managed_curve_truncate_at_culm=managed_curve_truncate_at_culm,
         managed_curve_max_age=managed_curve_max_age,
+        instance_root=Path(instance_root) if instance_root is not None else None,
     )
 
 
@@ -711,7 +724,11 @@ def build_legacy_execution_plan(
     base_env: Mapping[str, str],
 ) -> LegacyExecutionPlan:
     """Resolve all command/env/path details needed to execute the legacy script."""
-    run_paths = resolve_run_paths(script_path=script_path, log_dir=run_config.log_dir)
+    run_paths = resolve_run_paths(
+        script_path=script_path,
+        instance_root=run_config.instance_root,
+        log_dir=run_config.log_dir,
+    )
     run_id = run_config.run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     manifest_path = run_paths.log_dir / f"run_manifest-{run_id}.json"
     checkpoint_paths = [
@@ -728,6 +745,7 @@ def build_legacy_execution_plan(
     env["FEMIC_RUN_ID"] = run_id
     env["FEMIC_LOG_DIR"] = str(run_paths.log_dir)
     env["FEMIC_OUTPUT_ROOT"] = str(Path(run_config.output_root))
+    env["FEMIC_INSTANCE_ROOT"] = str(run_paths.repo_root)
     if run_config.run_config_path is not None:
         env["FEMIC_RUN_CONFIG_PATH"] = str(run_config.run_config_path)
     if run_config.run_config_sha256 is not None:
@@ -796,4 +814,5 @@ def build_legacy_execution_plan(
         run_config_sha256=run_config.run_config_sha256,
         env=env,
         cmd=cmd,
+        working_dir=run_paths.repo_root,
     )

@@ -62,7 +62,11 @@ def test_prep_validate_case_passes_with_tsa_profile(
     cfg_dir.mkdir()
     _write_min_tipsy_cfg(cfg_dir / "tsa08.yaml", "08")
 
-    monkeypatch.setattr(cli_main, "_preflight_checks", lambda *, resume: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_preflight_checks",
+        lambda **_kwargs: None,
+    )
     monkeypatch.setattr(
         cli_main,
         "resolve_legacy_external_data_paths",
@@ -101,7 +105,11 @@ def test_prep_validate_case_fails_when_tipsy_config_missing(
     cfg_dir = tmp_path / "tipsy"
     cfg_dir.mkdir()
 
-    monkeypatch.setattr(cli_main, "_preflight_checks", lambda *, resume: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_preflight_checks",
+        lambda **_kwargs: None,
+    )
     monkeypatch.setattr(
         cli_main,
         "resolve_legacy_external_data_paths",
@@ -141,7 +149,11 @@ def test_prep_validate_case_fails_when_boundary_code_missing(
     cfg_dir = tmp_path / "tipsy"
     cfg_dir.mkdir()
 
-    monkeypatch.setattr(cli_main, "_preflight_checks", lambda *, resume: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_preflight_checks",
+        lambda **_kwargs: None,
+    )
     monkeypatch.setattr(
         cli_main,
         "resolve_legacy_external_data_paths",
@@ -179,7 +191,11 @@ def test_prep_validate_case_strict_warnings_fails(tmp_path: Path, monkeypatch) -
     cfg_dir.mkdir()
     _write_min_tipsy_cfg(cfg_dir / "tsa08.yaml", "08")
 
-    monkeypatch.setattr(cli_main, "_preflight_checks", lambda *, resume: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_preflight_checks",
+        lambda **_kwargs: None,
+    )
     monkeypatch.setattr(
         cli_main,
         "resolve_legacy_external_data_paths",
@@ -233,7 +249,11 @@ def test_prep_validate_case_smoke_from_instantiated_templates(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(cli_main, "_preflight_checks", lambda *, resume: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_preflight_checks",
+        lambda **_kwargs: None,
+    )
     monkeypatch.setattr(
         cli_main,
         "resolve_legacy_external_data_paths",
@@ -292,7 +312,11 @@ def test_prep_validate_case_template_boundary_mode_compatibility(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(cli_main, "_preflight_checks", lambda *, resume: None)
+    monkeypatch.setattr(
+        cli_main,
+        "_preflight_checks",
+        lambda **_kwargs: None,
+    )
     monkeypatch.setattr(
         cli_main,
         "resolve_legacy_external_data_paths",

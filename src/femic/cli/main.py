@@ -6,12 +6,19 @@ import json
 import os
 from pathlib import Path
 import shutil
+import zipfile
 
 import typer
 import yaml
 from rich.console import Console
 
 from femic import __version__
+from femic.instance_bootstrap import bootstrap_instance_workspace
+from femic.instance_context import (
+    INSTANCE_ROOT_ENV,
+    InstanceContext,
+    resolve_instance_context,
+)
 from femic.fmg import (
     DEFAULT_CC_MAX_AGE,
     DEFAULT_CC_MIN_AGE,
@@ -85,6 +92,11 @@ patchworks_app = typer.Typer(
     no_args_is_help=True,
     help="Run proprietary Patchworks Matrix Builder (Wine on Linux, native on Windows).",
 )
+instance_app = typer.Typer(
+    add_completion=False,
+    no_args_is_help=True,
+    help="Initialize and manage deployment-instance workspaces.",
+)
 console = Console()
 
 DATA_ROOT_OPTION = typer.Option(
@@ -155,6 +167,15 @@ RUN_CONFIG_OPTION = typer.Option(
     None,
     "--run-config",
     help="YAML/JSON run profile used to seed TSA/strata and mode defaults.",
+    show_default=False,
+)
+INSTANCE_ROOT_OPTION = typer.Option(
+    None,
+    "--instance-root",
+    help=(
+        "Root directory for deployment-instance files. "
+        f"Defaults to CWD (or {INSTANCE_ROOT_ENV} env var when set)."
+    ),
     show_default=False,
 )
 CASE_RUN_CONFIG_OPTION = typer.Option(
@@ -409,8 +430,8 @@ VDYP_MIN_RUN_EVENTS_OPTION = typer.Option(
 )
 
 
-def _preflight_checks(*, resume: bool) -> None:
-    repo_root = Path(__file__).resolve().parents[3]
+def _preflight_checks(*, resume: bool, instance_context: InstanceContext) -> None:
+    repo_root = instance_context.root
     errors: list[str] = []
     warnings: list[str] = []
 
@@ -487,6 +508,24 @@ def _normalize_case_code(value: str) -> str:
     return code.zfill(2) if code.isdigit() else code.lower()
 
 
+def _resolve_cli_instance_context(
+    *,
+    instance_root: Path | None,
+    allow_legacy_fallback: bool = True,
+) -> InstanceContext:
+    legacy_repo_root = Path(__file__).resolve().parents[3]
+    context = resolve_instance_context(
+        instance_root=instance_root,
+        env=os.environ,
+        cwd=Path.cwd(),
+        legacy_repo_root=legacy_repo_root,
+        allow_legacy_fallback=allow_legacy_fallback,
+    )
+    for warning in context.warnings:
+        console.print(f"[yellow]Warning:[/yellow] {warning}")
+    return context
+
+
 @app.callback()
 def main(
     version: bool = VERSION_OPTION,
@@ -497,6 +536,66 @@ def main(
     if version:
         typer.echo(__version__)
         raise typer.Exit()
+
+
+@instance_app.command("init")
+def instance_init(
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
+    overwrite: bool = typer.Option(
+        False,
+        "--overwrite",
+        help="Overwrite existing template files in the instance root.",
+    ),
+    download_bc_vri: bool = typer.Option(
+        True,
+        "--download-bc-vri/--no-download-bc-vri",
+        help="Download BC-wide VRI 2024 datasets into standard instance paths.",
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Assume yes for interactive prompts.",
+    ),
+) -> None:
+    context = _resolve_cli_instance_context(
+        instance_root=instance_root,
+        allow_legacy_fallback=False,
+    )
+
+    should_download = download_bc_vri
+    if should_download and not yes:
+        should_download = typer.confirm(
+            "Download BC-wide VRI datasets now? (default: Yes)",
+            default=True,
+        )
+
+    try:
+        result = bootstrap_instance_workspace(
+            instance_root=context.root,
+            overwrite=overwrite,
+            include_bc_vri_download=should_download,
+            message_fn=lambda message: console.print(
+                f"[blue]instance:[/blue] {message}"
+            ),
+        )
+    except (OSError, ValueError, zipfile.BadZipFile) as exc:
+        console.print(f"[red]Instance init failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        "[green]instance init completed[/green] "
+        f"root={result.instance_root} "
+        f"written={len(result.written_files)} "
+        f"dirs={len(result.created_dirs)}"
+    )
+    if result.skipped_files:
+        console.print(f"skipped_files={len(result.skipped_files)}")
+    if result.downloaded_archives:
+        console.print(
+            "downloaded_archives="
+            f"{len(result.downloaded_archives)} extracted_dirs={len(result.extracted_dirs)}"
+        )
 
 
 @app.command("run")
@@ -512,13 +611,21 @@ def run_all(
     run_id: str | None = RUN_ID_OPTION,
     log_dir: Path = LOG_DIR_OPTION,
     run_config: Path | None = RUN_CONFIG_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_output_root = instance_context.resolve_path(output_root)
+    resolved_log_dir = instance_context.resolve_path(log_dir)
+    resolved_run_config = (
+        instance_context.resolve_path(run_config) if run_config is not None else None
+    )
+
     run_profile = None
     run_config_sha256: str | None = None
-    if run_config is not None:
+    if resolved_run_config is not None:
         try:
-            run_profile = load_pipeline_run_profile(run_config)
-            run_config_sha256 = file_sha256(run_config)
+            run_profile = load_pipeline_run_profile(resolved_run_config)
+            run_config_sha256 = file_sha256(resolved_run_config)
         except (
             FileNotFoundError,
             ValueError,
@@ -535,7 +642,7 @@ def run_all(
         skip_checks=skip_checks,
         debug_rows=debug_rows,
         run_id=run_id,
-        log_dir=log_dir,
+        log_dir=resolved_log_dir,
         profile=run_profile,
     )
     if effective.strata_list:
@@ -543,8 +650,11 @@ def run_all(
             "[yellow]Warning:[/yellow] run config strata selection is recorded but not "
             "yet wired into legacy execution filtering."
         )
-    if data_root != Path("data") or output_root != Path("outputs"):
-        console.print("[red]data-root/output-root overrides are not wired yet.[/red]")
+    if data_root != Path("data"):
+        console.print(
+            "[red]--data-root override is not wired yet; keep default data/ under the "
+            "instance root.[/red]"
+        )
         raise typer.Exit(code=1)
     if effective.dry_run:
         console.print(
@@ -554,7 +664,10 @@ def run_all(
         )
         raise typer.Exit()
     if not effective.skip_checks:
-        _preflight_checks(resume=effective.resume)
+        _preflight_checks(
+            resume=effective.resume,
+            instance_context=instance_context,
+        )
     if effective.verbose:
         console.print(
             f"Running legacy pipeline for tsa={effective.tsa_list or 'ALL'} "
@@ -567,8 +680,8 @@ def run_all(
         debug_rows=effective.debug_rows,
         run_id=effective.run_id,
         log_dir=effective.log_dir,
-        output_root=output_root,
-        run_config_path=run_config,
+        output_root=resolved_output_root,
+        run_config_path=resolved_run_config,
         run_config_sha256=run_config_sha256,
         boundary_path=effective.boundary_path,
         boundary_layer=effective.boundary_layer,
@@ -587,6 +700,7 @@ def run_all(
         managed_curve_y_scale=effective.managed_curve_y_scale,
         managed_curve_truncate_at_culm=effective.managed_curve_truncate_at_culm,
         managed_curve_max_age=effective.managed_curve_max_age,
+        instance_root=instance_context.root,
     )
     manifest_path = run_data_prep(pipeline_run_config)
     console.print(f"Run manifest: {manifest_path}")
@@ -600,8 +714,9 @@ def prep_run(
     resume: bool = RESUME_OPTION,
     dry_run: bool = DRY_RUN_OPTION,
     verbose: bool = VERBOSE_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
-    _ = (data_root, output_root, tsa, resume, dry_run, verbose)
+    _ = (data_root, output_root, tsa, resume, dry_run, verbose, instance_root)
     _emit_stub("femic prep run")
 
 
@@ -610,9 +725,14 @@ def prep_validate_case(
     run_config: Path = CASE_RUN_CONFIG_OPTION,
     tipsy_config_dir: Path = CASE_TIPSY_CONFIG_DIR_OPTION,
     strict_warnings: bool = CASE_STRICT_WARNINGS_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_run_config = instance_context.resolve_path(run_config)
+    resolved_tipsy_config_dir = instance_context.resolve_path(tipsy_config_dir)
+
     try:
-        profile = load_pipeline_run_profile(run_config)
+        profile = load_pipeline_run_profile(resolved_run_config)
     except (
         FileNotFoundError,
         ValueError,
@@ -634,7 +754,10 @@ def prep_validate_case(
         profile=profile,
     )
 
-    _preflight_checks(resume=effective.resume)
+    _preflight_checks(
+        resume=effective.resume,
+        instance_context=instance_context,
+    )
 
     errors: list[str] = []
     warnings: list[str] = []
@@ -647,7 +770,7 @@ def prep_validate_case(
         )
 
     if profile.boundary_path is not None:
-        boundary_path = Path(profile.boundary_path)
+        boundary_path = instance_context.resolve_path(Path(profile.boundary_path))
         if not boundary_path.exists():
             errors.append(
                 f"Boundary path does not exist: {boundary_path} "
@@ -665,21 +788,23 @@ def prep_validate_case(
 
     for code in sorted(case_codes):
         try:
-            cfg = load_tipsy_tsa_config(tsa_code=code, config_dir=tipsy_config_dir)
+            cfg = load_tipsy_tsa_config(
+                tsa_code=code,
+                config_dir=resolved_tipsy_config_dir,
+            )
         except ValueError as exc:
             errors.append(f"Invalid TIPSY config for {code}: {exc}")
             continue
         if cfg is None:
-            expected_yaml = tipsy_config_dir / f"tsa{code}.yaml"
-            expected_yml = tipsy_config_dir / f"tsa{code}.yml"
+            expected_yaml = resolved_tipsy_config_dir / f"tsa{code}.yaml"
+            expected_yml = resolved_tipsy_config_dir / f"tsa{code}.yml"
             errors.append(
-                f"Missing TIPSY config for {code} in {tipsy_config_dir} "
+                f"Missing TIPSY config for {code} in {resolved_tipsy_config_dir} "
                 f"(expected {expected_yaml.name} or {expected_yml.name})."
             )
 
-    repo_root = Path(__file__).resolve().parents[3]
     external_paths = resolve_legacy_external_data_paths(
-        repo_root=repo_root,
+        repo_root=instance_context.root,
         env_override=os.environ.get("FEMIC_EXTERNAL_DATA_ROOT"),
     )
     required_external_paths = {
@@ -695,9 +820,9 @@ def prep_validate_case(
                 "(set FEMIC_EXTERNAL_DATA_ROOT or restore expected dataset path)."
             )
 
-    if not tipsy_config_dir.exists():
+    if not resolved_tipsy_config_dir.exists():
         errors.append(
-            f"TIPSY config directory does not exist: {tipsy_config_dir} "
+            f"TIPSY config directory does not exist: {resolved_tipsy_config_dir} "
             "(create directory and add tsa*.yaml case configs)."
         )
 
@@ -721,8 +846,8 @@ def prep_validate_case(
 
     targets = ", ".join(sorted(case_codes)) if case_codes else "<none>"
     console.print(
-        f"[green]Case preflight passed[/green] run_config={run_config} "
-        f"targets=[{targets}] tipsy_config_dir={tipsy_config_dir}"
+        f"[green]Case preflight passed[/green] run_config={resolved_run_config} "
+        f"targets=[{targets}] tipsy_config_dir={resolved_tipsy_config_dir}"
     )
 
 
@@ -734,8 +859,9 @@ def vdyp_run(
     resume: bool = RESUME_OPTION,
     dry_run: bool = DRY_RUN_OPTION,
     verbose: bool = VERBOSE_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
-    _ = (data_root, output_root, tsa, resume, dry_run, verbose)
+    _ = (data_root, output_root, tsa, resume, dry_run, verbose, instance_root)
     _emit_stub("femic vdyp run")
 
 
@@ -817,8 +943,9 @@ def tsa_run(
     resume: bool = RESUME_OPTION,
     dry_run: bool = DRY_RUN_OPTION,
     verbose: bool = VERBOSE_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
-    _ = (data_root, output_root, tsa, resume, dry_run, verbose)
+    _ = (data_root, output_root, tsa, resume, dry_run, verbose, instance_root)
     _emit_stub("femic tsa run")
 
 
@@ -828,7 +955,10 @@ def tsa_post_tipsy(
     verbose: bool = VERBOSE_OPTION,
     run_id: str | None = RUN_ID_OPTION,
     log_dir: Path = LOG_DIR_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_log_dir = instance_context.resolve_path(log_dir)
     targets = [str(v).zfill(2) for v in tsa] if tsa else []
     if not targets:
         console.print("[red]Provide at least one TSA via --tsa for post-tipsy.[/red]")
@@ -836,7 +966,9 @@ def tsa_post_tipsy(
     run_result = run_post_tipsy_bundle_with_manifest(
         tsa_list=targets,
         run_id=run_id,
-        log_dir=log_dir,
+        log_dir=resolved_log_dir,
+        repo_root=instance_context.root,
+        data_root=(instance_context.root / "data"),
         message_fn=console.print if verbose else (lambda *_args, **_kwargs: None),
     )
     result = run_result.result
@@ -859,10 +991,13 @@ def tipsy_validate(
         help="Directory containing tsaXX.yaml files.",
     ),
     tsa: list[str] | None = TSA_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
-    found = discover_tipsy_config_tsas(config_dir)
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_config_dir = instance_context.resolve_path(config_dir)
+    found = discover_tipsy_config_tsas(resolved_config_dir)
     if not found:
-        console.print(f"[red]No TIPSY configs found in {config_dir}[/red]")
+        console.print(f"[red]No TIPSY configs found in {resolved_config_dir}[/red]")
         raise typer.Exit(code=1)
     targets = sorted({str(v).zfill(2) for v in tsa}) if tsa else sorted(found.keys())
     missing = [code for code in targets if code not in found]
@@ -870,10 +1005,10 @@ def tipsy_validate(
         console.print(f"[red]Missing TSA config files:[/red] {', '.join(missing)}")
         raise typer.Exit(code=1)
     for code in targets:
-        load_tipsy_tsa_config(tsa_code=code, config_dir=config_dir)
+        load_tipsy_tsa_config(tsa_code=code, config_dir=resolved_config_dir)
     console.print(
         f"[green]Validated TIPSY configs:[/green] {', '.join(targets)} "
-        f"(dir={config_dir})"
+        f"(dir={resolved_config_dir})"
     )
 
 
@@ -893,7 +1028,17 @@ def export_patchworks(
     ifm_threshold: float | None = EXPORT_IFM_THRESHOLD_OPTION,
     ifm_target_managed_share: float | None = (EXPORT_IFM_TARGET_MANAGED_SHARE_OPTION),
     seral_stage_config: Path | None = EXPORT_SERAL_STAGE_CONFIG_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_bundle_dir = instance_context.resolve_path(bundle_dir)
+    resolved_checkpoint = instance_context.resolve_path(checkpoint)
+    resolved_output_dir = instance_context.resolve_path(output_dir)
+    resolved_seral_stage_config = (
+        instance_context.resolve_path(seral_stage_config)
+        if isinstance(seral_stage_config, Path)
+        else None
+    )
     targets = (
         [str(v).zfill(2) if str(v).isdigit() else str(v).lower() for v in tsa]
         if tsa
@@ -906,9 +1051,9 @@ def export_patchworks(
         raise typer.Exit(code=1)
     try:
         result = export_patchworks_package(
-            bundle_dir=bundle_dir,
-            checkpoint_path=checkpoint,
-            output_dir=output_dir,
+            bundle_dir=resolved_bundle_dir,
+            checkpoint_path=resolved_checkpoint,
+            output_dir=resolved_output_dir,
             tsa_list=targets,
             start_year=start_year,
             horizon_years=horizon_years,
@@ -919,7 +1064,7 @@ def export_patchworks(
             ifm_source_col=ifm_source_col,
             ifm_threshold=ifm_threshold,
             ifm_target_managed_share=ifm_target_managed_share,
-            seral_stage_config_path=seral_stage_config,
+            seral_stage_config_path=resolved_seral_stage_config,
         )
     except (FileNotFoundError, ValueError) as exc:
         console.print(f"[red]Patchworks export failed:[/red] {exc}")
@@ -943,7 +1088,12 @@ def export_woodstock(
     cc_min_age: int = EXPORT_CC_MIN_AGE_OPTION,
     cc_max_age: int = EXPORT_CC_MAX_AGE_OPTION,
     fragments_crs: str = EXPORT_FRAGMENTS_CRS_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_bundle_dir = instance_context.resolve_path(bundle_dir)
+    resolved_checkpoint = instance_context.resolve_path(checkpoint)
+    resolved_output_dir = instance_context.resolve_path(output_dir)
     targets = (
         [str(v).zfill(2) if str(v).isdigit() else str(v).lower() for v in tsa]
         if tsa
@@ -956,9 +1106,9 @@ def export_woodstock(
         raise typer.Exit(code=1)
     try:
         result = export_woodstock_package(
-            bundle_dir=bundle_dir,
-            checkpoint_path=checkpoint,
-            output_dir=output_dir,
+            bundle_dir=resolved_bundle_dir,
+            checkpoint_path=resolved_checkpoint,
+            output_dir=resolved_output_dir,
             tsa_list=targets,
             cc_min_age=cc_min_age,
             cc_max_age=cc_max_age,
@@ -990,16 +1140,27 @@ def export_release(
     logs_dir: Path = EXPORT_RELEASE_LOGS_DIR_OPTION,
     run_id: str | None = EXPORT_RELEASE_RUN_ID_OPTION,
     strict: bool = EXPORT_RELEASE_STRICT_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     effective_case_id = case_id.strip() if case_id and case_id.strip() else "case"
+    resolved_output_root = instance_context.resolve_path(output_root)
+    resolved_bundle_dir = instance_context.resolve_path(bundle_dir)
+    resolved_patchworks_dir = instance_context.resolve_path(patchworks_dir)
+    resolved_woodstock_dir = (
+        instance_context.resolve_path(woodstock_dir)
+        if woodstock_dir is not None
+        else None
+    )
+    resolved_logs_dir = instance_context.resolve_path(logs_dir)
     try:
         result = build_release_package(
             case_id=effective_case_id,
-            output_root=output_root,
-            model_input_bundle_dir=bundle_dir,
-            patchworks_output_dir=patchworks_dir,
-            woodstock_output_dir=woodstock_dir,
-            logs_dir=logs_dir,
+            output_root=resolved_output_root,
+            model_input_bundle_dir=resolved_bundle_dir,
+            patchworks_output_dir=resolved_patchworks_dir,
+            woodstock_output_dir=resolved_woodstock_dir,
+            logs_dir=resolved_logs_dir,
             run_id=run_id,
             strict=strict,
         )
@@ -1018,9 +1179,12 @@ def export_release(
 @patchworks_app.command("preflight")
 def patchworks_preflight(
     config: Path = PATCHWORKS_CONFIG_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_config = instance_context.resolve_path(config)
     try:
-        runtime_config = load_patchworks_runtime_config(config)
+        runtime_config = load_patchworks_runtime_config(resolved_config)
     except (
         FileNotFoundError,
         PatchworksConfigError,
@@ -1060,13 +1224,17 @@ def patchworks_matrix_build(
         "--interactive",
         help="Launch Patchworks app chooser instead of direct Matrix Builder invocation.",
     ),
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_config = instance_context.resolve_path(config)
+    resolved_log_dir = instance_context.resolve_path(log_dir)
     try:
-        runtime_config = load_patchworks_runtime_config(config)
+        runtime_config = load_patchworks_runtime_config(resolved_config)
         result = run_patchworks_command(
             config=runtime_config,
             interactive=interactive,
-            log_dir=log_dir,
+            log_dir=resolved_log_dir,
             run_id=run_id,
         )
     except (
@@ -1123,13 +1291,24 @@ def patchworks_build_blocks(
         "--with-topology/--no-topology",
         help="Write blocks/topology_blocks_<radius>r.csv alongside blocks.shp.",
     ),
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_config = instance_context.resolve_path(config)
+    resolved_model_dir = (
+        instance_context.resolve_path(model_dir) if model_dir is not None else None
+    )
+    resolved_fragments_shp = (
+        instance_context.resolve_path(fragments_shp)
+        if fragments_shp is not None
+        else None
+    )
     try:
-        runtime_config = load_patchworks_runtime_config(config)
+        runtime_config = load_patchworks_runtime_config(resolved_config)
         result = build_patchworks_blocks_dataset(
             config=runtime_config,
-            model_dir=model_dir,
-            fragments_shapefile_path=fragments_shp,
+            model_dir=resolved_model_dir,
+            fragments_shapefile_path=resolved_fragments_shp,
             topology_radius_m=topology_radius,
             build_topology=with_topology,
         )
@@ -1165,3 +1344,4 @@ app.add_typer(tsa_app, name="tsa")
 app.add_typer(tipsy_app, name="tipsy")
 app.add_typer(export_app, name="export")
 app.add_typer(patchworks_app, name="patchworks")
+app.add_typer(instance_app, name="instance")

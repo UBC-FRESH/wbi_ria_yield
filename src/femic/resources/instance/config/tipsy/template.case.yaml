@@ -1,0 +1,90 @@
+# Case onboarding template for FEMIC TIPSY rule configuration.
+# Copy this file to config/tipsy/tsa<code>.yaml (or tsak3z.yaml style for named units).
+
+schema_version: 1
+tsa_code: "08"
+
+metadata:
+  source_tsr:
+    - title: ""
+      year: null
+      url: ""
+      notes: ""
+  author: ""
+  created_utc: ""
+  notes: ""
+
+defaults:
+  e:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+  f:
+    OAF2: 0.95
+    FIZ: "I"
+    Regen_Method: "P"
+    Proportion: 1
+    SI_c1: 1.0
+    SI_c2: 0.0
+
+# Rule order is first-match-wins.
+rules:
+  - id: "example_softwood_rule"
+    when:
+      leading_species_in: ["S", "SB", "SE", "SN", "SS", "SW", "SX"]
+      bec_in: ["SBS", "ESSF"]
+      forest_type_in: [1]
+      min_operable_years_gte: 50
+      min_volume_gte: 140
+      min_si_quantile_gte: 10
+    assign:
+      e:
+        Regen_Delay: 2
+        Density: 1400
+        SPP_1: "SW"
+        PCT_1: 100
+        Util_DBH_cm: 17.5
+      f:
+        Regen_Delay: 1
+        Density: 1400
+        SI_c1: 1.0
+        SI_c2: 0.0
+        SPP_1: "SW"
+        PCT_1: 100
+        Util_DBH_cm: 17.5
+    notes: "Replace with production rules from local TSR/FSP evidence."
+
+required_fields:
+  - AU
+  - TBLno
+  - BEC
+  - Proportion
+  - Regen_Delay
+  - SI
+  - OAF1
+  - OAF2
+  - FIZ
+  - Regen_Method
+  - Density
+  - SPP_1
+  - PCT_1
+  - SPP_2
+  - PCT_2
+  - SPP_3
+  - PCT_3
+  - SPP_4
+  - PCT_4
+  - SPP_5
+  - PCT_5
+  - GW_1
+  - GW_2
+  - GW_3
+  - GW_4
+  - GW_5
+  - GW_age_1
+  - GW_age_2
+  - GW_age_3
+  - GW_age_4
+  - GW_age_5
+  - Util_DBH_cm

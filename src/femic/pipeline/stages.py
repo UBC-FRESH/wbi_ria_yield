@@ -207,7 +207,7 @@ def run_legacy_subprocess(
     env.setdefault("PYTHONUNBUFFERED", "1")
     process = subprocess.Popen(
         execution_plan.cmd,
-        cwd=str(execution_plan.script_path.parent),
+        cwd=str(execution_plan.working_dir),
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,

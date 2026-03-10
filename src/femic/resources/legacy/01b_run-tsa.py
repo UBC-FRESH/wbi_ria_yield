@@ -1,0 +1,243 @@
+# Auto-generated from 01b_run-tsa.ipynb
+
+import os
+
+
+def run_tsa(
+    *,
+    tsa,
+    results,
+    au_scsi,
+    tipsy_curves,
+    vdyp_curves_smooth,
+    runtime_config,
+):
+    from pathlib import Path
+
+    # --- cell 1 ---
+    #!mv ./data/04_output.out ./data/tipsy_output_tsa08.out
+    #!mv ./data/04_output.out ./data/tipsy_output_tsa16.out
+    #!mv ./data/04_output.out ./data/tipsy_output_tsa24.out
+    #!mv ./data/04_output.out ./data/tipsy_output_tsa40.out
+    #!mv ./data/04_output.out ./data/tipsy_output_tsa41.out
+
+    # --- cell 2 ---
+    ##################################################################################
+    # Code below is adapted from a script developed by Cosmin Man (cman@forsite.ca).
+    ##################################################################################
+
+    import pandas as pd
+    from matplotlib import pyplot as plt
+    import seaborn as sns
+    from femic.pipeline.legacy_runtime import Legacy01BRuntimeConfig
+    from femic.pipeline.managed_curves import build_transformed_managed_curves_for_tsa
+    from femic.pipeline.plots import tipsy_vdyp_ylim_for_tsa
+    from femic.pipeline.tipsy import tipsy_params_excel_path, tipsy_stage_output_paths
+
+    if not isinstance(runtime_config, Legacy01BRuntimeConfig):
+        raise TypeError(
+            "runtime_config must be Legacy01BRuntimeConfig, got "
+            f"{type(runtime_config).__name__}"
+        )
+
+    #############no need to change the code below
+    tipsy_excel = str(
+        tipsy_params_excel_path(
+            tsa=tsa,
+            tipsy_params_path_prefix=runtime_config.tipsy_params_path_prefix,
+        )
+    )
+    tipsy_output_root = Path(runtime_config.tipsy_output_root)
+    tipsyout = str(
+        tipsy_output_root
+        / runtime_config.tipsy_output_filename_template.format(tsa=tsa)
+    )
+    outYield_path, outSPP_path = tipsy_stage_output_paths(
+        tsa=tsa, output_root=runtime_config.tipsy_output_root
+    )
+    outYield = str(outYield_path)
+    outSPP = str(outSPP_path)
+
+    managed_curve_mode = (
+        os.environ.get("FEMIC_MANAGED_CURVE_MODE", "tipsy").strip().lower()
+    )
+    managed_curve_x_scale = float(os.environ.get("FEMIC_MANAGED_CURVE_X_SCALE", "0.8"))
+    managed_curve_y_scale = float(os.environ.get("FEMIC_MANAGED_CURVE_Y_SCALE", "1.2"))
+    managed_curve_max_age = int(os.environ.get("FEMIC_MANAGED_CURVE_MAX_AGE", "300"))
+    managed_curve_truncate_at_culm = os.environ.get(
+        "FEMIC_MANAGED_CURVE_TRUNCATE_AT_CULM", "1"
+    ).strip().lower() in {"1", "true", "yes"}
+
+    tipsy_input_df = pd.read_excel(
+        tipsy_excel, sheet_name="TIPSY_inputTBL", usecols="A:AF"
+    )
+    tipsy_input_df = tipsy_input_df.query("SI > 0").copy()
+    if tipsy_input_df.empty:
+        print(
+            f"warning: no valid TIPSY input rows for TSA {tsa}; writing empty 01b outputs"
+        )
+        pd.DataFrame(columns=["AU"]).to_csv(outSPP, header=True, index=False)
+        pd.DataFrame(columns=["AU", "Age", "Yield", "Height", "DBHq", "TPH"]).to_csv(
+            outYield,
+            header=True,
+            index=False,
+        )
+    else:
+        # reformat data
+        for i in range(1, 6):
+            tipsy_input_df[["PCT_" + str(i)]] = tipsy_input_df[
+                ["PCT_" + str(i)]
+            ].fillna(0)
+            if tipsy_input_df["PCT_" + str(i)].dtype == object:
+                tipsy_input_df["PCT_" + str(i)] = pd.to_numeric(
+                    tipsy_input_df["PCT_" + str(i)]
+                ).astype(int)
+            else:
+                tipsy_input_df["PCT_" + str(i)] = tipsy_input_df[
+                    "PCT_" + str(i)
+                ].astype(int)
+
+        # consolidate species
+        for i in range(1, 4):
+            ds = tipsy_input_df.groupby(
+                ["AU", "Proportion", "SPP_" + str(i)], as_index=False
+            )[["PCT_" + str(i)]].mean()
+            ds["SPP"] = ds["SPP_" + str(i)]
+            ds["PCT"] = ds["Proportion"] * ds["PCT_" + str(i)]
+            ds = ds.query("PCT>0")
+            ds = ds.groupby(["AU", "SPP"], as_index=False)[["PCT"]].sum()
+            if i == 1:
+                dspp = ds
+            else:
+                dspp = pd.concat([dspp, ds], ignore_index=True)
+        dspp = dspp.groupby(["AU", "SPP"])[["PCT"]].sum()
+
+        # unstack and remove extra columns
+        dspp = dspp.unstack()
+        dspp.columns = dspp.columns.droplevel(0)
+        dspp.reset_index(inplace=True)
+        dspp.to_csv(outSPP, header=True, index=False)
+
+        if not Path(tipsyout).is_file():
+            print(
+                f"warning: missing TIPSY output file for TSA {tsa} at {tipsyout}; "
+                "writing empty yield table"
+            )
+            pd.DataFrame(
+                columns=["AU", "Age", "Yield", "Height", "DBHq", "TPH"]
+            ).to_csv(outYield, header=True, index=False)
+        else:
+            # consolidate yields
+            cols = [
+                "TABLE_NO",
+                "Empty",
+                "Age",
+                "Yield",
+                "Vol_gross",
+                "DBHq",
+                "Height",
+                "TPH",
+                "Crown_C",
+                "Crown_L",
+                "CWD_TPH",
+            ]
+            dy = pd.read_csv(
+                tipsyout,
+                low_memory=False,
+                header=None,
+                skiprows=4,
+                sep=r"\s+",
+            )
+            dy.columns = cols
+            dy.drop("Empty", axis=1, inplace=True)
+            dy.set_index("TABLE_NO", inplace=True)
+            dp = tipsy_input_df.groupby(["AU", "TBLno"], as_index=False)[
+                ["Proportion"]
+            ].sum()
+            dp.set_index("TBLno", inplace=True)
+            dy = dy.join(dp)
+            dy.reset_index(inplace=True)
+            dyf = dy.groupby(["AU", "Age"], as_index=False).agg(
+                {"Yield": ["sum"], "Height": ["max"], "DBHq": ["max"], "TPH": ["sum"]}
+            )
+            dyf.columns = dyf.columns.droplevel(1)  # drop the sum/max labels
+
+            # export result to a CSV file
+            dyf.to_csv(outYield, header=True, index=False)
+
+    # --- cell 4 ---
+    yield_df = pd.read_csv(outYield)
+    if "AU" in yield_df.columns and not yield_df.empty:
+        yield_df["AU"] = yield_df["AU"].astype("int")
+
+    palette = sns.color_palette("Greens", 3)  # , len(df.index.unique(level=0)))
+    sns.set_palette(palette)
+    vdyp_curves_by_scsi = (
+        vdyp_curves_smooth[tsa]
+        .sort_values(["stratum_code", "si_level", "age"])
+        .set_index(["stratum_code", "si_level"])
+        .sort_index()
+    )
+    if managed_curve_mode == "vdyp_transform":
+        au_values = (
+            tipsy_input_df["AU"].astype(int).tolist()
+            if "AU" in tipsy_input_df.columns
+            else []
+        )
+        transformed = build_transformed_managed_curves_for_tsa(
+            tsa=tsa,
+            au_values=au_values,
+            au_scsi=au_scsi,
+            vdyp_curves_by_scsi=vdyp_curves_by_scsi,
+            x_scale=managed_curve_x_scale,
+            y_scale=managed_curve_y_scale,
+            max_age=managed_curve_max_age,
+            truncate_after_culmination=managed_curve_truncate_at_culm,
+            pd_module=pd,
+        )
+        if transformed.empty:
+            print(
+                f"warning: managed curve mode 'vdyp_transform' yielded no rows for tsa {tsa}; "
+                "falling back to TIPSY output"
+            )
+        else:
+            yield_df = transformed.copy()
+            yield_df.to_csv(outYield, header=True, index=False)
+            print(
+                "managed curve mode vdyp_transform: "
+                f"x_scale={managed_curve_x_scale:.3f} "
+                f"y_scale={managed_curve_y_scale:.3f} "
+                f"truncate={managed_curve_truncate_at_culm} "
+                f"max_age={managed_curve_max_age}"
+            )
+
+    yield_df.set_index(["AU", "Age"], inplace=True)
+    tipsy_curves[tsa] = yield_df
+    y_limits = tipsy_vdyp_ylim_for_tsa(tsa)
+
+    for i, au in enumerate(yield_df.index.unique(level=0)):
+        print(i, au)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+        au_ = int(str(au)[-4:])
+        stratumi = int(str(au)[-2:])
+        _, _, result = results[tsa][stratumi]
+        sc, si_level = au_scsi[tsa][au_]
+        print(au, sc, si_level)
+        # (df.loc[au].Yield * ss.CROWN_CLOSURE.median() * 0.01).plot(ax=ax, label='TIPSY (scaled by CC)', linestyle='--')
+        (yield_df.loc[au].Yield * 1.00).plot(ax=ax, label="TIPSY (raw)", linestyle="--")
+        vdyp_curves_by_scsi.loc[sc, si_level].set_index("age").volume.plot(label="VDYP")
+        # plt.plot(df.loc[au].Age, df.loc[au].Yield, linestyle='-', alpha=0.5, label=au, linewidth=2)s
+        plt.xlabel("Age")
+        plt.ylabel("Yield (m3/ha)")
+        plt.title("%s %s (AU %i)" % (sc, si_level, au))
+        plt.legend()
+        plt.xlim([0, 300])
+        plt.ylim(list(y_limits))
+        plt.savefig("./plots/tipsy_vdyp_tsa%s-%s.png" % (tsa, au), facecolor="white")
+        plt.close(fig)
+
+
+if __name__ == "__main__":
+    raise SystemExit(
+        "01b_run-tsa.py is intended to be launched by 00_data-prep.py or femic run."
+    )

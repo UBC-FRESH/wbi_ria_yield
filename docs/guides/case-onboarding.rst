@@ -15,19 +15,25 @@ Template Files
 Onboarding Workflow
 -------------------
 
-1. Copy run-profile template:
+1. Initialize an instance workspace (if not already done):
+
+   .. code-block:: bash
+
+      femic instance init
+
+2. Copy run-profile template:
 
    .. code-block:: bash
 
       cp config/run_profile.case_template.yaml config/run_profile.<case>.yaml
 
-2. Set case identity:
+3. Set case identity:
 
    - For TSA mode: set ``selection.tsa``.
    - For custom boundary mode: set ``selection.boundary_path``,
      ``selection.boundary_layer``, and ``selection.boundary_code``.
 
-3. Copy TIPSY template:
+4. Copy TIPSY template:
 
    .. code-block:: bash
 
@@ -36,21 +42,21 @@ Onboarding Workflow
    For named custom units, use the boundary code in filename form accepted by
    your run wiring (for example ``tsak3z.yaml``).
 
-4. Fill TIPSY rule metadata and rule assignments using local TSR/FSP evidence.
+5. Fill TIPSY rule metadata and rule assignments using local TSR/FSP evidence.
 
-5. Validate config before running:
+6. Validate config before running:
 
    .. code-block:: bash
 
       PYTHONPATH=src python -m femic tipsy validate --config-dir config/tipsy --tsa <code>
 
-6. Run single-command case preflight:
+7. Run single-command case preflight:
 
    .. code-block:: bash
 
       PYTHONPATH=src python -m femic prep validate-case --run-config config/run_profile.<case>.yaml
 
-7. Dry-run and compile:
+8. Dry-run and compile:
 
    .. code-block:: bash
 

@@ -225,6 +225,40 @@
   - [x] P9.5b Run full validation gates before merge
   - [x] P9.5c Confirm post-rename install/docs/CLI smoke checks
 
+## Phase 10: Instance/Package Decoupling + PyPI Release Readiness
+- [ ] P10.1 Add first-class instance model + path resolution
+  - [x] P10.1a Introduce `InstanceContext`/`instance_root` resolver
+    (default: CWD, override via `--instance-root`/env).
+  - [x] P10.1b Make CLI commands resolve defaults relative to instance root,
+    not repo-root assumptions.
+  - [x] P10.1c Keep transition compatibility (legacy root-coupled mode still
+    works with warnings).
+- [ ] P10.2 Add instance bootstrap UX (`femic instance init`)
+  - [x] P10.2a Add new CLI namespace `instance` with `init` command.
+  - [x] P10.2b Scaffold filesystem-first instance skeleton (config/templates/log/output/data dirs + `.gitignore` + quickstart doc).
+  - [x] P10.2c Ship template assets as package resources (not repo-root only files).
+- [ ] P10.3 Decouple runtime from repo-root legacy scripts
+  - [x] P10.3a Move legacy stage scripts to package-owned resources and execute from package runtime.
+  - [x] P10.3b Remove hard dependency on `<repo>/00_data-prep.py` style paths.
+  - [x] P10.3c Add explicit migration/warning messages for old execution assumptions.
+- [ ] P10.4 Split case/deployment assets from generic project layout
+  - [ ] P10.4a Define canonical in-repo reference instance location (for maintainers), separate from package source.
+  - [ ] P10.4b Repoint docs/tests/examples to instance-based layout.
+  - [ ] P10.4c Enforce contract tests: no active runtime/docs/config references to repo-specific deployment paths.
+- [ ] P10.5 Publish-readiness completion criteria (PyPI in scope)
+  - [ ] P10.5a Add package build/release checks (`build`, `twine check`, wheel install smoke).
+  - [ ] P10.5b Verify installed-package workflow in clean env (`pip install femic` + `femic instance init` + preflight).
+  - [ ] P10.5c Final docs updates for “install package + create instance + run”.
+- [ ] P10.6 Public-data accessibility mirror via DataLad + submodule linkage
+  - [ ] P10.6a Inventory all "public but not directly downloadable" required layers
+    (including archived HectaresBC `misc*.tif` dependencies) with provenance notes.
+  - [ ] P10.6b Create/publish a dedicated DataLad-backed GitHub dataset repo for
+    these layers with remote object storage on Arbutus (special remote).
+  - [ ] P10.6c Add the published dataset repo as a Git submodule under FEMIC and
+    wire docs/instance bootstrap guidance to consume it.
+  - [ ] P10.6d Add operator runbook for clone/get/update workflows
+    (`git submodule` + `datalad get`) for students/collaborators.
+
 ## Detailed Next Steps Notes
 - 2026-03-10 (P8.7 docs QA + acceptance checks): added automated docs
   contract coverage for Sample Models navigation and required K3Z sections,
@@ -2763,3 +2797,35 @@
   - Removed remaining transition slug mention from `README.md` to keep active
     user-facing docs/config free of historical slug references.
   - Marked complete: `P9.2`, `P9.4a`, `P9.4b`, `P9.4c`, and parent `P9.4`.
+- 2026-03-10 (Phase 10 implementation slice 1: instance decoupling + bootstrap):
+  implemented instance-rooted CLI path resolution and deployment workspace
+  scaffolding as the first concrete Phase 10 delivery.
+  - Added `src/femic/instance_context.py` with resolver precedence:
+    `--instance-root` -> `FEMIC_INSTANCE_ROOT` -> CWD, plus legacy repo-root
+    compatibility fallback warning.
+  - Added shared `--instance-root` support across operational commands
+    (`run`, `prep validate-case`, `tipsy validate`, `tsa post-tipsy`,
+    export commands, and patchworks runtime commands), and rewired relative
+    paths to resolve under instance root.
+  - Added `femic instance init` (`instance` CLI namespace) with filesystem-first
+    scaffold generation (`config/`, `config/tipsy/`, `data/`, `output/`,
+    `vdyp_io/logs/`, `.gitignore`, `QUICKSTART.md`).
+  - Added optional BC-wide VRI dataset bootstrap with built-in URLs and default
+    yes/no prompt:
+    `VEG_COMP_LYR_R1_POLY_2024.gdb.zip` and
+    `VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb.zip`.
+  - Added package-owned resources under `src/femic/resources/` for instance
+    templates and legacy scripts (`00_data-prep.py`, `01a_run-tsa.py`,
+    `01b_run-tsa.py`), and updated workflow runtime to execute packaged scripts
+    by default (no hard dependency on repo-root script paths).
+  - Added/updated tests for instance-context resolution, instance bootstrap,
+    packaged legacy resource loading, and CLI wiring.
+  - Marked complete: `P10.1a/P10.1b/P10.1c`, `P10.2a/P10.2b/P10.2c`,
+    `P10.3a/P10.3b/P10.3c`.
+- 2026-03-10 (Phase 10 scope extension: public-but-inaccessible dataset mirror):
+  added a new Phase 10 workstream to publish missing FEMIC-required public
+  datasets (including archived HectaresBC `misc*.tif` layers) through a
+  DataLad-powered GitHub dataset repository with Arbutus special-remote object
+  storage, then link that dataset back into FEMIC as a git submodule.
+  - Added checklist `P10.6a/P10.6b/P10.6c/P10.6d` for inventory, publishing,
+    submodule integration, and collaborator runbook coverage.

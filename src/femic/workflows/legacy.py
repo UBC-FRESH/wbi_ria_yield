@@ -27,6 +27,10 @@ from femic.pipeline.manifest import (
     write_manifest,
 )
 from femic.pipeline.stages import load_legacy_module, run_legacy_subprocess
+from femic.workflows.legacy_resources import (
+    LEGACY_SCRIPT_FILENAMES,
+    resolve_legacy_script_bundle,
+)
 
 
 _LEGACY_NOISE_LINES = {"Error in sys.excepthook:", "Original exception was:"}
@@ -188,13 +192,24 @@ def run_post_tipsy_bundle(
     resolved_repo_root = repo_root if repo_root is not None else Path.cwd()
 
     if run_01b_fn is None:
-        module = load_legacy_module(
-            script_path=resolved_repo_root / "01b_run-tsa.py",
-            module_name="run_tsa_01b_post_tipsy",
+        filesystem_script_root = (
+            resolved_repo_root
+            if all(
+                (resolved_repo_root / name).is_file()
+                for name in LEGACY_SCRIPT_FILENAMES
+            )
+            else None
         )
-        run_01b = getattr(module, "run_tsa", None)
-        if not callable(run_01b):
-            raise RuntimeError("01b_run-tsa.py does not define callable run_tsa")
+        with resolve_legacy_script_bundle(
+            explicit_root=filesystem_script_root
+        ) as script_bundle:
+            module = load_legacy_module(
+                script_path=script_bundle.stage01b_path,
+                module_name="run_tsa_01b_post_tipsy",
+            )
+            run_01b = getattr(module, "run_tsa", None)
+            if not callable(run_01b):
+                raise RuntimeError("01b_run-tsa.py does not define callable run_tsa")
     else:
         run_01b = run_01b_fn
 
@@ -462,53 +477,60 @@ def run_data_prep(
     run_config: PipelineRunConfig,
 ) -> Path:
     """Run the legacy 00_data-prep.py workflow with explicit run configuration."""
+    explicit_script_root = None
+    if run_config.instance_root is not None:
+        resolved_instance_root = run_config.instance_root.expanduser().resolve()
+        if all(
+            (resolved_instance_root / name).is_file()
+            for name in LEGACY_SCRIPT_FILENAMES
+        ):
+            explicit_script_root = resolved_instance_root
 
-    script_path = Path(__file__).resolve().parents[3] / "00_data-prep.py"
-    if not script_path.exists():
-        raise FileNotFoundError(f"Expected legacy script at {script_path}")
-
-    execution_plan = build_legacy_execution_plan(
-        run_config=run_config,
-        script_path=script_path,
-        python_executable=sys.executable,
-        base_env=os.environ,
-    )
-
-    started_at = datetime.now(timezone.utc)
-    monotonic_started = time.monotonic()
-    write_manifest(
-        execution_plan.manifest_path,
-        build_run_manifest_payload(
-            execution_plan=execution_plan,
-            status="started",
-            started_at=started_at,
-            finished_at=None,
-            duration_sec=None,
-            exit_code=None,
-        ),
-    )
-
-    stage_result = run_legacy_subprocess(
-        execution_plan=execution_plan,
-        drop_lines=_LEGACY_NOISE_LINES,
-    )
-    finished_at = datetime.now(timezone.utc)
-    duration_sec = round(time.monotonic() - monotonic_started, 3)
-    write_manifest(
-        execution_plan.manifest_path,
-        build_run_manifest_payload(
-            execution_plan=execution_plan,
-            status="ok" if stage_result.exit_code == 0 else "failed",
-            started_at=started_at,
-            finished_at=finished_at,
-            duration_sec=duration_sec,
-            exit_code=stage_result.exit_code,
-        ),
-    )
-
-    if stage_result.exit_code != 0:
-        raise RuntimeError(
-            "Legacy workflow failed with exit code "
-            f"{stage_result.exit_code}: {' '.join(execution_plan.cmd)}"
+    with resolve_legacy_script_bundle(
+        explicit_root=explicit_script_root
+    ) as script_bundle:
+        execution_plan = build_legacy_execution_plan(
+            run_config=run_config,
+            script_path=script_bundle.stage00_path,
+            python_executable=sys.executable,
+            base_env=os.environ,
         )
-    return execution_plan.manifest_path
+
+        started_at = datetime.now(timezone.utc)
+        monotonic_started = time.monotonic()
+        write_manifest(
+            execution_plan.manifest_path,
+            build_run_manifest_payload(
+                execution_plan=execution_plan,
+                status="started",
+                started_at=started_at,
+                finished_at=None,
+                duration_sec=None,
+                exit_code=None,
+            ),
+        )
+
+        stage_result = run_legacy_subprocess(
+            execution_plan=execution_plan,
+            drop_lines=_LEGACY_NOISE_LINES,
+        )
+        finished_at = datetime.now(timezone.utc)
+        duration_sec = round(time.monotonic() - monotonic_started, 3)
+        write_manifest(
+            execution_plan.manifest_path,
+            build_run_manifest_payload(
+                execution_plan=execution_plan,
+                status="ok" if stage_result.exit_code == 0 else "failed",
+                started_at=started_at,
+                finished_at=finished_at,
+                duration_sec=duration_sec,
+                exit_code=stage_result.exit_code,
+            ),
+        )
+
+        if stage_result.exit_code != 0:
+            raise RuntimeError(
+                "Legacy workflow failed with exit code "
+                f"{stage_result.exit_code}: {' '.join(execution_plan.cmd)}"
+            )
+        return execution_plan.manifest_path

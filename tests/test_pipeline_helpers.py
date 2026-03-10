@@ -77,6 +77,19 @@ def test_resolve_run_paths_uses_script_parent_as_repo_root(tmp_path: Path) -> No
     assert resolved.log_dir == (tmp_path / "vdyp_io" / "logs").resolve()
 
 
+def test_resolve_run_paths_uses_instance_root_when_provided(tmp_path: Path) -> None:
+    script_path = tmp_path / "scripts" / "00_data-prep.py"
+    script_path.parent.mkdir(parents=True, exist_ok=True)
+    script_path.write_text("# test\n", encoding="utf-8")
+    instance_root = tmp_path / "instance"
+    instance_root.mkdir(parents=True, exist_ok=True)
+
+    resolved = resolve_run_paths(script_path=script_path, instance_root=instance_root)
+
+    assert resolved.repo_root == instance_root.resolve()
+    assert resolved.log_dir == (instance_root / "vdyp_io" / "logs").resolve()
+
+
 def test_build_ria_vri_checkpoint_paths_defaults() -> None:
     paths = build_ria_vri_checkpoint_paths()
     assert paths[1] == Path("data/ria_vri_vclr1p_checkpoint1.feather")
@@ -1019,6 +1032,7 @@ def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> N
     assert plan.env["FEMIC_DEBUG_ROWS"] == "100"
     assert plan.env["FEMIC_RUN_ID"] == "runabc"
     assert plan.env["FEMIC_OUTPUT_ROOT"] == str(tmp_path / "outputs")
+    assert plan.env["FEMIC_INSTANCE_ROOT"] == str(script_path.parent.resolve())
     assert plan.env["FEMIC_RUN_CONFIG_PATH"] == str(
         tmp_path / "config" / "run_profile.yaml"
     )
@@ -1039,6 +1053,7 @@ def test_build_legacy_execution_plan_resolves_env_and_paths(tmp_path: Path) -> N
     assert plan.env["FEMIC_MANAGED_CURVE_TRUNCATE_AT_CULM"] == "1"
     assert plan.env["FEMIC_MANAGED_CURVE_MAX_AGE"] == "300"
     assert plan.cmd == ["/usr/bin/python3", str(script_path)]
+    assert plan.working_dir == script_path.parent.resolve()
 
 
 def test_file_sha256_is_deterministic(tmp_path: Path) -> None:

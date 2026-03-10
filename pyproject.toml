@@ -22,3 +22,18 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+femic = [
+    "resources/instance/.gitignore",
+    "resources/instance/*",
+    "resources/instance/config/*",
+    "resources/instance/config/tipsy/*",
+    "resources/legacy/*.py",
+]
+
+[tool.ruff]
+extend-exclude = ["src/femic/resources/legacy/*.py"]
+
+[tool.mypy]
+exclude = ["^src/femic/resources/legacy/.*\\.py$"]

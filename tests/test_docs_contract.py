@@ -15,6 +15,7 @@ COVERAGE_CSV = GUIDES_ROOT / "legacy_notebook_coverage.csv"
 
 GUIDE_PAGES = [
     "pipeline-overview",
+    "deployment-instances",
     "case-onboarding",
     "stage-00-data-prep",
     "stage-01a-vdyp-tipsy-input",
@@ -101,7 +102,16 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
     cli_doc = (DOCS_ROOT / "reference" / "cli.rst").read_text()
 
     checks: list[tuple[list[str], list[str]]] = [
-        (["run", "--help"], ["--run-config", "--run-id", "--log-dir", "--debug-rows"]),
+        (
+            ["run", "--help"],
+            [
+                "--run-config",
+                "--run-id",
+                "--log-dir",
+                "--debug-rows",
+                "--instance-root",
+            ],
+        ),
         (
             ["prep", "validate-case", "--help"],
             ["--run-config", "--tipsy-config-dir", "--strict-warnings"],
@@ -154,6 +164,17 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
                 "--topology-radius",
                 "--with-topology",
                 "--no-topology",
+                "--instance-root",
+            ],
+        ),
+        (
+            ["instance", "init", "--help"],
+            [
+                "--instance-root",
+                "--overwrite",
+                "--download-bc-vri",
+                "--no-download-bc-vri",
+                "--yes",
             ],
         ),
     ]

@@ -25,6 +25,7 @@ Commands
 - ``tipsy``
 - ``export``
 - ``patchworks``
+- ``instance``
 
 Run
 ---
@@ -44,6 +45,7 @@ Run
 - ``--run-id TEXT``
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
 - ``--run-config PATH`` (YAML/JSON run profile)
+- ``--instance-root PATH`` (optional; defaults to CWD or ``FEMIC_INSTANCE_ROOT`` env)
 
 Prep
 ----
@@ -71,6 +73,7 @@ Subcommands
 - ``--run-config PATH`` (default: ``config/run_profile.case_template.yaml``)
 - ``--tipsy-config-dir PATH`` (default: ``config/tipsy``)
 - ``--strict-warnings``
+- ``--instance-root PATH``
 
 VDYP
 ----
@@ -135,6 +138,7 @@ Subcommands
 - ``--verbose`` / ``-v``
 - ``--run-id TEXT``
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
+- ``--instance-root PATH``
 
 TIPSY
 -----
@@ -151,6 +155,7 @@ Subcommands
 
 - ``--config-dir PATH`` (default: ``config/tipsy``)
 - ``--tsa TEXT`` (repeatable)
+- ``--instance-root PATH``
 
 Export
 ------
@@ -181,6 +186,7 @@ Subcommands
 - ``--ifm-threshold FLOAT`` (optional; managed when source value > threshold)
 - ``--ifm-target-managed-share FLOAT`` (optional; top-N managed by source value)
 - ``--seral-stage-config PATH`` (optional; YAML per-AU seral-stage boundaries)
+- ``--instance-root PATH``
 
 ``export woodstock`` options
 
@@ -191,6 +197,7 @@ Subcommands
 - ``--cc-min-age INTEGER`` (default: ``0``)
 - ``--cc-max-age INTEGER`` (default: ``1000``)
 - ``--fragments-crs TEXT`` (default: ``EPSG:3005``)
+- ``--instance-root PATH``
 
 ``export release`` options
 
@@ -202,6 +209,7 @@ Subcommands
 - ``--logs-dir PATH`` (default: ``vdyp_io/logs``)
 - ``--run-id TEXT`` (optional)
 - ``--strict / --no-strict`` (default: ``--strict``)
+- ``--instance-root PATH``
 
 Patchworks Runtime
 ------------------
@@ -223,9 +231,11 @@ Subcommands
 ``patchworks matrix-build`` options
 
 - ``--config PATH`` (default: ``config/patchworks.runtime.yaml``)
+- ``--instance-root PATH``
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
 - ``--run-id TEXT``
 - ``--interactive``
+- ``--instance-root PATH``
 
 ``patchworks build-blocks`` options
 
@@ -234,3 +244,22 @@ Subcommands
 - ``--fragments-shp PATH`` (optional; defaults to runtime fragments ``.shp``)
 - ``--topology-radius FLOAT`` (default: ``200.0``)
 - ``--with-topology / --no-topology`` (default: ``--with-topology``)
+- ``--instance-root PATH``
+
+Instance Workspace
+------------------
+
+.. code-block:: text
+
+   python -m femic instance [OPTIONS] COMMAND [ARGS]...
+
+Subcommands
+
+- ``init``: ``python -m femic instance init [OPTIONS]``
+
+``instance init`` options
+
+- ``--instance-root PATH`` (optional; defaults to CWD)
+- ``--overwrite`` (overwrite existing scaffold template files)
+- ``--download-bc-vri / --no-download-bc-vri`` (default: ``--download-bc-vri``)
+- ``--yes`` / ``-y`` (assume yes for prompts)
