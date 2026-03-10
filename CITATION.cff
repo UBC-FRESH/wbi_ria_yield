@@ -4,8 +4,8 @@ authors:
   - family-names: Paradis
     given-names: Gregory
     orcid: https://orcid.org/0000-0001-9618-8797
-title: "wbi_ria_yield"
+title: "femic"
 version: 1.0.0
 date-released: 2022-03-31
 license: MIT
-repository-code: https://github.com/UBC-FRESH/wbi_ria_yield
+repository-code: https://github.com/UBC-FRESH/femic

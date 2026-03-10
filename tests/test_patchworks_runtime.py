@@ -178,6 +178,35 @@ def test_load_patchworks_runtime_config_requires_spshome(
         load_patchworks_runtime_config(cfg)
 
 
+def test_load_patchworks_runtime_config_uses_env_spshome_when_field_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SPSHOME", "Z:\\PatchworksEnv")
+    cfg = tmp_path / "patchworks.runtime.yaml"
+    cfg.write_text(
+        "\n".join(
+            [
+                "patchworks:",
+                "  jar_path: patchworks/patchworks.jar",
+                "  wine_prefix: null",
+                "  license_env: SPS_LICENSE_SERVER",
+                "  license_value: frst424@auth.spatial.ca",
+                "matrix_builder:",
+                "  fragments_path: data/fragments.dbf",
+                "  output_dir: output/tracks",
+                "  forestmodel_xml_path: output/forestmodel.xml",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_patchworks_runtime_config(cfg)
+    assert loaded.spshome == "Z:\\PatchworksEnv"
+    command = build_matrix_builder_command_string(loaded)
+    assert 'set "SPSHOME=Z:\\PatchworksEnv"' in command
+
+
 def test_run_patchworks_command_writes_logs_and_manifest(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -413,6 +442,35 @@ def test_run_patchworks_preflight_windows_uses_cmd(
     assert result.host_mode == "windows"
     assert result.launcher_executable == "java.exe"
     assert observed_args[:2] == ["java.exe", "-version"]
+
+
+def test_run_patchworks_preflight_warns_when_env_spshome_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cfg_path = _write_runtime_config(tmp_path)
+    cfg = load_patchworks_runtime_config(cfg_path)
+    cfg.jar_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.jar_path.touch()
+    cfg.fragments_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.fragments_path.touch()
+    cfg.forestmodel_xml_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.forestmodel_xml_path.touch()
+
+    monkeypatch.delenv("SPSHOME", raising=False)
+    monkeypatch.setattr("femic.patchworks_runtime.is_windows_host", lambda: True)
+    monkeypatch.setattr(
+        "femic.patchworks_runtime.shutil_which", lambda name: "java.exe"
+    )
+    monkeypatch.setattr(
+        "femic.patchworks_runtime.subprocess.run",
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=0, stdout="", stderr=""),
+    )
+
+    result = run_patchworks_preflight(config=cfg)
+    assert result.ok
+    assert any(
+        "SPSHOME environment variable is not set" in msg for msg in result.warnings
+    )
 
 
 def test_infer_patchworks_model_dir_uses_runtime_layout(tmp_path: Path) -> None:

@@ -1,10 +1,12 @@
-# wbi_ria_yield
+# femic
+
+Formerly `wbi_ria_yield` (repository rename transition in progress).
 
 [![DOI](https://zenodo.org/badge/430531073.svg)](https://zenodo.org/badge/latestdoi/430531073)
 
 ## Documentation
 
-Published docs: `https://ubc-fresh.github.io/wbi_ria_yield/`
+Published docs (target URL): `https://ubc-fresh.github.io/femic/`
 
 The docs are now split into:
 

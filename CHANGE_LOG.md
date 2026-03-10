@@ -2787,3 +2787,67 @@
   - `pytest` (`403 passed`)
   - `pre-commit run --all-files`
   - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-10 - Added Phase 9 rebrand roadmap (`wbi_ria_yield` -> `femic`)
+- Added new `ROADMAP.md` phase:
+  `Phase 9: Repository + Project Rebrand (wbi_ria_yield -> femic)`.
+- Planned checklist scope includes:
+  - metadata/title rebrand (`README`, docs title, citation metadata),
+  - URL endpoint updates (GitHub repo slug + GitHub Pages URL),
+  - runtime config cleanup for old absolute path assumptions,
+  - legacy-slug sweep policy and notebook-output handling,
+  - cutover validation gates and post-rename smoke checks.
+- Created dedicated branch for rebrand work:
+  `feature/rebrand-femic` (and marked `P9.5a` complete in roadmap).
+
+## 2026-03-10 - Phase 9 implementation slice 1 (metadata/docs/config rebrand)
+- Updated canonical project naming surfaces to `femic`:
+  - `README.md` title,
+  - `docs/conf.py` project name,
+  - `docs/index.rst` landing title,
+  - `CITATION.cff` title.
+- Added explicit transition marker in `README.md`:
+  formerly `wbi_ria_yield`.
+- Updated target publication/repository URLs to new slug:
+  - `https://ubc-fresh.github.io/femic/`
+  - `https://github.com/UBC-FRESH/femic`
+- Removed old hard-coded local repo-slug assumption from
+  `config/patchworks.runtime.yaml` by dropping static `patchworks.spshome`
+  path; runtime now resolves install home from `SPSHOME` env when needed.
+- Updated roadmap status:
+  - marked `P9.1` complete (`P9.1a/P9.1b/P9.1c`),
+  - marked `P9.2a` and `P9.2b` complete,
+  - marked `P9.3a` complete,
+  - marked `P9.5b` complete.
+
+## 2026-03-10 - Phase 9 implementation slice 2 (runtime/post-rename smoke)
+- Confirmed new repository remote + branch publication on renamed origin:
+  - origin URL now `https://github.com/UBC-FRESH/femic.git`
+  - pushed `feature/rebrand-femic` with upstream tracking.
+- Performed post-rename smoke checks:
+  - `python -m femic --help` succeeds.
+  - `sphinx-build -b html docs _build/html -W` succeeds.
+  - `femic patchworks preflight --config config/patchworks.runtime.windows.yaml`
+    succeeds on this host.
+  - `femic patchworks preflight --config config/patchworks.runtime.yaml` now
+    reports missing local artifacts (jar/fragments/xml) without requiring
+    hard-coded `spshome` in config.
+- Added regression coverage for env-driven install-home resolution:
+  - `tests/test_patchworks_runtime.py::test_load_patchworks_runtime_config_uses_env_spshome_when_field_missing`.
+- Updated roadmap status:
+  - marked `P9.3b`, `P9.3c`, and `P9.5c` complete.
+  - kept `P9.2c` pending until a post-merge docs-pages deploy verifies the
+    renamed published URL endpoint.
+- Observed in GitHub Actions that the latest `docs-pages` deployment record
+  still points to `https://ubc-fresh.github.io/wbi_ria_yield/`; a new
+  main-branch deploy is still required to confirm the `.../femic/` endpoint.
+
+## 2026-03-10 - Patchworks preflight warns on missing SPSHOME env
+- Updated Patchworks preflight semantics to surface install-registration
+  confidence explicitly:
+  - when `SPSHOME` is absent from the current process environment,
+    `run_patchworks_preflight(...)` now emits a warning that Patchworks may not
+    be correctly installed/registered on the host.
+- Added regression coverage:
+  - `tests/test_patchworks_runtime.py::test_run_patchworks_preflight_warns_when_env_spshome_missing`.
+- Full validation gates re-run and passing after this change.
