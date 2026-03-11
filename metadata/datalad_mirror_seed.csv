@@ -1,0 +1,6 @@
+id,canonical_instance_path,access_mode,source_url,checksum_status,target_artifact
+bc_vri_l1_r1_2019_gdb,data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb,manual_catalog_retrieval,,pending,VEG_COMP_LYR_R1_POLY.gdb
+bc_vri_vdyp7_input_2019_gdb,data/bc/vri/2019/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb,manual_catalog_retrieval,,pending,VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb
+bc_tsa_boundaries_fadm_gdb,data/bc/tsa/FADM_TSA.gdb,manual_catalog_retrieval,,pending,FADM_TSA.gdb
+bc_site_prod_bc_gdb,data/bc/siteprod/Site_Prod_BC.gdb,manual_catalog_retrieval,,pending,Site_Prod_BC.gdb
+hectaresbc_misc_thlb_tif,data/misc.thlb.tif,archive_only,https://www.hectaresbc.org/app/habc/HaBC.html?type=raster&query=misc.thlb,required_before_publish,misc.thlb.tif

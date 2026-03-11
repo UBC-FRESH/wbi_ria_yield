@@ -10,6 +10,8 @@ Authoritative Registry
 
 - Machine-readable source of truth:
   ``metadata/required_datasets.yaml``
+- Current DataLad include list snapshot:
+  ``metadata/datalad_mirror_seed.csv``
 - Scope:
   required provincial base layers, optional support assets, and case-specific
   geometry dependencies.

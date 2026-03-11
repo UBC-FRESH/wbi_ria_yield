@@ -59,3 +59,6 @@ scoped to one workspace root.
 See also: ``docs/guides/data-access-inventory.rst`` and
 ``metadata/required_datasets.yaml`` for dataset provenance, access mode, and
 checksum/mirroring status.
+
+For DataLad mirror clone/get/update workflow, see
+``docs/guides/public-data-mirror-runbook.rst``.

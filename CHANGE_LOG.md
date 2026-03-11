@@ -2941,3 +2941,15 @@
 - Updated roadmap state:
   - marked `P10.6a` complete,
   - appended matching Detailed Next Steps note for queued `P10.6b`.
+
+## 2026-03-10 - Added DataLad mirror runbook and seed manifest (`P10.6d`)
+- Added user-facing guide:
+  `docs/guides/public-data-mirror-runbook.rst`.
+- Wired guide into docs navigation and deployment-instance references.
+- Added mirror candidate seed manifest:
+  `metadata/datalad_mirror_seed.csv`.
+- Added maintainer bootstrap note:
+  `planning/femic_public_data_datalad_bootstrap.md`.
+- Updated roadmap state:
+  - marked `P10.6d` complete,
+  - retained `P10.6b/P10.6c` as next execution steps.

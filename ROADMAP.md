@@ -256,7 +256,7 @@
     these layers with remote object storage on Arbutus (special remote).
   - [ ] P10.6c Add the published dataset repo as a Git submodule under FEMIC and
     wire docs/instance bootstrap guidance to consume it.
-  - [ ] P10.6d Add operator runbook for clone/get/update workflows
+  - [x] P10.6d Add operator runbook for clone/get/update workflows
     (`git submodule` + `datalad get`) for students/collaborators.
 
 ## Detailed Next Steps Notes
@@ -2843,3 +2843,14 @@
   - Updated deployment-instance guide to reference the authoritative registry.
   - Marked `P10.6a` complete; next queued step is `P10.6b` (publish DataLad
     dataset repository and configure Arbutus special remote).
+- 2026-03-10 (Phase 10 `P10.6d` complete: DataLad operator runbook + mirror seed):
+  added maintainer/operator docs and seed artifacts so the mirror workflow can
+  be executed deterministically once the dataset repo is created.
+  - Added guide `docs/guides/public-data-mirror-runbook.rst` with
+    create/publish steps plus collaborator clone/get/update commands.
+  - Added `metadata/datalad_mirror_seed.csv` as the current
+    `datalad_mirror.include=true` extraction from dataset registry.
+  - Added maintainer bootstrap note:
+    `planning/femic_public_data_datalad_bootstrap.md`.
+  - Marked `P10.6d` complete; next queued implementation is
+    `P10.6b` followed by `P10.6c`.
