@@ -1,10 +1,11 @@
 schema_version: 1
-updated_utc: "2026-03-11T00:00:00Z"
+updated_utc: "2026-03-11T06:30:00Z"
 owner: "UBC FRESH / FEMIC maintainers"
 notes:
   - "Registry for required upstream datasets used by FEMIC compile workflows."
   - "Use this inventory as the source of truth for P10.6 DataLad mirror scope."
   - "Checksum fields are required; populate sha256 values after controlled acquisition."
+  - "For directory artifacts (`*.gdb`), checksum values are SHA256 of deterministic tar streams (`tar --sort=name --mtime=UTC 1970-01-01 --owner=0 --group=0 --numeric-owner`)."
 
 datasets:
   - id: bc_vri_l1_r1_2024_gdb
@@ -69,8 +70,8 @@ datasets:
       provenance_notes: "Legacy fallback path retained for compatibility."
     checksum:
       algorithm: "sha256"
-      value: null
-      status: "pending"
+      value: "6c51c470497f7c13ef4a3ed8daf629e5b02044c0ed4fcd1a0ab25b213b0713d7"
+      status: "complete"
       target_artifact: "VEG_COMP_LYR_R1_POLY.gdb"
     datalad_mirror:
       include: true
@@ -90,8 +91,8 @@ datasets:
       provenance_notes: "Legacy fallback path retained for compatibility."
     checksum:
       algorithm: "sha256"
-      value: null
-      status: "pending"
+      value: "8cc1244d81307bdf1ab8363c1a40fa4c47c923ad6dcd645d857ac7bc8122df5e"
+      status: "complete"
       target_artifact: "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"
     datalad_mirror:
       include: true
@@ -111,8 +112,8 @@ datasets:
       provenance_notes: "Needed by `resolve_legacy_external_data_paths`."
     checksum:
       algorithm: "sha256"
-      value: null
-      status: "pending"
+      value: "cff6e0017f07891b7edaaf80abe9ad9c8fa6509b44aace4c4899ad083bd28b2c"
+      status: "complete"
       target_artifact: "FADM_TSA.gdb"
     datalad_mirror:
       include: true
@@ -132,8 +133,8 @@ datasets:
       provenance_notes: "Referenced by stage 00 site productivity extraction."
     checksum:
       algorithm: "sha256"
-      value: null
-      status: "pending"
+      value: "d08aaf6e5fd9ec2185e99c0a7ec08628ac859167740c56215abed20089dfc605"
+      status: "complete"
       target_artifact: "Site_Prod_BC.gdb"
     datalad_mirror:
       include: true
@@ -154,8 +155,8 @@ datasets:
       provenance_notes: "Original portal is offline; recovered from archived local holdings."
     checksum:
       algorithm: "sha256"
-      value: null
-      status: "required_before_publish"
+      value: "bb78ffbc859ef8fe71b5854c102d2df265d0b0e89744a8b55434463b033fa822"
+      status: "complete"
       target_artifact: "misc.thlb.tif"
     datalad_mirror:
       include: true

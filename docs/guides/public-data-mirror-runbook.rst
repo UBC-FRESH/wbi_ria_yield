@@ -31,15 +31,52 @@ Maintainer Workflow (Create/Publish Mirror Repo)
    matching relative paths under the dataset root.
 4. Compute and record checksums for mirrored artifacts in
    ``metadata/required_datasets.yaml``.
-5. Configure Arbutus S3 special remote and publish:
+5. Configure Arbutus S3 special remote and GitHub publication dependency.
+   Prepare credentials/environment before remote setup:
 
    .. code-block:: bash
 
-      datalad create-sibling-github --name github --existing reconfigure
-      git remote add github git@github.com:UBC-FRESH/femic-public-data.git
-      datalad push --to github
-      datalad create-sibling-ria --name arbutus-ria <ria-url>
-      datalad push --to arbutus-ria
+      cp config/credentials/arbutus_env.template.sh config/credentials/arbutus_env.sh
+      # edit config/credentials/arbutus_env.sh with real values
+      source config/credentials/arbutus_env.sh
+
+   At minimum, the following variables must be set in-shell:
+
+   .. code-block:: bash
+
+      export AWS_ACCESS_KEY_ID=<key-id>
+      export AWS_SECRET_ACCESS_KEY=<secret-key>
+      export AWS_DEFAULT_REGION=ca-west-1
+
+   Initialize the Arbutus S3 special remote (host must be endpoint hostname,
+   not a ``ria+`` URL):
+
+   .. code-block:: bash
+
+      git annex initremote arbutus-s3 \
+        type=S3 \
+        encryption=none \
+        bucket=<unique-bucket-name> \
+        public=yes \
+        publicurl=https://object-arbutus.cloud.computecanada.ca/<unique-bucket-name> \
+        host=object-arbutus.cloud.computecanada.ca \
+        protocol=https \
+        requeststyle=path \
+        autoenable=true
+
+   Create/reconfigure GitHub sibling and wire publication dependency so one
+   push publishes Git metadata and annexed content:
+
+   .. code-block:: bash
+
+      datalad create-sibling-github -d . \
+        --github-organization UBC-FRESH \
+        --name origin \
+        --publish-depends arbutus-s3 \
+        --existing reconfigure \
+        femic-public-data
+
+      datalad push --to origin
 
 6. Verify fresh clone and selective retrieval works:
 
@@ -48,6 +85,13 @@ Maintainer Workflow (Create/Publish Mirror Repo)
       cd ..
       datalad clone git@github.com:UBC-FRESH/femic-public-data.git mirror-smoke
       cd mirror-smoke
+      datalad get data/misc.thlb.tif
+
+   If retrieval fails in a clone where the special remote is not auto-enabled:
+
+   .. code-block:: bash
+
+      git annex enableremote arbutus-s3
       datalad get data/misc.thlb.tif
 
 Collaborator Workflow (Clone/Get/Update)

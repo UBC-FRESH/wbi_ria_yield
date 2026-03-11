@@ -7,13 +7,26 @@ Current local bootstrap state (2026-03-11):
 
 - Local dataset repo exists at `/home/gep/projects/femic-public-data`.
 - FEMIC links it as submodule at `external/femic-public-data`.
-- GitHub publish + Arbutus special-remote push are still pending.
+- Published dataset repo: `https://github.com/UBC-FRESH/femic-public-data`.
+- Arbutus special-remote upload verified for mirrored seed artifacts (including `misc.thlb.tif` and `VEG_COMP_LYR_R1_POLY.gdb/a00000009.gdbtable`).
+
+Known-good command sequence source:
+
+- `tmp/datalad-kb-page.md` (FRESH lab DataLad KB copy).
+- `tmp/lab-data-workflow-workshop` symlink target:
+  `/home/gep/projects/lab-data-workflow-workshop`.
+- Most relevant workshop references:
+  - `arbutus_s3/datalad_s3_setup.md`
+  - `scripts/create_github_sibling.sh`
+  - `workflows/common_errors.md`
 
 ## Inputs
 
 - `metadata/required_datasets.yaml` (authoritative source inventory)
 - `metadata/datalad_mirror_seed.csv` (current include=true dataset list)
 - Arbutus S3 credentials for special remote setup
+- Local credential template:
+  `config/credentials/arbutus_env.template.sh`
 
 ## Bootstrap Steps
 
@@ -29,8 +42,8 @@ Current local bootstrap state (2026-03-11):
    datalad save -m "Add initial FEMIC mirrored public datasets"
    ```
 5. Configure and test remotes:
-   - GitHub sibling (`datalad create-sibling-github ...`)
-   - Arbutus special remote (`datalad create-sibling-ria ...`)
+   - Arbutus S3 special remote via `git annex initremote`
+   - GitHub sibling with `--publish-depends arbutus-s3`
 6. Push dataset metadata and annexed content to both remotes.
 7. Validate cold-clone retrieval:
    ```bash
@@ -42,6 +55,6 @@ Current local bootstrap state (2026-03-11):
 ## Required Completion Artifacts
 
 - Published dataset repo URL.
-- Arbutus special remote config recorded in repo docs.
+- Arbutus S3 special remote config recorded in repo docs.
 - Checksum values backfilled in `metadata/required_datasets.yaml`.
 - Follow-on FEMIC task: add repo as submodule (`P10.6c`).
