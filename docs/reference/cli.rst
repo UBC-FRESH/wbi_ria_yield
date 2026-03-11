@@ -138,6 +138,7 @@ Subcommands
 - ``--verbose`` / ``-v``
 - ``--run-id TEXT``
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
+- ``--run-config PATH`` (optional; load TSA and managed-curve mode defaults)
 - ``--instance-root PATH``
 
 TIPSY

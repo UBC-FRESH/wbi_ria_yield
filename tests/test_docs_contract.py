@@ -127,7 +127,10 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
                 "--min-curve-events",
             ],
         ),
-        (["tsa", "post-tipsy", "--help"], ["--tsa", "--run-id", "--log-dir"]),
+        (
+            ["tsa", "post-tipsy", "--help"],
+            ["--tsa", "--run-id", "--log-dir", "--run-config"],
+        ),
         (
             ["export", "patchworks", "--help"],
             [

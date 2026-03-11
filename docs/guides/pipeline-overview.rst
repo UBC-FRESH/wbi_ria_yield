@@ -30,7 +30,7 @@ Run from your active instance root (maintainers can use
 
    .. code-block:: bash
 
-      femic tsa post-tipsy --tsa <code> -v
+      femic tsa post-tipsy --run-config config/run_profile.<case>.yaml --tsa <code> -v
 
 5. Export planning-system packages:
 
