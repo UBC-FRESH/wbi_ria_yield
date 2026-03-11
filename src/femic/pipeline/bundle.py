@@ -150,8 +150,8 @@ def build_bundle_tables_from_curves(
         "si_level": [],
         "canfi_species": [],
         # Canonical upstream naming.
-        "natural_curve_id": [],
-        "planted_curve_id": [],
+        "untreated_curve_id": [],
+        "treated_curve_id": [],
         # Back-compat aliases used by older checkpoints/exporters.
         "unmanaged_curve_id": [],
         "managed_curve_id": [],
@@ -191,11 +191,11 @@ def build_bundle_tables_from_curves(
             au_table_data["stratum_code"].append(stratum_code)
             au_table_data["si_level"].append(si_level)
             au_table_data["canfi_species"].append(canfi_species_fn(stratum_code))
-            au_table_data["natural_curve_id"].append(unmanaged_curve_id)
-            au_table_data["planted_curve_id"].append(managed_curve_id)
+            au_table_data["untreated_curve_id"].append(unmanaged_curve_id)
+            au_table_data["treated_curve_id"].append(managed_curve_id)
             au_table_data["unmanaged_curve_id"].append(unmanaged_curve_id)
             curve_table_data["curve_id"].append(unmanaged_curve_id)
-            curve_table_data["curve_type"].append("natural")
+            curve_table_data["curve_type"].append("untreated")
             vdyp_curve = vdyp_curves_tsa.loc[(stratum_code, si_level)]
             for x, y in zip(vdyp_curve.age, vdyp_curve.volume):
                 curve_points_table_data["curve_id"].append(unmanaged_curve_id)
@@ -211,7 +211,7 @@ def build_bundle_tables_from_curves(
                     species_curve_id = unmanaged_curve_id * 1000 + species_idx
                     curve_table_data["curve_id"].append(species_curve_id)
                     curve_table_data["curve_type"].append(
-                        f"natural_species_prop_{species_code}"
+                        f"untreated_species_prop_{species_code}"
                     )
                     curve_points_table_data["curve_id"].append(species_curve_id)
                     curve_points_table_data["x"].append(1)
@@ -221,7 +221,7 @@ def build_bundle_tables_from_curves(
             au_table_data["managed_curve_id"].append(managed_curve_id)
             if is_managed_au:
                 curve_table_data["curve_id"].append(managed_curve_id)
-                curve_table_data["curve_type"].append("planted")
+                curve_table_data["curve_type"].append("treated")
                 tipsy_curve = tipsy_curves_tsa.loc[tipsy_curve_id]
                 for x, y in zip(tipsy_curve.Age, tipsy_curve.Yield):
                     curve_points_table_data["curve_id"].append(managed_curve_id)
@@ -255,7 +255,7 @@ def build_bundle_tables_from_curves(
                         species_curve_id = managed_curve_id * 1000 + species_idx
                         curve_table_data["curve_id"].append(species_curve_id)
                         curve_table_data["curve_type"].append(
-                            f"planted_species_prop_{species_code}"
+                            f"treated_species_prop_{species_code}"
                         )
                         curve_points_table_data["curve_id"].append(species_curve_id)
                         curve_points_table_data["x"].append(1)
@@ -299,13 +299,13 @@ def assign_curve_ids_from_au_table(
     np_module: Any,
     au_col: str = "au",
     proj_age_col: str = "PROJ_AGE_1",
-    managed_curve_col: str = "planted_curve_id",
-    unmanaged_curve_col: str = "natural_curve_id",
+    managed_curve_col: str = "treated_curve_id",
+    unmanaged_curve_col: str = "untreated_curve_id",
     curve1_col: str = "curve1",
     curve2_col: str = "curve2",
     managed_age_cutoff: int = 60,
 ) -> Any:
-    """Assign curve ids from AU table for planted/natural curve slots."""
+    """Assign curve ids from AU table for treated/untreated curve slots."""
     table = f_table.copy()
     au_indexed = au_table
     if getattr(au_indexed.index, "name", None) != "au_id":

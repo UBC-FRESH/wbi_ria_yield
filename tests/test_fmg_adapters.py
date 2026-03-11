@@ -21,25 +21,25 @@ def _write_bundle_tables(bundle_dir: Path) -> None:
                 "tsa": "29",
                 "stratum_code": "SBPS_PLI",
                 "si_level": "L",
-                "planted_curve_id": 21001,
-                "natural_curve_id": 1001,
+                "treated_curve_id": 21001,
+                "untreated_curve_id": 1001,
             },
             {
                 "au_id": 1001,
                 "tsa": "29",
                 "stratum_code": "SBPS_PLI",
                 "si_level": "L",
-                "planted_curve_id": 21001,
-                "natural_curve_id": 1001,
+                "treated_curve_id": 21001,
+                "untreated_curve_id": 1001,
             },
         ]
     ).to_csv(bundle_dir / "au_table.csv", index=False)
     pd.DataFrame(
         [
-            {"curve_id": 1001, "curve_type": "natural"},
-            {"curve_id": 21001, "curve_type": "planted"},
-            {"curve_id": 21001001, "curve_type": "planted_species_prop_PL"},
-            {"curve_id": 1001001, "curve_type": "natural_species_prop_PL"},
+            {"curve_id": 1001, "curve_type": "untreated"},
+            {"curve_id": 21001, "curve_type": "treated"},
+            {"curve_id": 21001001, "curve_type": "treated_species_prop_PL"},
+            {"curve_id": 1001001, "curve_type": "untreated_species_prop_PL"},
         ]
     ).to_csv(bundle_dir / "curve_table.csv", index=False)
     pd.DataFrame(
@@ -68,32 +68,32 @@ def test_build_bundle_model_context_from_tables_scopes_and_dedupes() -> None:
                 "tsa": "29",
                 "stratum_code": "SBPS_PLI",
                 "si_level": "L",
-                "planted_curve_id": 21001,
-                "natural_curve_id": 1001,
+                "treated_curve_id": 21001,
+                "untreated_curve_id": 1001,
             },
             {
                 "au_id": 1001,
                 "tsa": "29",
                 "stratum_code": "SBPS_PLI",
                 "si_level": "L",
-                "planted_curve_id": 21001,
-                "natural_curve_id": 1001,
+                "treated_curve_id": 21001,
+                "untreated_curve_id": 1001,
             },
             {
                 "au_id": 2001,
                 "tsa": "k3z",
                 "stratum_code": "CWH_HW",
                 "si_level": "M",
-                "planted_curve_id": 22001,
-                "natural_curve_id": 2001,
+                "treated_curve_id": 22001,
+                "untreated_curve_id": 2001,
             },
         ]
     )
     curve_table = pd.DataFrame(
         [
-            {"curve_id": 1001, "curve_type": "natural"},
-            {"curve_id": 21001, "curve_type": "planted"},
-            {"curve_id": 21001001, "curve_type": "planted_species_prop_PL"},
+            {"curve_id": 1001, "curve_type": "untreated"},
+            {"curve_id": 21001, "curve_type": "treated"},
+            {"curve_id": 21001001, "curve_type": "treated_species_prop_PL"},
         ]
     )
     curve_points = pd.DataFrame(

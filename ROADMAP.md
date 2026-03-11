@@ -275,14 +275,14 @@
     `matrix-build` against the relocated model instance.
   - [x] P12.1c Capture and archive run evidence (stdout/stderr/manifest plus
     key output artifact timestamps) for reproducibility.
-- [ ] P12.2 Verify bugfixes and check regressions after rebuilt tracks
-  - [x] P12.2a Confirm `FD -> FDC` planted species mapping remains correct in
+- [x] P12.2 Verify bugfixes and check regressions after rebuilt tracks
+  - [x] P12.2a Confirm `FD -> FDC` treated species mapping remains correct in
     rebuilt K3Z outputs (no nonzero-source collapse to zero).
   - [x] P12.2b Compare rebuilt `tracks/*.csv` structural invariants against
     known-good baseline (row counts, account counts, key account names).
   - [x] P12.2c Add regression checks/scripts for K3Z compile invariants so
     future rebuilds fail fast on behavior drift.
-  - [ ] P12.2d Investigate `PL` vs `PLC` species-account semantics in K3Z;
+  - [x] P12.2d Investigate `PL` vs `PLC` species-account semantics in K3Z;
     if `PL` is not a valid active species in current inputs, trim `PL` from
     generated accounts/targets/docs to prevent student-facing false alarms.
 - [ ] P12.3 Stand up standalone Sphinx docs in `femic-k3z-instance`
@@ -322,6 +322,11 @@
     (`import fiona`, GDAL version visibility, shapefile I/O smoke).
   - [ ] P12.7d Add troubleshooting docs for Windows geospatial dependency install
     failures and deterministic remediation steps.
+- [x] P12.8 Terminology normalization: use `untreated/treated` curve-source terms
+  - [x] P12.8a Replace legacy terminology in source code, tests, and docstrings.
+  - [x] P12.8b Replace legacy terminology in user-facing docs/metadata text.
+  - [x] P12.8c Keep IFM semantics unchanged (`managed/unmanaged`) while using
+    `untreated/treated` only for curve-source terminology.
 
 ## Phase 13: Instance Rebuild Repro Framework (Default for All New Instances)
 - [ ] P13.1 Define a canonical rebuild contract for FEMIC deployment instances
@@ -368,10 +373,10 @@
     `tests/test_docs_contract.py`.
   - Verified contract/tests/docs build remain green after relocation.
 - 2026-03-11 (K3Z species-account bugfix: TIPSY `FD` alias to canonical `FDC`):
-  fixed planted species-proportion mapping so species-wise accounts no longer
+  fixed treated species-proportion mapping so species-wise accounts no longer
   drop `FDC` to zero when TIPSY outputs `FD`.
   - Updated bundle assembly in `src/femic/pipeline/bundle.py` to normalize
-    TIPSY species aliases (`FD -> FDC`) before writing planted species-prop
+    TIPSY species aliases (`FD -> FDC`) before writing treated species-prop
     curves.
   - Added regression test
     `tests/test_bundle.py::test_build_bundle_tables_from_curves_maps_tipsy_fd_to_fdc`.
@@ -2246,7 +2251,7 @@
   `reference/29ts_dpkg_2024-2.pdf` (Section 8.5) and
   `reference/williams_lake_tsa_data_package-2.pdf` (Section 6.3 Tables 23–25).
 - Updated `config/tipsy/tsa29.yaml` from provisional heuristics to ordered BEC/species pathways
-  with explicit planted/natural proportions, regeneration delays, species mixes, densities, and
+  with explicit treated/untreated proportions, regeneration delays, species mixes, densities, and
   genetic-worth values aligned to TSR assumptions, while preserving catch-all coverage.
 - Synced TSA29 config tests in `tests/test_tipsy_config.py` to the new rule expectations.
 - Fixed a TSA29 resume-path loader defect in `src/femic/pipeline/vdyp_stage.py` by adding
@@ -2280,11 +2285,11 @@
   `data/02_input-tsak3z.dat`, uploads `data/04_output-tsak3z.out`, and we execute
   `python -m femic tsa post-tipsy --tsa k3z --run-id <id> -v`.
 - Hardened config-driven TIPSY mix output (`src/femic/pipeline/tipsy_config.py`) to eliminate
-  known BatchTIPSY failure patterns in planted rows:
-  normalize `SX -> SW`, drop planted broadleaf species from `f` mixes, enforce descending
+  known BatchTIPSY failure patterns in treated rows:
+  normalize `SX -> SW`, drop treated broadleaf species from `f` mixes, enforce descending
   species order (dominant species in `SPP_1`), and force exact integer composition sums to 100.
 - Added regression coverage in `tests/test_tipsy_config.py` for mix normalization and TSA29 rule
-  behavior (`AT`/`SX` removed from planted `f` rows, dominant species promoted to `SPP_1`,
+  behavior (`AT`/`SX` removed from treated `f` rows, dominant species promoted to `SPP_1`,
   `% composition == 100`).
 - Validation gate completed for this slice:
   `.venv/bin/ruff format src tests`, `.venv/bin/ruff check src tests`,
@@ -2789,14 +2794,14 @@
   statements by default; `--cc-transition-ifm` is now optional (unset by default),
   and only non-redundant transitions (e.g., `unmanaged`) are emitted.
 - 2026-03-08: Renamed upstream bundle yield terminology from
-  `managed/unmanaged` to `planted/natural` to avoid semantic collision with
+  `managed/unmanaged` to `treated/untreated` to avoid semantic collision with
   Patchworks IFM keywords. Bundle assembly now emits:
-  - `curve_type` values `planted` / `natural`
-  - species-proportion curve types `planted_species_prop_*` /
-    `natural_species_prop_*`
+  - `curve_type` values `treated` / `untreated`
+  - species-proportion curve types `treated_species_prop_*` /
+    `untreated_species_prop_*`
   while preserving back-compat aliases (`managed_curve_id` /
   `unmanaged_curve_id`) and adding canonical AU columns
-  (`planted_curve_id` / `natural_curve_id`).
+  (`treated_curve_id` / `untreated_curve_id`).
 - 2026-03-08: Split documentation source from development reference assets:
   moved non-Sphinx PDFs out of `docs/reference/` into top-level `reference/`
   (including `reference/vdyp/`), leaving `docs/` as Sphinx source only; updated
@@ -3192,3 +3197,17 @@
     `seral_account_count=75`, `baseline_match=true`.
   - Marked complete: `P12.1c`, `P12.2a`, `P12.2b`, `P12.2c`.
   - Left open: `P12.2d` (`PL` vs `PLC` semantics cleanup for student-facing clarity).
+- 2026-03-11 (Phase 12 terminology normalization complete): replaced
+  legacy curve-source terminology across active FEMIC code/docs with
+  `untreated/treated`, while preserving IFM terminology as
+  `managed/unmanaged`.
+  - Updated bundle/adapters/export logic and tests to use
+    `untreated_curve_id`/`treated_curve_id` and
+    `untreated_species_prop_*`/`treated_species_prop_*` naming.
+  - Updated user-facing docs/metadata wording to remove legacy curve-source
+    references and align with `untreated/treated`.
+  - Completed `P12.8a/P12.8b/P12.8c`.
+- 2026-03-11 (Phase 12 `P12.2d` completion): validated `PL` vs `PLC` behavior
+  in K3Z and implemented zero-signal species trimming so `PL` no longer appears
+  as an empty managed species account when no treated species-proportion signal
+  exists for `PL`.

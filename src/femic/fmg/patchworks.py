@@ -128,28 +128,28 @@ def _sanitize_id_component(value: str) -> str:
 def _source_curve_ref(*, curve_id: int, curve_type: str) -> str:
     """Build readable, deterministic XML curve id from source metadata."""
     ctype = str(curve_type or "").strip()
-    if ctype in {"managed", "planted"}:
+    if ctype in {"managed", "treated"}:
         prefix = "managed_total"
-    elif ctype in {"unmanaged", "natural"}:
+    elif ctype in {"unmanaged", "untreated"}:
         prefix = "unmanaged_total"
-    elif ctype.startswith(("managed_species_prop_", "planted_species_prop_")):
+    elif ctype.startswith(("managed_species_prop_", "treated_species_prop_")):
         if ctype.startswith("managed_species_prop_"):
             species = _sanitize_id_component(
                 ctype.removeprefix("managed_species_prop_")
             )
         else:
             species = _sanitize_id_component(
-                ctype.removeprefix("planted_species_prop_")
+                ctype.removeprefix("treated_species_prop_")
             )
         prefix = f"managed_prop_{species}"
-    elif ctype.startswith(("unmanaged_species_prop_", "natural_species_prop_")):
+    elif ctype.startswith(("unmanaged_species_prop_", "untreated_species_prop_")):
         if ctype.startswith("unmanaged_species_prop_"):
             species = _sanitize_id_component(
                 ctype.removeprefix("unmanaged_species_prop_")
             )
         else:
             species = _sanitize_id_component(
-                ctype.removeprefix("natural_species_prop_")
+                ctype.removeprefix("untreated_species_prop_")
             )
         prefix = f"unmanaged_prop_{species}"
     else:

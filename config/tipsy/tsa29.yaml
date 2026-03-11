@@ -73,7 +73,7 @@ defaults:
     GW_age_5: null
 
 rules:
-  # TSR 2013 Table 23 proxy: PL poor sites (30% planted / 70% natural).
+  # TSR 2013 Table 23 proxy: PL poor sites (30% treated / 70% untreated).
   - id: "tsa29_pine_poor_sbps"
     when:
       bec_in: ["SBPS"]
@@ -110,7 +110,7 @@ rules:
         GW_age_1: 12
         Util_DBH_cm: 12.5
 
-  # TSR 2013 Table 23 proxy: PL medium/good sites (85% planted / 15% natural).
+  # TSR 2013 Table 23 proxy: PL medium/good sites (85% treated / 15% untreated).
   - id: "tsa29_pine_ms_sbps_idf"
     when:
       bec_in: ["MS", "IDF"]
@@ -151,7 +151,7 @@ rules:
         GW_age_1: 12
         Util_DBH_cm: 12.5
 
-  # TSR 2013 Table 23 proxy: FD medium/good sites (90% planted / 10% natural).
+  # TSR 2013 Table 23 proxy: FD medium/good sites (90% treated / 10% untreated).
   - id: "tsa29_fir_idf"
     when:
       bec_in: ["IDF"]
@@ -192,7 +192,7 @@ rules:
         GW_age_1: 12
         Util_DBH_cm: 17.5
 
-  # TSR 2013 Table 23 proxy: SX medium/good sites (planted distribution, full planted).
+  # TSR 2013 Table 23 proxy: SX medium/good sites (treated distribution, full treated).
   - id: "tsa29_spruce_essf"
     when:
       bec_in: ["ESSF"]

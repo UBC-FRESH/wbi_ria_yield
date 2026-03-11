@@ -64,7 +64,7 @@ Operator Interpretation Callouts
   before curve fitting is trusted.
 - ``vdyp_fitdiag_*.png`` should track binned medians; large early-age spikes
   or inverted SI ordering are red flags.
-- ``tipsy_vdyp_*.png`` should be coherent with intended natural/planted story;
+- ``tipsy_vdyp_*.png`` should be coherent with intended untreated/treated story;
   if not, tune TIPSY config or use configured managed-curve transform mode.
 
 Primary Sources

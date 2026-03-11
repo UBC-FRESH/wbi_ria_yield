@@ -299,7 +299,7 @@ walkthroughs:
   ``plots/strata-tsak3z.png``
 - per-stratum low/medium/high curve overlays:
   ``plots/vdyp_lmh_tsak3z-*.png``
-- AU-level managed-vs-natural curve overlays:
+- AU-level managed-vs-untreated curve overlays:
   ``plots/tipsy_vdyp_tsak3z-*.png``
 
 Minimum instructor review set after each rebuild:

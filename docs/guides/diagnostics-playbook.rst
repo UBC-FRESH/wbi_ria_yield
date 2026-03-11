@@ -38,7 +38,7 @@ TIPSY vs VDYP Overlays (``tipsy_vdyp_*.png``)
 
 Healthy signals:
 
-- Managed and natural curves are scenario-coherent AU-by-AU.
+- Managed and untreated curves are scenario-coherent AU-by-AU.
 - Relative magnitudes and timing match intended silviculture assumptions.
 
 Red flags:

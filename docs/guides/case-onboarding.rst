@@ -97,7 +97,7 @@ Required Input Checklist
 
   - Strata diagnostics generated.
   - VDYP fit diagnostics generated.
-  - Managed vs natural overlay diagnostics generated after post-TIPSY stage.
+  - Managed vs untreated overlay diagnostics generated after post-TIPSY stage.
 
 Acceptance Criteria for Onboarded Case
 --------------------------------------

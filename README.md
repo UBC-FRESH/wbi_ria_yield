@@ -88,7 +88,7 @@ This command writes a run manifest to ``vdyp_io/logs/`` (override with ``--log-d
 ``--run-id``).
 When `data/ria_vri_vclr1p_checkpoint8.feather` is available, post-TIPSY bundle assembly also
 adds species-proportion curves for all top-6 VRI species present in the selected TSA(s):
-`natural_species_prop_<SPP>` and `planted_species_prop_<SPP>` (single-point curves at `x=1`).
+`untreated_species_prop_<SPP>` and `treated_species_prop_<SPP>` (single-point curves at `x=1`).
 
 7. Export Patchworks starter package (ForestModel XML + fragments shapefile):
 

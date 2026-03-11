@@ -48,12 +48,12 @@ def _dedupe_au_table(au_table: pd.DataFrame) -> pd.DataFrame:
         "managed_curve_id": (
             "managed_curve_id"
             if "managed_curve_id" in au_table.columns
-            else "planted_curve_id"
+            else "treated_curve_id"
         ),
         "unmanaged_curve_id": (
             "unmanaged_curve_id"
             if "unmanaged_curve_id" in au_table.columns
-            else "natural_curve_id"
+            else "untreated_curve_id"
         ),
     }
     missing_curve_cols = [
@@ -62,7 +62,7 @@ def _dedupe_au_table(au_table: pd.DataFrame) -> pd.DataFrame:
     if missing_curve_cols:
         raise ValueError(
             "au_table.csv missing required curve id columns "
-            "(need planted/natural or managed/unmanaged ids)"
+            "(need treated/untreated or managed/unmanaged ids)"
         )
     table = au_table.copy()
     table["managed_curve_id"] = table[curve_cols["managed_curve_id"]]
@@ -116,20 +116,20 @@ def _species_curve_maps(
     for _, row in curve_table.iterrows():
         curve_id = _coerce_int(row["curve_id"])
         curve_type = str(row["curve_type"])
-        if curve_type.startswith(("managed_species_prop_", "planted_species_prop_")):
+        if curve_type.startswith(("managed_species_prop_", "treated_species_prop_")):
             if curve_type.startswith("managed_species_prop_"):
                 species = curve_type.removeprefix("managed_species_prop_")
             else:
-                species = curve_type.removeprefix("planted_species_prop_")
+                species = curve_type.removeprefix("treated_species_prop_")
             base = curve_id // 1000
             managed.setdefault(base, {})[species] = curve_id
         elif curve_type.startswith(
-            ("unmanaged_species_prop_", "natural_species_prop_")
+            ("unmanaged_species_prop_", "untreated_species_prop_")
         ):
             if curve_type.startswith("unmanaged_species_prop_"):
                 species = curve_type.removeprefix("unmanaged_species_prop_")
             else:
-                species = curve_type.removeprefix("natural_species_prop_")
+                species = curve_type.removeprefix("untreated_species_prop_")
             base = curve_id // 1000
             unmanaged.setdefault(base, {})[species] = curve_id
     return managed, unmanaged

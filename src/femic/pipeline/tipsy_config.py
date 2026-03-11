@@ -416,8 +416,8 @@ def _finalize_species_mix(
             )
         ]
 
-    # In planted rows, strip broadleaf species and re-allocate their share to a
-    # conifer species to avoid BatchTIPSY planted-curve/mapping failures.
+    # In treated rows, strip broadleaf species and re-allocate their share to a
+    # conifer species to avoid BatchTIPSY treated-curve/mapping failures.
     if str(side_map.get("Regen_Method", "P")).upper() == "P":
         broadleaf_pct = sum(
             pct for spp, pct in entries if spp.upper() in BROADLEAF_SPECIES_CODES
