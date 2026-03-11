@@ -3161,3 +3161,16 @@
 - Rebuilt K3Z post-TIPSY bundle and Patchworks export and verified affected
   AU curves now carry non-zero `FDC` where source TIPSY species mix contains
   non-zero `FD`.
+
+## 2026-03-11 - Archived legacy notebooks out of repo root
+- Moved legacy notebooks from repository root into dedicated archive folder:
+  - `00_data-prep.ipynb`
+  - `01a_run-tsa.ipynb`
+  - `01b_run-tsa.ipynb`
+  -> `reference/legacy_notebooks/`
+- Updated docs and contract tests to follow the new archive location:
+  - `docs/guides/legacy-traceability.rst`
+  - `docs/guides/index.rst`
+  - `tests/test_docs_contract.py`
+- Verified all quality gates remain passing after relocation (`ruff`, `mypy`,
+  `pytest`, `pre-commit`, `sphinx -W`).

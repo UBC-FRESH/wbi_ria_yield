@@ -2,8 +2,9 @@ Guides
 ======
 
 These guides recover and curate workflow knowledge from the legacy notebooks
-(``00_data-prep.ipynb``, ``01a_run-tsa.ipynb``, ``01b_run-tsa.ipynb``) and align it
-with the current FEMIC CLI and export modules.
+(``00_data-prep.ipynb``, ``01a_run-tsa.ipynb``, ``01b_run-tsa.ipynb``) archived in
+``reference/legacy_notebooks/``, and align it with the current FEMIC CLI and
+export modules.
 
 .. toctree::
    :maxdepth: 2

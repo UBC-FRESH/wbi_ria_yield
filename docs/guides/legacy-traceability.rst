@@ -14,6 +14,9 @@ Legacy markdown cells inventoried:
 - ``01b_run-tsa.ipynb``: 2 markdown cells
 - Total mapped records: 77
 
+Notebook archive location:
+``reference/legacy_notebooks/``
+
 Each record is classified as one of:
 
 - assumptions
@@ -67,4 +70,7 @@ Recommended cleanup command:
 
 .. code-block:: bash
 
-   jupyter nbconvert --clear-output --inplace 00_data-prep.ipynb 01a_run-tsa.ipynb 01b_run-tsa.ipynb
+   jupyter nbconvert --clear-output --inplace \
+     reference/legacy_notebooks/00_data-prep.ipynb \
+     reference/legacy_notebooks/01a_run-tsa.ipynb \
+     reference/legacy_notebooks/01b_run-tsa.ipynb

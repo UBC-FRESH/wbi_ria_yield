@@ -267,6 +267,17 @@
 - [x] P11.5 Add contract checks + acceptance validation
 
 ## Detailed Next Steps Notes
+- 2026-03-11 (repo-root cleanup: legacy notebook archive move):
+  moved legacy notebook artifacts out of repository root into a dedicated
+  archive location.
+  - Moved notebook files:
+    `00_data-prep.ipynb`, `01a_run-tsa.ipynb`, `01b_run-tsa.ipynb` ->
+    `reference/legacy_notebooks/`.
+  - Updated docs/test references to the new notebook location:
+    `docs/guides/legacy-traceability.rst`,
+    `docs/guides/index.rst`,
+    `tests/test_docs_contract.py`.
+  - Verified contract/tests/docs build remain green after relocation.
 - 2026-03-11 (K3Z species-account bugfix: TIPSY `FD` alias to canonical `FDC`):
   fixed planted species-proportion mapping so species-wise accounts no longer
   drop `FDC` to zero when TIPSY outputs `FD`.

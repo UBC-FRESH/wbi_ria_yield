@@ -36,9 +36,9 @@ SAMPLE_MODEL_PAGES = [
 ]
 
 NOTEBOOKS = [
-    Path("00_data-prep.ipynb"),
-    Path("01a_run-tsa.ipynb"),
-    Path("01b_run-tsa.ipynb"),
+    Path("reference/legacy_notebooks/00_data-prep.ipynb"),
+    Path("reference/legacy_notebooks/01a_run-tsa.ipynb"),
+    Path("reference/legacy_notebooks/01b_run-tsa.ipynb"),
 ]
 LEGACY_SLUG = "wbi_ria_yield"
 
