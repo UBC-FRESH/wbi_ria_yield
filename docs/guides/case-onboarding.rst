@@ -106,3 +106,24 @@ Acceptance Criteria for Onboarded Case
 - BatchTIPSY handoff files are generated and parseable.
 - Post-TIPSY bundle compiles without missing AU/curve mapping failures.
 - Export commands complete for target downstream platform(s).
+
+K3Z Example Instance Baseline
+-----------------------------
+
+Use the canonical K3Z example instance repository when you need a known-good
+full payload baseline:
+
+- ``https://github.com/UBC-FRESH/femic-k3z-instance``
+- linked in FEMIC at ``external/femic-k3z-instance``
+
+From a FEMIC checkout:
+
+.. code-block:: bash
+
+   git submodule update --init --recursive
+
+To pull latest K3Z baseline updates:
+
+.. code-block:: bash
+
+   git submodule update --remote external/femic-k3z-instance

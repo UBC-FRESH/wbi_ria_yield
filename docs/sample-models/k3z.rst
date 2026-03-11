@@ -17,13 +17,23 @@ major input/output and understand what should or should not be edited directly.
 Authoritative Location and Provenance
 -------------------------------------
 
-- Source of truth: ``models/k3z_patchworks_model``
+- Canonical full instance bundle:
+  ``https://github.com/UBC-FRESH/femic-k3z-instance``
+- FEMIC linkback submodule path: ``external/femic-k3z-instance``
+- In-repo teaching model source of truth: ``models/k3z_patchworks_model``
 - Runtime config for Windows collaborators:
   ``config/patchworks.runtime.windows.yaml``
 - Layout target: mirrors the Patchworks sample-model folder pattern
   (same top-level model directories).
 - Detailed metadata lineage: ``docs/sample-models/k3z-metadata-lineage.rst``
   and ``models/k3z_patchworks_model/metadata/lineage_registry.yaml``.
+
+Submodule refresh commands from FEMIC root:
+
+.. code-block:: bash
+
+   git submodule update --init --recursive
+   git submodule update --remote external/femic-k3z-instance
 
 Model Anatomy
 -------------

@@ -2,3 +2,7 @@
 	path = external/femic-public-data
 	url = https://github.com/UBC-FRESH/femic-public-data.git
 	branch = main
+[submodule "external/femic-k3z-instance"]
+	path = external/femic-k3z-instance
+	url = https://github.com/UBC-FRESH/femic-k3z-instance.git
+	branch = main

@@ -259,6 +259,13 @@
   - [x] P10.6d Add operator runbook for clone/get/update workflows
     (`git submodule` + `datalad get`) for students/collaborators.
 
+## Phase 11: K3Z Example Instance Repository (Standalone + Linked)
+- [x] P11.1 Define K3Z example-instance repository contract
+- [x] P11.2 Assemble and validate K3Z instance payload
+- [x] P11.3 Publish `UBC-FRESH` public K3Z repo
+- [x] P11.4 Link K3Z repo into FEMIC as submodule + docs wiring
+- [x] P11.5 Add contract checks + acceptance validation
+
 ## Detailed Next Steps Notes
 - 2026-03-10 (P8.7 docs QA + acceptance checks): added automated docs
   contract coverage for Sample Models navigation and required K3Z sections,
@@ -2994,3 +3001,19 @@
     explicit installed-package workflow text.
   - Marked `P10.5c` complete; with `P10.5a/P10.5b` already complete, parent
     `P10.5` is now complete.
+- 2026-03-11 (Phase 11 complete: K3Z standalone example instance + submodule):
+  implemented and published the canonical full K3Z instance repository and
+  linked it back into FEMIC for onboarding and reproducible case setup.
+  - Defined contract note:
+    `planning/femic_k3z_instance_repo_contract.md`.
+  - Published public repo:
+    `https://github.com/UBC-FRESH/femic-k3z-instance` with initial baseline
+    tag `v0.1.0`.
+  - Added submodule linkage:
+    `external/femic-k3z-instance`.
+  - Updated docs to reference the standalone K3Z repo + submodule workflow and
+    added operator commands:
+    `git submodule update --init --recursive`,
+    `git submodule update --remote external/femic-k3z-instance`.
+  - Added docs-contract assertions requiring K3Z repo and submodule references.
+  - Marked `P11.1/P11.2/P11.3/P11.4/P11.5` complete.

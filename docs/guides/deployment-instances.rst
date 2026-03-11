@@ -93,3 +93,28 @@ For DataLad mirror clone/get/update workflow, see
 ``docs/guides/public-data-mirror-runbook.rst``.
 Mirror datasets are linked in-repo via submodule:
 ``external/femic-public-data``.
+
+Canonical K3Z Example Instance Repository
+-----------------------------------------
+
+FEMIC publishes a standalone, full K3Z teaching instance at:
+
+- ``https://github.com/UBC-FRESH/femic-k3z-instance``
+
+The same repository is linked back into FEMIC via git submodule:
+
+- ``external/femic-k3z-instance``
+
+Clone FEMIC with submodules initialized:
+
+.. code-block:: bash
+
+   git clone https://github.com/UBC-FRESH/femic.git
+   cd femic
+   git submodule update --init --recursive
+
+Refresh the K3Z example submodule to latest upstream commit:
+
+.. code-block:: bash
+
+   git submodule update --remote external/femic-k3z-instance

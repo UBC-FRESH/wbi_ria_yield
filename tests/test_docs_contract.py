@@ -266,6 +266,23 @@ def test_docs_include_installed_package_instance_run_workflow() -> None:
     assert "femic run --run-config" in pipeline_text
 
 
+def test_k3z_instance_repo_submodule_docs_contract() -> None:
+    deploy_text = (GUIDES_ROOT / "deployment-instances.rst").read_text()
+    onboarding_text = (GUIDES_ROOT / "case-onboarding.rst").read_text()
+    k3z_text = (SAMPLE_MODELS_ROOT / "k3z.rst").read_text()
+
+    for text in (deploy_text, onboarding_text, k3z_text):
+        assert "UBC-FRESH/femic-k3z-instance" in text
+        assert "external/femic-k3z-instance" in text
+
+    assert "git submodule update --init --recursive" in deploy_text
+    assert "git submodule update --remote external/femic-k3z-instance" in deploy_text
+    assert "git submodule update --init --recursive" in onboarding_text
+    assert (
+        "git submodule update --remote external/femic-k3z-instance" in onboarding_text
+    )
+
+
 def test_sample_model_pages_are_in_docs_tree() -> None:
     assert (DOCS_ROOT / "index.rst").exists()
     index_text = (DOCS_ROOT / "index.rst").read_text()

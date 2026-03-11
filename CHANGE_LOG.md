@@ -3128,3 +3128,23 @@
 ## 2026-03-11 - Normalized P10.1/P10.2/P10.3 parent statuses
 - Marked roadmap parent items `P10.1`, `P10.2`, and `P10.3` complete because
   all corresponding child tasks were already complete.
+
+## 2026-03-11 - Completed Phase 11 K3Z standalone instance repository + submodule linkback
+- Published new public K3Z example instance repository:
+  `https://github.com/UBC-FRESH/femic-k3z-instance`
+  with initial baseline tag `v0.1.0`.
+- Added FEMIC submodule linkage for canonical pull-through access:
+  `external/femic-k3z-instance`
+  (tracked in `.gitmodules` on `branch = main`).
+- Added planning contract note documenting include/exclude rules, provenance,
+  update cadence, and operator update workflow:
+  `planning/femic_k3z_instance_repo_contract.md`.
+- Updated docs to wire the new canonical K3Z instance source:
+  - `docs/guides/deployment-instances.rst`
+  - `docs/guides/case-onboarding.rst`
+  - `docs/sample-models/k3z.rst`
+- Added docs contract checks in `tests/test_docs_contract.py` requiring:
+  - `UBC-FRESH/femic-k3z-instance` mention,
+  - `external/femic-k3z-instance` mention,
+  - submodule init/update command coverage.
+- Completed acceptance validation flow for linkage and docs-contract gates.
