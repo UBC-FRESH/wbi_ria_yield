@@ -2921,3 +2921,23 @@
   workstream for "public but not directly accessible" dependencies
   (including archived HectaresBC `misc*.tif` layers), plus planned Git
   submodule linkage back into FEMIC.
+
+## 2026-03-10 - Completed P10.6a dataset inventory baseline for DataLad planning
+- Added machine-readable dataset registry:
+  `metadata/required_datasets.yaml`.
+- Captured required external/input dataset families with:
+  - canonical instance paths,
+  - source URL/publisher,
+  - access mode (`direct_http`, `manual_catalog_retrieval`, `archive_only`,
+    `operator_supplied`),
+  - license/provenance notes,
+  - checksum fields (`sha256` + status),
+  - DataLad mirror inclusion flags/rationale.
+- Explicitly inventoried archived HectaresBC THLB dependency:
+  `misc.thlb.tif` as a mirror-priority dataset.
+- Added docs page:
+  `docs/guides/data-access-inventory.rst` and linked it from guides index and
+  deployment-instance guide.
+- Updated roadmap state:
+  - marked `P10.6a` complete,
+  - appended matching Detailed Next Steps note for queued `P10.6b`.

@@ -250,7 +250,7 @@
   - [ ] P10.5b Verify installed-package workflow in clean env (`pip install femic` + `femic instance init` + preflight).
   - [ ] P10.5c Final docs updates for “install package + create instance + run”.
 - [ ] P10.6 Public-data accessibility mirror via DataLad + submodule linkage
-  - [ ] P10.6a Inventory all "public but not directly downloadable" required layers
+  - [x] P10.6a Inventory all "public but not directly downloadable" required layers
     (including archived HectaresBC `misc*.tif` dependencies) with provenance notes.
   - [ ] P10.6b Create/publish a dedicated DataLad-backed GitHub dataset repo for
     these layers with remote object storage on Arbutus (special remote).
@@ -2829,3 +2829,17 @@
   storage, then link that dataset back into FEMIC as a git submodule.
   - Added checklist `P10.6a/P10.6b/P10.6c/P10.6d` for inventory, publishing,
     submodule integration, and collaborator runbook coverage.
+- 2026-03-10 (Phase 10 `P10.6a` complete: dataset inventory + provenance baseline):
+  published the required dataset inventory for DataLad mirror planning, with
+  explicit access mode and checksum status fields.
+  - Added machine-readable registry:
+    `metadata/required_datasets.yaml`
+    covering VRI/VDYP provincial layers, TSA boundaries, Site_Prod_BC,
+    HectaresBC `misc.thlb.tif`, support assets, and case-specific boundary
+    geometry.
+  - Added user-facing guide:
+    `docs/guides/data-access-inventory.rst`
+    and wired it into docs navigation.
+  - Updated deployment-instance guide to reference the authoritative registry.
+  - Marked `P10.6a` complete; next queued step is `P10.6b` (publish DataLad
+    dataset repository and configure Arbutus special remote).

@@ -55,3 +55,7 @@ Operational commands accept ``--instance-root`` and otherwise resolve paths by:
 
 This allows running FEMIC from any location while keeping all deployment files
 scoped to one workspace root.
+
+See also: ``docs/guides/data-access-inventory.rst`` and
+``metadata/required_datasets.yaml`` for dataset provenance, access mode, and
+checksum/mirroring status.

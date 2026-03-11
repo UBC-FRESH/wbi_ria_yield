@@ -16,6 +16,7 @@ COVERAGE_CSV = GUIDES_ROOT / "legacy_notebook_coverage.csv"
 GUIDE_PAGES = [
     "pipeline-overview",
     "deployment-instances",
+    "data-access-inventory",
     "case-onboarding",
     "stage-00-data-prep",
     "stage-01a-vdyp-tipsy-input",

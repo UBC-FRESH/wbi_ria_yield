@@ -1,0 +1,204 @@
+schema_version: 1
+updated_utc: "2026-03-11T00:00:00Z"
+owner: "UBC FRESH / FEMIC maintainers"
+notes:
+  - "Registry for required upstream datasets used by FEMIC compile workflows."
+  - "Use this inventory as the source of truth for P10.6 DataLad mirror scope."
+  - "Checksum fields are required; populate sha256 values after controlled acquisition."
+
+datasets:
+  - id: bc_vri_l1_r1_2024_gdb
+    category: inventory
+    required_for:
+      - "legacy stage 00 stand extraction"
+      - "default provincial compile workflow"
+    canonical_instance_path: "data/bc/vri/2024/VEG_COMP_LYR_R1_POLY_2024.gdb"
+    preferred: true
+    fallback_ids:
+      - "bc_vri_l1_r1_2019_gdb"
+    source:
+      publisher: "BC Data Catalogue"
+      url: "https://pub.data.gov.bc.ca/datasets/02dba161-fdb7-48ae-a4bb-bd6ef017c36d/current/VEG_COMP_LYR_R1_POLY_2024.gdb.zip"
+      access_mode: "direct_http"
+      license: "Open Government Licence - British Columbia"
+      provenance_notes: "Downloaded by `femic instance init` when enabled."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "pending"
+      target_artifact: "VEG_COMP_LYR_R1_POLY_2024.gdb.zip"
+    datalad_mirror:
+      include: false
+      rationale: "Directly downloadable from stable provincial endpoint."
+
+  - id: bc_vri_vdyp7_input_2024_gdb
+    category: inventory
+    required_for:
+      - "legacy stage 00 VDYP input extraction"
+      - "default provincial compile workflow"
+    canonical_instance_path: "data/bc/vri/2024/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb"
+    preferred: true
+    fallback_ids:
+      - "bc_vri_vdyp7_input_2019_gdb"
+    source:
+      publisher: "BC Data Catalogue"
+      url: "https://pub.data.gov.bc.ca/datasets/02dba161-fdb7-48ae-a4bb-bd6ef017c36d/current/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb.zip"
+      access_mode: "direct_http"
+      license: "Open Government Licence - British Columbia"
+      provenance_notes: "Downloaded by `femic instance init` when enabled."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "pending"
+      target_artifact: "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2024.gdb.zip"
+    datalad_mirror:
+      include: false
+      rationale: "Directly downloadable from stable provincial endpoint."
+
+  - id: bc_vri_l1_r1_2019_gdb
+    category: inventory
+    required_for:
+      - "legacy fallback when 2024 VRI not available"
+    canonical_instance_path: "data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb"
+    preferred: false
+    source:
+      publisher: "BC Data Catalogue / historical release"
+      url: null
+      access_mode: "manual_catalog_retrieval"
+      license: "Open Government Licence - British Columbia"
+      provenance_notes: "Legacy fallback path retained for compatibility."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "pending"
+      target_artifact: "VEG_COMP_LYR_R1_POLY.gdb"
+    datalad_mirror:
+      include: true
+      rationale: "May require manual request or historical access steps."
+
+  - id: bc_vri_vdyp7_input_2019_gdb
+    category: inventory
+    required_for:
+      - "legacy fallback when 2024 VDYP input not available"
+    canonical_instance_path: "data/bc/vri/2019/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"
+    preferred: false
+    source:
+      publisher: "BC Data Catalogue / historical release"
+      url: null
+      access_mode: "manual_catalog_retrieval"
+      license: "Open Government Licence - British Columbia"
+      provenance_notes: "Legacy fallback path retained for compatibility."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "pending"
+      target_artifact: "VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb"
+    datalad_mirror:
+      include: true
+      rationale: "May require manual request or historical access steps."
+
+  - id: bc_tsa_boundaries_fadm_gdb
+    category: boundaries
+    required_for:
+      - "TSA-mode run selection"
+    canonical_instance_path: "data/bc/tsa/FADM_TSA.gdb"
+    preferred: true
+    source:
+      publisher: "Government of British Columbia"
+      url: null
+      access_mode: "manual_catalog_retrieval"
+      license: "Open Government Licence - British Columbia"
+      provenance_notes: "Needed by `resolve_legacy_external_data_paths`."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "pending"
+      target_artifact: "FADM_TSA.gdb"
+    datalad_mirror:
+      include: true
+      rationale: "Acquisition flow can vary by account/request constraints."
+
+  - id: bc_site_prod_bc_gdb
+    category: productivity
+    required_for:
+      - "Site index attribution and species-specific SI raster generation"
+    canonical_instance_path: "data/bc/siteprod/Site_Prod_BC.gdb"
+    preferred: true
+    source:
+      publisher: "Government of British Columbia"
+      url: null
+      access_mode: "manual_catalog_retrieval"
+      license: "Open Government Licence - British Columbia"
+      provenance_notes: "Referenced by stage 00 site productivity extraction."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "pending"
+      target_artifact: "Site_Prod_BC.gdb"
+    datalad_mirror:
+      include: true
+      rationale: "Not always accessible through one-click direct download."
+
+  - id: hectaresbc_misc_thlb_tif
+    category: thlb
+    required_for:
+      - "THLB signal attribution (`misc.thlb.tif`)"
+      - "managed/unmanaged assignment in baseline legacy flow"
+    canonical_instance_path: "data/misc.thlb.tif"
+    preferred: true
+    source:
+      publisher: "HectaresBC (decommissioned)"
+      url: "https://www.hectaresbc.org/app/habc/HaBC.html?type=raster&query=misc.thlb"
+      access_mode: "archive_only"
+      license: "Public BC government data (license verification required before republish)"
+      provenance_notes: "Original portal is offline; recovered from archived local holdings."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "required_before_publish"
+      target_artifact: "misc.thlb.tif"
+    datalad_mirror:
+      include: true
+      rationale: "Primary target for P10.6 mirror due to source unavailability."
+
+  - id: ria_maptiles_csv
+    category: support
+    required_for:
+      - "optional map-tiling support in legacy stage 00"
+    canonical_instance_path: "ria_maptiles.csv"
+    preferred: true
+    source:
+      publisher: "FEMIC repository asset"
+      url: null
+      access_mode: "in_repo"
+      license: "Repository terms"
+      provenance_notes: "Optional warning-only dependency in preflight."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "pending"
+      target_artifact: "ria_maptiles.csv"
+    datalad_mirror:
+      include: false
+      rationale: "Already versioned in FEMIC source repository."
+
+  - id: case_boundary_geometry
+    category: case_specific
+    required_for:
+      - "custom-boundary deployments (`selection.boundary_path`)"
+    canonical_instance_path: "data/bc/cfa/<case>/<boundary>.shp"
+    preferred: true
+    source:
+      publisher: "Case-specific authority"
+      url: null
+      access_mode: "operator_supplied"
+      license: "Case-dependent"
+      provenance_notes: "Required for boundary mode; not a shared provincial base layer."
+    checksum:
+      algorithm: "sha256"
+      value: null
+      status: "pending"
+      target_artifact: "<boundary dataset>"
+    datalad_mirror:
+      include: false
+      rationale: "Per-deployment asset; tracked in case repositories as needed."

@@ -10,6 +10,7 @@ with the current FEMIC CLI and export modules.
 
    pipeline-overview
    deployment-instances
+   data-access-inventory
    case-onboarding
    stage-00-data-prep
    stage-01a-vdyp-tipsy-input
