@@ -197,6 +197,17 @@ def _build_species_yield_curve(
     return tuple(derived)
 
 
+def _curve_has_positive_signal(
+    points: tuple[CurvePoint, ...], *, abs_tol: float = 1e-12
+) -> bool:
+    """Return True when curve points contain a positive y value."""
+    for point in points:
+        y_val = float(point.y)
+        if math.isfinite(y_val) and y_val > abs_tol:
+            return True
+    return False
+
+
 def _derived_species_yield_curve_ref(*, au_id: int, managed: bool, species: str) -> str:
     """Build readable deterministic XML id for derived species-yield curves."""
     mode = "managed" if managed else "unmanaged"
@@ -406,10 +417,10 @@ def _resolve_seral_bounds_for_au(
                 )
 
         if max_age is not None and max_age < min_age:
-            raise ValueError(
-                f"Invalid seral stage bounds for AU {au_id}, stage {stage}: "
-                f"min_age={min_age}, max_age={max_age}"
-            )
+            # Configuration/token combinations can produce a max below min
+            # (for example immature max=cmai when cmai<26). Clamp to a
+            # one-age stage instead of aborting export.
+            max_age = int(min_age)
         resolved[stage] = (int(min_age), None if max_age is None else int(max_age))
 
     return resolved
@@ -664,8 +675,12 @@ def build_patchworks_forestmodel_definition(
             context.unmanaged_species_curve_ids.get(unmanaged_curve_id, {}).items()
         ):
             species_curve_ref = source_curve_ref_by_id.get(species_curve_id)
+            species_prop_curve = context.curves_by_id.get(species_curve_id)
+            unmanaged_species_has_signal = (
+                species_prop_curve is not None
+                and _curve_has_positive_signal(species_prop_curve.points)
+            )
             if unmanaged_total_curve is not None:
-                species_prop_curve = context.curves_by_id.get(species_curve_id)
                 if species_prop_curve is not None:
                     derived_curve_ref = _derived_species_yield_curve_ref(
                         au_id=au.au_id,
@@ -676,7 +691,9 @@ def build_patchworks_forestmodel_definition(
                         total_points=unmanaged_total_curve.points,
                         species_prop_points=species_prop_curve.points,
                     )
-                    if derived_curve_points:
+                    if derived_curve_points and _curve_has_positive_signal(
+                        derived_curve_points
+                    ):
                         curves[derived_curve_ref] = derived_curve_points
                         unmanaged_attrs.append(
                             AttributeBinding(
@@ -684,7 +701,7 @@ def build_patchworks_forestmodel_definition(
                                 curve_idref=derived_curve_ref,
                             )
                         )
-            if species_curve_ref is not None:
+            if species_curve_ref is not None and unmanaged_species_has_signal:
                 unmanaged_attrs.append(
                     AttributeBinding(
                         label=f"feature.SpeciesProp.unmanaged.{species}",
@@ -712,17 +729,38 @@ def build_patchworks_forestmodel_definition(
         managed_species_curve_map = context.managed_species_curve_ids.get(
             managed_curve_id, {}
         )
+        unmanaged_species_curve_map = context.unmanaged_species_curve_ids.get(
+            unmanaged_curve_id, {}
+        )
         if not managed_species_curve_map and managed_curve_id == unmanaged_curve_id:
             # When managed curves fall back to unmanaged curves (no TIPSY AU curve),
             # reuse unmanaged species-proportion curves so species-wise managed
             # accounts remain available instead of collapsing to Total-only.
-            managed_species_curve_map = context.unmanaged_species_curve_ids.get(
-                unmanaged_curve_id, {}
-            )
+            managed_species_curve_map = unmanaged_species_curve_map
         for species, species_curve_id in sorted(managed_species_curve_map.items()):
-            species_curve_ref = source_curve_ref_by_id.get(species_curve_id)
+            effective_curve_id = species_curve_id
+            species_prop_curve = context.curves_by_id.get(effective_curve_id)
+            if species_prop_curve is not None and not _curve_has_positive_signal(
+                species_prop_curve.points
+            ):
+                fallback_curve_id = unmanaged_species_curve_map.get(species)
+                fallback_curve = (
+                    context.curves_by_id.get(fallback_curve_id)
+                    if fallback_curve_id is not None
+                    else None
+                )
+                if fallback_curve is not None and _curve_has_positive_signal(
+                    fallback_curve.points
+                ):
+                    assert fallback_curve_id is not None
+                    effective_curve_id = int(fallback_curve_id)
+                    species_prop_curve = fallback_curve
+            species_curve_ref = source_curve_ref_by_id.get(effective_curve_id)
+            managed_species_has_signal = (
+                species_prop_curve is not None
+                and _curve_has_positive_signal(species_prop_curve.points)
+            )
             if managed_total_curve is not None:
-                species_prop_curve = context.curves_by_id.get(species_curve_id)
                 if species_prop_curve is not None:
                     derived_curve_ref = _derived_species_yield_curve_ref(
                         au_id=au.au_id,
@@ -733,7 +771,9 @@ def build_patchworks_forestmodel_definition(
                         total_points=managed_total_curve.points,
                         species_prop_points=species_prop_curve.points,
                     )
-                    if derived_curve_points:
+                    if derived_curve_points and _curve_has_positive_signal(
+                        derived_curve_points
+                    ):
                         curves[derived_curve_ref] = derived_curve_points
                         managed_attrs.append(
                             AttributeBinding(
@@ -753,7 +793,7 @@ def build_patchworks_forestmodel_definition(
                                 curve_idref=derived_curve_ref,
                             )
                         )
-            if species_curve_ref is not None:
+            if species_curve_ref is not None and managed_species_has_signal:
                 managed_attrs.append(
                     AttributeBinding(
                         label=f"feature.SpeciesProp.managed.{species}",

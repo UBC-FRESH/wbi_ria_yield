@@ -300,6 +300,120 @@ def test_build_forestmodel_xml_tree_reuses_unmanaged_species_props_for_managed_f
     assert "product.SpeciesProp.managed.HW" in xml_text
 
 
+def test_build_forestmodel_xml_tree_reuses_unmanaged_species_when_managed_prop_is_zero() -> (
+    None
+):
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+            {"curve_id": 985501000001, "curve_type": "unmanaged_species_prop_HW"},
+            {"curve_id": 985521000001, "curve_type": "managed_species_prop_HW"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985501000, "x": 10, "y": 50.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+            {"curve_id": 985521000, "x": 10, "y": 70.0},
+            {"curve_id": 985501000001, "x": 1, "y": 0.6},
+            {"curve_id": 985521000001, "x": 1, "y": 0.0},
+        ]
+    )
+
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+
+    managed_curve = root.find("./curve[@id='au_985501000_managed_yield_HW']")
+    assert managed_curve is not None
+    points = managed_curve.findall("./point")
+    assert points[0].attrib == {"x": "1", "y": "7.2"}
+    assert points[1].attrib == {"x": "10", "y": "42.0"}
+
+    xml_text = et.tostring(root, encoding="unicode")
+    assert "feature.SpeciesProp.managed.HW" in xml_text
+    assert "product.SpeciesProp.managed.HW" in xml_text
+    assert 'curve idref="unmanaged_prop_HW_985501000001"' in xml_text
+
+
+def test_build_forestmodel_xml_tree_omits_zero_signal_species_accounts() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+            {"curve_id": 985501000001, "curve_type": "unmanaged_species_prop_PL"},
+            {"curve_id": 985521000001, "curve_type": "managed_species_prop_PL"},
+            {"curve_id": 985501000002, "curve_type": "unmanaged_species_prop_PLC"},
+            {"curve_id": 985521000002, "curve_type": "managed_species_prop_PLC"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985501000, "x": 10, "y": 50.0},
+            {"curve_id": 985521000, "x": 1, "y": 12.0},
+            {"curve_id": 985521000, "x": 10, "y": 70.0},
+            {"curve_id": 985501000001, "x": 1, "y": 0.0},
+            {"curve_id": 985501000001, "x": 10, "y": 0.0},
+            {"curve_id": 985521000001, "x": 1, "y": 0.0},
+            {"curve_id": 985521000001, "x": 10, "y": 0.0},
+            {"curve_id": 985501000002, "x": 1, "y": 0.2},
+            {"curve_id": 985501000002, "x": 10, "y": 0.2},
+            {"curve_id": 985521000002, "x": 1, "y": 0.3},
+            {"curve_id": 985521000002, "x": 10, "y": 0.3},
+        ]
+    )
+
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+    labels = {
+        attr.attrib["label"]
+        for attr in root.findall(".//attribute")
+        if "label" in attr.attrib
+    }
+
+    assert "product.Yield.managed.PLC" in labels
+    assert "product.HarvestedVolume.managed.PLC.CC" in labels
+    assert "feature.SpeciesProp.managed.PLC" in labels
+    assert "product.SpeciesProp.managed.PLC" in labels
+
+    assert "product.Yield.managed.PL" not in labels
+    assert "product.HarvestedVolume.managed.PL.CC" not in labels
+    assert "feature.SpeciesProp.managed.PL" not in labels
+    assert "product.SpeciesProp.managed.PL" not in labels
+
+
 def test_build_forestmodel_xml_tree_sets_cc_min_age_from_cmai_minus_20() -> None:
     au_table = pd.DataFrame(
         [
@@ -483,6 +597,59 @@ def test_build_forestmodel_xml_tree_respects_per_au_seral_overrides() -> None:
     mature_points = [point.attrib for point in mature_curve.findall("./point")]
     assert {"x": "70", "y": "1.0"} in mature_points
     assert {"x": "71", "y": "0.0"} in mature_points
+
+
+def test_build_forestmodel_xml_tree_clamps_invalid_seral_stage_bounds() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985521000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985521000, "curve_type": "managed"},
+        ]
+    )
+    # Early culmination age so cmai resolves below configured immature min_age.
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 0.0},
+            {"curve_id": 985521000, "x": 1, "y": 20.0},
+            {"curve_id": 985521000, "x": 5, "y": 30.0},
+            {"curve_id": 985521000, "x": 10, "y": 35.0},
+            {"curve_id": 985521000, "x": 40, "y": 100.0},
+        ]
+    )
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+        seral_stage_config={
+            "default": {
+                "regenerating": {"min_age": 0, "max_age": 5},
+                "young": {"min_age": 6, "max_age": 25},
+                "immature": {"min_age": 26, "max_age": "cmai"},
+                "mature": {"min_age": "cmai_plus_1", "max_age": "min_peak_or_200"},
+                "overmature": {"min_age": "mature_plus_1", "max_age": None},
+            }
+        },
+    )
+    xml_text = et.tostring(root, encoding="unicode")
+    assert "feature.Seral.immature" in xml_text
+
+    immature_curve = root.find("./curve[@id='au_985501000_seral_immature']")
+    assert immature_curve is not None
+    points = [point.attrib for point in immature_curve.findall("./point")]
+    assert {"x": "26", "y": "1.0"} in points
+    assert {"x": "27", "y": "0.0"} in points
 
 
 def test_forestmodel_xml_trims_repeated_curve_values_on_both_tails() -> None:
