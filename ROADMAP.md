@@ -267,6 +267,17 @@
 - [x] P11.5 Add contract checks + acceptance validation
 
 ## Detailed Next Steps Notes
+- 2026-03-11 (K3Z species-account bugfix: TIPSY `FD` alias to canonical `FDC`):
+  fixed planted species-proportion mapping so species-wise accounts no longer
+  drop `FDC` to zero when TIPSY outputs `FD`.
+  - Updated bundle assembly in `src/femic/pipeline/bundle.py` to normalize
+    TIPSY species aliases (`FD -> FDC`) before writing planted species-prop
+    curves.
+  - Added regression test
+    `tests/test_bundle.py::test_build_bundle_tables_from_curves_maps_tipsy_fd_to_fdc`.
+  - Re-ran K3Z post-TIPSY bundle + Patchworks export and verified
+    `managed_prop_FDC_985521000004` now exports with `y=0.1`, and
+    `au_985501000_managed_yield_FDC` is no longer a flat zero curve.
 - 2026-03-10 (P8.7 docs QA + acceptance checks): added automated docs
   contract coverage for Sample Models navigation and required K3Z sections,
   and added a release-readiness checklist for student distribution.

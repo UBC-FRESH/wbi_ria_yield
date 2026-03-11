@@ -251,7 +251,9 @@ def test_build_forestmodel_xml_tree_adds_species_yield_curves() -> None:
     assert "product.HarvestedVolume.managed.HW.CC" in xml_text
 
 
-def test_build_forestmodel_xml_tree_reuses_unmanaged_species_props_for_managed_fallback() -> None:
+def test_build_forestmodel_xml_tree_reuses_unmanaged_species_props_for_managed_fallback() -> (
+    None
+):
     au_table = pd.DataFrame(
         [
             {

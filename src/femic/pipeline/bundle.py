@@ -8,6 +8,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 
+TIPSY_SPECIES_CODE_ALIASES = {
+    "FD": "FDC",
+}
+
+
 @dataclass(frozen=True)
 class BundlePaths:
     """Resolved file paths for model input bundle tables."""
@@ -223,7 +228,7 @@ def build_bundle_tables_from_curves(
                     curve_points_table_data["x"].append(int(x))
                     curve_points_table_data["y"].append(round(y, 2))
                 if ordered_species:
-                    tipsy_prop_map = {}
+                    tipsy_prop_map: dict[str, float] = {}
                     if (
                         tipsy_spp_tsa is not None
                         and tipsy_curve_id in tipsy_spp_tsa.index
@@ -231,11 +236,19 @@ def build_bundle_tables_from_curves(
                         tipsy_row = tipsy_spp_tsa.loc[tipsy_curve_id]
                         if hasattr(tipsy_row, "ndim") and tipsy_row.ndim > 1:
                             tipsy_row = tipsy_row.iloc[0]
-                        tipsy_prop_map = {
+                        tipsy_prop_map_raw: dict[str, float] = {
                             str(col).upper(): float(tipsy_row[col]) * 0.01
                             for col in tipsy_row.index
                             if str(col).upper() != "AU"
                         }
+                        tipsy_prop_map = {}
+                        for species_code, proportion in tipsy_prop_map_raw.items():
+                            canonical = TIPSY_SPECIES_CODE_ALIASES.get(
+                                species_code, species_code
+                            )
+                            tipsy_prop_map[canonical] = float(
+                                tipsy_prop_map.get(canonical, 0.0)
+                            ) + float(proportion)
                     for species_idx, species_code in enumerate(
                         ordered_species, start=1
                     ):

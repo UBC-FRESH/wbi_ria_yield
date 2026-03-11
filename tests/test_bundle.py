@@ -206,6 +206,50 @@ def test_build_bundle_tables_from_curves_adds_species_proportion_curves() -> Non
     assert managed_sw_y == 0.6
 
 
+def test_build_bundle_tables_from_curves_maps_tipsy_fd_to_fdc() -> None:
+    vdyp_curves_smooth = {
+        "08": pd.DataFrame(
+            [
+                {"stratum_code": "BWBS_FD", "si_level": "L", "age": 10, "volume": 1.0},
+                {"stratum_code": "BWBS_FD", "si_level": "L", "age": 20, "volume": 2.0},
+            ]
+        )
+    }
+    tipsy_curves = {
+        "08": pd.DataFrame(
+            [
+                {"AU": 20005, "Age": 10, "Yield": 1.5},
+                {"AU": 20005, "Age": 20, "Yield": 2.5},
+            ]
+        )
+    }
+    # Legacy TIPSY outputs use FD; bundle species universe uses canonical FDC.
+    tipsy_spp = {"08": pd.DataFrame([{"AU": 20005, "FD": 10.0, "HW": 90.0}])}
+    vdyp_spp = {"08": {("BWBS_FD", "L"): {"FDC": 0.1, "HW": 0.9}}}
+    scsi_au = {"08": {("BWBS_FD", "L"): 5}}
+
+    out = build_bundle_tables_from_curves(
+        tsa_list=["08"],
+        vdyp_curves_smooth=vdyp_curves_smooth,
+        tipsy_curves=tipsy_curves,
+        scsi_au=scsi_au,
+        canfi_species_fn=lambda _s: 101,
+        species_universe=["FDC", "HW"],
+        vdyp_species_proportions=vdyp_spp,
+        tipsy_species_proportions=tipsy_spp,
+        pd_module=pd,
+        message_fn=lambda _m: None,
+    )
+
+    planted_fdc_id = out.curve_table.loc[
+        out.curve_table["curve_type"] == "planted_species_prop_FDC", "curve_id"
+    ].iloc[0]
+    planted_fdc_y = out.curve_points_table.loc[
+        out.curve_points_table["curve_id"] == planted_fdc_id, "y"
+    ].iloc[0]
+    assert planted_fdc_y == 0.1
+
+
 def test_bundle_tables_support_named_unit_codes() -> None:
     vdyp_curves_smooth = {
         "k3z": pd.DataFrame(

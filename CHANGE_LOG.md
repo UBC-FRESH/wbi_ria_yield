@@ -3148,3 +3148,16 @@
   - `external/femic-k3z-instance` mention,
   - submodule init/update command coverage.
 - Completed acceptance validation flow for linkage and docs-contract gates.
+
+## 2026-03-11 - Fixed K3Z planted species-account alias loss (`FD` -> `FDC`)
+- Fixed planted species-proportion assembly in
+  `src/femic/pipeline/bundle.py` by normalizing legacy TIPSY species codes to
+  canonical FEMIC species codes before writing bundle curves.
+- Added alias handling:
+  - `FD` maps to `FDC` (with additive merge behavior if canonical code is also
+    present).
+- Added regression coverage in `tests/test_bundle.py`:
+  - `test_build_bundle_tables_from_curves_maps_tipsy_fd_to_fdc`
+- Rebuilt K3Z post-TIPSY bundle and Patchworks export and verified affected
+  AU curves now carry non-zero `FDC` where source TIPSY species mix contains
+  non-zero `FD`.
