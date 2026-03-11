@@ -524,14 +524,14 @@ def test_build_patchworks_blocks_dataset_writes_blocks_and_topology(
     assert result.blocks_shapefile_path.exists()
     assert result.topology_csv_path is not None
     assert result.topology_csv_path.exists()
-    assert result.stand_id_field == "FEATURE_ID"
+    assert result.stand_id_field == "BLOCK"
     assert result.block_count == 2
 
     blocks_gdf = gpd.read_file(result.blocks_shapefile_path)
-    assert set(blocks_gdf["BLOCK"].astype(int).tolist()) == {101, 102}
+    assert set(blocks_gdf["BLOCK"].astype(int).tolist()) == {1, 2}
 
     topology_text = result.topology_csv_path.read_text(encoding="utf-8")
     assert "BLOCK1,BLOCK2,DISTANCE,LENGTH" in topology_text
-    assert "-9999,101" in topology_text
-    assert "-9999,102" in topology_text
-    assert "101,102,0.000" in topology_text
+    assert "-9999,1" in topology_text
+    assert "-9999,2" in topology_text
+    assert "1,2,0.000" in topology_text

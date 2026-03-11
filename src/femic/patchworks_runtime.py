@@ -875,12 +875,14 @@ def _resolve_blocks_model_dir(
 
 
 def _select_stand_id_field(columns: list[str]) -> str:
-    for candidate in ("FEATURE_ID", "FRAGS_ID", "BLOCK"):
+    # Prefer existing BLOCK IDs when present so blocks.shp keys align with
+    # Matrix Builder outputs keyed on BLOCK.
+    for candidate in ("BLOCK", "FEATURE_ID", "FRAGS_ID"):
         if candidate in columns:
             return candidate
     raise PatchworksConfigError(
         "No stand identifier field found in fragments. "
-        "Expected FEATURE_ID, FRAGS_ID, or BLOCK."
+        "Expected BLOCK, FEATURE_ID, or FRAGS_ID."
     )
 
 
