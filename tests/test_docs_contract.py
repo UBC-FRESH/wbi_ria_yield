@@ -12,6 +12,7 @@ DOCS_ROOT = Path("docs")
 GUIDES_ROOT = DOCS_ROOT / "guides"
 SAMPLE_MODELS_ROOT = DOCS_ROOT / "sample-models"
 COVERAGE_CSV = GUIDES_ROOT / "legacy_notebook_coverage.csv"
+K3Z_INSTANCE_ROOT = Path("external/femic-k3z-instance")
 
 GUIDE_PAGES = [
     "pipeline-overview",
@@ -284,6 +285,25 @@ def test_k3z_instance_repo_submodule_docs_contract() -> None:
     assert (
         "git submodule update --remote external/femic-k3z-instance" in onboarding_text
     )
+
+
+def test_k3z_instance_standalone_docs_scaffold_exists() -> None:
+    docs_root = K3Z_INSTANCE_ROOT / "docs"
+    assert docs_root.is_dir()
+    assert (docs_root / "conf.py").is_file()
+    assert (docs_root / "index.rst").is_file()
+    assert (docs_root / "requirements.txt").is_file()
+    assert (K3Z_INSTANCE_ROOT / ".readthedocs.yaml").is_file()
+    assert (K3Z_INSTANCE_ROOT / ".github/workflows/docs-pages.yml").is_file()
+
+    index_text = (docs_root / "index.rst").read_text()
+    for slug in (
+        "getting-started",
+        "model-anatomy",
+        "rebuild-and-qa",
+        "troubleshooting",
+    ):
+        assert slug in index_text
 
 
 def test_sample_model_pages_are_in_docs_tree() -> None:

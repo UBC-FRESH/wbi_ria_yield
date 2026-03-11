@@ -286,7 +286,7 @@
     if `PL` is not a valid active species in current inputs, trim `PL` from
     generated accounts/targets/docs to prevent student-facing false alarms.
 - [ ] P12.3 Stand up standalone Sphinx docs in `femic-k3z-instance`
-  - [ ] P12.3a Add docs scaffold (`docs/`, `conf.py`, `index.rst`,
+  - [x] P12.3a Add docs scaffold (`docs/`, `conf.py`, `index.rst`,
     docs requirements, `.readthedocs.yaml`, and docs publish workflow).
   - [ ] P12.3b Publish docs for `femic-k3z-instance` and verify external URLs.
   - [ ] P12.3c Add docs acceptance checks for required sections and navigation.
@@ -3211,3 +3211,17 @@
   in K3Z and implemented zero-signal species trimming so `PL` no longer appears
   as an empty managed species account when no treated species-proportion signal
   exists for `PL`.
+- 2026-03-11 (Phase 12 `P12.3a` complete: standalone K3Z Sphinx scaffold):
+  created and published the baseline standalone docs scaffold in
+  `external/femic-k3z-instance`.
+  - Submodule commit pushed: `6c61c71` (`femic-k3z-instance/main`).
+  - Added docs files: `docs/conf.py`, `docs/index.rst`,
+    `docs/getting-started.rst`, `docs/model-anatomy.rst`,
+    `docs/rebuild-and-qa.rst`, `docs/troubleshooting.rst`, and
+    `docs/requirements.txt`.
+  - Added publishing/build config: `.readthedocs.yaml` and
+    `.github/workflows/docs-pages.yml`.
+  - Added parent docs-contract check in `tests/test_docs_contract.py` requiring
+    standalone K3Z docs scaffold presence and key toctree entries.
+  - Verified standalone docs build:
+    `python -m sphinx -b html docs docs/_build/html -W` in submodule root.

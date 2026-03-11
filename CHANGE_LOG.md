@@ -3262,3 +3262,26 @@
   empty managed species boxes (for `PL`) are not emitted when no species-prop
   signal exists.
 - Confirmed K3Z rebuild regression checks still pass after this change.
+
+## 2026-03-11 - Added standalone Sphinx scaffold for femic-k3z-instance (P12.3a)
+- Created standalone K3Z instance docs scaffold inside
+  `external/femic-k3z-instance`:
+  - `docs/conf.py`, `docs/index.rst`, `docs/getting-started.rst`,
+    `docs/model-anatomy.rst`, `docs/rebuild-and-qa.rst`,
+    `docs/troubleshooting.rst`, `docs/requirements.txt`.
+- Added standalone docs publishing/build config in submodule:
+  - `.readthedocs.yaml`
+  - `.github/workflows/docs-pages.yml`
+- Updated submodule `.gitignore` for docs build output and added README docs
+  build instructions.
+- Added parent repository docs contract test
+  (`tests/test_docs_contract.py`) requiring K3Z standalone docs scaffold
+  existence and key navigation entries.
+- Submodule docs commit pushed to `UBC-FRESH/femic-k3z-instance`:
+  `6c61c71`.
+- Validation gates run:
+  - K3Z standalone docs build:
+    `python -m sphinx -b html docs docs/_build/html -W`
+  - FEMIC main repo gates:
+    `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
+    `pre-commit run --all-files`, `python -m sphinx -b html docs _build/html -W`.
