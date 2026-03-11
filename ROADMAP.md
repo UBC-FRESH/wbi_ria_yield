@@ -266,6 +266,95 @@
 - [x] P11.4 Link K3Z repo into FEMIC as submodule + docs wiring
 - [x] P11.5 Add contract checks + acceptance validation
 
+## Phase 12: Relocated K3Z Rebuild Validation + Standalone Docs Program
+- [x] P12.1 Revalidate relocated K3Z Patchworks compile flow on Windows
+  - [x] P12.1a Add/track an instance-local Patchworks runtime config in
+    `external/femic-k3z-instance/config/` with paths resolved to the relocated
+    K3Z workspace layout.
+  - [x] P12.1b Run `femic patchworks preflight`, `build-blocks`, and
+    `matrix-build` against the relocated model instance.
+  - [x] P12.1c Capture and archive run evidence (stdout/stderr/manifest plus
+    key output artifact timestamps) for reproducibility.
+- [ ] P12.2 Verify bugfixes and check regressions after rebuilt tracks
+  - [x] P12.2a Confirm `FD -> FDC` planted species mapping remains correct in
+    rebuilt K3Z outputs (no nonzero-source collapse to zero).
+  - [x] P12.2b Compare rebuilt `tracks/*.csv` structural invariants against
+    known-good baseline (row counts, account counts, key account names).
+  - [x] P12.2c Add regression checks/scripts for K3Z compile invariants so
+    future rebuilds fail fast on behavior drift.
+  - [ ] P12.2d Investigate `PL` vs `PLC` species-account semantics in K3Z;
+    if `PL` is not a valid active species in current inputs, trim `PL` from
+    generated accounts/targets/docs to prevent student-facing false alarms.
+- [ ] P12.3 Stand up standalone Sphinx docs in `femic-k3z-instance`
+  - [ ] P12.3a Add docs scaffold (`docs/`, `conf.py`, `index.rst`,
+    docs requirements, `.readthedocs.yaml`, and docs publish workflow).
+  - [ ] P12.3b Publish docs for `femic-k3z-instance` and verify external URLs.
+  - [ ] P12.3c Add docs acceptance checks for required sections and navigation.
+- [ ] P12.4 Expand K3Z user-facing docs to TSR-style data-package depth
+  - [ ] P12.4a Add full metadata inventory and lineage narratives by artifact
+    family (inputs, transforms, outputs, validation evidence).
+  - [ ] P12.4b Add full operator runbook coverage (fresh setup, rebuild,
+    diagnostics, troubleshooting, and release checklist).
+  - [ ] P12.4c Add user edit-policy matrix and interpretation guidance aligned
+    to classroom workflows and scenario comparison needs.
+- [ ] P12.5 Enforce FRESH lab Sphinx template consistency (FHOPS-aligned)
+  - [ ] P12.5a Define the canonical template baseline using
+    `https://github.com/UBC-FRESH/fhops` as the reference implementation.
+  - [ ] P12.5b Capture required template components and style conventions
+    (theme/extensions, navigation structure, build/publish settings, RTD/GitHub
+    Pages behavior, and warning-as-error policy).
+  - [ ] P12.5c Apply the shared template baseline to
+    `femic-k3z-instance` docs, then reconcile FEMIC docs where needed so FRESH
+    lab docs present a consistent user experience.
+  - [ ] P12.5d Add a template-compliance checklist in CI/docs-contract tests to
+    prevent drift across FRESH lab documentation projects.
+- [ ] P12.6 Finalize and operationalize docs ownership
+  - [ ] P12.6a Define update cadence and ownership for K3Z docs/content refresh.
+  - [ ] P12.6b Define release tagging/versioning policy for docs alongside model
+    snapshots.
+  - [ ] P12.6c Add contributor onboarding guidance for docs changes and review.
+- [ ] P12.7 Cross-platform geospatial dependency bootstrap hardening (`fiona`/`GDAL`)
+  - [ ] P12.7a Define and test known-valid install rituals for Linux and Windows
+    (including Windows-specific `fiona`/`GDAL` handling for local `.venv` setup).
+  - [ ] P12.7b Add runtime/bootstrap OS detection so environment setup applies the
+    correct dependency path automatically.
+  - [ ] P12.7c Add explicit preflight checks for geospatial stack readiness
+    (`import fiona`, GDAL version visibility, shapefile I/O smoke).
+  - [ ] P12.7d Add troubleshooting docs for Windows geospatial dependency install
+    failures and deterministic remediation steps.
+
+## Phase 13: Instance Rebuild Repro Framework (Default for All New Instances)
+- [ ] P13.1 Define a canonical rebuild contract for FEMIC deployment instances
+  - [ ] P13.1a Specify required inputs, required config files, and required runtime prerequisites.
+  - [ ] P13.1b Specify the authoritative rebuild sequence (command order, mutable artifacts, expected outputs).
+  - [ ] P13.1c Specify required post-rebuild invariants (accounts, targets, managed-area sanity, block joins, seral presence).
+  - [ ] P13.1d Define failure classes (hard fail vs warning) and required remediation messaging.
+- [ ] P13.2 Add first-class rebuild orchestration to FEMIC
+  - [ ] P13.2a Add a reusable rebuild runner abstraction (step graph + deterministic execution + report sink).
+  - [ ] P13.2b Add CLI support for instance rebuild execution (instance-rooted, run-ided, non-interactive).
+  - [ ] P13.2c Ensure rebuild execution writes machine-readable reports/manifests and references all generated logs.
+  - [ ] P13.2d Add dry-run mode showing full planned command sequence without mutation.
+- [ ] P13.3 Add per-instance rebuild spec/config files as tracked source-of-truth
+  - [ ] P13.3a Define a standard rebuild spec schema (YAML) for instance command steps and invariants.
+  - [ ] P13.3b Ship a default template with `femic instance init` so every new instance starts with a rebuild spec.
+  - [ ] P13.3c Add K3Z as the reference implementation and backfill its current known-valid sequence.
+  - [ ] P13.3d Add schema validation + clear diagnostics for malformed rebuild specs.
+- [ ] P13.4 Add regression guardrails for rebuild outputs
+  - [ ] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
+  - [ ] P13.4b Add configurable baseline snapshot/diff support for key track tables and selected XML structures.
+  - [ ] P13.4c Add explicit allowlist mechanism for intentional output deltas (so accepted changes are tracked in git).
+  - [ ] P13.4d Fail rebuild with actionable summary when invariants regress or unexpected diffs exceed thresholds.
+- [ ] P13.5 Add user-facing documentation and operator runbooks
+  - [ ] P13.5a Add docs page: "Rebuild Repro Contract" (what it is, why it exists, expected workflow).
+  - [ ] P13.5b Add docs page: "How to author a new instance rebuild spec" with copy-ready examples.
+  - [ ] P13.5c Add docs page: "How to interpret rebuild reports and regressions".
+  - [ ] P13.5d Add contributor policy text making rebuild-spec + checks mandatory for new instance repos.
+- [ ] P13.6 Enforce this as the default norm for all new FEMIC instances
+  - [ ] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
+  - [ ] P13.6b Add docs/contract tests requiring rebuild-spec references in sample/new instance docs.
+  - [ ] P13.6c Add release-gate checks requiring successful rebuild report for reference instances prior to milestone close.
+  - [ ] P13.6d Add roadmap/changelog policy note: no new instance phase closes without reproducible rebuild evidence.
+
 ## Detailed Next Steps Notes
 - 2026-03-11 (repo-root cleanup: legacy notebook archive move):
   moved legacy notebook artifacts out of repository root into a dedicated
@@ -3039,3 +3128,67 @@
     `git submodule update --remote external/femic-k3z-instance`.
   - Added docs-contract assertions requiring K3Z repo and submodule references.
   - Marked `P11.1/P11.2/P11.3/P11.4/P11.5` complete.
+- 2026-03-11 (Phase 12 planning kickoff): added a concrete execution phase for
+  relocated K3Z rebuild validation and standalone K3Z documentation buildout,
+  including explicit FHOPS-template alignment requirements for cross-project
+  FRESH lab Sphinx consistency.
+  - Added `P12.1/P12.2` for relocated Patchworks matrix-build execution,
+    bugfix verification, and regression evidence capture.
+  - Added `P12.3/P12.4` for standalone `femic-k3z-instance` Sphinx docs
+    scaffolding and TSR-style user-guide expansion.
+  - Added `P12.5` to formalize a shared FRESH lab Sphinx template baseline
+    using FHOPS as canonical reference.
+  - Added `P12.6` for documentation ownership, cadence, and release policy.
+- 2026-03-11 (Phase 12 `P12.1a/P12.1b` execution on relocated K3Z instance):
+  ran Windows native Patchworks preflight + blocks build + matrix build in
+  `external/femic-k3z-instance`.
+  - Added instance-local runtime config:
+    `external/femic-k3z-instance/config/patchworks.runtime.windows.yaml`.
+  - Executed successful runs with artifacts/logs under:
+    `external/femic-k3z-instance/vdyp_io/logs/`
+    (run ids: `k3z_relocated_20260311`, `k3z_relocated_20260311b`).
+  - `accounts.csv` sync/backup behavior confirmed via manifest.
+  - Noted structural drift from tracked baseline remains and requires follow-up
+    under `P12.2` (for example lower account/treatment counts after rebuild).
+- 2026-03-11 (Phase 12 scope extension: cross-platform geospatial bootstrap):
+  added explicit `fiona`/`GDAL` hardening tasks for Linux/Windows local `.venv`
+  bootstrap reliability.
+  - Added `P12.7a` for OS-specific validated install rituals.
+  - Added `P12.7b` for runtime/bootstrap environment detection.
+  - Added `P12.7c` for geospatial dependency preflight checks.
+  - Added `P12.7d` for Windows remediation runbook coverage.
+- 2026-03-11 (Phase 13 planning kickoff): added a new cross-instance
+  reproducibility phase that makes rebuild scripts/specs + invariant checks the
+  default requirement for all new FEMIC deployment-instance projects.
+  - Added `P13.1` contract definition tasks for required inputs, sequence, invariants, and failure taxonomy.
+  - Added `P13.2` orchestration tasks for first-class CLI rebuild execution + manifest/report outputs.
+  - Added `P13.3` per-instance rebuild spec/template tasks, including K3Z backfill as reference.
+  - Added `P13.4` regression guardrail tasks (invariants, baseline diffs, allowlisted deltas, fail-fast behavior).
+  - Added `P13.5` user-facing documentation/runbook tasks for authoring and interpreting rebuild reports.
+  - Added `P13.6` enforcement tasks to make this mandatory in `instance init`, docs contracts, and release gates.
+- 2026-03-11 (K3Z runtime validation feedback: species account completeness):
+  user confirmed rebuilt K3Z launches in Patchworks without startup errors and
+  now shows nonzero volume in species-wise accounts except `PL`.
+  - Added follow-up task `P12.2d` to verify `PL` vs `PLC` semantics in this
+    case and, if `PL` is not valid for current K3Z inputs, remove/trim `PL`
+    from generated accounts/targets/docs to avoid student confusion.
+- 2026-03-11 (Phase 12 `P12.1c` + `P12.2a/b/c` execution: reproducible K3Z rebuild checks):
+  implemented and exercised a deterministic rebuild-and-validate script for the
+  relocated K3Z instance.
+  - Fixed and expanded `scripts/k3z/rebuild_k3z_instance.py` to:
+    - execute full rebuild flow,
+    - emit machine-readable report JSON,
+    - record key artifact timestamps,
+    - enforce species/seral/block-join invariants,
+    - compare structural `tracks/*.csv` invariants against a baseline snapshot.
+  - Added baseline snapshot: `scripts/k3z/k3z_tracks_baseline.json`.
+  - Executed evidence runs:
+    - `k3z_reprocheck_20260311_2` (baseline initialized with `--write-baseline`),
+    - `k3z_reprocheck_20260311_3` (baseline regression check pass),
+    - `k3z_reprocheck_20260311_4` (clean repeat pass after UTC warning fix).
+  - Latest report confirms:
+    `managed_area_ha=1781.3132360577583`, `passive_area_ha=0.0`,
+    `block_join_csv_only=0`, `block_join_shp_only=0`,
+    `seral_account_count=75`, `baseline_match=true`.
+  - Marked complete: `P12.1c`, `P12.2a`, `P12.2b`, `P12.2c`.
+  - Left open: `P12.2d` (`PL` vs `PLC` semantics cleanup for student-facing clarity).

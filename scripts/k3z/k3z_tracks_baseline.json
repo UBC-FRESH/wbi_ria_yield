@@ -1,0 +1,32 @@
+{
+  "run_id": "k3z_reprocheck_20260311_6",
+  "generated_utc": "2026-03-11T21:38:09Z",
+  "tracks_row_counts": {
+    "blocks.csv": 218,
+    "curves.csv": 9773,
+    "treatments.csv": 14,
+    "features.csv": 176,
+    "products.csv": 229,
+    "tracknames.csv": 14,
+    "strata.csv": 14,
+    "accounts.csv": 120,
+    "protoaccounts.csv": 120
+  },
+  "account_count": 120,
+  "key_accounts_present": {
+    "product.Yield.managed.Total": true,
+    "product.HarvestedVolume.managed.Total.CC": true,
+    "product.Yield.managed.FDC": true,
+    "product.HarvestedVolume.managed.FDC.CC": true,
+    "feature.Seral.regenerating": true,
+    "feature.Seral.young": true,
+    "feature.Seral.immature": true,
+    "feature.Seral.mature": true,
+    "feature.Seral.overmature": true,
+    "product.Seral.area.regenerating.985501000.CC": true,
+    "product.Seral.area.young.985501000.CC": true,
+    "product.Seral.area.immature.985501000.CC": true,
+    "product.Seral.area.mature.985501000.CC": true,
+    "product.Seral.area.overmature.985501000.CC": true
+  }
+}

@@ -3174,3 +3174,71 @@
   - `tests/test_docs_contract.py`
 - Verified all quality gates remain passing after relocation (`ruff`, `mypy`,
   `pytest`, `pre-commit`, `sphinx -W`).
+
+## 2026-03-11 - Added Phase 12 roadmap plan for relocated K3Z validation + docs program
+- Expanded `ROADMAP.md` with new `Phase 12` to cover:
+  - relocated K3Z Patchworks rebuild validation (`P12.1`),
+  - bugfix/regression verification after matrix rebuild (`P12.2`),
+  - standalone `femic-k3z-instance` Sphinx scaffolding and publishing (`P12.3`),
+  - TSR-style K3Z user-guide expansion (`P12.4`),
+  - cross-project FRESH lab Sphinx template alignment using FHOPS as
+    canonical reference (`P12.5`),
+  - docs ownership/update cadence/release policy (`P12.6`).
+- Appended matching detailed next-steps roadmap note so the leading execution
+  plan now reflects this new docs and validation workstream.
+
+## 2026-03-11 - Ran relocated K3Z Patchworks compile flow (Phase 12 `P12.1a/P12.1b`)
+- Added instance-local Patchworks runtime config:
+  `external/femic-k3z-instance/config/patchworks.runtime.windows.yaml`.
+- Executed on Windows native runtime against relocated K3Z instance:
+  - `femic patchworks preflight`
+  - `femic patchworks build-blocks`
+  - `femic patchworks matrix-build`
+- Captured run logs/manifests under:
+  `external/femic-k3z-instance/vdyp_io/logs/`
+  (run ids: `k3z_relocated_20260311`, `k3z_relocated_20260311b`).
+- Confirmed matrix manifest success and `protoaccounts.csv -> accounts.csv`
+  sync/backup behavior.
+- Recorded remaining structural drift for follow-up under `P12.2`.
+
+## 2026-03-11 - Added cross-platform `fiona`/`GDAL` bootstrap planning to roadmap
+- Extended `Phase 12` with `P12.7` to address geospatial dependency reliability
+  across Linux and Windows local `.venv` bootstraps.
+- Added concrete subtasks for:
+  - OS-specific validated install rituals (`P12.7a`),
+  - runtime/bootstrap OS detection and branching (`P12.7b`),
+  - geospatial preflight checks (`P12.7c`),
+  - Windows remediation runbook coverage (`P12.7d`).
+
+## 2026-03-11 - Added Phase 13 roadmap for reproducible instance rebuild enforcement
+- Added `Phase 13: Instance Rebuild Repro Framework (Default for All New Instances)` to `ROADMAP.md`.
+- Added detailed task/subtask structure covering:
+  - canonical rebuild contract definition,
+  - first-class rebuild orchestration + reporting,
+  - per-instance rebuild spec templates,
+  - regression guardrails (invariants + baselines + allowlisted deltas),
+  - user-facing docs and runbooks,
+  - enforcement as default policy for all new FEMIC instance projects.
+- Added matching `Detailed Next Steps Notes` entry tying this phase to immediate implementation sequencing.
+
+## 2026-03-11 - Added deterministic K3Z rebuild evidence + baseline regression checks
+- Fixed and expanded `scripts/k3z/rebuild_k3z_instance.py` so it now:
+  - runs full relocated K3Z rebuild sequence,
+  - writes a machine-readable rebuild report,
+  - records key artifact timestamps,
+  - enforces invariants for managed-area, block joins, seral accounts, and
+    required managed species yields,
+  - compares structural `tracks/*.csv` outputs against a baseline snapshot.
+- Added baseline file: `scripts/k3z/k3z_tracks_baseline.json`.
+- Executed reproducibility runs:
+  - `k3z_reprocheck_20260311_2` (baseline initialization),
+  - `k3z_reprocheck_20260311_3` (baseline comparison pass),
+  - `k3z_reprocheck_20260311_4` (repeat pass after UTC warning cleanup).
+- Latest run evidence (`k3z_reprocheck_20260311_4`) confirms:
+  - `managed_area_ha = 1781.3132360577583`,
+  - `passive_area_ha = 0.0`,
+  - `block_join_csv_only = 0`, `block_join_shp_only = 0`,
+  - `seral_account_count = 75`,
+  - `baseline_match = true`.
+- Added explicit roadmap follow-up (`P12.2d`) to validate `PL` vs `PLC`
+  semantics and trim `PL` outputs if they are not valid for current K3Z inputs.
