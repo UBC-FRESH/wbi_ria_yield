@@ -709,9 +709,17 @@ def build_patchworks_forestmodel_definition(
                 curve_idref=managed_curve_ref,
             ),
         ]
-        for species, species_curve_id in sorted(
-            context.managed_species_curve_ids.get(managed_curve_id, {}).items()
-        ):
+        managed_species_curve_map = context.managed_species_curve_ids.get(
+            managed_curve_id, {}
+        )
+        if not managed_species_curve_map and managed_curve_id == unmanaged_curve_id:
+            # When managed curves fall back to unmanaged curves (no TIPSY AU curve),
+            # reuse unmanaged species-proportion curves so species-wise managed
+            # accounts remain available instead of collapsing to Total-only.
+            managed_species_curve_map = context.unmanaged_species_curve_ids.get(
+                unmanaged_curve_id, {}
+            )
+        for species, species_curve_id in sorted(managed_species_curve_map.items()):
             species_curve_ref = source_curve_ref_by_id.get(species_curve_id)
             if managed_total_curve is not None:
                 species_prop_curve = context.curves_by_id.get(species_curve_id)

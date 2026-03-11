@@ -251,6 +251,53 @@ def test_build_forestmodel_xml_tree_adds_species_yield_curves() -> None:
     assert "product.HarvestedVolume.managed.HW.CC" in xml_text
 
 
+def test_build_forestmodel_xml_tree_reuses_unmanaged_species_props_for_managed_fallback() -> None:
+    au_table = pd.DataFrame(
+        [
+            {
+                "au_id": 985501000,
+                "tsa": "k3z",
+                "stratum_code": "CWHvm_HW+FDC",
+                "si_level": "L",
+                "managed_curve_id": 985501000,
+                "unmanaged_curve_id": 985501000,
+            }
+        ]
+    )
+    curve_table = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "curve_type": "unmanaged"},
+            {"curve_id": 985501000001, "curve_type": "unmanaged_species_prop_HW"},
+        ]
+    )
+    curve_points = pd.DataFrame(
+        [
+            {"curve_id": 985501000, "x": 1, "y": 10.0},
+            {"curve_id": 985501000, "x": 10, "y": 50.0},
+            {"curve_id": 985501000001, "x": 1, "y": 0.6},
+        ]
+    )
+
+    root = build_forestmodel_xml_tree(
+        au_table=au_table,
+        curve_table=curve_table,
+        curve_points_table=curve_points,
+    )
+
+    managed_curve = root.find("./curve[@id='au_985501000_managed_yield_HW']")
+    assert managed_curve is not None
+    points = managed_curve.findall("./point")
+    assert points[0].attrib == {"x": "1", "y": "6.0"}
+    assert points[1].attrib == {"x": "10", "y": "30.0"}
+
+    xml_text = et.tostring(root, encoding="unicode")
+    assert "feature.Yield.managed.HW" in xml_text
+    assert "product.Yield.managed.HW" in xml_text
+    assert "product.HarvestedVolume.managed.HW.CC" in xml_text
+    assert "feature.SpeciesProp.managed.HW" in xml_text
+    assert "product.SpeciesProp.managed.HW" in xml_text
+
+
 def test_build_forestmodel_xml_tree_sets_cc_min_age_from_cmai_minus_20() -> None:
     au_table = pd.DataFrame(
         [
