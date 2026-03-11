@@ -2969,3 +2969,162 @@
   - marked `P10.6c` complete,
   - kept `P10.6b` open pending GitHub publish + Arbutus special-remote setup
     and checksum backfill.
+
+## 2026-03-11 - Hardened P10.6b runbook using lab DataLad/Arbutus templates
+- Incorporated known-good command ordering from:
+  - `tmp/datalad-kb-page.md`
+  - `tmp/lab-data-workflow-workshop` references
+    (`arbutus_s3/datalad_s3_setup.md`, `scripts/create_github_sibling.sh`,
+    `workflows/common_errors.md`).
+- Updated `docs/guides/public-data-mirror-runbook.rst` to document explicit
+  Arbutus S3 special-remote setup:
+  - `git annex initremote arbutus-s3 ...`
+  - `datalad create-sibling-github --publish-depends arbutus-s3 ...`
+  - `datalad push --to origin`
+- Added recovery note for clone/get issues:
+  `git annex enableremote arbutus-s3`.
+- Updated `planning/femic_public_data_datalad_bootstrap.md` to track the KB
+  source material and standardized remote terminology (`Arbutus S3`).
+
+## 2026-03-11 - Added repo-local Arbutus credentials template
+- Added credentials template:
+  `config/credentials/arbutus_env.template.sh`.
+- Updated `.gitignore` to ignore concrete credentials under
+  `config/credentials/*.sh` while preserving tracked template files
+  (`!config/credentials/*.template.sh`).
+- Updated DataLad mirror docs/bootstrap instructions to use:
+  - `cp config/credentials/arbutus_env.template.sh config/credentials/arbutus_env.sh`
+  - `source config/credentials/arbutus_env.sh`
+  before running `git annex initremote` / `datalad` publish steps.
+
+## 2026-03-11 - Completed P10.6b DataLad mirror publish + Arbutus upload
+- Confirmed published dataset repository:
+  `https://github.com/UBC-FRESH/femic-public-data`.
+- Confirmed `arbutus-s3` special-remote object presence for mirrored seed
+  artifacts, including:
+  - `data/misc.thlb.tif`
+  - `data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb/a00000009.gdbtable`
+- Backfilled `sha256` checksum values in `metadata/required_datasets.yaml` for
+  all current mirror-scope datasets (`datalad_mirror.include=true`).
+- Added explicit checksum methodology note for directory artifacts (`*.gdb`):
+  deterministic tar-stream SHA256.
+- Updated roadmap state:
+  - marked `P10.6b` complete,
+  - marked parent `P10.6` complete.
+
+## 2026-03-11 - Completed P10.4a canonical maintainer reference instance
+- Added canonical in-repo maintainer reference instance at:
+  `instances/reference/`.
+- Generated reference scaffold from current package templates via:
+  `femic instance init --instance-root instances/reference --no-download-bc-vri --yes`.
+- Updated deployment-instance guide with a dedicated section documenting
+  `instances/reference/` usage and refresh command.
+- Added docs contract test coverage requiring:
+  - `instances/reference/` path presence,
+  - expected scaffold files (`run_profile.case_template.yaml`,
+    `template.case.yaml`, `QUICKSTART.md`),
+  - deployment guide mention of `instances/reference/`.
+- Updated roadmap state:
+  - marked `P10.4a` complete,
+  - left `P10.4b/P10.4c` pending.
+
+## 2026-03-11 - Completed P10.4b docs/tests/examples repoint to instance layout
+- Repointed maintainer-facing workflow docs to the canonical in-repo reference
+  instance:
+  - `docs/guides/case-onboarding.rst`
+  - `docs/guides/pipeline-overview.rst`
+  - `docs/reference/run-config.rst`
+- Updated README onboarding/run-config examples to use
+  `instances/reference/config/...` paths.
+- Updated template-instantiation and docs-contract tests to use/reference the
+  canonical `instances/reference/` layout:
+  - `tests/test_case_preflight_cli.py`
+  - `tests/test_docs_contract.py`
+- Updated roadmap state:
+  - marked `P10.4b` complete,
+  - left `P10.4c` pending.
+
+## 2026-03-11 - Completed P10.4c repo-path coupling contract enforcement
+- Removed remaining active repo-root-coupled deployment wording:
+  - `README.md` external-data note now describes instance-root-relative
+    behavior.
+  - `docs/sample-models/k3z.rst` now uses workspace-root phrasing.
+- Added docs/config contract test coverage in `tests/test_docs_contract.py`
+  preventing reintroduction of:
+  - `repository root`
+  - `repo root`
+  - host-specific `/home/gep/projects/` deployment path references
+- Updated roadmap state:
+  - marked `P10.4c` complete,
+  - marked parent `P10.4` complete.
+
+## 2026-03-11 - Completed P10.5a package build/release checks
+- Added CI workflow:
+  `.github/workflows/package-release-checks.yml` with:
+  - `python -m build`
+  - `twine check dist/*`
+  - wheel-install smoke (`femic --help`, `femic instance init ...`)
+- Added README maintainer instructions for running the same checks locally.
+- Fixed package runtime metadata by expanding `pyproject.toml` dependencies so
+  wheel installs are executable (resolved smoke-failure on missing `numpy` and
+  related runtime imports).
+- Added contract test in `tests/test_docs_contract.py` requiring packaging
+  workflow presence and key command coverage.
+- Updated roadmap state:
+  - marked `P10.5a` complete,
+  - left `P10.5b/P10.5c` pending.
+
+## 2026-03-11 - Completed P10.5b installed-package preflight verification
+- Extended `.github/workflows/package-release-checks.yml` with a clean-env
+  installed-wheel preflight smoke:
+  - `pip install dist/*.whl`
+  - `femic instance init ...`
+  - `femic prep validate-case ...`
+- Added workflow fixture setup for deterministic preflight execution in CI:
+  - minimal instance-local required files/directories (`data/*`,
+    `vdyp_io/VDYP_CFG`, `VDYP7/VDYP7/VDYP7Console.exe`),
+  - minimal TIPSY config + run profile,
+  - mock `wine` on `PATH`,
+  - external dataset tree via `FEMIC_EXTERNAL_DATA_ROOT`.
+- Extended docs contract checks in `tests/test_docs_contract.py` to require
+  installed-package preflight coverage in the packaging workflow.
+- Updated roadmap state:
+  - marked `P10.5b` complete,
+  - left `P10.5c` pending.
+
+## 2026-03-11 - Completed P10.5c install-instance-run docs finalization
+- Updated README quickstart to document installed-package-first workflow:
+  `python -m pip install femic` -> `femic instance init` -> `femic run ...`.
+- Updated guide command examples to use installed CLI commands as primary:
+  - `docs/guides/deployment-instances.rst`
+  - `docs/guides/case-onboarding.rst`
+  - `docs/guides/pipeline-overview.rst`
+- Added docs contract coverage in `tests/test_docs_contract.py` to require
+  installed-package workflow guidance in README and key guides.
+- Updated roadmap state:
+  - marked `P10.5c` complete,
+  - marked parent `P10.5` complete.
+
+## 2026-03-11 - Completed P8.6d K3Z regenerated strata/AU plot rollout
+- Added user-facing K3Z docs section:
+  `Regenerated Strata/AU Build Plots` in
+  `docs/sample-models/k3z.rst`.
+- Documented required regenerated plot artifacts for teaching/release review:
+  - `plots/strata-tsak3z.png`
+  - `plots/vdyp_lmh_tsak3z-*.png`
+  - `plots/tipsy_vdyp_tsak3z-*.png`
+- Updated K3Z release-readiness checklist to require regenerated plot presence.
+- Extended docs contract checks in `tests/test_docs_contract.py` to enforce:
+  - presence of the new K3Z section,
+  - presence of the three plot artifact references.
+- Updated roadmap state:
+  - marked `P8.6d` complete,
+  - marked parent `P8.6` complete.
+
+## 2026-03-11 - Normalized P8.3 parent status
+- Marked parent `P8.3` complete in roadmap because all child items
+  (`P8.3a`, `P8.3b`, `P8.3c`) were already complete.
+
+## 2026-03-11 - Normalized P10.1/P10.2/P10.3 parent statuses
+- Marked roadmap parent items `P10.1`, `P10.2`, and `P10.3` complete because
+  all corresponding child tasks were already complete.

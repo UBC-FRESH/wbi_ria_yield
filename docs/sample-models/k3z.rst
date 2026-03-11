@@ -62,7 +62,8 @@ Current baseline snapshot from tracked artifacts:
 Build and Rebuild Workflow
 --------------------------
 
-All commands below are run from repository root.
+All commands below are run from the workspace root containing ``config/`` and
+``models/``.
 
 1. Validate Patchworks runtime wiring first:
 
@@ -113,7 +114,7 @@ for model inputs/outputs:
 - ``matrix_builder.forestmodel_xml_path: ../models/k3z_patchworks_model/yield/forestmodel.xml``
 
 Because these are relative to the config file location (``config/``), users can
-run commands from repository root without editing absolute paths.
+run commands from the workspace root without editing absolute paths.
 
 If you need to refresh model inputs from exporter output, rebuild ForestModel +
 fragments first, then update the model folder:
@@ -277,6 +278,29 @@ Report templates (minimum set):
      - ``product.HarvestedVolume.managed.Total.CC`` plus seral area accounts
      - Compare total harvested volume with stage-specific CC area shares.
 
+Regenerated Strata/AU Build Plots
+---------------------------------
+
+The current K3Z teaching baseline includes regenerated QA plots under
+``plots/``. Keep these in sync with each rebuild and use them in student
+walkthroughs:
+
+- strata composition + SI distribution overview:
+  ``plots/strata-tsak3z.png``
+- per-stratum low/medium/high curve overlays:
+  ``plots/vdyp_lmh_tsak3z-*.png``
+- AU-level managed-vs-natural curve overlays:
+  ``plots/tipsy_vdyp_tsak3z-*.png``
+
+Minimum instructor review set after each rebuild:
+
+1. ``strata-tsak3z.png`` for area-coverage and SI-structure sanity.
+2. At least one ``vdyp_lmh_tsak3z-*.png`` from each major species mix.
+3. At least one ``tipsy_vdyp_tsak3z-*.png`` from each AU family used in class.
+
+If these plots are stale or missing, regenerate with the upstream pipeline run
+before distributing the model package.
+
 Release Readiness Checklist
 ---------------------------
 
@@ -295,7 +319,10 @@ Use this checklist before distributing a K3Z model revision to students:
    ``docs/sample-models/k3z.rst``,
    ``docs/sample-models/k3z-metadata-lineage.rst``, and
    ``models/k3z_patchworks_model/metadata/lineage_registry.yaml``.
-6. Capture run evidence and update repo records:
+6. Confirm regenerated QA plots are present:
+   ``plots/strata-tsak3z.png``, ``plots/vdyp_lmh_tsak3z-*.png``,
+   ``plots/tipsy_vdyp_tsak3z-*.png``.
+7. Capture run evidence and update repo records:
    append `ROADMAP.md` Detailed Next Steps note and matching `CHANGE_LOG.md`
    entry for the release build.
 

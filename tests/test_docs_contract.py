@@ -192,8 +192,8 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
 
 
 def test_case_onboarding_templates_exist() -> None:
-    assert Path("config/run_profile.case_template.yaml").exists()
-    assert Path("config/tipsy/template.case.yaml").exists()
+    assert Path("instances/reference/config/run_profile.case_template.yaml").exists()
+    assert Path("instances/reference/config/tipsy/template.case.yaml").exists()
 
 
 def test_case_onboarding_guide_keeps_template_and_preflight_links() -> None:
@@ -201,6 +201,69 @@ def test_case_onboarding_guide_keeps_template_and_preflight_links() -> None:
     assert "config/run_profile.case_template.yaml" in guide_text
     assert "config/tipsy/template.case.yaml" in guide_text
     assert "python -m femic prep validate-case" in guide_text
+    assert "cd instances/reference" in guide_text
+
+
+def test_reference_instance_location_is_defined_and_documented() -> None:
+    reference_root = Path("instances/reference")
+    assert reference_root.is_dir()
+    assert (reference_root / "config/run_profile.case_template.yaml").is_file()
+    assert (reference_root / "config/tipsy/template.case.yaml").is_file()
+    assert (reference_root / "QUICKSTART.md").is_file()
+
+    guide_text = (GUIDES_ROOT / "deployment-instances.rst").read_text()
+    assert "instances/reference/" in guide_text
+    pipeline_text = (GUIDES_ROOT / "pipeline-overview.rst").read_text()
+    assert "instances/reference/" in pipeline_text
+
+
+def test_active_docs_and_config_avoid_repo_root_path_wording() -> None:
+    contract_files = [
+        Path("README.md"),
+        DOCS_ROOT / "guides" / "pipeline-overview.rst",
+        DOCS_ROOT / "guides" / "case-onboarding.rst",
+        DOCS_ROOT / "sample-models" / "k3z.rst",
+        Path("config/patchworks.runtime.yaml"),
+        Path("config/patchworks.runtime.windows.yaml"),
+    ]
+    forbidden_snippets = [
+        "repository root",
+        "repo root",
+        "relative to the repo root",
+        "/home/gep/projects/",
+    ]
+
+    for path in contract_files:
+        text = path.read_text().lower()
+        for snippet in forbidden_snippets:
+            assert snippet not in text, (
+                f"{path} includes forbidden repo-coupled deployment wording: {snippet}"
+            )
+
+
+def test_package_release_checks_workflow_exists() -> None:
+    workflow_path = Path(".github/workflows/package-release-checks.yml")
+    workflow_text = workflow_path.read_text()
+
+    assert "python -m build" in workflow_text
+    assert "twine check dist/*" in workflow_text
+    assert "pip install dist/*.whl" in workflow_text
+    assert "femic instance init" in workflow_text
+    assert "femic prep validate-case" in workflow_text
+    assert "FEMIC_EXTERNAL_DATA_ROOT=" in workflow_text
+
+
+def test_docs_include_installed_package_instance_run_workflow() -> None:
+    readme_text = Path("README.md").read_text()
+    deploy_text = (GUIDES_ROOT / "deployment-instances.rst").read_text()
+    pipeline_text = (GUIDES_ROOT / "pipeline-overview.rst").read_text()
+
+    assert "python -m pip install femic" in readme_text
+    assert "femic instance init" in readme_text
+    assert "femic run --run-config" in readme_text
+    assert "python -m pip install femic" in deploy_text
+    assert "femic prep validate-case" in deploy_text
+    assert "femic run --run-config" in pipeline_text
 
 
 def test_sample_model_pages_are_in_docs_tree() -> None:
@@ -225,11 +288,15 @@ def test_k3z_sample_model_docs_keep_required_sections() -> None:
         "Edit Policy: Safe vs Generated",
         "Backup and Recovery Conventions",
         "Scenario Comparison Guidance",
+        "Regenerated Strata/AU Build Plots",
         "Release Readiness Checklist",
         "Troubleshooting",
     ]
     for heading in required_k3z_sections:
         assert heading in k3z_text, f"k3z.rst missing required section: {heading}"
+    assert "plots/strata-tsak3z.png" in k3z_text
+    assert "plots/vdyp_lmh_tsak3z-*.png" in k3z_text
+    assert "plots/tipsy_vdyp_tsak3z-*.png" in k3z_text
 
     lineage_text = (SAMPLE_MODELS_ROOT / "k3z-metadata-lineage.rst").read_text()
     required_lineage_sections = [

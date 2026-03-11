@@ -181,7 +181,7 @@
   - [x] P8.2a Enumerate every operational default (IFM, seral, CC age, topology, horizon)
   - [x] P8.2b Map each parameter to its controlling file/CLI flag
   - [x] P8.2c Define acceptable ranges and risk notes for student edits
-- [ ] P8.3 Document component-to-function mapping for the full model
+- [x] P8.3 Document component-to-function mapping for the full model
   - [x] P8.3a Map each directory/file to Patchworks runtime behavior
   - [x] P8.3b Add account/target traceability (`forestmodel.xml` -> tracks -> PIN targets)
   - [x] P8.3c Add map-layer and report-wiring traceability in `analysis/base.pin`
@@ -193,11 +193,11 @@
   - [x] P8.5a Explain seral trajectory interpretation within and across scenarios
   - [x] P8.5b Explain treatment-shift interpretation using `product.Seral.area.*.*.CC`
   - [x] P8.5c Add report/table templates for classroom comparisons
-- [ ] P8.6 Expand "Sample Models/K3Z" docs to complete user-facing how-to coverage
+- [x] P8.6 Expand "Sample Models/K3Z" docs to complete user-facing how-to coverage
   - [x] P8.6a Add end-to-end onboarding checklist for first-run users
   - [x] P8.6b Add failure-signature cookbook with deterministic remediation steps
   - [x] P8.6c Add change-management notes for collaborators extending the model
-  - [ ] P8.6d Roll regenerated strata/AU build plots into user-facing K3Z docs
+  - [x] P8.6d Roll regenerated strata/AU build plots into user-facing K3Z docs
 - [x] P8.7 Add docs QA and acceptance checks for K3Z documentation completeness
   - [x] P8.7a Add contract tests for new Sample Models navigation/pages
   - [x] P8.7b Add required-section checks for K3Z metadata/how-to docs
@@ -226,33 +226,33 @@
   - [x] P9.5c Confirm post-rename install/docs/CLI smoke checks
 
 ## Phase 10: Instance/Package Decoupling + PyPI Release Readiness
-- [ ] P10.1 Add first-class instance model + path resolution
+- [x] P10.1 Add first-class instance model + path resolution
   - [x] P10.1a Introduce `InstanceContext`/`instance_root` resolver
     (default: CWD, override via `--instance-root`/env).
   - [x] P10.1b Make CLI commands resolve defaults relative to instance root,
     not repo-root assumptions.
   - [x] P10.1c Keep transition compatibility (legacy root-coupled mode still
     works with warnings).
-- [ ] P10.2 Add instance bootstrap UX (`femic instance init`)
+- [x] P10.2 Add instance bootstrap UX (`femic instance init`)
   - [x] P10.2a Add new CLI namespace `instance` with `init` command.
   - [x] P10.2b Scaffold filesystem-first instance skeleton (config/templates/log/output/data dirs + `.gitignore` + quickstart doc).
   - [x] P10.2c Ship template assets as package resources (not repo-root only files).
-- [ ] P10.3 Decouple runtime from repo-root legacy scripts
+- [x] P10.3 Decouple runtime from repo-root legacy scripts
   - [x] P10.3a Move legacy stage scripts to package-owned resources and execute from package runtime.
   - [x] P10.3b Remove hard dependency on `<repo>/00_data-prep.py` style paths.
   - [x] P10.3c Add explicit migration/warning messages for old execution assumptions.
-- [ ] P10.4 Split case/deployment assets from generic project layout
-  - [ ] P10.4a Define canonical in-repo reference instance location (for maintainers), separate from package source.
-  - [ ] P10.4b Repoint docs/tests/examples to instance-based layout.
-  - [ ] P10.4c Enforce contract tests: no active runtime/docs/config references to repo-specific deployment paths.
-- [ ] P10.5 Publish-readiness completion criteria (PyPI in scope)
-  - [ ] P10.5a Add package build/release checks (`build`, `twine check`, wheel install smoke).
-  - [ ] P10.5b Verify installed-package workflow in clean env (`pip install femic` + `femic instance init` + preflight).
-  - [ ] P10.5c Final docs updates for “install package + create instance + run”.
-- [ ] P10.6 Public-data accessibility mirror via DataLad + submodule linkage
+- [x] P10.4 Split case/deployment assets from generic project layout
+  - [x] P10.4a Define canonical in-repo reference instance location (for maintainers), separate from package source.
+  - [x] P10.4b Repoint docs/tests/examples to instance-based layout.
+  - [x] P10.4c Enforce contract tests: no active runtime/docs/config references to repo-specific deployment paths.
+- [x] P10.5 Publish-readiness completion criteria (PyPI in scope)
+  - [x] P10.5a Add package build/release checks (`build`, `twine check`, wheel install smoke).
+  - [x] P10.5b Verify installed-package workflow in clean env (`pip install femic` + `femic instance init` + preflight).
+  - [x] P10.5c Final docs updates for “install package + create instance + run”.
+- [x] P10.6 Public-data accessibility mirror via DataLad + submodule linkage
   - [x] P10.6a Inventory all "public but not directly downloadable" required layers
     (including archived HectaresBC `misc*.tif` dependencies) with provenance notes.
-  - [ ] P10.6b Create/publish a dedicated DataLad-backed GitHub dataset repo for
+  - [x] P10.6b Create/publish a dedicated DataLad-backed GitHub dataset repo for
     these layers with remote object storage on Arbutus (special remote).
   - [x] P10.6c Add the published dataset repo as a Git submodule under FEMIC and
     wire docs/instance bootstrap guidance to consume it.
@@ -271,6 +271,23 @@
   - Added `Release Readiness Checklist` section to
     `docs/sample-models/k3z.rst`.
   - Marked `P8.7a/P8.7b/P8.7c` complete.
+- 2026-03-11 (Phase 8 `P8.6d` complete: regenerated strata/AU plot rollout):
+  integrated regenerated K3Z strata/AU QA plot artifacts into user-facing
+  Sample Models documentation.
+  - Added new section `Regenerated Strata/AU Build Plots` to
+    `docs/sample-models/k3z.rst` with explicit artifact families:
+    `plots/strata-tsak3z.png`, `plots/vdyp_lmh_tsak3z-*.png`,
+    `plots/tipsy_vdyp_tsak3z-*.png`.
+  - Updated K3Z release checklist to require regenerated plot presence prior to
+    student distribution.
+  - Extended `tests/test_docs_contract.py` K3Z section contract to require the
+    new plot section and artifact-pattern references.
+  - Marked `P8.6d` complete; with `P8.6a/P8.6b/P8.6c` already complete, parent
+    `P8.6` is now complete.
+- 2026-03-11 (Phase 8 status normalization): parent `P8.3` marked complete
+  because all child items (`P8.3a/P8.3b/P8.3c`) were already completed.
+- 2026-03-11 (Phase 10 status normalization): parent `P10.1`, `P10.2`, and
+  `P10.3` marked complete because all child items were already completed.
 - 2026-03-10 (P8.5 scenario interpretation guidance): completed trajectory
   interpretation guidance for classroom scenario analysis in K3Z docs.
   - Added `Scenario Comparison Guidance` to `docs/sample-models/k3z.rst`
@@ -2869,3 +2886,111 @@
   - Marked `P10.6c` complete.
   - `P10.6b` remains open pending GitHub publish + Arbutus special-remote
     configuration + checksum backfill in `metadata/required_datasets.yaml`.
+- 2026-03-11 (Phase 10 `P10.6b` execution hardening with lab KB template):
+  aligned FEMIC DataLad mirror runbook/bootstrap docs to the known-good
+  Arbutus S3 command sequence from the FRESH lab workflow workshop materials.
+  - Updated `docs/guides/public-data-mirror-runbook.rst` to use explicit
+    `git annex initremote arbutus-s3` setup, followed by
+    `datalad create-sibling-github --publish-depends arbutus-s3`.
+  - Added credential/export and recovery notes (`git annex enableremote`) to
+    reduce clone/get failures caused by ordering/config mismatches.
+  - Updated `planning/femic_public_data_datalad_bootstrap.md` with source links
+    to the imported KB/workshop references in `tmp/`.
+- 2026-03-11 (Phase 10 `P10.6b` creds bootstrap template standardization):
+  added a repo-local Arbutus credentials template and ignore policy so
+  maintainers can source AWS/S3 env vars consistently without risking secret
+  commits.
+  - Added template:
+    `config/credentials/arbutus_env.template.sh`.
+  - Updated `.gitignore` to ignore concrete credential scripts under
+    `config/credentials/*.sh` while keeping `*.template.sh` tracked.
+  - Updated `docs/guides/public-data-mirror-runbook.rst` and
+    `planning/femic_public_data_datalad_bootstrap.md` to use the new template
+    path in the `P10.6b` setup sequence.
+- 2026-03-11 (Phase 10 `P10.6b` complete: published mirror repo + Arbutus upload):
+  completed the publish phase for the FEMIC public-data mirror dataset.
+  - Verified published dataset repository:
+    `https://github.com/UBC-FRESH/femic-public-data`.
+  - Verified `git-annex` object availability on `arbutus-s3` for mirrored
+    seed artifacts, including:
+    - `data/misc.thlb.tif`
+    - `data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb/a00000009.gdbtable`
+  - Backfilled checksum values in `metadata/required_datasets.yaml` for all
+    current `datalad_mirror.include=true` artifacts and documented the
+    deterministic directory-hash method for `*.gdb` datasets.
+  - Marked `P10.6b` complete; with `P10.6a/P10.6c/P10.6d` already complete,
+    parent `P10.6` is now complete.
+- 2026-03-11 (Phase 10 `P10.4a` complete: canonical in-repo reference instance):
+  established a maintainer reference deployment instance under
+  `instances/reference/`, separate from package source templates.
+  - Generated `instances/reference/` via `femic instance init` with
+    `--no-download-bc-vri` for deterministic in-repo scaffolding.
+  - Added docs section in `docs/guides/deployment-instances.rst` defining
+    `instances/reference/` as the canonical maintainer reference location.
+  - Added docs contract coverage in `tests/test_docs_contract.py` to require
+    the reference instance path and key scaffold files.
+  - Marked `P10.4a` complete; next execution step remains `P10.4b`.
+- 2026-03-11 (Phase 10 `P10.4b` complete: docs/tests/examples repointed):
+  repointed maintainer-facing workflow docs and template-instantiation tests to
+  use the canonical in-repo reference instance layout.
+  - Updated guides:
+    `docs/guides/case-onboarding.rst`,
+    `docs/guides/pipeline-overview.rst`,
+    `docs/reference/run-config.rst`.
+  - Updated README onboarding/run-config examples to reference
+    `instances/reference/config/...` paths.
+  - Updated tests to consume reference-instance templates:
+    `tests/test_case_preflight_cli.py`,
+    `tests/test_docs_contract.py`.
+  - Marked `P10.4b` complete; next execution step is `P10.4c`.
+- 2026-03-11 (Phase 10 `P10.4c` complete: repo-path coupling contract checks):
+  enforced docs/config contract coverage against repo-root-coupled deployment
+  wording and removed remaining active references.
+  - Updated `README.md` external-data note to describe instance-root-relative
+    behavior rather than repo-root assumptions.
+  - Updated `docs/sample-models/k3z.rst` wording from "repository root" to
+    workspace-root phrasing.
+  - Added `tests/test_docs_contract.py` check to fail on forbidden active
+    deployment wording (`repository root`, `repo root`, and host-specific
+    `/home/gep/projects/` paths) across key docs/config files.
+  - Marked `P10.4c` complete; with `P10.4a/P10.4b` already complete, parent
+    `P10.4` is now complete.
+- 2026-03-11 (Phase 10 `P10.5a` complete: package build/release checks):
+  added automated and documented package-distribution checks and fixed runtime
+  package metadata so wheel smoke installs are executable.
+  - Added GitHub Actions workflow:
+    `.github/workflows/package-release-checks.yml` running:
+    `python -m build`, `twine check dist/*`, and wheel-install smoke
+    (`femic --help`, `femic instance init ...`).
+  - Added README maintainer section documenting equivalent local commands.
+  - Expanded `pyproject.toml` runtime `dependencies` to include required
+    import-time packages (for example `numpy`, `pandas`, `geopandas`, `scipy`,
+    `rasterio`) discovered by wheel-smoke failure diagnostics.
+  - Added docs contract test coverage requiring workflow presence and required
+    packaging-check commands (`tests/test_docs_contract.py`).
+  - Marked `P10.5a` complete; next execution step remains `P10.5b`.
+- 2026-03-11 (Phase 10 `P10.5b` complete: clean-env installed-package preflight):
+  extended publish-readiness verification to cover an installed-wheel case
+  preflight run in a clean virtual environment.
+  - Updated `.github/workflows/package-release-checks.yml` to run:
+    installed `femic prep validate-case` after `femic instance init`.
+  - Added CI fixture setup in workflow for minimal preflight prerequisites:
+    required instance-local data/runtime placeholders, mock `wine` on `PATH`,
+    and a minimal external-data tree via `FEMIC_EXTERNAL_DATA_ROOT`.
+  - Extended `tests/test_docs_contract.py` package-workflow contract assertions
+    to require installed-package preflight coverage.
+  - Marked `P10.5b` complete; next execution step remains `P10.5c`.
+- 2026-03-11 (Phase 10 `P10.5c` complete: install->instance->run docs finalization):
+  finalized user-facing docs for installed-package execution flow.
+  - Updated `README.md` quickstart to lead with:
+    `python -m pip install femic` -> `femic instance init` -> `femic run ...`
+    and switched primary command examples to installed CLI form.
+  - Updated deployment/onboarding pipeline guides to use installed CLI commands
+    as primary examples:
+    `docs/guides/deployment-instances.rst`,
+    `docs/guides/case-onboarding.rst`,
+    `docs/guides/pipeline-overview.rst`.
+  - Added docs contract checks in `tests/test_docs_contract.py` to require
+    explicit installed-package workflow text.
+  - Marked `P10.5c` complete; with `P10.5a/P10.5b` already complete, parent
+    `P10.5` is now complete.
