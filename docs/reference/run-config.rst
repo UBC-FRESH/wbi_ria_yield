@@ -65,7 +65,9 @@ Precedence
 Example
 -------
 
-A template profile is included at ``config/run_profile.example.yaml``.
+A template profile is included at ``instances/reference/config/run_profile.case_template.yaml``
+(maintainer reference instance) and as package scaffolding via
+``femic instance init``.
 When provided, run manifests also record ``run_config_path`` and
 ``run_config_sha256`` provenance metadata plus output version annotations.
 For deterministic VDYP bootstrap sampling, set ``FEMIC_SAMPLING_SEED`` to an

@@ -1,0 +1,24 @@
+﻿# FEMIC instance workspace ignores
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Runtime logs and manifests
+vdyp_io/logs/*.log
+vdyp_io/logs/*.json
+
+# Large raw datasets
+data/downloads/
+data/bc/
+
+# Generated model outputs
+output/
+releases/
+plots/
+
+# Legacy intermediate artifacts
+data/*.feather
+data/*.pkl
+data/model_input_bundle/

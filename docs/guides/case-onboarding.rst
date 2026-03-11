@@ -21,6 +21,12 @@ Onboarding Workflow
 
       femic instance init
 
+   Maintainer in-repo reference workspace:
+
+   .. code-block:: bash
+
+      cd instances/reference
+
 2. Copy run-profile template:
 
    .. code-block:: bash
@@ -48,20 +54,26 @@ Onboarding Workflow
 
    .. code-block:: bash
 
-      PYTHONPATH=src python -m femic tipsy validate --config-dir config/tipsy --tsa <code>
+      femic tipsy validate --config-dir config/tipsy --tsa <code>
 
 7. Run single-command case preflight:
 
    .. code-block:: bash
 
-      PYTHONPATH=src python -m femic prep validate-case --run-config config/run_profile.<case>.yaml
+      femic prep validate-case --run-config config/run_profile.<case>.yaml
 
 8. Dry-run and compile:
 
    .. code-block:: bash
 
-      PYTHONPATH=src python -m femic run --run-config config/run_profile.<case>.yaml --dry-run
-      PYTHONPATH=src python -m femic run --run-config config/run_profile.<case>.yaml
+      femic run --run-config config/run_profile.<case>.yaml --dry-run
+      femic run --run-config config/run_profile.<case>.yaml
+
+   Source-checkout equivalent:
+
+   .. code-block:: bash
+
+      PYTHONPATH=src python -m femic prep validate-case --run-config config/run_profile.<case>.yaml
 
 Required Input Checklist
 ------------------------
@@ -73,7 +85,7 @@ Required Input Checklist
 
 - FEMIC runtime:
 
-  - ``PYTHONPATH=src python -m femic --help`` succeeds.
+  - ``femic --help`` succeeds.
   - ``wine`` and VDYP assets are available for non-resume upstream runs.
 
 - TIPSY handoff:

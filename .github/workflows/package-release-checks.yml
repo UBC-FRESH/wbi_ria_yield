@@ -1,0 +1,93 @@
+name: package-release-checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  package-release-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install packaging tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Validate distribution metadata
+        run: twine check dist/*
+
+      - name: Wheel install smoke
+        run: |
+          python -m venv /tmp/femic-wheel-smoke
+          /tmp/femic-wheel-smoke/bin/pip install --upgrade pip
+          /tmp/femic-wheel-smoke/bin/pip install dist/*.whl
+          /tmp/femic-wheel-smoke/bin/femic --help
+          /tmp/femic-wheel-smoke/bin/femic instance init \
+            --instance-root /tmp/femic-wheel-smoke-instance \
+            --no-download-bc-vri \
+            --yes
+          test -f /tmp/femic-wheel-smoke-instance/config/run_profile.case_template.yaml
+
+      - name: Installed-package preflight smoke
+        run: |
+          mkdir -p /tmp/femic-wheel-smoke-instance/data
+          mkdir -p /tmp/femic-wheel-smoke-instance/vdyp_io/VDYP_CFG
+          mkdir -p /tmp/femic-wheel-smoke-instance/VDYP7/VDYP7
+          mkdir -p /tmp/femic-wheel-smoke-instance/config/tipsy
+          mkdir -p /tmp/femic-wheel-smoke-instance/vdyp_io/logs
+
+          touch /tmp/femic-wheel-smoke-instance/data/tsa_boundaries.feather
+          touch /tmp/femic-wheel-smoke-instance/data/ria_vri_vclr1p_checkpoint1.feather
+          touch /tmp/femic-wheel-smoke-instance/data/tipsy_params_columns
+          touch /tmp/femic-wheel-smoke-instance/VDYP7/VDYP7/VDYP7Console.exe
+
+          cat > /tmp/femic-wheel-smoke-instance/config/run_profile.ci.yaml <<'EOF'
+          selection:
+            tsa: ["08"]
+          run:
+            log_dir: vdyp_io/logs
+          EOF
+
+          cat > /tmp/femic-wheel-smoke-instance/config/tipsy/tsa08.yaml <<'EOF'
+          schema_version: 1
+          tsa_code: "08"
+          rules:
+            - id: ci
+              when: {}
+              assign:
+                e: {}
+                f: {}
+          EOF
+
+          mkdir -p /tmp/femic-wheel-smoke-external/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb
+          mkdir -p /tmp/femic-wheel-smoke-external/bc/vri/2019/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb
+          mkdir -p /tmp/femic-wheel-smoke-external/bc/tsa/FADM_TSA.gdb
+          mkdir -p /tmp/femic-wheel-smoke-external/bc/siteprod/Site_Prod_BC.gdb
+
+          mkdir -p /tmp/femic-wheel-smoke-bin
+          cat > /tmp/femic-wheel-smoke-bin/wine <<'EOF'
+          #!/usr/bin/env bash
+          exit 0
+          EOF
+          chmod +x /tmp/femic-wheel-smoke-bin/wine
+
+          export FEMIC_EXTERNAL_DATA_ROOT=/tmp/femic-wheel-smoke-external
+          export PATH=/tmp/femic-wheel-smoke-bin:$PATH
+          /tmp/femic-wheel-smoke/bin/femic prep validate-case \
+            --instance-root /tmp/femic-wheel-smoke-instance \
+            --run-config /tmp/femic-wheel-smoke-instance/config/run_profile.ci.yaml \
+            --tipsy-config-dir /tmp/femic-wheel-smoke-instance/config/tipsy

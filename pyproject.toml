@@ -9,6 +9,21 @@ description = "Forest Estate Model Input Compiler"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "distance",
+    "fiona",
+    "geocube",
+    "geopandas",
+    "ipyparallel",
+    "mapply",
+    "matplotlib",
+    "nbformat",
+    "numpy",
+    "pandas",
+    "pympler",
+    "rasterio",
+    "scipy",
+    "seaborn",
+    "swifter",
     "typer>=0.9",
     "rich>=13",
     "PyYAML>=6",

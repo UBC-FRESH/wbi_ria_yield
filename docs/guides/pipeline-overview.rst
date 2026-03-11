@@ -11,11 +11,18 @@ interfaces through ``femic`` CLI commands.
 End-to-End Flow
 ---------------
 
+Run from your active instance root (maintainers can use
+``instances/reference/``):
+
+.. code-block:: bash
+
+   cd instances/reference
+
 1. Run upstream compilation:
 
    .. code-block:: bash
 
-      PYTHONPATH=src python -m femic run --run-config config/run_profile.<case>.yaml
+      femic run --run-config config/run_profile.<case>.yaml
 
 2. Execute manual BatchTIPSY handoff using generated ``02_input-*.dat``.
 3. Upload ``04_output-*.out`` back into ``data/``.
@@ -23,14 +30,14 @@ End-to-End Flow
 
    .. code-block:: bash
 
-      PYTHONPATH=src python -m femic tsa post-tipsy --tsa <code> -v
+      femic tsa post-tipsy --tsa <code> -v
 
 5. Export planning-system packages:
 
    .. code-block:: bash
 
-      PYTHONPATH=src python -m femic export patchworks --tsa <code>
-      PYTHONPATH=src python -m femic export woodstock --tsa <code>
+      femic export patchworks --tsa <code>
+      femic export woodstock --tsa <code>
 
 Stage Boundaries
 ----------------

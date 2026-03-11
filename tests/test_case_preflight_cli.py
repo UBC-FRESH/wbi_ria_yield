@@ -222,8 +222,10 @@ def test_prep_validate_case_strict_warnings_fails(tmp_path: Path, monkeypatch) -
 def test_prep_validate_case_smoke_from_instantiated_templates(
     tmp_path: Path, monkeypatch
 ) -> None:
-    run_profile_template = Path("config/run_profile.case_template.yaml")
-    tipsy_template = Path("config/tipsy/template.case.yaml")
+    run_profile_template = Path(
+        "instances/reference/config/run_profile.case_template.yaml"
+    )
+    tipsy_template = Path("instances/reference/config/tipsy/template.case.yaml")
 
     profile_payload = yaml.safe_load(run_profile_template.read_text(encoding="utf-8"))
     assert isinstance(profile_payload, dict)
@@ -282,8 +284,10 @@ def test_prep_validate_case_template_boundary_mode_compatibility(
 ) -> None:
     boundary = tmp_path / "boundary.shp"
     boundary.touch()
-    run_profile_template = Path("config/run_profile.case_template.yaml")
-    tipsy_template = Path("config/tipsy/template.case.yaml")
+    run_profile_template = Path(
+        "instances/reference/config/run_profile.case_template.yaml"
+    )
+    tipsy_template = Path("instances/reference/config/tipsy/template.case.yaml")
 
     profile_payload = yaml.safe_load(run_profile_template.read_text(encoding="utf-8"))
     assert isinstance(profile_payload, dict)

@@ -20,8 +20,8 @@ Legacy notebook narrative provenance is preserved in:
 New case onboarding starters:
 
 - `docs/guides/case-onboarding.rst`
-- `config/run_profile.case_template.yaml`
-- `config/tipsy/template.case.yaml`
+- `instances/reference/config/run_profile.case_template.yaml`
+- `instances/reference/config/tipsy/template.case.yaml`
 
 ## CLI
 
@@ -41,43 +41,47 @@ For each TSA, raw VDYP process streams are also captured to:
 
 ### Quickstart (End-to-End)
 
-1. Initialize a deployment instance workspace:
+1. Install package and initialize a deployment instance workspace:
 
 ```bash
+python -m pip install femic
+mkdir -p ~/femic-instance
+cd ~/femic-instance
 femic instance init
 ```
 
 This scaffolds `config/`, `data/`, `output/`, and `vdyp_io/logs/` under the
 current directory, and prompts to download standard BC VRI 2024 datasets.
+Use `--no-download-bc-vri` to skip dataset download during bootstrap.
 
 2. Validate base install:
 
 ```bash
-PYTHONPATH=src python -m femic --help
+femic --help
 ```
 
 3. Validate TIPSY config handoff files:
 
 ```bash
-PYTHONPATH=src python -m femic tipsy validate --config-dir config/tipsy --tsa 08
+femic tipsy validate --config-dir config/tipsy --tsa 08
 ```
 
 4. Run one TSA with resume enabled:
 
 ```bash
-PYTHONPATH=src python -m femic run --tsa 08 --resume
+femic run --tsa 08 --resume
 ```
 
 5. Summarize VDYP diagnostics:
 
 ```bash
-PYTHONPATH=src python -m femic vdyp report
+femic vdyp report
 ```
 
 6. After manual BatchTIPSY output is uploaded, run downstream stages only (01b + bundle):
 
 ```bash
-PYTHONPATH=src python -m femic tsa post-tipsy --tsa 29 -v
+femic tsa post-tipsy --tsa 29 -v
 ```
 
 This command writes a run manifest to ``vdyp_io/logs/`` (override with ``--log-dir`` and
@@ -89,7 +93,7 @@ adds species-proportion curves for all top-6 VRI species present in the selected
 7. Export Patchworks starter package (ForestModel XML + fragments shapefile):
 
 ```bash
-PYTHONPATH=src python -m femic export patchworks --tsa k3z
+femic export patchworks --tsa k3z
 ```
 
 By default this command reads bundle tables from `data/model_input_bundle/` and stand
@@ -109,13 +113,13 @@ If your checkpoint carries continuous THLB signal values (for example `thlb_raw`
 in `[0, 1]`), you can tune managed/unmanaged assignment at export time:
 
 ```bash
-PYTHONPATH=src python -m femic export patchworks --tsa k3z --ifm-source-col thlb_raw --ifm-target-managed-share 0.8
+femic export patchworks --tsa k3z --ifm-source-col thlb_raw --ifm-target-managed-share 0.8
 ```
 
 To include seral-stage attributes in ForestModel output, provide a YAML config:
 
 ```bash
-PYTHONPATH=src python -m femic export patchworks --tsa k3z --seral-stage-config config/seral.k3z.yaml
+femic export patchworks --tsa k3z --seral-stage-config config/seral.k3z.yaml
 ```
 
 With seral config enabled, export writes inventory-state accounts
@@ -125,9 +129,9 @@ specific labels (`product.Seral.area.<stage>.<au_id>.CC`).
 8. (Optional) Run proprietary Patchworks Matrix Builder under Wine:
 
 ```bash
-PYTHONPATH=src python -m femic patchworks preflight --config config/patchworks.runtime.yaml
-PYTHONPATH=src python -m femic patchworks build-blocks --config config/patchworks.runtime.yaml
-PYTHONPATH=src python -m femic patchworks matrix-build --config config/patchworks.runtime.yaml
+femic patchworks preflight --config config/patchworks.runtime.yaml
+femic patchworks build-blocks --config config/patchworks.runtime.yaml
+femic patchworks matrix-build --config config/patchworks.runtime.yaml
 ```
 
 Runtime logs/manifests are written to `vdyp_io/logs/` with run-scoped names:
@@ -151,7 +155,7 @@ points to this location.
 9. Export Woodstock compatibility CSV package:
 
 ```bash
-PYTHONPATH=src python -m femic export woodstock --tsa k3z
+femic export woodstock --tsa k3z
 ```
 
 This currently writes:
@@ -160,12 +164,15 @@ This currently writes:
 - `output/woodstock/woodstock_actions.csv`
 - `output/woodstock/woodstock_transitions.csv`
 
+Developer note: from a source checkout without package install, use
+`PYTHONPATH=src python -m femic ...` as command equivalent.
+
 ### Config-Driven Runs
 
 Use a YAML/JSON profile to seed TSA selection and run modes:
 
 ```bash
-PYTHONPATH=src python -m femic run --run-config config/run_profile.example.yaml
+PYTHONPATH=src python -m femic run --run-config instances/reference/config/run_profile.case_template.yaml
 ```
 
 Profile schema and precedence are documented at `docs/reference/run-config.rst`.
@@ -180,7 +187,21 @@ Custom management-unit runs are also supported via run profile fields:
 Validate case prerequisites before long runs:
 
 ```bash
-PYTHONPATH=src python -m femic prep validate-case --run-config config/run_profile.<case>.yaml
+PYTHONPATH=src python -m femic prep validate-case --run-config instances/reference/config/run_profile.<case>.yaml
+```
+
+### Package Release Checks
+
+Run package build/release-readiness checks locally:
+
+```bash
+python -m pip install build twine
+python -m build
+twine check dist/*
+python -m venv /tmp/femic-wheel-smoke
+/tmp/femic-wheel-smoke/bin/pip install dist/*.whl
+/tmp/femic-wheel-smoke/bin/femic --help
+/tmp/femic-wheel-smoke/bin/femic instance init --instance-root /tmp/femic-wheel-smoke-instance --no-download-bc-vri --yes
 ```
 
 ### Reproducibility Controls
@@ -241,9 +262,10 @@ femic vdyp report --max-curve-warnings 2 --max-first-point-mismatches 0 --min-cu
 Yield curves are anchored to a quasi-origin point `(1, 1e-6)` so downstream positive-value
 filters can remain unchanged while avoiding zero-age intercept issues.
 
-Raw BC datasets are expected under `../data` relative to the repo root (e.g.,
-`../data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb`). You can override this by setting
-`FEMIC_EXTERNAL_DATA_ROOT` to a different base path.
+Raw BC datasets are expected under `../data` relative to your instance root
+(for example, if you run from `instances/reference`, this resolves to
+`data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb` at the workspace level). You can
+override this by setting `FEMIC_EXTERNAL_DATA_ROOT` to a different base path.
 
 ## TIPSY Handoff Boundary
 

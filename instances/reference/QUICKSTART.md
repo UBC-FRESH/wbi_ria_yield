@@ -1,0 +1,9 @@
+﻿# FEMIC Deployment Instance Quickstart
+
+1. Validate CLI install:
+   `femic --help`
+2. Validate case templates and external paths:
+   `femic prep validate-case --run-config config/run_profile.case_template.yaml`
+3. Copy and customize `config/run_profile.case_template.yaml`.
+4. Add/edit `config/tipsy/tsa<code>.yaml` from `config/tipsy/template.case.yaml`.
+5. Run compile workflow from this instance root.

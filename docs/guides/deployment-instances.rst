@@ -12,6 +12,7 @@ From an empty directory:
 
 .. code-block:: bash
 
+   python -m pip install femic
    femic instance init
 
 By default this scaffolds:
@@ -21,6 +22,25 @@ By default this scaffolds:
 - ``output/``
 - ``vdyp_io/logs/``
 - workspace ``.gitignore`` and ``QUICKSTART.md``
+
+Canonical In-Repo Reference Instance (Maintainers)
+--------------------------------------------------
+
+FEMIC now carries a canonical maintainer reference instance at:
+
+- ``instances/reference/``
+
+This path is for maintainers and docs/tests reference only; deployment users
+should still create their own instance roots outside the source tree.
+
+To refresh this reference instance from current package templates:
+
+.. code-block:: bash
+
+   PYTHONPATH=src python -m femic instance init \
+     --instance-root instances/reference \
+     --no-download-bc-vri \
+     --yes
 
 BC VRI Auto-Download
 --------------------
@@ -43,6 +63,15 @@ Or run non-interactive bootstrap:
 .. code-block:: bash
 
    femic instance init --yes
+
+Installed-Package Preflight Check
+---------------------------------
+
+After initializing an instance, run case preflight before long compile jobs:
+
+.. code-block:: bash
+
+   femic prep validate-case --run-config config/run_profile.case_template.yaml
 
 Instance Root Resolution
 ------------------------
