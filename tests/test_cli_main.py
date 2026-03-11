@@ -221,7 +221,13 @@ def test_tsa_post_tipsy_requires_tsa(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli_main.console, "print", messages.append)
 
     with pytest.raises(typer.Exit) as exc_info:
-        cli_main.tsa_post_tipsy(tsa=None, verbose=False)
+        cli_main.tsa_post_tipsy(
+            tsa=None,
+            verbose=False,
+            run_id=None,
+            log_dir=Path("vdyp_io/logs"),
+            run_config=None,
+        )
 
     assert exc_info.value.exit_code == 1
     assert any("Provide at least one TSA" in msg for msg in messages)
@@ -233,13 +239,29 @@ def test_tsa_post_tipsy_calls_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
     called: dict[str, object] = {}
 
     def _fake_run_post_tipsy_bundle_with_manifest(
-        *, tsa_list, run_id, log_dir, repo_root, data_root, message_fn
+        *,
+        tsa_list,
+        run_id,
+        log_dir,
+        repo_root,
+        data_root,
+        message_fn,
+        managed_curve_mode,
+        managed_curve_x_scale,
+        managed_curve_y_scale,
+        managed_curve_truncate_at_culm,
+        managed_curve_max_age,
     ):
         called["tsa_list"] = tsa_list
         called["run_id"] = run_id
         called["log_dir"] = log_dir
         called["repo_root"] = repo_root
         called["data_root"] = data_root
+        called["managed_curve_mode"] = managed_curve_mode
+        called["managed_curve_x_scale"] = managed_curve_x_scale
+        called["managed_curve_y_scale"] = managed_curve_y_scale
+        called["managed_curve_truncate_at_culm"] = managed_curve_truncate_at_culm
+        called["managed_curve_max_age"] = managed_curve_max_age
         message_fn("fake-progress")
         return SimpleNamespace(
             manifest_path=Path("vdyp_io/logs/run_manifest-post_tipsy_test.json"),
@@ -267,6 +289,7 @@ def test_tsa_post_tipsy_calls_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
         verbose=True,
         run_id="post_tipsy_test",
         log_dir=Path("vdyp_io/logs"),
+        run_config=None,
     )
 
     assert called["tsa_list"] == ["29"]
@@ -274,9 +297,80 @@ def test_tsa_post_tipsy_calls_workflow(monkeypatch: pytest.MonkeyPatch) -> None:
     assert Path(called["log_dir"]).as_posix().endswith("vdyp_io/logs")
     assert isinstance(called["repo_root"], Path)
     assert isinstance(called["data_root"], Path)
+    assert called["managed_curve_mode"] is None
+    assert called["managed_curve_x_scale"] is None
+    assert called["managed_curve_y_scale"] is None
+    assert called["managed_curve_truncate_at_culm"] is None
+    assert called["managed_curve_max_age"] is None
     assert any("post-tipsy completed" in msg for msg in messages)
     assert any("Run manifest:" in msg for msg in messages)
     assert any("fake-progress" in msg for msg in messages)
+
+
+def test_tsa_post_tipsy_uses_run_config_managed_curve_options(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    called: dict[str, object] = {}
+
+    cfg_path = tmp_path / "run_profile.k3z.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "selection:",
+                "  tsa: ['k3z']",
+                "modes:",
+                "  managed_curve_mode: vdyp_transform",
+                "  managed_curve_x_scale: 0.8",
+                "  managed_curve_y_scale: 1.2",
+                "  managed_curve_truncate_at_culm: true",
+                "  managed_curve_max_age: 300",
+                "run:",
+                "  run_id: cfg_post_tipsy",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def _fake_run_post_tipsy_bundle_with_manifest(**kwargs):
+        called.update(kwargs)
+        return SimpleNamespace(
+            manifest_path=Path("vdyp_io/logs/run_manifest-cfg_post_tipsy.json"),
+            result=SimpleNamespace(
+                tsa_list=kwargs["tsa_list"],
+                au_rows=30,
+                curve_rows=60,
+                curve_points_rows=9000,
+                au_table_path=Path("data/model_input_bundle/au_table.csv"),
+                curve_table_path=Path("data/model_input_bundle/curve_table.csv"),
+                curve_points_table_path=Path(
+                    "data/model_input_bundle/curve_points_table.csv"
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(
+        cli_main,
+        "run_post_tipsy_bundle_with_manifest",
+        _fake_run_post_tipsy_bundle_with_manifest,
+    )
+
+    cli_main.tsa_post_tipsy(
+        tsa=None,
+        verbose=False,
+        run_id=None,
+        log_dir=Path("vdyp_io/logs"),
+        run_config=cfg_path,
+    )
+
+    assert called["tsa_list"] == ["k3z"]
+    assert called["run_id"] == "cfg_post_tipsy"
+    assert called["managed_curve_mode"] == "vdyp_transform"
+    assert called["managed_curve_x_scale"] == 0.8
+    assert called["managed_curve_y_scale"] == 1.2
+    assert called["managed_curve_truncate_at_culm"] is True
+    assert called["managed_curve_max_age"] == 300
 
 
 def test_export_patchworks_requires_tsa(monkeypatch: pytest.MonkeyPatch) -> None:

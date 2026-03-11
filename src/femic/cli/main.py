@@ -955,21 +955,78 @@ def tsa_post_tipsy(
     verbose: bool = VERBOSE_OPTION,
     run_id: str | None = RUN_ID_OPTION,
     log_dir: Path = LOG_DIR_OPTION,
+    run_config: Path | None = RUN_CONFIG_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
-    resolved_log_dir = instance_context.resolve_path(log_dir)
-    targets = [str(v).zfill(2) for v in tsa] if tsa else []
+    resolved_log_dir = instance_context.resolve_path(Path(log_dir))
+    resolved_run_config = (
+        instance_context.resolve_path(run_config) if run_config is not None else None
+    )
+    run_profile = None
+    if resolved_run_config is not None:
+        try:
+            run_profile = load_pipeline_run_profile(resolved_run_config)
+        except (
+            FileNotFoundError,
+            ValueError,
+            json.JSONDecodeError,
+            yaml.YAMLError,
+        ) as exc:
+            console.print(f"[red]Invalid run config:[/red] {exc}")
+            raise typer.Exit(code=1) from exc
+
+    targets_raw = tsa if tsa else (run_profile.tsa_list if run_profile else [])
+    targets = [str(v).zfill(2) for v in targets_raw] if targets_raw else []
     if not targets:
-        console.print("[red]Provide at least one TSA via --tsa for post-tipsy.[/red]")
+        console.print(
+            "[red]Provide at least one TSA via --tsa or selection.tsa in --run-config "
+            "for post-tipsy.[/red]"
+        )
         raise typer.Exit(code=1)
+    effective_run_id = (
+        run_id
+        if run_id is not None
+        else (run_profile.run_id if run_profile is not None else None)
+    )
+    effective_verbose = verbose or (
+        run_profile.verbose if run_profile is not None else False
+    )
+    effective_log_dir = (
+        instance_context.resolve_path(run_profile.log_dir)
+        if (
+            run_profile is not None
+            and Path(log_dir) == Path("vdyp_io/logs")
+            and run_profile.log_dir is not None
+        )
+        else resolved_log_dir
+    )
     run_result = run_post_tipsy_bundle_with_manifest(
         tsa_list=targets,
-        run_id=run_id,
-        log_dir=resolved_log_dir,
+        run_id=effective_run_id,
+        log_dir=effective_log_dir,
         repo_root=instance_context.root,
         data_root=(instance_context.root / "data"),
-        message_fn=console.print if verbose else (lambda *_args, **_kwargs: None),
+        message_fn=console.print
+        if effective_verbose
+        else (lambda *_args, **_kwargs: None),
+        managed_curve_mode=(
+            run_profile.managed_curve_mode if run_profile is not None else None
+        ),
+        managed_curve_x_scale=(
+            run_profile.managed_curve_x_scale if run_profile is not None else None
+        ),
+        managed_curve_y_scale=(
+            run_profile.managed_curve_y_scale if run_profile is not None else None
+        ),
+        managed_curve_truncate_at_culm=(
+            run_profile.managed_curve_truncate_at_culm
+            if run_profile is not None
+            else None
+        ),
+        managed_curve_max_age=(
+            run_profile.managed_curve_max_age if run_profile is not None else None
+        ),
     )
     result = run_result.result
     console.print(

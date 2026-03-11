@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import os
 import sys
 import time
@@ -9,7 +10,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 import pickle
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 import uuid
 
 import pandas as pd
@@ -147,6 +148,46 @@ def _load_species_universe_for_tsas(
     return sorted(species_codes)
 
 
+def _managed_curve_env_overrides(
+    *,
+    managed_curve_mode: str | None,
+    managed_curve_x_scale: float | None,
+    managed_curve_y_scale: float | None,
+    managed_curve_truncate_at_culm: bool | None,
+    managed_curve_max_age: int | None,
+) -> dict[str, str]:
+    env: dict[str, str] = {}
+    if managed_curve_mode is not None:
+        env["FEMIC_MANAGED_CURVE_MODE"] = str(managed_curve_mode)
+    if managed_curve_x_scale is not None:
+        env["FEMIC_MANAGED_CURVE_X_SCALE"] = str(float(managed_curve_x_scale))
+    if managed_curve_y_scale is not None:
+        env["FEMIC_MANAGED_CURVE_Y_SCALE"] = str(float(managed_curve_y_scale))
+    if managed_curve_truncate_at_culm is not None:
+        env["FEMIC_MANAGED_CURVE_TRUNCATE_AT_CULM"] = (
+            "1" if managed_curve_truncate_at_culm else "0"
+        )
+    if managed_curve_max_age is not None:
+        env["FEMIC_MANAGED_CURVE_MAX_AGE"] = str(int(managed_curve_max_age))
+    return env
+
+
+@contextmanager
+def _temporary_env(overrides: Mapping[str, str]) -> Any:
+    previous: dict[str, str | None] = {}
+    for key, value in overrides.items():
+        previous[key] = os.environ.get(key)
+        os.environ[key] = value
+    try:
+        yield
+    finally:
+        for key, prior in previous.items():
+            if prior is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = prior
+
+
 def _vdyp_species_proportions_for_tsa(
     *,
     results_for_tsa: list[tuple[int, str, Any]],
@@ -186,6 +227,11 @@ def run_post_tipsy_bundle(
     run_01b_fn: Callable[..., Any] | None = None,
     canfi_species_fn: Callable[[str], int] = _default_canfi_species,
     message_fn: Callable[[str], Any] = print,
+    managed_curve_mode: str | None = None,
+    managed_curve_x_scale: float | None = None,
+    managed_curve_y_scale: float | None = None,
+    managed_curve_truncate_at_culm: bool | None = None,
+    managed_curve_max_age: int | None = None,
 ) -> PostTipsyBundleResult:
     """Run downstream 01b + bundle assembly from cached TSA artifacts only."""
     normalized_tsa_list = [str(tsa).zfill(2) for tsa in tsa_list]
@@ -223,44 +269,52 @@ def run_post_tipsy_bundle(
     tipsy_curves_paths: list[Path] = []
     tipsy_sppcomp_paths: list[Path] = []
 
-    for tsa in normalized_tsa_list:
-        prep_path = data_root / f"vdyp_prep-tsa{tsa}.pkl"
-        smooth_path = data_root / f"vdyp_curves_smooth-tsa{tsa}.feather"
-        if not prep_path.exists():
-            raise FileNotFoundError(f"Missing 01a prep checkpoint: {prep_path}")
-        if not smooth_path.exists():
-            raise FileNotFoundError(f"Missing smoothed VDYP curves: {smooth_path}")
+    managed_env_overrides = _managed_curve_env_overrides(
+        managed_curve_mode=managed_curve_mode,
+        managed_curve_x_scale=managed_curve_x_scale,
+        managed_curve_y_scale=managed_curve_y_scale,
+        managed_curve_truncate_at_culm=managed_curve_truncate_at_culm,
+        managed_curve_max_age=managed_curve_max_age,
+    )
+    with _temporary_env(managed_env_overrides):
+        for tsa in normalized_tsa_list:
+            prep_path = data_root / f"vdyp_prep-tsa{tsa}.pkl"
+            smooth_path = data_root / f"vdyp_curves_smooth-tsa{tsa}.feather"
+            if not prep_path.exists():
+                raise FileNotFoundError(f"Missing 01a prep checkpoint: {prep_path}")
+            if not smooth_path.exists():
+                raise FileNotFoundError(f"Missing smoothed VDYP curves: {smooth_path}")
 
-        with prep_path.open("rb") as fh:
-            results_for_tsa = pickle.load(fh)
-        results[tsa] = results_for_tsa
-        vdyp_species_proportions[tsa] = _vdyp_species_proportions_for_tsa(
-            results_for_tsa=results_for_tsa
-        )
-        vdyp_curves_smooth[tsa] = pd.read_feather(smooth_path)
-        scsi_au[tsa], au_scsi[tsa] = _build_au_maps_from_results(
-            results_for_tsa=results_for_tsa
-        )
+            with prep_path.open("rb") as fh:
+                results_for_tsa = pickle.load(fh)
+            results[tsa] = results_for_tsa
+            vdyp_species_proportions[tsa] = _vdyp_species_proportions_for_tsa(
+                results_for_tsa=results_for_tsa
+            )
+            vdyp_curves_smooth[tsa] = pd.read_feather(smooth_path)
+            scsi_au[tsa], au_scsi[tsa] = _build_au_maps_from_results(
+                results_for_tsa=results_for_tsa
+            )
 
-        runtime_config = build_legacy_01b_runtime_config(
-            tipsy_params_path_prefix=data_root / "tipsy_params_tsa",
-            tipsy_output_root=data_root,
-            tipsy_output_filename_template="04_output-tsa{tsa}.out",
-        )
-        message_fn(f"running 01b for tsa {tsa}")
-        run_01b(
-            tsa=tsa,
-            results=results,
-            au_scsi=au_scsi,
-            tipsy_curves=tipsy_curves,
-            vdyp_curves_smooth=vdyp_curves_smooth,
-            runtime_config=runtime_config,
-        )
-        tipsy_curves_paths.append(data_root / f"tipsy_curves_tsa{tsa}.csv")
-        tipsy_sppcomp_paths.append(data_root / f"tipsy_sppcomp_tsa{tsa}.csv")
-        tipsy_spp_path = tipsy_sppcomp_paths[-1]
-        if tipsy_spp_path.exists():
-            tipsy_sppcomp[tsa] = pd.read_csv(tipsy_spp_path)
+            runtime_config = build_legacy_01b_runtime_config(
+                tipsy_params_path_prefix=data_root / "tipsy_params_tsa",
+                tipsy_output_root=data_root,
+                tipsy_output_filename_template="04_output-tsa{tsa}.out",
+            )
+            message_fn(f"running 01b for tsa {tsa}")
+            run_01b(
+                tsa=tsa,
+                results=results,
+                au_scsi=au_scsi,
+                tipsy_curves=tipsy_curves,
+                vdyp_curves_smooth=vdyp_curves_smooth,
+                runtime_config=runtime_config,
+            )
+            tipsy_curves_paths.append(data_root / f"tipsy_curves_tsa{tsa}.csv")
+            tipsy_sppcomp_paths.append(data_root / f"tipsy_sppcomp_tsa{tsa}.csv")
+            tipsy_spp_path = tipsy_sppcomp_paths[-1]
+            if tipsy_spp_path.exists():
+                tipsy_sppcomp[tsa] = pd.read_csv(tipsy_spp_path)
 
     species_universe = _load_species_universe_for_tsas(
         data_root=data_root,
@@ -394,6 +448,11 @@ def run_post_tipsy_bundle_with_manifest(
     run_01b_fn: Callable[..., Any] | None = None,
     canfi_species_fn: Callable[[str], int] = _default_canfi_species,
     message_fn: Callable[[str], Any] = print,
+    managed_curve_mode: str | None = None,
+    managed_curve_x_scale: float | None = None,
+    managed_curve_y_scale: float | None = None,
+    managed_curve_truncate_at_culm: bool | None = None,
+    managed_curve_max_age: int | None = None,
 ) -> PostTipsyBundleRunResult:
     """Run post-TIPSY downstream assembly and emit run-manifest metadata."""
     normalized_tsa_list = [str(tsa).zfill(2) for tsa in tsa_list]
@@ -431,6 +490,11 @@ def run_post_tipsy_bundle_with_manifest(
             run_01b_fn=run_01b_fn,
             canfi_species_fn=canfi_species_fn,
             message_fn=message_fn,
+            managed_curve_mode=managed_curve_mode,
+            managed_curve_x_scale=managed_curve_x_scale,
+            managed_curve_y_scale=managed_curve_y_scale,
+            managed_curve_truncate_at_culm=managed_curve_truncate_at_culm,
+            managed_curve_max_age=managed_curve_max_age,
         )
     except Exception as exc:
         finished_at = datetime.now(timezone.utc)
