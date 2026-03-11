@@ -3,6 +3,12 @@
 This note is maintainer-focused and captures the first publish flow for a
 dedicated DataLad dataset repository (target: `UBC-FRESH/femic-public-data`).
 
+Current local bootstrap state (2026-03-11):
+
+- Local dataset repo exists at `/home/gep/projects/femic-public-data`.
+- FEMIC links it as submodule at `external/femic-public-data`.
+- GitHub publish + Arbutus special-remote push are still pending.
+
 ## Inputs
 
 - `metadata/required_datasets.yaml` (authoritative source inventory)

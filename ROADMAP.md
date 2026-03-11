@@ -254,7 +254,7 @@
     (including archived HectaresBC `misc*.tif` dependencies) with provenance notes.
   - [ ] P10.6b Create/publish a dedicated DataLad-backed GitHub dataset repo for
     these layers with remote object storage on Arbutus (special remote).
-  - [ ] P10.6c Add the published dataset repo as a Git submodule under FEMIC and
+  - [x] P10.6c Add the published dataset repo as a Git submodule under FEMIC and
     wire docs/instance bootstrap guidance to consume it.
   - [x] P10.6d Add operator runbook for clone/get/update workflows
     (`git submodule` + `datalad get`) for students/collaborators.
@@ -2854,3 +2854,18 @@
     `planning/femic_public_data_datalad_bootstrap.md`.
   - Marked `P10.6d` complete; next queued implementation is
     `P10.6b` followed by `P10.6c`.
+- 2026-03-11 (Phase 10 `P10.6c` complete + local `P10.6b` bootstrap):
+  created a local DataLad dataset mirror repo and linked it back into FEMIC as
+  a Git submodule at `external/femic-public-data`.
+  - Created local dataset repo at `/home/gep/projects/femic-public-data` and
+    mirrored current seed artifacts from this workspace:
+    - `data/misc.thlb.tif`
+    - `data/bc/tsa/FADM_TSA.gdb`
+    - `data/bc/siteprod/Site_Prod_BC.gdb`
+    - `data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb`
+    - `data/bc/vri/2019/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb`
+  - Added submodule linkage in FEMIC:
+    `external/femic-public-data`.
+  - Marked `P10.6c` complete.
+  - `P10.6b` remains open pending GitHub publish + Arbutus special-remote
+    configuration + checksum backfill in `metadata/required_datasets.yaml`.

@@ -53,8 +53,8 @@ Maintainer Workflow (Create/Publish Mirror Repo)
 Collaborator Workflow (Clone/Get/Update)
 ----------------------------------------
 
-After ``P10.6c`` adds the mirror repo as a submodule in FEMIC, collaborators
-should use:
+The mirror repo is linked into FEMIC at
+``external/femic-public-data``. Collaborators should use:
 
 .. code-block:: bash
 

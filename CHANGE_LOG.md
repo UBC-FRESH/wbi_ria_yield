@@ -2953,3 +2953,19 @@
 - Updated roadmap state:
   - marked `P10.6d` complete,
   - retained `P10.6b/P10.6c` as next execution steps.
+
+## 2026-03-11 - Linked local DataLad public-data repo as FEMIC submodule (`P10.6c`)
+- Created local DataLad dataset repository:
+  `/home/gep/projects/femic-public-data`.
+- Mirrored current seed artifacts into canonical mirror paths:
+  - `data/misc.thlb.tif`
+  - `data/bc/tsa/FADM_TSA.gdb`
+  - `data/bc/siteprod/Site_Prod_BC.gdb`
+  - `data/bc/vri/2019/VEG_COMP_LYR_R1_POLY.gdb`
+  - `data/bc/vri/2019/VEG_COMP_VDYP7_INPUT_POLY_AND_LAYER_2019.gdb`
+- Added submodule linkage in FEMIC:
+  `external/femic-public-data`.
+- Updated roadmap state:
+  - marked `P10.6c` complete,
+  - kept `P10.6b` open pending GitHub publish + Arbutus special-remote setup
+    and checksum backfill.

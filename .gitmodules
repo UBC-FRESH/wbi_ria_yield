@@ -1,0 +1,4 @@
+[submodule "external/femic-public-data"]
+	path = external/femic-public-data
+	url = https://github.com/UBC-FRESH/femic-public-data.git
+	branch = main

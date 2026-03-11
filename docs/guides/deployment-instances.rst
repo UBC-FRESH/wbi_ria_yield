@@ -62,3 +62,5 @@ checksum/mirroring status.
 
 For DataLad mirror clone/get/update workflow, see
 ``docs/guides/public-data-mirror-runbook.rst``.
+Mirror datasets are linked in-repo via submodule:
+``external/femic-public-data``.
