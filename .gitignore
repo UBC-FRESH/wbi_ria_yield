@@ -57,3 +57,6 @@ reference/Patchworks*/
 # Local credentials (templates are committed; concrete files are not)
 config/credentials/*.sh
 !config/credentials/*.template.sh
+
+# Local reference docs (do not track)
+reference/myVPN Setup for GNU:Linux | UBC IT.pdf
