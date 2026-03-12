@@ -113,6 +113,18 @@ Expected behavior:
 - ``vdyp_io/logs/patchworks_matrixbuilder_stderr-<run_id>.log``
 - ``vdyp_io/logs/patchworks_matrixbuilder_manifest-<run_id>.json``
 
+Deterministic instance rebuild entrypoint (for full instance workflows):
+
+.. code-block:: powershell
+
+   PYTHONPATH=src python -m femic instance rebuild --instance-root external/femic-k3z-instance --spec config/rebuild.spec.yaml --with-patchworks
+
+Reference rebuild control files in the K3Z instance repository:
+
+- ``external/femic-k3z-instance/config/rebuild.spec.yaml``
+- ``external/femic-k3z-instance/config/rebuild.allowlist.yaml``
+- ``external/femic-k3z-instance/runbooks/REBUILD_RUNBOOK.md``
+
 Runtime Pathing Notes
 ---------------------
 

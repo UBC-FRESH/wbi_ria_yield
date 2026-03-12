@@ -3694,3 +3694,14 @@
 - Added/updated tests:
   `tests/test_instance_bootstrap.py`,
   `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Enforced rebuild-spec references in sample/new instance docs (`P13.6b`)
+- Updated docs content to explicitly reference rebuild control artifacts:
+  - `docs/sample-models/k3z.rst`,
+  - `docs/guides/case-onboarding.rst`.
+- Required references now include:
+  - `config/rebuild.spec.yaml`,
+  - `config/rebuild.allowlist.yaml`,
+  - `runbooks/REBUILD_RUNBOOK.md`.
+- Added docs-contract enforcement in:
+  `tests/test_docs_contract.py` so these references remain mandatory.

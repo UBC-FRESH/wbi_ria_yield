@@ -9,6 +9,12 @@ Template Files
 
 - Run profile template:
   ``config/run_profile.case_template.yaml``
+- Rebuild spec template:
+  ``config/rebuild.spec.yaml``
+- Rebuild allowlist template:
+  ``config/rebuild.allowlist.yaml``
+- Rebuild runbook placeholder:
+  ``runbooks/REBUILD_RUNBOOK.md``
 - TIPSY parameter starter template:
   ``config/tipsy/template.case.yaml``
 
@@ -48,21 +54,27 @@ Onboarding Workflow
    For named custom units, use the boundary code in filename form accepted by
    your run wiring (for example ``tsak3z.yaml``).
 
-5. Fill TIPSY rule metadata and rule assignments using local TSR/FSP evidence.
+5. Validate and customize rebuild control files:
 
-6. Validate config before running:
+   - update ``config/rebuild.spec.yaml`` with case-specific step/invariant thresholds,
+   - update ``config/rebuild.allowlist.yaml`` for intentional baseline drift,
+   - record operator notes in ``runbooks/REBUILD_RUNBOOK.md``.
+
+6. Fill TIPSY rule metadata and rule assignments using local TSR/FSP evidence.
+
+7. Validate config before running:
 
    .. code-block:: bash
 
       femic tipsy validate --config-dir config/tipsy --tsa <code>
 
-7. Run single-command case preflight:
+8. Run single-command case preflight:
 
    .. code-block:: bash
 
       femic prep validate-case --run-config config/run_profile.<case>.yaml
 
-8. Dry-run and compile:
+9. Dry-run and compile:
 
    .. code-block:: bash
 

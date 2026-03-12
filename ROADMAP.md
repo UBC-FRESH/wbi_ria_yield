@@ -375,7 +375,7 @@
   - [x] P13.5d Add contributor policy text making rebuild-spec + checks mandatory for new instance repos.
 - [ ] P13.6 Enforce this as the default norm for all new FEMIC instances
   - [x] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
-  - [ ] P13.6b Add docs/contract tests requiring rebuild-spec references in sample/new instance docs.
+  - [x] P13.6b Add docs/contract tests requiring rebuild-spec references in sample/new instance docs.
   - [ ] P13.6c Add release-gate checks requiring successful rebuild report for reference instances prior to milestone close.
   - [ ] P13.6d Add roadmap/changelog policy note: no new instance phase closes without reproducible rebuild evidence.
 
@@ -3581,3 +3581,14 @@
   - Added regression checks in
     `tests/test_instance_bootstrap.py` and
     `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 13 `P13.6b` completion): added docs-contract enforcement
+  requiring rebuild-spec references in sample/new instance documentation.
+  - Updated sample-model K3Z guide to include explicit rebuild workflow
+    references:
+    `config/rebuild.spec.yaml`,
+    `config/rebuild.allowlist.yaml`,
+    `runbooks/REBUILD_RUNBOOK.md`.
+  - Updated case-onboarding guide template checklist to include rebuild
+    spec/allowlist/runbook assets.
+  - Added/extended docs-contract assertions in `tests/test_docs_contract.py`
+    to enforce these references going forward.

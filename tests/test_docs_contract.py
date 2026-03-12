@@ -238,6 +238,9 @@ def test_case_onboarding_templates_exist() -> None:
 def test_case_onboarding_guide_keeps_template_and_preflight_links() -> None:
     guide_text = (GUIDES_ROOT / "case-onboarding.rst").read_text()
     assert "config/run_profile.case_template.yaml" in guide_text
+    assert "config/rebuild.spec.yaml" in guide_text
+    assert "config/rebuild.allowlist.yaml" in guide_text
+    assert "runbooks/REBUILD_RUNBOOK.md" in guide_text
     assert "config/tipsy/template.case.yaml" in guide_text
     assert "python -m femic prep validate-case" in guide_text
     assert "cd instances/reference" in guide_text
@@ -579,6 +582,9 @@ def test_k3z_sample_model_docs_keep_required_sections() -> None:
     assert "plots/strata-tsak3z.png" in k3z_text
     assert "plots/vdyp_lmh_tsak3z-*.png" in k3z_text
     assert "plots/tipsy_vdyp_tsak3z-*.png" in k3z_text
+    assert "config/rebuild.spec.yaml" in k3z_text
+    assert "config/rebuild.allowlist.yaml" in k3z_text
+    assert "runbooks/REBUILD_RUNBOOK.md" in k3z_text
 
     lineage_text = (SAMPLE_MODELS_ROOT / "k3z-metadata-lineage.rst").read_text()
     required_lineage_sections = [
