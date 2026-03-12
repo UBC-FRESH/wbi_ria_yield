@@ -416,6 +416,24 @@ INSTANCE_REFERENCE_ROOT_OPTION = typer.Option(
     "--reference-root",
     help="Repository-relative path to the maintainer reference instance.",
 )
+INSTANCE_EVIDENCE_MAX_WARN_INCREASE_OPTION = typer.Option(
+    None,
+    "--max-warn-increase",
+    help=(
+        "Optional threshold for allowed increase in invariant_warn_count "
+        "compared to existing output evidence."
+    ),
+    show_default=False,
+)
+INSTANCE_EVIDENCE_MAX_BASELINE_DIFF_INCREASE_OPTION = typer.Option(
+    None,
+    "--max-baseline-diff-increase",
+    help=(
+        "Optional threshold for allowed increase in summary.baseline_diff_count "
+        "compared to existing output evidence."
+    ),
+    show_default=False,
+)
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
     "--config",
@@ -1089,6 +1107,10 @@ def instance_promote_evidence(
     report: Path | None = INSTANCE_EVIDENCE_REPORT_OPTION,
     output: Path = INSTANCE_EVIDENCE_OUTPUT_OPTION,
     log_dir: Path = INSTANCE_EVIDENCE_LOG_DIR_OPTION,
+    max_warn_increase: int | None = INSTANCE_EVIDENCE_MAX_WARN_INCREASE_OPTION,
+    max_baseline_diff_increase: int | None = (
+        INSTANCE_EVIDENCE_MAX_BASELINE_DIFF_INCREASE_OPTION
+    ),
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
     context = _resolve_cli_instance_context(instance_root=instance_root)
@@ -1166,6 +1188,53 @@ def instance_promote_evidence(
             "baseline_diff_count": baseline_diff_count,
         },
     }
+    previous_payload: dict[str, object] | None = None
+    if resolved_output.exists():
+        try:
+            loaded = json.loads(resolved_output.read_text(encoding="utf-8"))
+            previous_payload = loaded if isinstance(loaded, dict) else None
+        except (OSError, json.JSONDecodeError):
+            previous_payload = None
+
+    previous_summary = (
+        previous_payload.get("summary", {})
+        if isinstance(previous_payload, dict)
+        else {}
+    )
+    if not isinstance(previous_summary, dict):
+        previous_summary = {}
+    previous_warn_count = int(previous_summary.get("invariant_warn_count", 0) or 0)
+    previous_baseline_diff_count = int(
+        previous_summary.get("baseline_diff_count", 0) or 0
+    )
+    current_baseline_diff_count = (
+        int(baseline_diff_count) if isinstance(baseline_diff_count, (int, float)) else 0
+    )
+    warn_increase = warn_count - previous_warn_count
+    baseline_diff_increase = current_baseline_diff_count - previous_baseline_diff_count
+    trend_warnings: list[str] = []
+    if max_warn_increase is not None and warn_increase > max_warn_increase:
+        trend_warnings.append(
+            f"invariant_warn_count increased by {warn_increase} (> {max_warn_increase})"
+        )
+    if (
+        max_baseline_diff_increase is not None
+        and baseline_diff_increase > max_baseline_diff_increase
+    ):
+        trend_warnings.append(
+            "baseline_diff_count increased by "
+            f"{baseline_diff_increase} (> {max_baseline_diff_increase})"
+        )
+    normalized["trend_drift"] = {
+        "previous_summary": previous_summary,
+        "warn_increase": warn_increase,
+        "baseline_diff_increase": baseline_diff_increase,
+        "thresholds": {
+            "max_warn_increase": max_warn_increase,
+            "max_baseline_diff_increase": max_baseline_diff_increase,
+        },
+        "warnings": trend_warnings,
+    }
     try:
         resolved_output.parent.mkdir(parents=True, exist_ok=True)
         resolved_output.write_text(json.dumps(normalized, indent=2), encoding="utf-8")
@@ -1177,12 +1246,18 @@ def instance_promote_evidence(
         "[green]Promoted rebuild evidence[/green] "
         f"report={resolved_report} output={resolved_output} status={normalized['status']}"
     )
+    for warning in trend_warnings:
+        console.print(f"[yellow]trend drift warning:[/yellow] {warning}")
 
 
 @instance_app.command("refresh-reference-evidence")
 def instance_refresh_reference_evidence(
     report: Path | None = INSTANCE_EVIDENCE_REPORT_OPTION,
     reference_root: Path = INSTANCE_REFERENCE_ROOT_OPTION,
+    max_warn_increase: int | None = INSTANCE_EVIDENCE_MAX_WARN_INCREASE_OPTION,
+    max_baseline_diff_increase: int | None = (
+        INSTANCE_EVIDENCE_MAX_BASELINE_DIFF_INCREASE_OPTION
+    ),
 ) -> None:
     """Refresh maintainer reference evidence artifact from latest rebuild report."""
 
@@ -1190,6 +1265,8 @@ def instance_refresh_reference_evidence(
         report=report,
         output=Path("evidence/reference_rebuild_report.latest.json"),
         log_dir=Path("vdyp_io/logs"),
+        max_warn_increase=max_warn_increase,
+        max_baseline_diff_increase=max_baseline_diff_increase,
         instance_root=reference_root,
     )
 

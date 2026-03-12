@@ -402,7 +402,7 @@ notes.
   - [x] P14.2b Add contributor runbook step for evidence refresh during release
     preparation.
 - [ ] P14.3 Add drift-monitoring hooks for long-lived instance repositories
-  - [ ] P14.3a Add optional warning threshold checks for trend drift in rebuild
+  - [x] P14.3a Add optional warning threshold checks for trend drift in rebuild
     evidence summaries.
   - [ ] P14.3b Add docs on interpreting evidence-trend drift across releases.
 
@@ -3676,3 +3676,16 @@ notes.
   - Updated `docs/guides/deployment-instances.rst` with contributor
     release-prep requirement text.
   - Added docs-contract enforcement in `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 14 `P14.3a` completion): added optional trend-drift
+  warning thresholds for rebuild evidence summaries.
+  - Extended `femic instance promote-evidence` with:
+    `--max-warn-increase` and `--max-baseline-diff-increase`.
+  - Added trend delta + warnings payload in evidence artifacts under
+    `trend_drift` (previous summary, increases, thresholds, warnings).
+  - Propagated threshold options through
+    `femic instance refresh-reference-evidence`.
+  - Updated CLI/deployment docs and contract/tests in:
+    `docs/reference/cli.rst`,
+    `docs/guides/deployment-instances.rst`,
+    `tests/test_cli_main.py`,
+    `tests/test_docs_contract.py`.

@@ -316,9 +316,13 @@ Rebuild exits non-zero when unexpected baseline diffs exceed
 - ``--report PATH`` (optional; defaults to latest rebuild report in ``--log-dir``)
 - ``--output PATH`` (default: ``evidence/reference_rebuild_report.latest.json``)
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
+- ``--max-warn-increase INT`` (optional drift warning threshold)
+- ``--max-baseline-diff-increase INT`` (optional drift warning threshold)
 - ``--instance-root PATH``
 
 ``instance refresh-reference-evidence`` options
 
 - ``--report PATH`` (optional; defaults to latest report in reference ``vdyp_io/logs``)
 - ``--reference-root PATH`` (default: ``instances/reference``)
+- ``--max-warn-increase INT`` (optional drift warning threshold)
+- ``--max-baseline-diff-increase INT`` (optional drift warning threshold)

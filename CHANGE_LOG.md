@@ -3768,3 +3768,18 @@
   `docs/guides/deployment-instances.rst`.
 - Added docs-contract enforcement in:
   `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Added optional evidence trend-drift warning thresholds (`P14.3a`)
+- Extended `femic instance promote-evidence` with:
+  - `--max-warn-increase`,
+  - `--max-baseline-diff-increase`.
+- Evidence payloads now include `trend_drift` with:
+  previous summary snapshot, computed deltas, configured thresholds, and
+  warning messages when thresholds are exceeded.
+- Propagated threshold options to:
+  `femic instance refresh-reference-evidence`.
+- Updated docs and test coverage:
+  `docs/reference/cli.rst`,
+  `docs/guides/deployment-instances.rst`,
+  `tests/test_cli_main.py`,
+  `tests/test_docs_contract.py`.

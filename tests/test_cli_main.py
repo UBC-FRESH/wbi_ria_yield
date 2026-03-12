@@ -1160,6 +1160,8 @@ def test_instance_promote_evidence_writes_normalized_payload(
         report=Path("vdyp_io/logs/instance_rebuild_report-r1.json"),
         output=Path("evidence/reference_rebuild_report.latest.json"),
         log_dir=Path("vdyp_io/logs"),
+        max_warn_increase=None,
+        max_baseline_diff_increase=None,
         instance_root=instance_root,
     )
 
@@ -1172,6 +1174,70 @@ def test_instance_promote_evidence_writes_normalized_payload(
     assert any("Promoted rebuild evidence" in msg for msg in messages)
 
 
+def test_instance_promote_evidence_emits_trend_warnings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    instance_root = tmp_path / "instance-root"
+    log_dir = instance_root / "vdyp_io" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    output_path = instance_root / "evidence/reference_rebuild_report.latest.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(
+            {
+                "summary": {
+                    "invariant_warn_count": 0,
+                    "baseline_diff_count": 0,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_path = log_dir / "instance_rebuild_report-r2.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "run_id": "r2",
+                "failed": False,
+                "invariant_results": [{"status": "warn"}, {"status": "warn"}],
+                "metrics": {"baseline_diff_count": 2},
+                "regression_gate": {
+                    "step_failure": False,
+                    "fatal_invariant_failure": False,
+                    "unexpected_diff_regression": False,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=instance_root,
+            resolve_path=lambda value: instance_root / value,
+        ),
+    )
+
+    cli_main.instance_promote_evidence(
+        report=Path("vdyp_io/logs/instance_rebuild_report-r2.json"),
+        output=Path("evidence/reference_rebuild_report.latest.json"),
+        log_dir=Path("vdyp_io/logs"),
+        max_warn_increase=0,
+        max_baseline_diff_increase=0,
+        instance_root=instance_root,
+    )
+
+    promoted = json.loads(output_path.read_text(encoding="utf-8"))
+    assert promoted["trend_drift"]["warn_increase"] == 2
+    assert promoted["trend_drift"]["baseline_diff_increase"] == 2
+    assert len(promoted["trend_drift"]["warnings"]) == 2
+    assert any("trend drift warning:" in msg for msg in messages)
+
+
 def test_instance_refresh_reference_evidence_uses_reference_defaults(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1182,12 +1248,19 @@ def test_instance_refresh_reference_evidence_uses_reference_defaults(
 
     monkeypatch.setattr(cli_main, "instance_promote_evidence", _fake_promote)
 
-    cli_main.instance_refresh_reference_evidence(report=None, reference_root=Path("r"))
+    cli_main.instance_refresh_reference_evidence(
+        report=None,
+        reference_root=Path("r"),
+        max_warn_increase=1,
+        max_baseline_diff_increase=2,
+    )
 
     assert captured["report"] is None
     assert captured["instance_root"] == Path("r")
     assert captured["output"] == Path("evidence/reference_rebuild_report.latest.json")
     assert captured["log_dir"] == Path("vdyp_io/logs")
+    assert captured["max_warn_increase"] == 1
+    assert captured["max_baseline_diff_increase"] == 2
 
 
 def test_collect_rebuild_artifact_references_filters_missing(

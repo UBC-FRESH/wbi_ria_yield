@@ -162,6 +162,14 @@ Maintainer evidence refresh command:
 
    python -m femic instance refresh-reference-evidence
 
+Optional drift-warning thresholds (long-lived repos):
+
+.. code-block:: bash
+
+   python -m femic instance refresh-reference-evidence \
+     --max-warn-increase 0 \
+     --max-baseline-diff-increase 0
+
 Contributor release-prep runbook step:
 
 - add this command to your instance ``runbooks/REBUILD_RUNBOOK.md`` release
