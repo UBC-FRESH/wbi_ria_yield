@@ -4253,3 +4253,23 @@
   - `pytest`
   - `pre-commit run --all-files`
   - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-12 - Completed Phase 18 P18.2 with pre-release TestPyPI publish (`0.1.1a1`)
+- Bumped package version in `pyproject.toml` from `0.1.0` to `0.1.1a1`
+  (PEP 440 pre-release) to avoid immutable-version re-upload errors.
+- Updated production publish workflow to match TestPyPI safety behavior:
+  - `.github/workflows/publish-pypi.yml` now sets `skip-existing: true`,
+  - includes post-publish smoke install (`femic --help`) using repo version.
+- Diagnosed TestPyPI smoke failure caused by index propagation delay after
+  successful upload (run: `23023687076`), then added retry loops to both:
+  - `.github/workflows/publish-testpypi.yml`
+  - `.github/workflows/publish-pypi.yml`
+- Re-ran TestPyPI workflow to green:
+  `https://github.com/UBC-FRESH/femic/actions/runs/23023751656`.
+- Validation gates passed locally after workflow updates:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`491 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`

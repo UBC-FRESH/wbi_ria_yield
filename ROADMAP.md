@@ -456,11 +456,29 @@ notes.
 
 ## Phase 18: Packaging and Publication to PyPI
 - [x] P18.1 Packaging metadata and build reproducibility checks
-- [ ] P18.2 TestPyPI publication and install smoke tests
+- [x] P18.2 TestPyPI publication and install smoke tests
 - [ ] P18.3 Production PyPI release
 - [ ] P18.4 Post-release docs/changelog/version traceability
 
 ## Detailed Next Steps Notes
+- 2026-03-12 (Phase 18 `P18.2` complete): published pre-release
+  `femic==0.1.1a1` to TestPyPI with successful end-to-end smoke install in
+  GitHub Actions.
+  - Version bump:
+    `pyproject.toml` from `0.1.0` -> `0.1.1a1` (PEP 440 pre-release).
+  - Workflow hardening:
+    - aligned `.github/workflows/publish-pypi.yml` with TestPyPI safety
+      behavior (`skip-existing: true` + smoke install step),
+    - added index-propagation retry loops to both publish workflows to handle
+      TestPyPI/PyPI indexing lag after upload.
+  - Green TestPyPI run:
+    `https://github.com/UBC-FRESH/femic/actions/runs/23023751656`.
+  - Prior failed attempt (diagnosed and fixed):
+    publish succeeded, smoke install failed due immediate index lag:
+    `https://github.com/UBC-FRESH/femic/actions/runs/23023687076`.
+  - Next:
+    execute `P18.3` production PyPI publish using the now-matched workflow and
+    then complete `P18.4` traceability recording.
 - 2026-03-12 (Phase 18 workflow bugfix): fixed TestPyPI smoke step shell
   parsing error after successful publish.
   - Root cause:
