@@ -348,11 +348,11 @@
     `untreated/treated` only for curve-source terminology.
 
 ## Phase 13: Instance Rebuild Repro Framework (Default for All New Instances)
-- [ ] P13.1 Define a canonical rebuild contract for FEMIC deployment instances
-  - [ ] P13.1a Specify required inputs, required config files, and required runtime prerequisites.
-  - [ ] P13.1b Specify the authoritative rebuild sequence (command order, mutable artifacts, expected outputs).
-  - [ ] P13.1c Specify required post-rebuild invariants (accounts, targets, managed-area sanity, block joins, seral presence).
-  - [ ] P13.1d Define failure classes (hard fail vs warning) and required remediation messaging.
+- [x] P13.1 Define a canonical rebuild contract for FEMIC deployment instances
+  - [x] P13.1a Specify required inputs, required config files, and required runtime prerequisites.
+  - [x] P13.1b Specify the authoritative rebuild sequence (command order, mutable artifacts, expected outputs).
+  - [x] P13.1c Specify required post-rebuild invariants (accounts, targets, managed-area sanity, block joins, seral presence).
+  - [x] P13.1d Define failure classes (hard fail vs warning) and required remediation messaging.
 - [ ] P13.2 Add first-class rebuild orchestration to FEMIC
   - [ ] P13.2a Add a reusable rebuild runner abstraction (step graph + deterministic execution + report sink).
   - [ ] P13.2b Add CLI support for instance rebuild execution (instance-rooted, run-ided, non-interactive).
@@ -3364,3 +3364,17 @@
     navigation.
   - Updated deployment + CLI reference docs and docs-contract/test coverage for
     the new command and guide requirements.
+- 2026-03-11 (Phase 13 `P13.1a/P13.1b/P13.1c/P13.1d` completion): defined the
+  canonical FEMIC instance rebuild contract in human-readable and
+  machine-readable forms.
+  - Added contract specification document:
+    `planning/femic_instance_rebuild_contract.md`.
+  - Added canonical YAML contract artifact:
+    `planning/femic_instance_rebuild_contract.v1.yaml`.
+  - Captured required inputs/config/runtime prerequisites, authoritative rebuild
+    sequence, required post-rebuild invariants, and failure-class remediation
+    message requirements.
+  - Added docs-contract enforcement in `tests/test_docs_contract.py` for
+    contract artifact presence and required schema keys/sections.
+  - Linked pipeline guide primary sources to the new rebuild contract doc:
+    `docs/guides/pipeline-overview.rst`.

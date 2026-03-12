@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from typer.testing import CliRunner
+import yaml
 
 from femic.cli.main import app
 
@@ -580,6 +581,36 @@ def test_geospatial_runtime_bootstrap_guide_keeps_required_sections() -> None:
     ):
         assert heading in guide_text
     assert "femic prep geospatial-preflight" in guide_text
+
+
+def test_instance_rebuild_contract_artifacts_are_present_and_complete() -> None:
+    contract_doc = Path("planning/femic_instance_rebuild_contract.md")
+    contract_yaml = Path("planning/femic_instance_rebuild_contract.v1.yaml")
+
+    assert contract_doc.is_file()
+    assert contract_yaml.is_file()
+
+    contract_text = contract_doc.read_text()
+    for heading in (
+        "Required Inputs and Prerequisites (`P13.1a`)",
+        "Authoritative Rebuild Sequence (`P13.1b`)",
+        "Required Post-Rebuild Invariants (`P13.1c`)",
+        "Failure Classes and Remediation Messaging (`P13.1d`)",
+    ):
+        assert heading in contract_text
+
+    payload = yaml.safe_load(contract_yaml.read_text())
+    assert payload["contract_id"] == "femic_instance_rebuild_contract_v1"
+    assert payload["version"] == "1.0"
+    for key in (
+        "required_inputs",
+        "authoritative_sequence",
+        "post_rebuild_invariants",
+        "failure_classes",
+    ):
+        assert key in payload
+    assert payload["authoritative_sequence"], "authoritative sequence must not be empty"
+    assert payload["post_rebuild_invariants"], "invariants list must not be empty"
 
 
 def test_legacy_slug_references_are_limited_to_audit_trail_files() -> None:

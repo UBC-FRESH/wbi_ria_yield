@@ -3425,3 +3425,18 @@
   `tests/test_geospatial_preflight.py`,
   CLI coverage updates in `tests/test_cli_main.py`,
   docs-contract coverage in `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Defined canonical instance rebuild contract (`P13.1`)
+- Added canonical human-readable rebuild contract:
+  `planning/femic_instance_rebuild_contract.md`.
+- Added machine-readable contract artifact:
+  `planning/femic_instance_rebuild_contract.v1.yaml`.
+- Contract now explicitly defines:
+  - required inputs/config/runtime prerequisites,
+  - authoritative rebuild step sequence and expected outputs,
+  - required post-rebuild invariants,
+  - failure classes and remediation message requirements.
+- Added docs-contract test coverage in `tests/test_docs_contract.py` to enforce
+  contract artifact presence and required schema/section keys.
+- Linked pipeline guide primary sources to the rebuild contract doc in
+  `docs/guides/pipeline-overview.rst`.

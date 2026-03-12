@@ -73,5 +73,6 @@ Primary Sources
 - ``00_data-prep.ipynb``
 - ``01a_run-tsa.ipynb``
 - ``01b_run-tsa.ipynb``
+- ``planning/femic_instance_rebuild_contract.md``
 - ``docs/reference/run-config.rst``
 - ``docs/reference/patchworks-export.rst``

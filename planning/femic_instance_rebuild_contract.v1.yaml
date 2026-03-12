@@ -1,0 +1,115 @@
+version: "1.0"
+contract_id: "femic_instance_rebuild_contract_v1"
+
+required_inputs:
+  artifact_families:
+    - id: selection_geometry
+      description: "Boundary/TSA selection geometry or selectors required by run profile."
+    - id: compile_inputs
+      description: "Inventory/checkpoint/bundle inputs used by FEMIC compile stages."
+    - id: patchworks_inputs
+      description: "Patchworks model-side inputs required for block/matrix build steps."
+  required_configs:
+    - path_pattern: "config/run_profile.<case>.yaml"
+      purpose: "Primary instance run profile."
+    - path_pattern: "config/tipsy/tsa<code>.yaml"
+      purpose: "Case/TSA TIPSY handoff configuration."
+    - path_pattern: "config/patchworks.runtime*.yaml"
+      purpose: "Patchworks runtime launch and path configuration."
+  runtime_prerequisites:
+    - id: femic_cli
+      check: "femic --help"
+      severity: fatal
+    - id: geospatial_runtime
+      check: "femic prep geospatial-preflight"
+      severity: fatal
+    - id: patchworks_runtime
+      check: "femic patchworks preflight --config <runtime>"
+      severity: fatal
+
+authoritative_sequence:
+  - step_id: validate_case
+    command: "femic prep validate-case --run-config <run_profile>"
+    required: true
+    mutable_artifacts: []
+    expected_outputs:
+      - "case preflight success signal"
+  - step_id: geospatial_preflight
+    command: "femic prep geospatial-preflight"
+    required: true
+    mutable_artifacts: []
+    expected_outputs:
+      - "geospatial readiness success signal"
+  - step_id: compile_upstream
+    command: "femic run --run-config <run_profile>"
+    required: true
+    mutable_artifacts:
+      - "data/* checkpoint and staging outputs"
+      - "vdyp_io/logs/*"
+    expected_outputs:
+      - "run manifest"
+  - step_id: manual_tipsy_boundary
+    command: "manual BatchTIPSY run and output handoff"
+    required: conditional
+    mutable_artifacts:
+      - "data/* tipsy output payloads"
+    expected_outputs:
+      - "04_output-*.out ingest-ready files"
+  - step_id: post_tipsy_bundle
+    command: "femic tsa post-tipsy --run-config <run_profile> --tsa <code>"
+    required: true
+    mutable_artifacts:
+      - "data/model_input_bundle/*"
+      - "vdyp_io/logs/*"
+    expected_outputs:
+      - "post-tipsy manifest"
+  - step_id: patchworks_build
+    command: "femic patchworks preflight/build-blocks/matrix-build"
+    required: conditional
+    mutable_artifacts:
+      - "models/*/blocks/*"
+      - "models/*/tracks/*"
+      - "vdyp_io/logs/patchworks*"
+    expected_outputs:
+      - "patchworks manifest"
+
+post_rebuild_invariants:
+  - id: accounts_targets_presence
+    severity: fatal
+    description: "Required account/target families must exist and be non-empty."
+  - id: managed_area_sanity
+    severity: fatal
+    description: "Managed area metric must satisfy case-defined expected bounds."
+  - id: block_join_consistency
+    severity: fatal
+    description: "blocks.csv and blocks.shp joins must not diverge beyond tolerance."
+  - id: seral_presence
+    severity: fatal
+    description: "Seral-stage account families must be present."
+  - id: baseline_structure_diff
+    severity: warn
+    description: "Tracked structural outputs should match baseline unless allowlisted."
+
+failure_classes:
+  fatal:
+    trigger_examples:
+      - "missing required input/config/runtime prerequisite"
+      - "mandatory step command non-zero return code"
+      - "fatal invariant regression"
+    required_message_fields:
+      - failure_class
+      - step_id
+      - cause
+      - remediation
+      - rerun_hint
+  warn:
+    trigger_examples:
+      - "optional artifact missing"
+      - "non-fatal metric drift"
+      - "informational preflight concern"
+    required_message_fields:
+      - failure_class
+      - scope
+      - impact
+      - recommended_action
+
