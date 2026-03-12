@@ -3349,3 +3349,28 @@
 - Verified published GitHub Pages deployment and live nav for new pages:
   - run `22981643203` (`success`)
   - `https://ubc-fresh.github.io/femic-k3z-instance/`
+
+## 2026-03-11 - Completed `P12.4a/P12.4b/P12.4c` TSR core docs buildout
+- Added standalone K3Z metadata/lineage page:
+  `external/femic-k3z-instance/docs/metadata-and-lineage.rst`.
+- Added standalone K3Z operator runbook page:
+  `external/femic-k3z-instance/docs/operator-runbook.rst`.
+- Added standalone K3Z edit-policy/scenario guidance page:
+  `external/femic-k3z-instance/docs/edit-policy-and-scenarios.rst`.
+- Wired all three pages into standalone docs navigation in
+  `external/femic-k3z-instance/docs/index.rst`.
+- Extended parent docs-contract tests (`tests/test_docs_contract.py`) to
+  require these pages and their key section headings.
+- Marked roadmap items complete: `P12.4a`, `P12.4b`, `P12.4c`.
+
+## 2026-03-11 - Decoupled standalone K3Z docs from parent-repo path assumptions
+- Removed parent-repo file/path references from standalone
+  `femic-k3z-instance` docs (for example `scripts/k3z/...` and `reference/...`)
+  and replaced them with instance-local FEMIC command workflows plus generic
+  exemplar citations.
+- Updated standalone docs pages:
+  `rebuild-and-qa.rst`, `operator-runbook.rst`, `data-package-crosswalk.rst`,
+  `assumptions-registry.rst`, `base-case-analysis.rst`,
+  `metadata-and-lineage.rst`.
+- Added parent docs-contract guard in `tests/test_docs_contract.py`:
+  `test_k3z_standalone_docs_do_not_reference_parent_repo_paths`.

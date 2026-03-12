@@ -304,6 +304,9 @@ def test_k3z_instance_standalone_docs_scaffold_exists() -> None:
         "land-base-and-netdown",
         "assumptions-registry",
         "base-case-analysis",
+        "metadata-and-lineage",
+        "operator-runbook",
+        "edit-policy-and-scenarios",
         "rebuild-and-qa",
         "troubleshooting",
     ):
@@ -349,7 +352,7 @@ def test_k3z_instance_standalone_docs_required_sections_and_navigation() -> None
         "Baseline Workflow",
     ):
         assert heading in rebuild_qa_text
-    assert "scripts/k3z/rebuild_k3z_instance.py" in rebuild_qa_text
+    assert "femic patchworks matrix-build" in rebuild_qa_text
 
     troubleshooting_text = (docs_root / "troubleshooting.rst").read_text()
     for heading in (
@@ -367,9 +370,9 @@ def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> N
     for heading in ("Section Crosswalk", "Reference Exemplars"):
         assert heading in crosswalk_text
     for exemplar in (
-        "TFL26_Information_Package_Sept-2018_v1.1.pdf",
-        "CFA_Analysis_Report.pdf",
-        "FNWL_Analysis_Report.pdf",
+        "TFL26 Timber Supply Analysis Information Package",
+        "CFA Timber Supply Analysis Data Package and Base Case Results",
+        "FNWL Timber Supply Analysis Data Package and Base Case Results",
     ):
         assert exemplar in crosswalk_text
 
@@ -418,6 +421,49 @@ def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> N
         "References",
     ):
         assert heading in analysis_text
+
+    metadata_text = (docs_root / "metadata-and-lineage.rst").read_text()
+    for heading in (
+        "Artifact Family Inventory",
+        "Build-Lineage Chain",
+        "Validation Evidence",
+        "Provenance Versioning Policy",
+    ):
+        assert heading in metadata_text
+
+    runbook_text = (docs_root / "operator-runbook.rst").read_text()
+    for heading in (
+        "Fresh Setup",
+        "Rebuild Workflow",
+        "Diagnostics Workflow",
+        "Troubleshooting Workflow",
+        "Release Checklist",
+        "Publication Checklist",
+    ):
+        assert heading in runbook_text
+
+    policy_text = (docs_root / "edit-policy-and-scenarios.rst").read_text()
+    for heading in (
+        "Edit Policy Matrix",
+        "Scenario Comparison Guidance",
+        "Interpretation Workflow",
+        "Classroom Use Guidance",
+        "How to Validate Reruns",
+    ):
+        assert heading in policy_text
+
+
+def test_k3z_standalone_docs_do_not_reference_parent_repo_paths() -> None:
+    docs_root = K3Z_INSTANCE_ROOT / "docs"
+    forbidden_snippets = (
+        "scripts/k3z/rebuild_k3z_instance.py",
+        "reference/",
+        "external/femic-k3z-instance",
+    )
+    for path in docs_root.glob("*.rst"):
+        text = path.read_text()
+        for snippet in forbidden_snippets:
+            assert snippet not in text, f"{path} references parent-repo path: {snippet}"
 
 
 def test_sample_model_pages_are_in_docs_tree() -> None:

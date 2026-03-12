@@ -292,11 +292,11 @@
   - [x] P12.3c Add docs acceptance checks for required sections and navigation.
 - [ ] P12.4 Expand K3Z user-facing docs to TSR-style data-package depth
   (match structure/depth of BC small-unit timber supply data packages)
-  - [ ] P12.4a Add full metadata inventory and lineage narratives by artifact
+  - [x] P12.4a Add full metadata inventory and lineage narratives by artifact
     family (inputs, transforms, outputs, validation evidence).
-  - [ ] P12.4b Add full operator runbook coverage (fresh setup, rebuild,
+  - [x] P12.4b Add full operator runbook coverage (fresh setup, rebuild,
     diagnostics, troubleshooting, and release checklist).
-  - [ ] P12.4c Add user edit-policy matrix and interpretation guidance aligned
+  - [x] P12.4c Add user edit-policy matrix and interpretation guidance aligned
     to classroom workflows and scenario comparison needs.
   - [x] P12.4d Build exemplar structure crosswalk from BC reference data
     packages (`TFL26`, `CFA`, `FNWL`) to K3Z standalone docs sections,
@@ -3299,3 +3299,28 @@
   - Verified GitHub Pages deployment/run and live navigation for new pages:
     run `22981643203` (`success`) and URL
     `https://ubc-fresh.github.io/femic-k3z-instance/`.
+- 2026-03-11 (Phase 12 `P12.4a/P12.4b/P12.4c` execution): expanded standalone
+  K3Z docs to complete the core TSR-style data-package scope.
+  - Added metadata/lineage page:
+    `external/femic-k3z-instance/docs/metadata-and-lineage.rst`
+    (artifact inventory, lineage chain, validation evidence, provenance policy).
+  - Added operator runbook page:
+    `external/femic-k3z-instance/docs/operator-runbook.rst`
+    (fresh setup, rebuild, diagnostics, troubleshooting, release/publication
+    checklists).
+  - Added edit-policy/scenario guidance page:
+    `external/femic-k3z-instance/docs/edit-policy-and-scenarios.rst`
+    (editable/regenerate matrix and classroom scenario interpretation workflow).
+  - Wired pages into standalone docs navigation in
+    `external/femic-k3z-instance/docs/index.rst`.
+  - Extended parent docs-contract checks to enforce required headings for the
+    three new pages (`tests/test_docs_contract.py`).
+  - Marked complete: `P12.4a`, `P12.4b`, `P12.4c`.
+- 2026-03-11 (standalone-docs decoupling hardening): removed parent-repo path
+  assumptions from standalone `femic-k3z-instance` docs so the instance docs
+  remain valid when consumed outside a FEMIC submodule checkout.
+  - Replaced parent-specific script/path references (for example
+    `scripts/k3z/rebuild_k3z_instance.py` and `reference/...`) with
+    instance-local FEMIC command workflows and generic exemplar citations.
+  - Added docs-contract guard:
+    `test_k3z_standalone_docs_do_not_reference_parent_repo_paths`.
