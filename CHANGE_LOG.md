@@ -3822,3 +3822,18 @@
 - Added regression coverage in `tests/test_patchworks_runtime.py` for:
   config parsing and regex-based account exclusion behavior.
 - Updated operator docs in `docs/guides/patchworks-wine-runtime.rst`.
+
+## 2026-03-11 - Applied K3Z `PL` exclusion policy and validated output (`P15.1b`)
+- Updated K3Z instance runtime config:
+  `external/femic-k3z-instance/config/patchworks.runtime.windows.yaml`
+  with:
+  `matrix_builder.accounts_exclude_regex: ["\\.PL(\\.|$)"]`.
+- Re-ran matrix build for K3Z:
+  `python -m femic patchworks matrix-build --config external/femic-k3z-instance/config/patchworks.runtime.windows.yaml --run-id k3z_plc_cleanup_20260312b`.
+- Verified
+  `external/femic-k3z-instance/models/k3z_patchworks_model/tracks/accounts.csv`
+  no longer contains `.PL` account rows and retains `.PLC` account rows.
+- Verified manifest evidence in
+  `vdyp_io/logs/patchworks_matrixbuilder_manifest-k3z_plc_cleanup_20260312b.json`:
+  `accounts_sync.excluded_patterns=["\\.PL(\\.|$)"]`,
+  `accounts_sync.excluded_row_count=5`.

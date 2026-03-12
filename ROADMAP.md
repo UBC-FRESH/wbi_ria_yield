@@ -411,7 +411,7 @@ notes.
   - [x] P15.1a Audit `tracks/accounts.csv`, `forestmodel.xml`, and source
     species-code mappings to confirm whether `PL` is a valid modeled species
     for K3Z or a legacy loose-end.
-  - [ ] P15.1b If `PL` is not valid for K3Z, remove it from generated account
+  - [x] P15.1b If `PL` is not valid for K3Z, remove it from generated account
    /target surfaces and keep `PLC` canonical.
   - [ ] P15.1c Add explicit docs note so students understand species-code
     expectations and do not interpret empty `PL` as runtime failure.
@@ -3750,3 +3750,19 @@ notes.
   - Added operator docs in `docs/guides/patchworks-wine-runtime.rst`.
   - Next execution step: apply the exclusion pattern in K3Z instance runtime
     config and verify account/target surfaces after matrix rebuild.
+- 2026-03-11 (Phase 15 `P15.1b` completion): applied K3Z runtime account
+  exclusion policy and verified matrix-build output surfaces.
+  - Updated
+    `external/femic-k3z-instance/config/patchworks.runtime.windows.yaml` with
+    `matrix_builder.accounts_exclude_regex: ["\\.PL(\\.|$)"]`.
+  - Re-ran matrix build:
+    `python -m femic patchworks matrix-build --config external/femic-k3z-instance/config/patchworks.runtime.windows.yaml --run-id k3z_plc_cleanup_20260312b`.
+  - Verified `tracks/accounts.csv` no longer includes `.PL` account rows while
+    `.PLC` rows remain.
+  - Verified manifest
+    `vdyp_io/logs/patchworks_matrixbuilder_manifest-k3z_plc_cleanup_20260312b.json`
+    reports
+    `accounts_sync.excluded_patterns=["\\.PL(\\.|$)"]` and
+    `accounts_sync.excluded_row_count=5`.
+  - Next execution step: `P15.1c` docs note for student-facing species-code
+    interpretation.
