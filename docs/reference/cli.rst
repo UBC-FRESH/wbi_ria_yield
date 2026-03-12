@@ -58,6 +58,7 @@ Subcommands
 
 - ``run``: ``python -m femic prep run [OPTIONS]``
 - ``validate-case``: ``python -m femic prep validate-case [OPTIONS]``
+- ``geospatial-preflight``: ``python -m femic prep geospatial-preflight [OPTIONS]``
 
 ``prep run`` options
 
@@ -74,6 +75,11 @@ Subcommands
 - ``--tipsy-config-dir PATH`` (default: ``config/tipsy``)
 - ``--strict-warnings``
 - ``--instance-root PATH``
+
+``prep geospatial-preflight`` options
+
+- ``--strict-warnings``
+- ``--skip-shapefile-smoke``
 
 VDYP
 ----

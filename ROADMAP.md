@@ -332,14 +332,14 @@
   - [x] P12.6b Define release tagging/versioning policy for docs alongside model
     snapshots.
   - [x] P12.6c Add contributor onboarding guidance for docs changes and review.
-- [ ] P12.7 Cross-platform geospatial dependency bootstrap hardening (`fiona`/`GDAL`)
-  - [ ] P12.7a Define and test known-valid install rituals for Linux and Windows
+- [x] P12.7 Cross-platform geospatial dependency bootstrap hardening (`fiona`/`GDAL`)
+  - [x] P12.7a Define and test known-valid install rituals for Linux and Windows
     (including Windows-specific `fiona`/`GDAL` handling for local `.venv` setup).
-  - [ ] P12.7b Add runtime/bootstrap OS detection so environment setup applies the
+  - [x] P12.7b Add runtime/bootstrap OS detection so environment setup applies the
     correct dependency path automatically.
-  - [ ] P12.7c Add explicit preflight checks for geospatial stack readiness
+  - [x] P12.7c Add explicit preflight checks for geospatial stack readiness
     (`import fiona`, GDAL version visibility, shapefile I/O smoke).
-  - [ ] P12.7d Add troubleshooting docs for Windows geospatial dependency install
+  - [x] P12.7d Add troubleshooting docs for Windows geospatial dependency install
     failures and deterministic remediation steps.
 - [x] P12.8 Terminology normalization: use `untreated/treated` curve-source terms
   - [x] P12.8a Replace legacy terminology in source code, tests, and docstrings.
@@ -3349,3 +3349,18 @@
     contributor onboarding/review workflow requirements.
   - Extended docs-contract checks (`tests/test_docs_contract.py`) to require
     the new page and its core governance sections.
+- 2026-03-11 (Phase 12 `P12.7a/P12.7b/P12.7c/P12.7d` completion): implemented
+  cross-platform geospatial dependency bootstrap hardening with runtime checks.
+  - Added OS-aware geospatial preflight module:
+    `src/femic/geospatial_preflight.py` (platform detection, install hints,
+    Fiona import check, GDAL visibility check, shapefile I/O smoke test).
+  - Added CLI command:
+    `femic prep geospatial-preflight` (supports `--strict-warnings` and
+    `--skip-shapefile-smoke`).
+  - Updated `femic instance init` to surface geospatial readiness guidance and
+    OS-specific install hints when dependencies are not yet ready.
+  - Added user guide:
+    `docs/guides/geospatial-runtime-bootstrap.rst` and wired it into guides
+    navigation.
+  - Updated deployment + CLI reference docs and docs-contract/test coverage for
+    the new command and guide requirements.

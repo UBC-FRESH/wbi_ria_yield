@@ -765,6 +765,18 @@ def test_instance_init_calls_bootstrap(monkeypatch: pytest.MonkeyPatch) -> None:
         "bootstrap_instance_workspace",
         _fake_bootstrap_instance_workspace,
     )
+    monkeypatch.setattr(
+        cli_main,
+        "run_geospatial_preflight",
+        lambda **_kwargs: SimpleNamespace(
+            os_family="windows",
+            install_hint="windows hint",
+            gdal_version=None,
+            warnings=(),
+            errors=(),
+            ok=True,
+        ),
+    )
 
     cli_main.instance_init(
         instance_root=Path("instance"),
@@ -777,3 +789,83 @@ def test_instance_init_calls_bootstrap(monkeypatch: pytest.MonkeyPatch) -> None:
     assert called["overwrite"] is True
     assert called["include_bc_vri_download"] is False
     assert any("instance init completed" in msg for msg in messages)
+
+
+def test_prep_geospatial_preflight_passes(monkeypatch: pytest.MonkeyPatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(
+        cli_main,
+        "run_geospatial_preflight",
+        lambda **_kwargs: SimpleNamespace(
+            os_family="linux",
+            install_hint="linux hint",
+            gdal_version="3.8.5",
+            warnings=(),
+            errors=(),
+            ok=True,
+        ),
+    )
+
+    cli_main.prep_geospatial_preflight(
+        strict_warnings=False, skip_shapefile_smoke=False
+    )
+
+    assert any("Geospatial preflight passed" in msg for msg in messages)
+    assert any("gdal_version=3.8.5" in msg for msg in messages)
+
+
+def test_prep_geospatial_preflight_fails_on_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(
+        cli_main,
+        "run_geospatial_preflight",
+        lambda **_kwargs: SimpleNamespace(
+            os_family="windows",
+            install_hint="windows hint",
+            gdal_version=None,
+            warnings=(),
+            errors=("missing fiona",),
+            ok=False,
+        ),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.prep_geospatial_preflight(
+            strict_warnings=False,
+            skip_shapefile_smoke=False,
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert any("missing fiona" in msg for msg in messages)
+
+
+def test_prep_geospatial_preflight_strict_warnings_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(
+        cli_main,
+        "run_geospatial_preflight",
+        lambda **_kwargs: SimpleNamespace(
+            os_family="linux",
+            install_hint="linux hint",
+            gdal_version="3.8.5",
+            warnings=("gdal visibility warning",),
+            errors=(),
+            ok=True,
+        ),
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.prep_geospatial_preflight(
+            strict_warnings=True,
+            skip_shapefile_smoke=True,
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert any("gdal visibility warning" in msg for msg in messages)

@@ -3403,3 +3403,25 @@
   - contributor onboarding and review checklist.
 - Extended parent docs-contract tests (`tests/test_docs_contract.py`) to
   require the governance page and core headings.
+
+## 2026-03-11 - Completed geospatial bootstrap hardening (`P12.7`)
+- Added OS-aware geospatial preflight module:
+  `src/femic/geospatial_preflight.py`.
+  - Detects host OS family and emits platform-specific Fiona/GDAL install hints.
+  - Checks Fiona importability, GDAL version visibility, and shapefile I/O smoke.
+- Added CLI command:
+  `femic prep geospatial-preflight` with options
+  `--strict-warnings` and `--skip-shapefile-smoke`.
+- Updated `femic instance init` to emit geospatial readiness/install guidance
+  when Fiona/GDAL are not yet available.
+- Added geospatial bootstrap guide:
+  `docs/guides/geospatial-runtime-bootstrap.rst` and linked it from
+  `docs/guides/index.rst`.
+- Updated docs references:
+  `docs/guides/deployment-instances.rst`,
+  `docs/reference/cli.rst`, and instance template
+  `src/femic/resources/instance/QUICKSTART.md`.
+- Added tests:
+  `tests/test_geospatial_preflight.py`,
+  CLI coverage updates in `tests/test_cli_main.py`,
+  docs-contract coverage in `tests/test_docs_contract.py`.

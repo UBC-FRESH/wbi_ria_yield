@@ -29,6 +29,7 @@ GUIDE_PAGES = [
     "limitations-and-boundaries",
     "patchworks-wine-runtime",
     "ubc-vpn-license-connectivity",
+    "geospatial-runtime-bootstrap",
     "legacy-traceability",
     "sphinx-template-baseline",
 ]
@@ -119,6 +120,10 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
         (
             ["prep", "validate-case", "--help"],
             ["--run-config", "--tipsy-config-dir", "--strict-warnings"],
+        ),
+        (
+            ["prep", "geospatial-preflight", "--help"],
+            ["--strict-warnings", "--skip-shapefile-smoke"],
         ),
         (
             ["vdyp", "report", "--help"],
@@ -562,6 +567,19 @@ def test_legacy_traceability_docs_include_notebook_cleanup_policy() -> None:
     traceability_text = (GUIDES_ROOT / "legacy-traceability.rst").read_text()
     assert "Notebook Output Cleanup Policy" in traceability_text
     assert "jupyter nbconvert --clear-output --inplace" in traceability_text
+
+
+def test_geospatial_runtime_bootstrap_guide_keeps_required_sections() -> None:
+    guide_text = (GUIDES_ROOT / "geospatial-runtime-bootstrap.rst").read_text()
+    for heading in (
+        "Why This Matters",
+        "Windows Bootstrap Ritual",
+        "Linux Bootstrap Ritual",
+        "Verify Runtime Readiness",
+        "Troubleshooting",
+    ):
+        assert heading in guide_text
+    assert "femic prep geospatial-preflight" in guide_text
 
 
 def test_legacy_slug_references_are_limited_to_audit_trail_files() -> None:

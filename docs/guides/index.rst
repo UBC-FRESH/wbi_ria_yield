@@ -23,5 +23,6 @@ export modules.
    limitations-and-boundaries
    patchworks-wine-runtime
    ubc-vpn-license-connectivity
+   geospatial-runtime-bootstrap
    legacy-traceability
    sphinx-template-baseline

@@ -73,6 +73,12 @@ After initializing an instance, run case preflight before long compile jobs:
 
    femic prep validate-case --run-config config/run_profile.case_template.yaml
 
+Then verify geospatial dependencies (Fiona/GDAL):
+
+.. code-block:: bash
+
+   femic prep geospatial-preflight
+
 Instance Root Resolution
 ------------------------
 

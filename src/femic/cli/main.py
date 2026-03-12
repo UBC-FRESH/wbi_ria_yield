@@ -13,6 +13,7 @@ import yaml
 from rich.console import Console
 
 from femic import __version__
+from femic.geospatial_preflight import run_geospatial_preflight
 from femic.instance_bootstrap import bootstrap_instance_workspace
 from femic.instance_context import (
     INSTANCE_ROOT_ENV,
@@ -596,6 +597,15 @@ def instance_init(
             "downloaded_archives="
             f"{len(result.downloaded_archives)} extracted_dirs={len(result.extracted_dirs)}"
         )
+    geo = run_geospatial_preflight(run_shapefile_smoke=False)
+    if geo.errors:
+        console.print(
+            "[yellow]Geospatial runtime check:[/yellow] dependencies not ready yet. "
+            "Run `femic prep geospatial-preflight` after installing Fiona/GDAL."
+        )
+        console.print(
+            f"[yellow]Install hint ({geo.os_family}):[/yellow] {geo.install_hint}"
+        )
 
 
 @app.command("run")
@@ -849,6 +859,37 @@ def prep_validate_case(
         f"[green]Case preflight passed[/green] run_config={resolved_run_config} "
         f"targets=[{targets}] tipsy_config_dir={resolved_tipsy_config_dir}"
     )
+
+
+@prep_app.command("geospatial-preflight")
+def prep_geospatial_preflight(
+    strict_warnings: bool = CASE_STRICT_WARNINGS_OPTION,
+    skip_shapefile_smoke: bool = typer.Option(
+        False,
+        "--skip-shapefile-smoke",
+        help="Skip Fiona shapefile read/write smoke test.",
+    ),
+) -> None:
+    result = run_geospatial_preflight(run_shapefile_smoke=not skip_shapefile_smoke)
+    console.print(
+        "[green]Geospatial preflight passed[/green] "
+        if result.ok and not result.warnings
+        else "[yellow]Geospatial preflight completed with findings[/yellow]"
+    )
+    console.print(f"os_family={result.os_family}")
+    if result.gdal_version is not None:
+        console.print(f"gdal_version={result.gdal_version}")
+    else:
+        console.print("gdal_version=unknown")
+    console.print(f"install_hint: {result.install_hint}")
+    for warning in result.warnings:
+        console.print(f"[yellow]Warning:[/yellow] {warning}")
+    for error in result.errors:
+        console.print(f"[red]Error:[/red] {error}")
+    if result.errors:
+        raise typer.Exit(code=1)
+    if strict_warnings and result.warnings:
+        raise typer.Exit(code=1)
 
 
 @vdyp_app.command("run")
