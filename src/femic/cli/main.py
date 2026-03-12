@@ -880,6 +880,14 @@ def instance_rebuild(
     baseline_snapshot_payload: dict[str, object] | None = None
     current_snapshot_payload: dict[str, object] | None = None
     baseline_status = "unavailable"
+    runtime_payload = spec_payload.get("runtime", {})
+    baseline_unexpected_diff_threshold = 0
+    if isinstance(runtime_payload, dict):
+        raw_threshold = runtime_payload.get("baseline_unexpected_diff_threshold", 0)
+        try:
+            baseline_unexpected_diff_threshold = int(raw_threshold)
+        except (TypeError, ValueError):
+            baseline_unexpected_diff_threshold = 0
     if resolved_patchworks_config.exists():
         try:
             current_snapshot_payload = build_current_snapshot(
@@ -997,7 +1005,38 @@ def instance_rebuild(
             f"diff_count={metrics.get('baseline_diff_count')} "
             f"unexpected_diff_count={metrics.get('baseline_unexpected_diff_count')}"
         )
-    if report.failed or fatal_invariant_failure:
+    unexpected_diff_count_value = metrics.get("baseline_unexpected_diff_count")
+    unexpected_diff_count = (
+        int(unexpected_diff_count_value)
+        if isinstance(unexpected_diff_count_value, (int, float))
+        else 0
+    )
+    unexpected_diff_regression = (
+        unexpected_diff_count > baseline_unexpected_diff_threshold
+    )
+    if unexpected_diff_regression:
+        console.print(
+            "[red]unexpected baseline diffs exceed threshold:[/red] "
+            f"{unexpected_diff_count} > {baseline_unexpected_diff_threshold}"
+        )
+        console.print(
+            "remediation: review rebuild report `baseline.allowlist_result`, "
+            "update config/rebuild.allowlist.yaml for intentional changes, "
+            "or regenerate baseline with --write-baseline."
+        )
+    try:
+        report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+        report_payload["regression_gate"] = {
+            "baseline_unexpected_diff_count": unexpected_diff_count,
+            "baseline_unexpected_diff_threshold": baseline_unexpected_diff_threshold,
+            "unexpected_diff_regression": unexpected_diff_regression,
+            "fatal_invariant_failure": fatal_invariant_failure,
+            "step_failure": report.failed,
+        }
+        report_path.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
+    except (OSError, json.JSONDecodeError):
+        pass
+    if report.failed or fatal_invariant_failure or unexpected_diff_regression:
         if fatal_invariant_failure and not report.failed:
             console.print("[red]Fatal rebuild invariant regression detected.[/red]")
         raise typer.Exit(code=1)

@@ -3604,3 +3604,20 @@
   `tests/test_instance_bootstrap.py`,
   `tests/test_cli_main.py`,
   `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Added fail-fast regression gate for unexpected diffs (`P13.4d`)
+- `femic instance rebuild` now fails when
+  `baseline_unexpected_diff_count` exceeds
+  `runtime.baseline_unexpected_diff_threshold` (default `0`).
+- Added explicit remediation summary output when this gate trips:
+  review allowlist results, update tracked allowlist, or regenerate baseline.
+- Rebuild reports now include a `regression_gate` section capturing:
+  - step failure status,
+  - fatal invariant failure status,
+  - baseline unexpected-diff threshold evaluation status.
+- Updated rebuild-spec schema/template docs:
+  `planning/femic_instance_rebuild_spec_schema.v1.yaml`,
+  `src/femic/resources/instance/config/rebuild.spec.yaml`,
+  `instances/reference/config/rebuild.spec.yaml`.
+- Added regression test:
+  `tests/test_cli_main.py::test_instance_rebuild_fails_when_unexpected_diffs_exceed_threshold`.

@@ -41,6 +41,9 @@ root:
         log_dir:
           type: string
           description: "Directory used for manifests/reports/logs."
+        baseline_unexpected_diff_threshold:
+          type: number
+          description: "Maximum unexpected baseline diffs allowed before rebuild fails."
     steps:
       type: list
       min_items: 1
@@ -115,4 +118,3 @@ root:
           remediation:
             type: string
             description: "Operator-facing remediation guidance on failure."
-

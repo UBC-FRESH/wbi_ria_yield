@@ -984,6 +984,108 @@ def test_instance_rebuild_dry_run_prints_plan_without_execution(
     assert any("patchworks_matrix_build" in msg for msg in messages)
 
 
+def test_instance_rebuild_fails_when_unexpected_diffs_exceed_threshold(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    instance_root = tmp_path / "instance-root"
+    (instance_root / "config").mkdir(parents=True, exist_ok=True)
+    (instance_root / "config/patchworks.runtime.yaml").write_text(
+        "patchworks:\n  jar_path: C:/patchworks/patchworks.jar\n"
+        "  license_env: SPS_LICENSE_SERVER\n"
+        "  license_value: user@server\n"
+        "  spshome: C:/patchworks\n"
+        "matrix_builder:\n"
+        "  fragments_path: C:/tmp/fragments.dbf\n"
+        "  output_dir: C:/tmp/tracks\n"
+        "  forestmodel_xml_path: C:/tmp/ForestModel.xml\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=instance_root,
+            resolve_path=lambda value: instance_root / value,
+        ),
+    )
+
+    class FakeRunner:
+        def __init__(self, *, steps, report_sink):
+            _ = (steps, report_sink)
+
+        def run(self, *, run_id, context):
+            _ = (run_id, context)
+            return SimpleNamespace(failed=False, outcomes=())
+
+    monkeypatch.setattr(cli_main, "RebuildRunner", FakeRunner)
+    monkeypatch.setattr(
+        cli_main,
+        "load_rebuild_spec",
+        lambda _path: {
+            "schema_version": "1.0",
+            "instance": {"case_id": "x"},
+            "runtime": {"baseline_unexpected_diff_threshold": 0},
+            "steps": [{}],
+            "invariants": [],
+        },
+    )
+    monkeypatch.setattr(cli_main, "validate_rebuild_spec_payload", lambda _payload: [])
+    monkeypatch.setattr(cli_main, "collect_rebuild_metrics", lambda **_kwargs: {})
+    monkeypatch.setattr(
+        cli_main,
+        "build_current_snapshot",
+        lambda **_kwargs: {"track_tables": {}, "forestmodel_xml": {}},
+    )
+    monkeypatch.setattr(cli_main, "load_snapshot", lambda _path: {})
+    monkeypatch.setattr(
+        cli_main,
+        "diff_snapshots",
+        lambda **_kwargs: {
+            "table_diffs": [],
+            "xml_diff": {"status": "unchanged", "changed_keys": []},
+            "diff_count": 1,
+            "baseline_match": False,
+        },
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "load_diff_allowlist",
+        lambda _path: {"allowed_table_diffs": [], "allowed_xml_keys": []},
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "apply_diff_allowlist",
+        lambda **_kwargs: {
+            "unexpected_table_diffs": [{"table": "accounts.csv"}],
+            "unexpected_xml_keys": [],
+            "unexpected_diff_count": 1,
+            "allowlist_match": False,
+        },
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.instance_rebuild(
+            spec=Path("config/rebuild.spec.yaml"),
+            run_config=Path("config/run_profile.case_template.yaml"),
+            tipsy_config_dir=Path("config/tipsy"),
+            log_dir=Path("vdyp_io/logs"),
+            run_id="rebuild_test",
+            with_patchworks=False,
+            dry_run=False,
+            patchworks_config=Path("config/patchworks.runtime.yaml"),
+            baseline=Path("config/rebuild.baseline.json"),
+            write_baseline=False,
+            allowlist=Path("config/rebuild.allowlist.yaml"),
+            instance_root=instance_root,
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert any("unexpected baseline diffs exceed threshold" in msg for msg in messages)
+
+
 def test_instance_validate_spec_reports_schema_issues(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

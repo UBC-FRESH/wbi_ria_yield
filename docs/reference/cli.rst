@@ -300,6 +300,9 @@ section with table/XML structural diffs and aggregate ``baseline_match`` /
 ``baseline_diff_count`` metrics. If an allowlist file is present, rebuild also
 computes ``baseline_allowlist_match`` and ``baseline_unexpected_diff_count``
 for explicit intentional-delta tracking.
+Rebuild exits non-zero when unexpected baseline diffs exceed
+``runtime.baseline_unexpected_diff_threshold`` from ``rebuild.spec.yaml``
+(default ``0``), and writes ``regression_gate`` details into the report.
 
 ``instance validate-spec`` options
 

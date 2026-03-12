@@ -367,7 +367,7 @@
   - [x] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
   - [x] P13.4b Add configurable baseline snapshot/diff support for key track tables and selected XML structures.
   - [x] P13.4c Add explicit allowlist mechanism for intentional output deltas (so accepted changes are tracked in git).
-  - [ ] P13.4d Fail rebuild with actionable summary when invariants regress or unexpected diffs exceed thresholds.
+  - [x] P13.4d Fail rebuild with actionable summary when invariants regress or unexpected diffs exceed thresholds.
 - [ ] P13.5 Add user-facing documentation and operator runbooks
   - [ ] P13.5a Add docs page: "Rebuild Repro Contract" (what it is, why it exists, expected workflow).
   - [ ] P13.5b Add docs page: "How to author a new instance rebuild spec" with copy-ready examples.
@@ -3508,3 +3508,19 @@
     `instances/reference/config/rebuild.allowlist.yaml`.
   - Updated instance scaffolding (`femic instance init`) and quickstart docs
     so every new instance starts with a tracked allowlist file.
+- 2026-03-11 (Phase 13 `P13.4d` completion): rebuild now fails fast with
+  explicit actionable regression summaries for unexpected baseline drift.
+  - `femic instance rebuild` now enforces runtime threshold
+    `runtime.baseline_unexpected_diff_threshold` (default `0`) and exits
+    non-zero when `baseline_unexpected_diff_count` exceeds threshold.
+  - Added operator-facing remediation output for unexpected diffs:
+    review report baseline allowlist results, update tracked allowlist, or
+    regenerate baseline with `--write-baseline`.
+  - Rebuild report now includes `regression_gate` with step/invariant/baseline
+    gate status fields.
+  - Updated baseline schema/template docs:
+    `planning/femic_instance_rebuild_spec_schema.v1.yaml`,
+    `src/femic/resources/instance/config/rebuild.spec.yaml`,
+    `instances/reference/config/rebuild.spec.yaml`.
+  - Added regression coverage:
+    `tests/test_cli_main.py::test_instance_rebuild_fails_when_unexpected_diffs_exceed_threshold`.
