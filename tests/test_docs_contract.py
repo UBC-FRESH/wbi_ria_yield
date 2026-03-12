@@ -256,6 +256,8 @@ def test_case_onboarding_templates_exist() -> None:
     runbook_text = Path("instances/reference/runbooks/REBUILD_RUNBOOK.md").read_text()
     assert "femic instance refresh-reference-evidence" in runbook_text
     assert "evidence/reference_rebuild_report.latest.json" in runbook_text
+    assert "femic instance account-surface" in runbook_text
+    assert "diagnosis.total_ok_species_empty_signature" in runbook_text
 
 
 def test_case_onboarding_guide_keeps_template_and_preflight_links() -> None:
@@ -487,6 +489,7 @@ def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> N
     for heading in (
         "Analysis Report",
         "Base Case Output and Interpretation",
+        "Expected-Empty Account Matrix",
         "Discussion",
         "Known Limitations and Uncertainty",
         "Provenance Table",
@@ -607,6 +610,7 @@ def test_k3z_sample_model_docs_keep_required_sections() -> None:
         "Edit Policy: Safe vs Generated",
         "Backup and Recovery Conventions",
         "Scenario Comparison Guidance",
+        "Expected-Empty Account Matrix and Validation Checklist",
         "Regenerated Strata/AU Build Plots",
         "Release Readiness Checklist",
         "Troubleshooting",
@@ -615,6 +619,8 @@ def test_k3z_sample_model_docs_keep_required_sections() -> None:
         assert heading in k3z_text, f"k3z.rst missing required section: {heading}"
     assert "Species Code Semantics: PL vs PLC" in k3z_text
     assert "Use ``PLC`` account series for lodgepole-pine interpretation." in k3z_text
+    assert "Expected-Empty Account Matrix and Validation Checklist" in k3z_text
+    assert "total OK, species-wise empty" in k3z_text
     assert "plots/strata-tsak3z.png" in k3z_text
     assert "plots/vdyp_lmh_tsak3z-*.png" in k3z_text
     assert "plots/tipsy_vdyp_tsak3z-*.png" in k3z_text

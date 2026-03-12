@@ -32,3 +32,13 @@ After refresh, verify:
 
 ## Local Notes
 - Document case-specific overrides, expected warnings, and accepted deltas here.
+
+## Species-Surface Diagnostics (When Total Looks OK but Species Look Empty)
+```bash
+femic instance account-surface \
+  --config config/patchworks.runtime.windows.yaml \
+  --output vdyp_io/logs/account_surface-<run_id>.json
+```
+After running, verify in the JSON/report:
+- `diagnosis.total_ok_species_empty_signature` is `false`.
+- If `true`, follow `diagnosis.recommended_next_checks` before changing allowlists.

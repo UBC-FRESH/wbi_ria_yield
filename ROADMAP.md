@@ -415,25 +415,25 @@ notes.
    /target surfaces and keep `PLC` canonical.
   - [x] P15.1c Add explicit docs note so students understand species-code
     expectations and do not interpret empty `PL` as runtime failure.
-- [ ] P15.2 Add rebuild invariants for species-account completeness
+- [x] P15.2 Add rebuild invariants for species-account completeness
   - [x] P15.2a Add invariant checks for species-wise managed yield and
     harvested-volume account presence/non-null behavior.
   - [x] P15.2b Classify expected-empty vs unexpected-empty species outputs as
     configurable policy in rebuild spec/allowlist.
   - [x] P15.2c Fail rebuild when unexpected species-account null regressions are
     introduced.
-- [ ] P15.3 Add operator diagnostics for account-surface QA
+- [x] P15.3 Add operator diagnostics for account-surface QA
   - [x] P15.3a Add a CLI/report helper to summarize account/target coverage by
     species and AU from rebuilt tracks.
   - [x] P15.3b Add a deterministic troubleshooting flow for "total OK,
     species-wise empty" failures.
-  - [ ] P15.3c Wire diagnostics outputs into rebuild evidence/runbook guidance.
-- [ ] P15.4 Update K3Z standalone docs and FEMIC sample-model docs
-  - [ ] P15.4a Update k3z guide pages with species-account interpretation and
+  - [x] P15.3c Wire diagnostics outputs into rebuild evidence/runbook guidance.
+- [x] P15.4 Update K3Z standalone docs and FEMIC sample-model docs
+  - [x] P15.4a Update k3z guide pages with species-account interpretation and
     PL/PLC decision record.
-  - [ ] P15.4b Add user-facing "expected empty account" matrix and validation
+  - [x] P15.4b Add user-facing "expected empty account" matrix and validation
     checklist.
-  - [ ] P15.4c Add docs-contract coverage for required species-account
+  - [x] P15.4c Add docs-contract coverage for required species-account
     interpretation sections.
 
 ## Detailed Next Steps Notes
@@ -3879,3 +3879,20 @@ notes.
     `external/femic-k3z-instance/docs/troubleshooting.rst`.
   - Next execution step: implement `P15.3c` to wire diagnostics outputs into
     rebuild evidence/runbook guidance.
+- 2026-03-12 (Phase 15 `P15.3c` + `P15.4` completion): wired account-surface
+  diagnostics into rebuild evidence and finalized user-facing species-account
+  docs coverage for K3Z.
+  - `femic instance rebuild` now writes `diagnostics.account_surface` into
+    rebuild reports when tracks are available and emits summary console lines.
+  - `femic instance promote-evidence` now carries
+    `summary.account_surface_total_ok_species_empty_signature` and
+    `summary.account_surface_species_count`.
+  - Updated runbook guidance in:
+    `instances/reference/runbooks/REBUILD_RUNBOOK.md`,
+    `src/femic/resources/instance/runbooks/REBUILD_RUNBOOK.md`.
+  - Added expected-empty account matrix/checklist docs in:
+    `docs/sample-models/k3z.rst` and
+    `external/femic-k3z-instance/docs/base-case-analysis.rst`.
+  - Expanded docs contract checks in `tests/test_docs_contract.py` to lock
+    required species-account interpretation sections.
+  - Phase 15 checklist is now complete.

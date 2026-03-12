@@ -294,6 +294,9 @@ Subcommands
 ``instance rebuild`` writes a machine-readable report to
 ``vdyp_io/logs/instance_rebuild_report-<run_id>.json`` and records discovered
 manifest/log artifact references under ``artifact_references``.
+It also writes ``diagnostics.account_surface`` when ``tracks/accounts.csv`` is
+available, including a deterministic
+``total_ok_species_empty_signature`` flag and recommended next checks.
 It also evaluates configured rebuild-spec invariants and appends measured
 ``metrics`` plus ``invariant_results`` to the report. Any invariant with
 ``severity: fatal`` that evaluates false causes command failure with a
@@ -320,6 +323,11 @@ Rebuild exits non-zero when unexpected baseline diffs exceed
 - ``--max-warn-increase INT`` (optional drift warning threshold)
 - ``--max-baseline-diff-increase INT`` (optional drift warning threshold)
 - ``--instance-root PATH``
+
+Promoted evidence summary also includes:
+
+- ``summary.account_surface_total_ok_species_empty_signature``
+- ``summary.account_surface_species_count``
 
 ``instance refresh-reference-evidence`` options
 

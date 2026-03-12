@@ -3967,3 +3967,23 @@
   - `tests/test_account_surface.py`
   - `tests/test_cli_main.py`
   - `tests/test_docs_contract.py` (required troubleshooting snippets).
+
+## 2026-03-12 - Wired account-surface diagnostics into rebuild evidence and closed Phase 15 (`P15.3c`, `P15.4`)
+- `femic instance rebuild` now writes `diagnostics.account_surface` to
+  `instance_rebuild_report-<run_id>.json` when tracks are available.
+- `femic instance promote-evidence` now carries account-surface QA fields:
+  - `summary.account_surface_total_ok_species_empty_signature`
+  - `summary.account_surface_species_count`
+- Updated runbook guidance to include deterministic species-surface diagnostics:
+  - `instances/reference/runbooks/REBUILD_RUNBOOK.md`
+  - `src/femic/resources/instance/runbooks/REBUILD_RUNBOOK.md`
+- Added/updated user-facing docs for expected-empty species accounts and
+  validation checklist:
+  - `docs/sample-models/k3z.rst`
+  - `external/femic-k3z-instance/docs/base-case-analysis.rst`
+  - `docs/reference/cli.rst`
+  - `docs/guides/troubleshooting.rst`
+- Expanded tests/docs-contract coverage:
+  - `tests/test_cli_main.py`
+  - `tests/test_docs_contract.py`
+  - `tests/test_account_surface.py`

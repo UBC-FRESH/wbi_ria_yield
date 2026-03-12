@@ -274,6 +274,41 @@ Interpretation rule for students:
 - Missing ``PL`` account boxes in Patchworks for K3Z are expected.
 - Use ``PLC`` account series for lodgepole-pine interpretation.
 
+Expected-Empty Account Matrix and Validation Checklist
+------------------------------------------------------
+
+Use this matrix so students can quickly distinguish expected empties from real
+model defects.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Account pattern
+     - Expected state in K3Z
+     - Why
+   * - ``product.Yield.managed.PLC``
+     - present + nonzero
+     - canonical lodgepole-pine interpreted species signal.
+   * - ``product.HarvestedVolume.managed.PLC.CC``
+     - present + nonzero
+     - canonical harvested-volume companion for ``PLC``.
+   * - ``product.Yield.managed.PL``
+     - absent
+     - filtered by account-promotion regex to avoid duplicate/ambiguous species coding.
+   * - ``product.HarvestedVolume.managed.PL.CC``
+     - absent
+     - same ``PL`` exclusion policy as above.
+
+Validation checklist (run after each matrix rebuild):
+
+1. ``femic instance account-surface`` reports no
+   ``total OK, species-wise empty`` diagnosis.
+2. ``femic instance rebuild --with-patchworks`` report shows fatal species policy
+   invariants passing.
+3. Matrix manifest confirms expected account filtering:
+   ``accounts_sync.excluded_patterns`` includes ``\.PL(\.|$)``.
+
+
 Scenario Comparison Guidance
 ----------------------------
 
@@ -388,3 +423,4 @@ Common failure signatures and fixes:
 
 For run diagnostics, inspect the corresponding manifest JSON under
 ``vdyp_io/logs`` first, then the run-scoped stdout/stderr logs.
+

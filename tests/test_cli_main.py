@@ -1217,6 +1217,12 @@ def test_instance_promote_evidence_writes_normalized_payload(
                     "baseline_unexpected_diff_threshold": 0,
                     "baseline_unexpected_diff_count": 0,
                 },
+                "diagnostics": {
+                    "account_surface": {
+                        "species_count": 10,
+                        "diagnosis": {"total_ok_species_empty_signature": False},
+                    }
+                },
             }
         ),
         encoding="utf-8",
@@ -1246,6 +1252,10 @@ def test_instance_promote_evidence_writes_normalized_payload(
     assert payload["status"] == "ok"
     assert payload["summary"]["invariant_pass_count"] == 1
     assert payload["summary"]["invariant_warn_count"] == 1
+    assert (
+        payload["summary"]["account_surface_total_ok_species_empty_signature"] is False
+    )
+    assert payload["summary"]["account_surface_species_count"] == 10
     assert any("Promoted rebuild evidence" in msg for msg in messages)
 
 

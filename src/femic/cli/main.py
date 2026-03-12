@@ -934,6 +934,34 @@ def instance_rebuild(
         run_id=effective_run_id,
         patchworks_config_path=resolved_patchworks_config,
     )
+    account_surface_summary: dict[str, Any] | None = None
+    if resolved_patchworks_config.exists():
+        try:
+            runtime_config = load_patchworks_runtime_config(resolved_patchworks_config)
+            accounts_csv_path = runtime_config.matrix_output_dir / "accounts.csv"
+            if accounts_csv_path.exists():
+                account_surface_summary = summarize_account_surface(
+                    accounts_csv_path=accounts_csv_path,
+                    products_csv_path=runtime_config.matrix_output_dir / "products.csv",
+                    curves_csv_path=runtime_config.matrix_output_dir / "curves.csv",
+                )
+                diagnosis = account_surface_summary.get("diagnosis", {})
+                if isinstance(diagnosis, dict):
+                    metrics["account_surface.total_ok_species_empty_signature"] = bool(
+                        diagnosis.get("total_ok_species_empty_signature", False)
+                    )
+                    metrics["account_surface.species_count"] = int(
+                        account_surface_summary.get("species_count", 0) or 0
+                    )
+        except (
+            FileNotFoundError,
+            PatchworksConfigError,
+            json.JSONDecodeError,
+            yaml.YAMLError,
+            OSError,
+            ValueError,
+        ):
+            account_surface_summary = None
     baseline_diff_payload: dict[str, object] | None = None
     baseline_allowlist_payload: dict[str, object] | None = None
     baseline_allowlist_result: dict[str, object] | None = None
@@ -1011,6 +1039,22 @@ def instance_rebuild(
                 "current_snapshot": current_snapshot_payload,
                 "baseline_snapshot": baseline_snapshot_payload,
             }
+            if account_surface_summary is not None:
+                diagnostics_payload = report_payload.get("diagnostics", {})
+                if not isinstance(diagnostics_payload, dict):
+                    diagnostics_payload = {}
+                diagnostics_payload["account_surface"] = account_surface_summary
+                report_payload["diagnostics"] = diagnostics_payload
+            report_path.write_text(
+                json.dumps(report_payload, indent=2), encoding="utf-8"
+            )
+        elif account_surface_summary is not None:
+            report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+            diagnostics_payload = report_payload.get("diagnostics", {})
+            if not isinstance(diagnostics_payload, dict):
+                diagnostics_payload = {}
+            diagnostics_payload["account_surface"] = account_surface_summary
+            report_payload["diagnostics"] = diagnostics_payload
             report_path.write_text(
                 json.dumps(report_payload, indent=2), encoding="utf-8"
             )
@@ -1063,6 +1107,19 @@ def instance_rebuild(
             f"path={resolved_baseline} "
             f"diff_count={metrics.get('baseline_diff_count')} "
             f"unexpected_diff_count={metrics.get('baseline_unexpected_diff_count')}"
+        )
+    if account_surface_summary is not None:
+        diagnosis = account_surface_summary.get("diagnosis", {})
+        signature = (
+            diagnosis.get("total_ok_species_empty_signature", False)
+            if isinstance(diagnosis, dict)
+            else False
+        )
+        console.print(
+            "account_surface: "
+            f"species={account_surface_summary.get('species_count')} "
+            f"au={account_surface_summary.get('au_count')} "
+            f"total_ok_species_empty={bool(signature)}"
         )
     unexpected_diff_count_value = metrics.get("baseline_unexpected_diff_count")
     unexpected_diff_count = (
@@ -1174,6 +1231,22 @@ def instance_promote_evidence(
     regression_gate = source_payload.get("regression_gate", {})
     if not isinstance(regression_gate, dict):
         regression_gate = {}
+    diagnostics_payload = source_payload.get("diagnostics", {})
+    account_surface_payload = (
+        diagnostics_payload.get("account_surface", {})
+        if isinstance(diagnostics_payload, dict)
+        else {}
+    )
+    diagnosis_payload = (
+        account_surface_payload.get("diagnosis", {})
+        if isinstance(account_surface_payload, dict)
+        else {}
+    )
+    total_ok_species_empty_signature = (
+        bool(diagnosis_payload.get("total_ok_species_empty_signature", False))
+        if isinstance(diagnosis_payload, dict)
+        else False
+    )
     failed = bool(
         source_payload.get("failed")
         or regression_gate.get("step_failure")
@@ -1206,6 +1279,14 @@ def instance_promote_evidence(
             "invariant_warn_count": warn_count,
             "invariant_fail_count": fail_count,
             "baseline_diff_count": baseline_diff_count,
+            "account_surface_total_ok_species_empty_signature": (
+                total_ok_species_empty_signature
+            ),
+            "account_surface_species_count": account_surface_payload.get(
+                "species_count"
+            )
+            if isinstance(account_surface_payload, dict)
+            else None,
         },
     }
     previous_payload: dict[str, object] | None = None
