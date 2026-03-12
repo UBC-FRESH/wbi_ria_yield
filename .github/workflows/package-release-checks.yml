@@ -91,3 +91,31 @@ jobs:
             --instance-root /tmp/femic-wheel-smoke-instance \
             --run-config /tmp/femic-wheel-smoke-instance/config/run_profile.ci.yaml \
             --tipsy-config-dir /tmp/femic-wheel-smoke-instance/config/tipsy
+
+      - name: Reference instance rebuild evidence gate
+        run: |
+          python - <<'EOF'
+          import json
+          from pathlib import Path
+
+          path = Path("instances/reference/evidence/reference_rebuild_report.latest.json")
+          if not path.exists():
+              raise SystemExit(f"missing reference rebuild evidence: {path}")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          gate = payload.get("regression_gate", {})
+          required_false = [
+              "step_failure",
+              "fatal_invariant_failure",
+              "unexpected_diff_regression",
+          ]
+          for key in required_false:
+              if gate.get(key) is not False:
+                  raise SystemExit(
+                      f"reference rebuild evidence gate failed: {key}={gate.get(key)!r}"
+                  )
+          if payload.get("status") != "ok":
+              raise SystemExit(
+                  f"reference rebuild evidence status not ok: {payload.get('status')!r}"
+              )
+          print("reference rebuild evidence gate: ok")
+          EOF

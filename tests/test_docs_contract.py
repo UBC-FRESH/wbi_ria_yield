@@ -252,6 +252,7 @@ def test_reference_instance_location_is_defined_and_documented() -> None:
     assert (reference_root / "config/run_profile.case_template.yaml").is_file()
     assert (reference_root / "config/tipsy/template.case.yaml").is_file()
     assert (reference_root / "QUICKSTART.md").is_file()
+    assert (reference_root / "evidence/reference_rebuild_report.latest.json").is_file()
 
     guide_text = (GUIDES_ROOT / "deployment-instances.rst").read_text()
     assert "instances/reference/" in guide_text
@@ -293,6 +294,10 @@ def test_package_release_checks_workflow_exists() -> None:
     assert "femic instance init" in workflow_text
     assert "femic prep validate-case" in workflow_text
     assert "FEMIC_EXTERNAL_DATA_ROOT=" in workflow_text
+    assert "Reference instance rebuild evidence gate" in workflow_text
+    assert "instances/reference/evidence/reference_rebuild_report.latest.json" in (
+        workflow_text
+    )
 
 
 def test_docs_include_installed_package_instance_run_workflow() -> None:
@@ -699,6 +704,16 @@ def test_contributor_policy_requires_rebuild_spec_and_checks() -> None:
     ]
     for marker in required_markers:
         assert marker in contract_text
+
+
+def test_reference_rebuild_evidence_payload_is_present_and_passing() -> None:
+    path = Path("instances/reference/evidence/reference_rebuild_report.latest.json")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["status"] == "ok"
+    gate = payload["regression_gate"]
+    assert gate["step_failure"] is False
+    assert gate["fatal_invariant_failure"] is False
+    assert gate["unexpected_diff_regression"] is False
 
 
 def test_author_instance_rebuild_spec_guide_covers_core_sections() -> None:

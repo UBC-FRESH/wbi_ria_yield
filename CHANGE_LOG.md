@@ -3705,3 +3705,16 @@
   - `runbooks/REBUILD_RUNBOOK.md`.
 - Added docs-contract enforcement in:
   `tests/test_docs_contract.py` so these references remain mandatory.
+
+## 2026-03-11 - Added reference-instance rebuild evidence release gate (`P13.6c`)
+- Added tracked evidence artifact:
+  `instances/reference/evidence/reference_rebuild_report.latest.json`.
+- Added package-release workflow gate:
+  `.github/workflows/package-release-checks.yml` now includes
+  `Reference instance rebuild evidence gate` and enforces passing
+  `regression_gate` fields.
+- Updated deployment docs with evidence requirements:
+  `docs/guides/deployment-instances.rst`.
+- Added docs-contract coverage:
+  `tests/test_docs_contract.py` now requires evidence artifact presence,
+  release-workflow gate wiring, and passing evidence payload fields.

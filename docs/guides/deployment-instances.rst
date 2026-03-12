@@ -140,3 +140,18 @@ When standing up a new instance repository, treat these as mandatory:
 - retain generated rebuild report/manifests for review.
 
 This policy is enforced by FEMIC roadmap/docs contracts for Phase 13.
+
+Reference Instance Release Gate Evidence
+----------------------------------------
+
+FEMIC release checks now require a tracked reference-instance rebuild evidence
+artifact with a passing regression gate:
+
+- ``instances/reference/evidence/reference_rebuild_report.latest.json``
+
+The release gate expects:
+
+- ``status: "ok"``
+- ``regression_gate.step_failure: false``
+- ``regression_gate.fatal_invariant_failure: false``
+- ``regression_gate.unexpected_diff_regression: false``

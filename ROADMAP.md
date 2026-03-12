@@ -376,7 +376,7 @@
 - [ ] P13.6 Enforce this as the default norm for all new FEMIC instances
   - [x] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
   - [x] P13.6b Add docs/contract tests requiring rebuild-spec references in sample/new instance docs.
-  - [ ] P13.6c Add release-gate checks requiring successful rebuild report for reference instances prior to milestone close.
+  - [x] P13.6c Add release-gate checks requiring successful rebuild report for reference instances prior to milestone close.
   - [ ] P13.6d Add roadmap/changelog policy note: no new instance phase closes without reproducible rebuild evidence.
 
 ## Detailed Next Steps Notes
@@ -3592,3 +3592,15 @@
     spec/allowlist/runbook assets.
   - Added/extended docs-contract assertions in `tests/test_docs_contract.py`
     to enforce these references going forward.
+- 2026-03-11 (Phase 13 `P13.6c` completion): added release-gate enforcement
+  requiring passing reference-instance rebuild evidence.
+  - Added tracked evidence artifact:
+    `instances/reference/evidence/reference_rebuild_report.latest.json`
+    with explicit `regression_gate` pass status fields.
+  - Added GitHub Actions release-gate step in
+    `.github/workflows/package-release-checks.yml`:
+    `Reference instance rebuild evidence gate`.
+  - Added docs + docs-contract enforcement for evidence path and required pass
+    fields in:
+    `docs/guides/deployment-instances.rst` and
+    `tests/test_docs_contract.py`.

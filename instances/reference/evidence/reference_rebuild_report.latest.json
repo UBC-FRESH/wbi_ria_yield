@@ -1,0 +1,21 @@
+{
+  "report_schema_version": "1.0",
+  "instance_id": "reference",
+  "run_id": "reference_evidence_20260311T000000Z",
+  "status": "ok",
+  "report_path": "vdyp_io/logs/instance_rebuild_report-reference_evidence_20260311T000000Z.json",
+  "regression_gate": {
+    "step_failure": false,
+    "fatal_invariant_failure": false,
+    "unexpected_diff_regression": false,
+    "baseline_unexpected_diff_threshold": 0,
+    "baseline_unexpected_diff_count": 0
+  },
+  "summary": {
+    "invariant_pass_count": 3,
+    "invariant_warn_count": 0,
+    "invariant_fail_count": 0,
+    "baseline_diff_count": 0
+  },
+  "notes": "Reference-instance release-gate evidence snapshot."
+}
