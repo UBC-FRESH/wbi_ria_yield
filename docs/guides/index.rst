@@ -13,6 +13,7 @@ export modules.
    deployment-instances
    rebuild-repro-contract
    author-instance-rebuild-spec
+   interpret-rebuild-reports
    data-access-inventory
    public-data-mirror-runbook
    case-onboarding

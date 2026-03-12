@@ -371,7 +371,7 @@
 - [ ] P13.5 Add user-facing documentation and operator runbooks
   - [x] P13.5a Add docs page: "Rebuild Repro Contract" (what it is, why it exists, expected workflow).
   - [x] P13.5b Add docs page: "How to author a new instance rebuild spec" with copy-ready examples.
-  - [ ] P13.5c Add docs page: "How to interpret rebuild reports and regressions".
+  - [x] P13.5c Add docs page: "How to interpret rebuild reports and regressions".
   - [ ] P13.5d Add contributor policy text making rebuild-spec + checks mandatory for new instance repos.
 - [ ] P13.6 Enforce this as the default norm for all new FEMIC instances
   - [ ] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
@@ -3543,3 +3543,15 @@
     `docs/guides/index.rst` and `docs/guides/rebuild-repro-contract.rst`.
   - Added docs-contract coverage:
     `tests/test_docs_contract.py::test_author_instance_rebuild_spec_guide_covers_core_sections`.
+- 2026-03-11 (Phase 13 `P13.5c` completion): added operator guide for rebuild
+  report interpretation and regression triage workflow.
+  - Added docs page:
+    `docs/guides/interpret-rebuild-reports.rst`.
+  - Documented how to interpret `outcomes`, `invariant_results`, `baseline`,
+    and `regression_gate` sections in instance rebuild reports.
+  - Added explicit triage sequence for resolving step failures, fatal
+    invariant regressions, and unexpected baseline drift.
+  - Added guide navigation links in:
+    `docs/guides/index.rst` and `docs/guides/rebuild-repro-contract.rst`.
+  - Added docs-contract coverage:
+    `tests/test_docs_contract.py::test_interpret_rebuild_reports_guide_covers_core_sections`.

@@ -3650,3 +3650,18 @@
   `docs/guides/rebuild-repro-contract.rst`.
 - Added docs-contract test coverage:
   `tests/test_docs_contract.py::test_author_instance_rebuild_spec_guide_covers_core_sections`.
+
+## 2026-03-11 - Added rebuild report interpretation and triage guide (`P13.5c`)
+- Added new guide:
+  `docs/guides/interpret-rebuild-reports.rst`.
+- Guide now covers:
+  - report location and top-level payload structure,
+  - step outcome interpretation,
+  - invariant result interpretation,
+  - baseline/allowlist diff interpretation,
+  - regression-gate semantics and triage workflow.
+- Updated docs navigation/linking:
+  `docs/guides/index.rst`,
+  `docs/guides/rebuild-repro-contract.rst`.
+- Added docs-contract test coverage:
+  `tests/test_docs_contract.py::test_interpret_rebuild_reports_guide_covers_core_sections`.

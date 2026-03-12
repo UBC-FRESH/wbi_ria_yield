@@ -71,4 +71,5 @@ Next Guides
 
 - ``How to author a new instance rebuild spec``:
   ``docs/guides/author-instance-rebuild-spec.rst`` (P13.5b)
-- ``How to interpret rebuild reports and regressions`` (P13.5c)
+- ``How to interpret rebuild reports and regressions``:
+  ``docs/guides/interpret-rebuild-reports.rst`` (P13.5c)

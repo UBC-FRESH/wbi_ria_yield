@@ -20,6 +20,7 @@ GUIDE_PAGES = [
     "deployment-instances",
     "rebuild-repro-contract",
     "author-instance-rebuild-spec",
+    "interpret-rebuild-reports",
     "data-access-inventory",
     "public-data-mirror-runbook",
     "case-onboarding",
@@ -691,6 +692,20 @@ def test_author_instance_rebuild_spec_guide_covers_core_sections() -> None:
         "Invariant Authoring Rules",
         "K3Z Reference Pattern",
         "Dry-Run and Execute",
+    ]
+    for section in required_sections:
+        assert section in guide_text
+
+
+def test_interpret_rebuild_reports_guide_covers_core_sections() -> None:
+    guide_text = (GUIDES_ROOT / "interpret-rebuild-reports.rst").read_text()
+    required_sections = [
+        "Report Location",
+        "Step Outcomes",
+        "Invariant Results",
+        "Baseline and Allowlist Diffs",
+        "Regression Gate",
+        "Triage Workflow",
     ]
     for section in required_sections:
         assert section in guide_text
