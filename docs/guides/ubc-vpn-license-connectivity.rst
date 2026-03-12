@@ -6,7 +6,7 @@ For this project the configured value is typically:
 
 .. code-block:: text
 
-   frst424@auth.spatial.ca
+   sps_user@auth.spatial.ca
 
 Primary Topology
 ----------------

@@ -53,6 +53,8 @@ docs/reference/*.pdf
 docs/reference/vdyp/*.pdf
 /fmg
 reference/Patchworks*/
+**/patchworks.jar
+**/Patchworks*.jar
 
 # Local credentials (templates are committed; concrete files are not)
 config/credentials/*.sh

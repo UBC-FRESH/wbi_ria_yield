@@ -29,7 +29,7 @@ def _write_runtime_config(tmp_path: Path) -> Path:
                 "  jar_path: patchworks/patchworks.jar",
                 "  wine_prefix: null",
                 "  license_env: SPS_LICENSE_SERVER",
-                "  license_value: frst424@auth.spatial.ca",
+                "  license_value: sps_user@auth.spatial.ca",
                 "  spshome: Z:\\Patchworks",
                 "matrix_builder:",
                 "  fragments_path: data/fragments.dbf",
@@ -75,7 +75,7 @@ def test_load_patchworks_runtime_config_handles_parent_relative_paths(
                 "patchworks:",
                 "  jar_path: ../reference/Patchworks/patchworks.jar",
                 "  license_env: SPS_LICENSE_SERVER",
-                "  license_value: frst424@auth.spatial.ca",
+                "  license_value: sps_user@auth.spatial.ca",
                 "  spshome: Z:\\Patchworks",
                 "matrix_builder:",
                 "  fragments_path: ../output/patchworks_k3z_validated/fragments/fragments.dbf",
@@ -107,7 +107,7 @@ def test_load_patchworks_runtime_config_parses_accounts_exclude_regex(
                 "patchworks:",
                 "  jar_path: patchworks/patchworks.jar",
                 "  license_env: SPS_LICENSE_SERVER",
-                "  license_value: frst424@auth.spatial.ca",
+                "  license_value: sps_user@auth.spatial.ca",
                 "  spshome: Z:\\Patchworks",
                 "matrix_builder:",
                 "  fragments_path: data/fragments.dbf",
@@ -125,8 +125,8 @@ def test_load_patchworks_runtime_config_parses_accounts_exclude_regex(
 
 
 def test_parse_license_server_requires_user_host_format() -> None:
-    assert parse_license_server("frst424@auth.spatial.ca") == (
-        "frst424",
+    assert parse_license_server("sps_user@auth.spatial.ca") == (
+        "sps_user",
         "auth.spatial.ca",
     )
     with pytest.raises(PatchworksConfigError):
@@ -193,7 +193,7 @@ def test_load_patchworks_runtime_config_requires_spshome(
                 "  jar_path: patchworks/patchworks.jar",
                 "  wine_prefix: null",
                 "  license_env: SPS_LICENSE_SERVER",
-                "  license_value: frst424@auth.spatial.ca",
+                "  license_value: sps_user@auth.spatial.ca",
                 "matrix_builder:",
                 "  fragments_path: data/fragments.dbf",
                 "  output_dir: output/tracks",
@@ -219,7 +219,7 @@ def test_load_patchworks_runtime_config_uses_env_spshome_when_field_missing(
                 "  jar_path: patchworks/patchworks.jar",
                 "  wine_prefix: null",
                 "  license_env: SPS_LICENSE_SERVER",
-                "  license_value: frst424@auth.spatial.ca",
+                "  license_value: sps_user@auth.spatial.ca",
                 "matrix_builder:",
                 "  fragments_path: data/fragments.dbf",
                 "  output_dir: output/tracks",
@@ -284,7 +284,7 @@ def test_run_patchworks_command_writes_logs_and_manifest(
     assert manifest["runtime"]["spshome"] == "Z:\\Patchworks"
     assert manifest["runtime"]["host_mode"] == "wine"
     assert manifest["runtime"]["launcher_executable"] == "/usr/bin/wine64"
-    assert observed_env["SPS_LICENSE_SERVER"] == "frst424@auth.spatial.ca"
+    assert observed_env["SPS_LICENSE_SERVER"] == "sps_user@auth.spatial.ca"
     assert observed_env["SPSHOME"] == "Z:\\Patchworks"
     assert not result.failures
 

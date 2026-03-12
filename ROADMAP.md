@@ -3841,3 +3841,9 @@ notes.
     `planning/femic_instance_rebuild_spec_schema.v1.yaml`.
   - Next execution step: start `P15.3a` (operator diagnostics helper for
     account/target coverage by species and AU).
+- 2026-03-11 (repo hygiene): scrubbed real SPS license username from docs,
+  configs, tests, and tracked manifests.
+  - Replaced `frst424@auth.spatial.ca` with neutral example
+    `sps_user@auth.spatial.ca` across FEMIC + K3Z instance repo content.
+  - Purpose: avoid shipping user-identifying credentials in public-facing
+    documentation/config examples while preserving executable examples/tests.

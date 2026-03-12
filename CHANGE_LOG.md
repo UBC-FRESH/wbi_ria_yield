@@ -3918,3 +3918,15 @@
 - Updated documentation/spec references:
   - `docs/guides/author-instance-rebuild-spec.rst`
   - `planning/femic_instance_rebuild_spec_schema.v1.yaml`
+
+## 2026-03-11 - Scrubbed SPS username from docs/config/tests/manifests
+- Replaced `frst424@auth.spatial.ca` with neutral example
+  `sps_user@auth.spatial.ca` across tracked repository content.
+- Updated affected areas:
+  - FEMIC runtime config examples (`config/`, `instances/reference/`,
+    `src/femic/resources/instance/config/`)
+  - User docs (`docs/guides/patchworks-wine-runtime.rst`,
+    `docs/guides/ubc-vpn-license-connectivity.rst`)
+  - Patchworks runtime tests (`tests/test_patchworks_runtime.py`,
+    `tests/test_cli_main.py`)
+  - K3Z tracked manifests/config in `external/femic-k3z-instance/`.

@@ -27,7 +27,7 @@ Use ``config/patchworks.runtime.yaml``:
      jar_path: reference/Patchworks/patchworks.jar
      wine_prefix: null
      license_env: SPS_LICENSE_SERVER
-     license_value: frst424@auth.spatial.ca
+     license_value: sps_user@auth.spatial.ca
      spshome: Z:\\Program Files\\Spatial Planning Systems\\Patchworks
      use_xvfb: false
 

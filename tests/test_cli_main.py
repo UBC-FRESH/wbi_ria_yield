@@ -614,7 +614,7 @@ def test_patchworks_preflight_passes(monkeypatch: pytest.MonkeyPatch) -> None:
     runtime_cfg = SimpleNamespace(
         jar_path=Path("reference/Patchworks/patchworks.jar"),
         license_env="SPS_LICENSE_SERVER",
-        license_value="frst424@auth.spatial.ca",
+        license_value="sps_user@auth.spatial.ca",
         spshome="Z:\\Patchworks",
     )
     monkeypatch.setattr(
