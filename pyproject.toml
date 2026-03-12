@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "femic"
-version = "0.1.0"
+version = "0.1.1a1"
 description = "Forest Estate Model Input Compiler"
 readme = "README.md"
 requires-python = ">=3.11"

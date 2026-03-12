@@ -38,3 +38,13 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+      - name: Smoke install from PyPI
+        run: |
+          python -m venv /tmp/femic-pypi-smoke
+          /tmp/femic-pypi-smoke/bin/pip install --upgrade pip
+          version="$(python -c "from pathlib import Path; import tomllib; print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])")"
+          /tmp/femic-pypi-smoke/bin/pip install "femic==${version}"
+          /tmp/femic-pypi-smoke/bin/femic --help
