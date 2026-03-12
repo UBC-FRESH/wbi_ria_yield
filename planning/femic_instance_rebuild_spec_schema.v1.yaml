@@ -113,6 +113,8 @@ root:
               - lte
               - exists
               - not_exists
+              - contains
+              - not_contains
           target:
             type: any
           remediation:

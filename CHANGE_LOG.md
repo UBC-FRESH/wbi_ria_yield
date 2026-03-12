@@ -3849,3 +3849,26 @@
 - Added docs-contract enforcement in:
   `tests/test_docs_contract.py`
   requiring the PL/PLC semantics section/marker text in the sample-model page.
+
+## 2026-03-11 - Added species-account completeness invariants (`P15.2a`)
+- Extended rebuild invariant metrics with `accounts.list` in:
+  `src/femic/rebuild_invariants.py`.
+- Added invariant comparators:
+  `contains`, `not_contains`
+  in:
+  `src/femic/rebuild_invariants.py`,
+  `src/femic/rebuild_spec.py`,
+  `planning/femic_instance_rebuild_spec_schema.v1.yaml`.
+- Added tests for new metric/comparators in:
+  `tests/test_rebuild_invariants.py`,
+  `tests/test_rebuild_spec.py`.
+- Added K3Z fatal invariants in:
+  `external/femic-k3z-instance/config/rebuild.spec.yaml`
+  requiring:
+  `product.Yield.managed.PLC`,
+  `product.HarvestedVolume.managed.PLC.CC`,
+  and forbidding:
+  `product.Yield.managed.PL`,
+  `product.HarvestedVolume.managed.PL.CC`.
+- Updated invariant authoring docs:
+  `docs/guides/author-instance-rebuild-spec.rst`.

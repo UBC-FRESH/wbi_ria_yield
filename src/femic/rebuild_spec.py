@@ -34,6 +34,8 @@ ALLOWED_INVARIANT_COMPARATORS = {
     "lte",
     "exists",
     "not_exists",
+    "contains",
+    "not_contains",
 }
 
 

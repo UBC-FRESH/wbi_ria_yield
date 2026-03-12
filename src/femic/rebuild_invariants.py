@@ -56,9 +56,11 @@ def collect_rebuild_metrics(
         tracks_dir = config.matrix_output_dir
         blocks_path = tracks_dir / "blocks.csv"
         accounts_path = tracks_dir / "accounts.csv"
+        accounts_list = _accounts_list(accounts_path)
 
         metrics["managed_area_ha"] = _managed_area_ha(blocks_path)
         metrics["accounts.targets.required_present"] = accounts_path.exists()
+        metrics["accounts.list"] = accounts_list
         metrics["managed_species_account_count"] = _managed_species_account_count(
             accounts_path
         )
@@ -157,6 +159,18 @@ def _managed_species_account_count(accounts_csv_path: Path) -> int | None:
     return count
 
 
+def _accounts_list(accounts_csv_path: Path) -> list[str] | None:
+    if not accounts_csv_path.exists():
+        return None
+    accounts: set[str] = set()
+    with accounts_csv_path.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            account = str(row.get("ACCOUNT", "")).strip()
+            if account:
+                accounts.add(account)
+    return sorted(accounts)
+
+
 def _seral_account_count(accounts_csv_path: Path) -> int | None:
     if not accounts_csv_path.exists():
         return None
@@ -228,6 +242,15 @@ def _compare_metric(*, comparator: str, measured: Any, target: Any) -> tuple[boo
         if comparator == "lt":
             return measured_num < target_num, ""
         return measured_num <= target_num, ""
+    if comparator in {"contains", "not_contains"}:
+        if not isinstance(measured, (list, tuple, set)):
+            return False, "contains comparator requires sequence-like measured value"
+        measured_values = {str(item) for item in measured}
+        target_value = str(target)
+        contains = target_value in measured_values
+        if comparator == "contains":
+            return contains, ""
+        return not contains, ""
     return False, f"unsupported comparator: {comparator}"
 
 

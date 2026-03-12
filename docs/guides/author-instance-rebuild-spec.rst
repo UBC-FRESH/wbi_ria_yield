@@ -99,8 +99,11 @@ Invariant Authoring Rules
 - Use ``severity: warn`` for non-blocking diagnostics.
 - Prefer metrics already emitted by rebuild:
   ``managed_area_ha``, ``block_join_mismatch_count``,
-  ``seral_account_count``, ``baseline_match``,
+  ``seral_account_count``, ``accounts.list``, ``baseline_match``,
   ``baseline_unexpected_diff_count``.
+- Supported comparators:
+  ``eq``, ``ne``, ``gt``, ``gte``, ``lt``, ``lte``, ``exists``,
+  ``not_exists``, ``contains``, ``not_contains``.
 - Always include remediation text that tells the operator what to do next.
 
 K3Z Reference Pattern

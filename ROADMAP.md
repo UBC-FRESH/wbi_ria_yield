@@ -416,7 +416,7 @@ notes.
   - [x] P15.1c Add explicit docs note so students understand species-code
     expectations and do not interpret empty `PL` as runtime failure.
 - [ ] P15.2 Add rebuild invariants for species-account completeness
-  - [ ] P15.2a Add invariant checks for species-wise managed yield and
+  - [x] P15.2a Add invariant checks for species-wise managed yield and
     harvested-volume account presence/non-null behavior.
   - [ ] P15.2b Classify expected-empty vs unexpected-empty species outputs as
     configurable policy in rebuild spec/allowlist.
@@ -3777,3 +3777,23 @@ notes.
     `Species Code Semantics: PL vs PLC` including the active exclusion policy.
   - Added docs-contract guard in `tests/test_docs_contract.py` so this
     semantics note remains present.
+- 2026-03-11 (Phase 15 `P15.2a` completion): added species-account completeness
+  invariant support and wired K3Z fatal checks for PLC present / PL absent.
+  - Added `accounts.list` metric in `src/femic/rebuild_invariants.py` and
+    added `contains` / `not_contains` comparator support.
+  - Extended rebuild-spec comparator allowlists in:
+    `src/femic/rebuild_spec.py` and
+    `planning/femic_instance_rebuild_spec_schema.v1.yaml`.
+  - Added test coverage in:
+    `tests/test_rebuild_invariants.py` and `tests/test_rebuild_spec.py`.
+  - Added K3Z invariant policy entries in:
+    `external/femic-k3z-instance/config/rebuild.spec.yaml`
+    for:
+    `product.Yield.managed.PLC`,
+    `product.HarvestedVolume.managed.PLC.CC`,
+    and exclusion of `product.Yield.managed.PL`,
+    `product.HarvestedVolume.managed.PL.CC`.
+  - Updated invariant-authoring docs in:
+    `docs/guides/author-instance-rebuild-spec.rst`.
+  - Next execution step: implement `P15.2b` configurable expected-empty policy
+    semantics in rebuild spec/allowlist patterns.

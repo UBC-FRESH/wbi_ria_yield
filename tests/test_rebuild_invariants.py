@@ -63,6 +63,8 @@ def test_collect_rebuild_metrics_extracts_known_risk_dimensions(
     )
 
     assert metrics["managed_area_ha"] == 10.0
+    assert "product.Yield.managed.CW" in metrics["accounts.list"]
+    assert "product.Yield.managed.Total" in metrics["accounts.list"]
     assert metrics["managed_species_account_count"] == 1
     assert metrics["seral_account_count"] == 1
     assert metrics["block_join_mismatch_count"] == 5
@@ -97,3 +99,34 @@ def test_evaluate_invariants_flags_fatal_regressions() -> None:
     assert results[0].status == "fail"
     assert results[1].status == "warn"
     assert has_fatal_invariant_failures(results) is True
+
+
+def test_evaluate_invariants_supports_contains_comparators() -> None:
+    invariants = [
+        {
+            "invariant_id": "plc_present",
+            "severity": "fatal",
+            "metric": "accounts.list",
+            "comparator": "contains",
+            "target": "product.Yield.managed.PLC",
+            "remediation": "rebuild tracks/accounts",
+        },
+        {
+            "invariant_id": "pl_absent",
+            "severity": "fatal",
+            "metric": "accounts.list",
+            "comparator": "not_contains",
+            "target": "product.Yield.managed.PL",
+            "remediation": "check account filtering policy",
+        },
+    ]
+    metrics = {
+        "accounts.list": [
+            "product.Yield.managed.PLC",
+            "product.Yield.managed.Total",
+        ]
+    }
+    results = evaluate_invariants(invariants=invariants, metrics=metrics)
+
+    assert results[0].status == "pass"
+    assert results[1].status == "pass"

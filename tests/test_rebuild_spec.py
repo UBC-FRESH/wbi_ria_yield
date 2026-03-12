@@ -36,13 +36,14 @@ def test_validate_rebuild_spec_payload_accepts_valid_minimal_payload() -> None:
             {
                 "invariant_id": "managed_area_sanity",
                 "severity": "fatal",
-                "metric": "managed_area_ha",
-                "comparator": "gt",
-                "target": 0,
+                "metric": "accounts.list",
+                "comparator": "contains",
+                "target": "product.Yield.managed.PLC",
             }
         ],
     }
-    assert validate_rebuild_spec_payload(payload) == []
+    errors = validate_rebuild_spec_payload(payload)
+    assert not errors
 
 
 def test_validate_rebuild_spec_payload_emits_clear_errors() -> None:
