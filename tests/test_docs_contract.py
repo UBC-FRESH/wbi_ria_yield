@@ -676,9 +676,22 @@ def test_rebuild_repro_contract_guide_covers_core_sections() -> None:
         "Expected Operator Workflow",
         "Required Evidence Artifacts",
         "Failure Classes",
+        "Contributor Policy (Mandatory for New Instance Repos)",
     ]
     for section in required_sections:
         assert section in guide_text
+
+
+def test_contributor_policy_requires_rebuild_spec_and_checks() -> None:
+    contract_text = (GUIDES_ROOT / "rebuild-repro-contract.rst").read_text()
+    required_markers = [
+        "config/rebuild.spec.yaml",
+        "config/rebuild.allowlist.yaml",
+        "femic instance validate-spec",
+        "femic instance rebuild",
+    ]
+    for marker in required_markers:
+        assert marker in contract_text
 
 
 def test_author_instance_rebuild_spec_guide_covers_core_sections() -> None:

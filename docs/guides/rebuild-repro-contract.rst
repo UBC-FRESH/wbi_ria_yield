@@ -66,6 +66,22 @@ Failure Classes
 - ``warn``: non-fatal issue requiring follow-up (for example, non-fatal
   invariant drift or optional artifact warning).
 
+Contributor Policy (Mandatory for New Instance Repos)
+-----------------------------------------------------
+
+For every new FEMIC deployment-instance repository, the following are required:
+
+- Track ``config/rebuild.spec.yaml`` in git.
+- Track ``config/rebuild.allowlist.yaml`` in git.
+- Run ``femic instance validate-spec`` as part of contributor QA.
+- Run ``femic instance rebuild`` (at least dry-run; full run when dependencies
+  are available) before milestone closure.
+- Preserve rebuild evidence artifacts (report + manifests/log references) for
+  review and audit trails.
+
+No new instance phase should be considered complete without reproducible
+rebuild evidence and a passing regression gate.
+
 Next Guides
 -----------
 

@@ -125,3 +125,17 @@ Refresh the K3Z example submodule to latest upstream commit:
 .. code-block:: bash
 
    git submodule update --remote external/femic-k3z-instance
+
+Contributor Baseline for New Instance Repositories
+--------------------------------------------------
+
+When standing up a new instance repository, treat these as mandatory:
+
+- commit ``config/rebuild.spec.yaml`` and ``config/rebuild.allowlist.yaml``,
+- validate spec structure with
+  ``femic instance validate-spec --spec config/rebuild.spec.yaml``,
+- run deterministic rebuild checks with
+  ``femic instance rebuild --spec config/rebuild.spec.yaml``,
+- retain generated rebuild report/manifests for review.
+
+This policy is enforced by FEMIC roadmap/docs contracts for Phase 13.

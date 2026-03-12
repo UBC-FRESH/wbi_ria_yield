@@ -372,7 +372,7 @@
   - [x] P13.5a Add docs page: "Rebuild Repro Contract" (what it is, why it exists, expected workflow).
   - [x] P13.5b Add docs page: "How to author a new instance rebuild spec" with copy-ready examples.
   - [x] P13.5c Add docs page: "How to interpret rebuild reports and regressions".
-  - [ ] P13.5d Add contributor policy text making rebuild-spec + checks mandatory for new instance repos.
+  - [x] P13.5d Add contributor policy text making rebuild-spec + checks mandatory for new instance repos.
 - [ ] P13.6 Enforce this as the default norm for all new FEMIC instances
   - [ ] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
   - [ ] P13.6b Add docs/contract tests requiring rebuild-spec references in sample/new instance docs.
@@ -3555,3 +3555,14 @@
     `docs/guides/index.rst` and `docs/guides/rebuild-repro-contract.rst`.
   - Added docs-contract coverage:
     `tests/test_docs_contract.py::test_interpret_rebuild_reports_guide_covers_core_sections`.
+- 2026-03-11 (Phase 13 `P13.5d` completion): added contributor policy text
+  making rebuild spec + checks mandatory for all new instance repositories.
+  - Added explicit policy section in
+    `docs/guides/rebuild-repro-contract.rst` requiring:
+    tracked `config/rebuild.spec.yaml`, tracked
+    `config/rebuild.allowlist.yaml`, spec validation, deterministic rebuild
+    checks, and preserved rebuild evidence artifacts.
+  - Added matching baseline contributor checklist in
+    `docs/guides/deployment-instances.rst`.
+  - Added docs-contract enforcement:
+    `tests/test_docs_contract.py::test_contributor_policy_requires_rebuild_spec_and_checks`.

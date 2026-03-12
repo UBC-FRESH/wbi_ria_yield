@@ -3665,3 +3665,17 @@
   `docs/guides/rebuild-repro-contract.rst`.
 - Added docs-contract test coverage:
   `tests/test_docs_contract.py::test_interpret_rebuild_reports_guide_covers_core_sections`.
+
+## 2026-03-11 - Added mandatory contributor policy for new instance repos (`P13.5d`)
+- Added explicit contributor policy section to:
+  `docs/guides/rebuild-repro-contract.rst`.
+- Policy now requires for new instance repositories:
+  - tracked `config/rebuild.spec.yaml`,
+  - tracked `config/rebuild.allowlist.yaml`,
+  - `femic instance validate-spec` in QA,
+  - `femic instance rebuild` checks before milestone closure,
+  - retained rebuild evidence artifacts.
+- Added matching baseline checklist section to:
+  `docs/guides/deployment-instances.rst`.
+- Added docs-contract enforcement:
+  `tests/test_docs_contract.py::test_contributor_policy_requires_rebuild_spec_and_checks`.
