@@ -3440,3 +3440,19 @@
   contract artifact presence and required schema/section keys.
 - Linked pipeline guide primary sources to the rebuild contract doc in
   `docs/guides/pipeline-overview.rst`.
+
+## 2026-03-11 - Added deterministic rebuild runner abstraction (`P13.2a`)
+- Added reusable rebuild orchestration module:
+  `src/femic/rebuild_runner.py`.
+- New primitives:
+  - `RebuildStep` (step definition + dependencies),
+  - `RebuildRunner` (deterministic dependency-ordered execution),
+  - `StepOutcome` / `RebuildExecutionReport` (machine-readable execution report),
+  - `JsonRebuildReportSink` (report artifact persistence).
+- Runner behavior supports:
+  - deterministic topological ordering,
+  - configurable stop-on-failure or continue-on-failure execution,
+  - explicit error capture per step.
+- Added regression/unit coverage in `tests/test_rebuild_runner.py`:
+  deterministic order, failure modes, report sink writing, unknown dependency
+  rejection, and cycle detection.

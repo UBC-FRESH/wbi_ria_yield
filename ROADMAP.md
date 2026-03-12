@@ -354,7 +354,7 @@
   - [x] P13.1c Specify required post-rebuild invariants (accounts, targets, managed-area sanity, block joins, seral presence).
   - [x] P13.1d Define failure classes (hard fail vs warning) and required remediation messaging.
 - [ ] P13.2 Add first-class rebuild orchestration to FEMIC
-  - [ ] P13.2a Add a reusable rebuild runner abstraction (step graph + deterministic execution + report sink).
+  - [x] P13.2a Add a reusable rebuild runner abstraction (step graph + deterministic execution + report sink).
   - [ ] P13.2b Add CLI support for instance rebuild execution (instance-rooted, run-ided, non-interactive).
   - [ ] P13.2c Ensure rebuild execution writes machine-readable reports/manifests and references all generated logs.
   - [ ] P13.2d Add dry-run mode showing full planned command sequence without mutation.
@@ -3378,3 +3378,16 @@
     contract artifact presence and required schema keys/sections.
   - Linked pipeline guide primary sources to the new rebuild contract doc:
     `docs/guides/pipeline-overview.rst`.
+- 2026-03-11 (Phase 13 `P13.2a` completion): added a reusable deterministic
+  rebuild-runner abstraction with JSON report sink support.
+  - Added module:
+    `src/femic/rebuild_runner.py` with:
+    `RebuildStep`, `RebuildRunner`, `StepOutcome`,
+    `RebuildExecutionReport`, and `JsonRebuildReportSink`.
+  - Runner now supports dependency graph ordering (deterministic topological
+    sort), stop-or-continue failure behavior, and machine-readable report
+    emission through sink abstraction.
+  - Added unit tests:
+    `tests/test_rebuild_runner.py` covering deterministic order, failure
+    handling modes, JSON sink output, unknown dependency errors, and cycle
+    detection.
