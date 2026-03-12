@@ -420,7 +420,7 @@ notes.
     harvested-volume account presence/non-null behavior.
   - [x] P15.2b Classify expected-empty vs unexpected-empty species outputs as
     configurable policy in rebuild spec/allowlist.
-  - [ ] P15.2c Fail rebuild when unexpected species-account null regressions are
+  - [x] P15.2c Fail rebuild when unexpected species-account null regressions are
     introduced.
 - [ ] P15.3 Add operator diagnostics for account-surface QA
   - [ ] P15.3a Add a CLI/report helper to summarize account/target coverage by
@@ -3824,3 +3824,20 @@ notes.
   - Added package-data include in `pyproject.toml`:
     `resources/instance/runbooks/*`.
   - Verified build output now includes runbook template in wheel payload.
+- 2026-03-11 (Phase 15 `P15.2c` completion): rebuild now fails hard when
+  species-account policy expects nonzero product labels and regenerated tracks
+  regress to zero/null signal.
+  - Added new rebuild metric extraction:
+    `products.nonzero_labels` from `tracks/products.csv` + `tracks/curves.csv`
+    in `src/femic/rebuild_invariants.py`.
+  - Extended `runtime.species_account_policy` with:
+    `required_nonzero` and `expected_zero` (fatal invariants over
+    `products.nonzero_labels`).
+  - Added/updated tests:
+    `tests/test_rebuild_invariants.py`,
+    `tests/test_cli_main.py`.
+  - Updated spec-authoring docs and schema:
+    `docs/guides/author-instance-rebuild-spec.rst`,
+    `planning/femic_instance_rebuild_spec_schema.v1.yaml`.
+  - Next execution step: start `P15.3a` (operator diagnostics helper for
+    account/target coverage by species and AU).

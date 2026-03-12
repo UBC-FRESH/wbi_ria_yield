@@ -28,6 +28,16 @@ def test_collect_rebuild_metrics_extracts_known_risk_dimensions(
         "_MANAGED_,x,feature.Seral.mature.AU1,1\n",
         encoding="utf-8",
     )
+    (tracks_dir / "curves.csv").write_text(
+        "CURVE,X,Y\n10,0,0\n10,1,5\n11,0,0\n",
+        encoding="utf-8",
+    )
+    (tracks_dir / "products.csv").write_text(
+        "TRACK,OFFSET,LABEL,CURVE\n"
+        "1,0,product.Yield.managed.CW,10\n"
+        "1,0,product.Yield.managed.PL,11\n",
+        encoding="utf-8",
+    )
     (tracks_dir / "blocks.csv").write_text(
         "BLOCK,TYPE,TRACK,OFFSET,AREA\n1,managed,1,0,10\n2,unmanaged,2,0,3\n",
         encoding="utf-8",
@@ -68,6 +78,8 @@ def test_collect_rebuild_metrics_extracts_known_risk_dimensions(
     assert "product.Yield.managed.Total" in metrics["accounts.list"]
     assert metrics["managed_species_account_count"] == 1
     assert metrics["seral_account_count"] == 1
+    assert "product.Yield.managed.CW" in metrics["products.nonzero_labels"]
+    assert "product.Yield.managed.PL" not in metrics["products.nonzero_labels"]
     assert metrics["block_join_mismatch_count"] == 5
     assert metrics["topology_edge_count"] == 1
 
@@ -148,3 +160,25 @@ def test_build_species_account_policy_invariants_emits_fatal_policy_checks() -> 
     assert invariants[0]["target"] == "product.Yield.managed.PLC"
     assert invariants[1]["comparator"] == "not_contains"
     assert invariants[1]["target"] == "product.Yield.managed.PL"
+
+
+def test_build_species_account_policy_invariants_supports_nonzero_policy() -> None:
+    invariants = build_species_account_policy_invariants(
+        {
+            "required_nonzero": [
+                "product.Yield.managed.PLC",
+                "product.HarvestedVolume.managed.PLC.CC",
+            ],
+            "expected_zero": ["product.Yield.managed.PL"],
+        }
+    )
+    assert len(invariants) == 3
+    assert invariants[0]["metric"] == "products.nonzero_labels"
+    assert invariants[0]["comparator"] == "contains"
+    assert invariants[0]["target"] == "product.Yield.managed.PLC"
+    assert invariants[1]["metric"] == "products.nonzero_labels"
+    assert invariants[1]["comparator"] == "contains"
+    assert invariants[1]["target"] == "product.HarvestedVolume.managed.PLC.CC"
+    assert invariants[2]["metric"] == "products.nonzero_labels"
+    assert invariants[2]["comparator"] == "not_contains"
+    assert invariants[2]["target"] == "product.Yield.managed.PL"

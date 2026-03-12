@@ -54,9 +54,14 @@ Minimal Copy-Ready Example
      baseline_unexpected_diff_threshold: 0
      species_account_policy:
        required_present:
-         - "product.Yield.managed.PLC"
+          - "product.Yield.managed.PLC"
        expected_absent:
-         - "product.Yield.managed.PL"
+          - "product.Yield.managed.PL"
+       required_nonzero:
+          - "product.Yield.managed.PLC"
+          - "product.HarvestedVolume.managed.PLC.CC"
+       expected_zero:
+          - "product.Yield.managed.PL"
 
    steps:
      - step_id: "validate_case"
@@ -104,14 +109,16 @@ Invariant Authoring Rules
 - Use ``severity: warn`` for non-blocking diagnostics.
 - Prefer metrics already emitted by rebuild:
   ``managed_area_ha``, ``block_join_mismatch_count``,
-  ``seral_account_count``, ``accounts.list``, ``baseline_match``,
+  ``seral_account_count``, ``accounts.list``, ``products.nonzero_labels``,
+  ``baseline_match``,
   ``baseline_unexpected_diff_count``.
 - Supported comparators:
   ``eq``, ``ne``, ``gt``, ``gte``, ``lt``, ``lte``, ``exists``,
   ``not_exists``, ``contains``, ``not_contains``.
 - For species-account completeness policies, prefer
-  ``runtime.species_account_policy`` so required/expected-empty account IDs are
-  generated as fatal invariants automatically.
+  ``runtime.species_account_policy`` so required/expected-empty account IDs and
+  required-nonzero/expected-zero product labels are generated as fatal
+  invariants automatically.
 - Always include remediation text that tells the operator what to do next.
 
 K3Z Reference Pattern

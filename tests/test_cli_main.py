@@ -1087,6 +1087,81 @@ def test_instance_rebuild_fails_when_unexpected_diffs_exceed_threshold(
     assert any("unexpected baseline diffs exceed threshold" in msg for msg in messages)
 
 
+def test_instance_rebuild_fails_on_fatal_invariant_regression(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=Path("instance-root"),
+            resolve_path=lambda value: Path("instance-root") / value,
+        ),
+    )
+
+    class FakeRunner:
+        def __init__(self, *, steps, report_sink):
+            _ = (steps, report_sink)
+
+        def run(self, *, run_id, context):
+            _ = (run_id, context)
+            return SimpleNamespace(failed=False, outcomes=())
+
+    monkeypatch.setattr(cli_main, "RebuildRunner", FakeRunner)
+    monkeypatch.setattr(
+        cli_main,
+        "load_rebuild_spec",
+        lambda _path: {
+            "schema_version": "1.0",
+            "instance": {"case_id": "x"},
+            "runtime": {},
+            "steps": [{}],
+            "invariants": [],
+        },
+    )
+    monkeypatch.setattr(cli_main, "validate_rebuild_spec_payload", lambda _payload: [])
+    monkeypatch.setattr(
+        cli_main,
+        "collect_rebuild_metrics",
+        lambda **_kwargs: {"products.nonzero_labels": []},
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "evaluate_invariants",
+        lambda **_kwargs: [
+            SimpleNamespace(
+                invariant_id="species_policy_nonzero_product_yield_managed_plc",
+                status="fail",
+                severity="fatal",
+                message="missing nonzero PLC signal",
+                remediation="rebuild tracks and inspect products/curves",
+            )
+        ],
+    )
+    monkeypatch.setattr(cli_main, "has_fatal_invariant_failures", lambda _results: True)
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.instance_rebuild(
+            spec=Path("config/rebuild.spec.yaml"),
+            run_config=Path("config/run_profile.case_template.yaml"),
+            tipsy_config_dir=Path("config/tipsy"),
+            log_dir=Path("vdyp_io/logs"),
+            run_id="rebuild_test",
+            with_patchworks=False,
+            dry_run=False,
+            patchworks_config=Path("config/patchworks.runtime.yaml"),
+            baseline=Path("config/rebuild.baseline.json"),
+            write_baseline=False,
+            allowlist=Path("config/rebuild.allowlist.yaml"),
+            instance_root=Path("instance-root"),
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert any("Fatal rebuild invariant regression detected" in msg for msg in messages)
+
+
 def test_instance_validate_spec_reports_schema_issues(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

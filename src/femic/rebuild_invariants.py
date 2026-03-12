@@ -61,6 +61,10 @@ def collect_rebuild_metrics(
         metrics["managed_area_ha"] = _managed_area_ha(blocks_path)
         metrics["accounts.targets.required_present"] = accounts_path.exists()
         metrics["accounts.list"] = accounts_list
+        metrics["products.nonzero_labels"] = _nonzero_product_labels(
+            products_csv_path=tracks_dir / "products.csv",
+            curves_csv_path=tracks_dir / "curves.csv",
+        )
         metrics["managed_species_account_count"] = _managed_species_account_count(
             accounts_path
         )
@@ -82,11 +86,19 @@ def build_species_account_policy_invariants(
         return []
     required_present = _coerce_string_list(policy.get("required_present"))
     expected_absent = _coerce_string_list(policy.get("expected_absent"))
+    required_nonzero = _coerce_string_list(policy.get("required_nonzero"))
+    expected_zero = _coerce_string_list(policy.get("expected_zero"))
     remediation_required = (
         "Rebuild tracks/accounts and verify species-account generation policy."
     )
     remediation_absent = (
         "Rebuild tracks/accounts and verify expected-empty species policy."
+    )
+    remediation_nonzero = (
+        "Rebuild tracks and verify species product labels resolve to nonzero curves."
+    )
+    remediation_zero = (
+        "Rebuild tracks and verify expected-zero species product labels remain zero."
     )
     invariants: list[dict[str, Any]] = []
     for account in required_present:
@@ -111,6 +123,30 @@ def build_species_account_policy_invariants(
                 "comparator": "not_contains",
                 "target": account,
                 "remediation": remediation_absent,
+            }
+        )
+    for label in required_nonzero:
+        token = _policy_token(label)
+        invariants.append(
+            {
+                "invariant_id": f"species_policy_nonzero_{token}",
+                "severity": "fatal",
+                "metric": "products.nonzero_labels",
+                "comparator": "contains",
+                "target": label,
+                "remediation": remediation_nonzero,
+            }
+        )
+    for label in expected_zero:
+        token = _policy_token(label)
+        invariants.append(
+            {
+                "invariant_id": f"species_policy_zero_{token}",
+                "severity": "fatal",
+                "metric": "products.nonzero_labels",
+                "comparator": "not_contains",
+                "target": label,
+                "remediation": remediation_zero,
             }
         )
     return invariants
@@ -225,6 +261,40 @@ def _seral_account_count(accounts_csv_path: Path) -> int | None:
             ):
                 count += 1
     return count
+
+
+def _nonzero_product_labels(
+    *,
+    products_csv_path: Path,
+    curves_csv_path: Path,
+) -> list[str] | None:
+    if not products_csv_path.exists() or not curves_csv_path.exists():
+        return None
+    curve_max: dict[str, float] = {}
+    with curves_csv_path.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            curve_id = str(row.get("CURVE", "")).strip()
+            if not curve_id:
+                continue
+            try:
+                value = float(row.get("Y", "0") or 0.0)
+            except (TypeError, ValueError):
+                continue
+            previous = curve_max.get(curve_id)
+            curve_max[curve_id] = value if previous is None else max(previous, value)
+
+    label_max: dict[str, float] = {}
+    with products_csv_path.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            label = str(row.get("LABEL", "")).strip()
+            curve_id = str(row.get("CURVE", "")).strip()
+            if not label or not curve_id:
+                continue
+            value = curve_max.get(curve_id, 0.0)
+            previous = label_max.get(label)
+            label_max[label] = value if previous is None else max(previous, value)
+
+    return sorted(label for label, value in label_max.items() if value > 0.0)
 
 
 def _block_join_mismatch_count(*, log_dir: Path, run_id: str) -> int | None:

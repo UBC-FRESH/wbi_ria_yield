@@ -3901,3 +3901,20 @@
   `femic/resources/instance/runbooks/REBUILD_RUNBOOK.md`.
 - Verified distribution build now contains the runbook resource in both sdist
   and wheel build outputs.
+
+## 2026-03-11 - Enforced fail-fast species-account null regression gate (`P15.2c`)
+- Added rebuild metric `products.nonzero_labels` computed from
+  `tracks/products.csv` joined to `tracks/curves.csv` maxima in
+  `src/femic/rebuild_invariants.py`.
+- Extended runtime species-account policy invariants with:
+  - `required_nonzero` (must appear in `products.nonzero_labels`)
+  - `expected_zero` (must not appear in `products.nonzero_labels`)
+- Rebuild gating impact:
+  - `femic instance rebuild` now exits nonzero when these fatal policy checks
+    fail, preventing silent species-wise null/zero regressions.
+- Updated tests:
+  - `tests/test_rebuild_invariants.py` (metric extraction + nonzero policy)
+  - `tests/test_cli_main.py` (fatal invariant regression exits with code 1)
+- Updated documentation/spec references:
+  - `docs/guides/author-instance-rebuild-spec.rst`
+  - `planning/femic_instance_rebuild_spec_schema.v1.yaml`

@@ -46,7 +46,7 @@ root:
           description: "Maximum unexpected baseline diffs allowed before rebuild fails."
         species_account_policy:
           type: map
-          description: "Optional policy for required-present and expected-absent account IDs."
+          description: "Optional policy for account presence and product nonzero/zero expectations."
           fields:
             required_present:
               type: list
@@ -56,6 +56,14 @@ root:
               type: list
               item_type: string
               description: "Account IDs that must not exist in tracks/accounts.csv."
+            required_nonzero:
+              type: list
+              item_type: string
+              description: "Product labels that must resolve to nonzero curve signal in tracks/products.csv."
+            expected_zero:
+              type: list
+              item_type: string
+              description: "Product labels that must not resolve to nonzero curve signal in tracks/products.csv."
     steps:
       type: list
       min_items: 1
