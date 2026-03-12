@@ -56,15 +56,31 @@ the same built ``dist/*`` files for TestPyPI and PyPI publication.
 TestPyPI publication and smoke
 ------------------------------
 
-Before first publish, configure trusted publishing on TestPyPI:
+Preferred path: token-free trusted publishing (OIDC).
 
-1. TestPyPI project: ``femic``.
-2. Publisher type: GitHub Actions.
-3. Repository owner/name: ``UBC-FRESH/femic``.
-4. Workflow filename: ``publish-testpypi.yml``.
-5. Environment name: ``testpypi``.
+Before first TestPyPI publish:
 
-Upload artifacts:
+1. Ensure GitHub environment ``testpypi`` exists in ``UBC-FRESH/femic``.
+2. In TestPyPI, open account-level publishing settings:
+   ``https://test.pypi.org/manage/account/publishing/``.
+3. Add a pending publisher:
+   - project name: ``femic``,
+   - owner/repo: ``UBC-FRESH/femic``,
+   - workflow: ``publish-testpypi.yml``,
+   - environment: ``testpypi``.
+4. Trigger GitHub workflow ``publish-testpypi`` on ``main``.
+
+Notes:
+
+- If there is no ``Add project`` button under ``/manage/projects``, this
+  account-level pending-publisher flow is the correct entry point.
+- First successful OIDC publish will create the TestPyPI project and attach the
+  publisher.
+
+Token fallback (not preferred)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If trusted publishing is temporarily unavailable, upload with token:
 
 .. code-block:: bash
 
@@ -72,7 +88,7 @@ Upload artifacts:
    export TWINE_PASSWORD="$TEST_PYPI_API_TOKEN"
    python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
 
-Install smoke in a clean environment:
+Install smoke in a clean environment (after publish):
 
 .. code-block:: bash
 
@@ -87,7 +103,9 @@ Install smoke in a clean environment:
 Production PyPI publication
 ---------------------------
 
-Before first production publish, configure trusted publishing on PyPI:
+Preferred path: token-free trusted publishing (OIDC).
+
+Before first production publish:
 
 1. PyPI project: ``femic``.
 2. Publisher type: GitHub Actions.
@@ -95,7 +113,9 @@ Before first production publish, configure trusted publishing on PyPI:
 4. Workflow filename: ``publish-pypi.yml``.
 5. Environment name: ``pypi``.
 
-Publish the same artifact set used in TestPyPI validation:
+Publish using workflow ``publish-pypi`` after TestPyPI validation passes.
+
+Token fallback (not preferred):
 
 .. code-block:: bash
 

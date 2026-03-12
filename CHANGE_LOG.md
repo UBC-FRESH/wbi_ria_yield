@@ -4226,3 +4226,12 @@
   - `P18.1` complete,
   - `P18.2` blocked pending TestPyPI trusted publisher config,
   - `P18.3/P18.4` pending `P18.2` completion.
+
+## 2026-03-12 - Clarified token-free TestPyPI bootstrap path in dev release docs
+- Updated `docs/guides/pypi-release-runbook.rst` to document the validated
+  OIDC-first entry point when no project-level `Add project` button is present.
+- Added account-level TestPyPI pending-publisher flow via:
+  `https://test.pypi.org/manage/account/publishing/`.
+- Documented expected behavior that first successful trusted publish creates the
+  `femic` TestPyPI project and attaches the publisher.
+- Reframed token upload instructions as fallback only.

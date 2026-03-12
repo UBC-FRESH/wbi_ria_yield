@@ -461,6 +461,15 @@ notes.
 - [ ] P18.4 Post-release docs/changelog/version traceability
 
 ## Detailed Next Steps Notes
+- 2026-03-12 (Phase 18 docs clarification): added validated TestPyPI
+  token-free bootstrap path to release runbook to remove ambiguity when no
+  project-level "Add project" button is visible.
+  - Updated `docs/guides/pypi-release-runbook.rst` with account-level
+    TestPyPI pending-publisher flow:
+    `https://test.pypi.org/manage/account/publishing/`.
+  - Added explicit notes that first successful OIDC publish creates the
+    TestPyPI project automatically and attaches the publisher.
+  - Kept token upload documented only as fallback, not primary path.
 - 2026-03-12 (Phase 18 `P18.2` execution attempt): triggered
   `publish-testpypi` workflow and confirmed current blocker is trusted
   publisher configuration, not packaging artifacts.
