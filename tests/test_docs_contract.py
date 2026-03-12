@@ -375,7 +375,8 @@ def test_k3z_instance_standalone_docs_required_sections_and_navigation() -> None
         "Baseline Workflow",
     ):
         assert heading in rebuild_qa_text
-    assert "femic patchworks matrix-build" in rebuild_qa_text
+    assert "femic instance rebuild" in rebuild_qa_text
+    assert "config/rebuild.spec.yaml" in rebuild_qa_text
 
     troubleshooting_text = (docs_root / "troubleshooting.rst").read_text()
     for heading in (
@@ -653,6 +654,20 @@ def test_instance_rebuild_spec_schema_artifact_is_present_and_structured() -> No
     invariant_fields = fields["invariants"]["item"]["fields"]
     for required in ("invariant_id", "severity", "metric", "comparator", "target"):
         assert required in invariant_fields
+
+
+def test_k3z_reference_rebuild_spec_exists_and_matches_schema_basics() -> None:
+    spec_path = K3Z_INSTANCE_ROOT / "config/rebuild.spec.yaml"
+    assert spec_path.is_file()
+    payload = yaml.safe_load(spec_path.read_text())
+
+    assert payload["schema_version"] == "1.0"
+    assert payload["instance"]["case_id"] == "k3z"
+    assert payload["runtime"]["run_config"] == "config/run_profile.k3z.yaml"
+    step_ids = [step["step_id"] for step in payload["steps"]]
+    assert "validate_case" in step_ids
+    assert "compile_upstream" in step_ids
+    assert "patchworks_matrix_build" in step_ids
 
 
 def test_legacy_slug_references_are_limited_to_audit_trail_files() -> None:

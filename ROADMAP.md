@@ -361,7 +361,7 @@
 - [ ] P13.3 Add per-instance rebuild spec/config files as tracked source-of-truth
   - [x] P13.3a Define a standard rebuild spec schema (YAML) for instance command steps and invariants.
   - [x] P13.3b Ship a default template with `femic instance init` so every new instance starts with a rebuild spec.
-  - [ ] P13.3c Add K3Z as the reference implementation and backfill its current known-valid sequence.
+  - [x] P13.3c Add K3Z as the reference implementation and backfill its current known-valid sequence.
   - [ ] P13.3d Add schema validation + clear diagnostics for malformed rebuild specs.
 - [ ] P13.4 Add regression guardrails for rebuild outputs
   - [ ] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
@@ -3446,3 +3446,11 @@
     rebuild-spec customization guidance.
   - Added/updated test coverage:
     `tests/test_instance_bootstrap.py` and `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 13 `P13.3c` completion): backfilled K3Z as the reference
+  rebuild-spec implementation using its known-valid sequence.
+  - Added K3Z instance spec:
+    `external/femic-k3z-instance/config/rebuild.spec.yaml`.
+  - Updated K3Z standalone docs/rebuild runbook and README to treat
+    `config/rebuild.spec.yaml` as the authoritative sequence source.
+  - Extended parent docs-contract checks to require the K3Z rebuild spec and
+    validate core schema-aligned fields and required step IDs.

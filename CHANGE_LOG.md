@@ -3521,3 +3521,17 @@
 - Updated test/contracts:
   `tests/test_instance_bootstrap.py`,
   `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Added K3Z reference rebuild spec (`P13.3c`)
+- Added K3Z rebuild-spec source-of-truth:
+  `external/femic-k3z-instance/config/rebuild.spec.yaml`.
+- Backfilled known-valid K3Z command sequence and baseline invariants into this
+  spec (case preflight, geospatial preflight, compile/post-TIPSY, Patchworks
+  preflight/build-blocks/matrix-build).
+- Updated standalone K3Z docs/README to reference the rebuild spec as the
+  primary authority:
+  `external/femic-k3z-instance/docs/rebuild-and-qa.rst`,
+  `external/femic-k3z-instance/README.md`.
+- Added contract checks in parent repo:
+  `tests/test_docs_contract.py` now requires K3Z rebuild-spec presence and
+  validates core schema-aligned fields and required step IDs.
