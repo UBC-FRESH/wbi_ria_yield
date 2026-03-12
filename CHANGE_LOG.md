@@ -3487,3 +3487,12 @@
 - Added regression coverage:
   `tests/test_cli_main.py::test_collect_rebuild_artifact_references_filters_missing`.
 - Updated CLI docs in `docs/reference/cli.rst`.
+
+## 2026-03-11 - Added instance rebuild dry-run planning mode (`P13.2d`)
+- Added `--dry-run` to `femic instance rebuild`.
+- Dry-run prints full planned step sequence (including dependency ordering),
+  run-id, and report path, and exits without executing rebuild mutations.
+- Added regression coverage:
+  `tests/test_cli_main.py::test_instance_rebuild_dry_run_prints_plan_without_execution`.
+- Updated CLI docs/contract checks:
+  `docs/reference/cli.rst`, `tests/test_docs_contract.py`.

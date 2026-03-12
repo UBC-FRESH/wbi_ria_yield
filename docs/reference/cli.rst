@@ -279,6 +279,7 @@ Subcommands
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
 - ``--run-id TEXT`` (optional; defaults to UTC timestamp)
 - ``--with-patchworks / --no-patchworks`` (default: ``--no-patchworks``)
+- ``--dry-run`` (print planned step sequence without execution)
 - ``--patchworks-config PATH`` (default: ``config/patchworks.runtime.yaml``)
 - ``--instance-root PATH``
 

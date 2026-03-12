@@ -199,6 +199,7 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
                 "--run-id",
                 "--with-patchworks",
                 "--no-patchworks",
+                "--dry-run",
                 "--patchworks-config",
                 "--instance-root",
             ],

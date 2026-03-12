@@ -349,6 +349,11 @@ INSTANCE_REBUILD_WITH_PATCHWORKS_OPTION = typer.Option(
     "--with-patchworks/--no-patchworks",
     help="Include Patchworks preflight + matrix-builder steps in instance rebuild.",
 )
+INSTANCE_REBUILD_DRY_RUN_OPTION = typer.Option(
+    False,
+    "--dry-run",
+    help="Print the planned rebuild step sequence without executing any step.",
+)
 INSTANCE_REBUILD_PATCHWORKS_CONFIG_OPTION = typer.Option(
     Path("config/patchworks.runtime.yaml"),
     "--patchworks-config",
@@ -671,6 +676,7 @@ def instance_rebuild(
     log_dir: Path = INSTANCE_REBUILD_LOG_DIR_OPTION,
     run_id: str | None = INSTANCE_REBUILD_RUN_ID_OPTION,
     with_patchworks: bool = INSTANCE_REBUILD_WITH_PATCHWORKS_OPTION,
+    dry_run: bool = INSTANCE_REBUILD_DRY_RUN_OPTION,
     patchworks_config: Path = INSTANCE_REBUILD_PATCHWORKS_CONFIG_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
@@ -774,6 +780,16 @@ def instance_rebuild(
         )
 
     report_path = resolved_log_dir / f"instance_rebuild_report-{effective_run_id}.json"
+    if dry_run:
+        console.print(
+            f"[yellow]instance rebuild dry-run[/yellow] run_id={effective_run_id} "
+            f"steps={len(steps)} report={report_path}"
+        )
+        for idx, step in enumerate(steps, start=1):
+            deps = ", ".join(step.depends_on) if step.depends_on else "<none>"
+            console.print(f"{idx}. {step.step_id} (depends_on={deps})")
+        return
+
     runner = RebuildRunner(
         steps=steps,
         report_sink=JsonRebuildReportSink(path=report_path),

@@ -841,6 +841,7 @@ def test_instance_rebuild_runs_runner_and_reports(
         log_dir=Path("vdyp_io/logs"),
         run_id="rebuild_test",
         with_patchworks=False,
+        dry_run=False,
         patchworks_config=Path("config/patchworks.runtime.yaml"),
         instance_root=Path("instance-root"),
     )
@@ -889,6 +890,7 @@ def test_instance_rebuild_includes_patchworks_steps_when_enabled(
         log_dir=Path("vdyp_io/logs"),
         run_id="rebuild_test",
         with_patchworks=True,
+        dry_run=False,
         patchworks_config=Path("config/patchworks.runtime.yaml"),
         instance_root=Path("instance-root"),
     )
@@ -896,6 +898,42 @@ def test_instance_rebuild_includes_patchworks_steps_when_enabled(
     step_ids = [step.step_id for step in calls["steps"]]
     assert "patchworks_preflight" in step_ids
     assert "patchworks_matrix_build" in step_ids
+
+
+def test_instance_rebuild_dry_run_prints_plan_without_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=Path("instance-root"),
+            resolve_path=lambda value: Path("instance-root") / value,
+        ),
+    )
+
+    class FailRunner:
+        def __init__(self, **_kwargs):
+            raise AssertionError("runner should not be constructed in dry-run mode")
+
+    monkeypatch.setattr(cli_main, "RebuildRunner", FailRunner)
+
+    cli_main.instance_rebuild(
+        run_config=Path("config/run_profile.case_template.yaml"),
+        tipsy_config_dir=Path("config/tipsy"),
+        log_dir=Path("vdyp_io/logs"),
+        run_id="rebuild_test",
+        with_patchworks=True,
+        dry_run=True,
+        patchworks_config=Path("config/patchworks.runtime.yaml"),
+        instance_root=Path("instance-root"),
+    )
+
+    assert any("instance rebuild dry-run" in msg for msg in messages)
+    assert any("1. validate_case" in msg for msg in messages)
+    assert any("patchworks_matrix_build" in msg for msg in messages)
 
 
 def test_collect_rebuild_artifact_references_filters_missing(

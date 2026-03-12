@@ -353,11 +353,11 @@
   - [x] P13.1b Specify the authoritative rebuild sequence (command order, mutable artifacts, expected outputs).
   - [x] P13.1c Specify required post-rebuild invariants (accounts, targets, managed-area sanity, block joins, seral presence).
   - [x] P13.1d Define failure classes (hard fail vs warning) and required remediation messaging.
-- [ ] P13.2 Add first-class rebuild orchestration to FEMIC
+- [x] P13.2 Add first-class rebuild orchestration to FEMIC
   - [x] P13.2a Add a reusable rebuild runner abstraction (step graph + deterministic execution + report sink).
   - [x] P13.2b Add CLI support for instance rebuild execution (instance-rooted, run-ided, non-interactive).
   - [x] P13.2c Ensure rebuild execution writes machine-readable reports/manifests and references all generated logs.
-  - [ ] P13.2d Add dry-run mode showing full planned command sequence without mutation.
+  - [x] P13.2d Add dry-run mode showing full planned command sequence without mutation.
 - [ ] P13.3 Add per-instance rebuild spec/config files as tracked source-of-truth
   - [ ] P13.3a Define a standard rebuild spec schema (YAML) for instance command steps and invariants.
   - [ ] P13.3b Ship a default template with `femic instance init` so every new instance starts with a rebuild spec.
@@ -3416,3 +3416,13 @@
     `tests/test_cli_main.py::test_collect_rebuild_artifact_references_filters_missing`.
   - Updated CLI reference docs to document report artifact-reference behavior:
     `docs/reference/cli.rst`.
+- 2026-03-11 (Phase 13 `P13.2d` completion): added rebuild dry-run mode so
+  operators can inspect full planned execution sequence without mutation.
+  - Added `--dry-run` option to `femic instance rebuild` in
+    `src/femic/cli/main.py`.
+  - Dry-run now prints ordered step plan (with dependencies), run-id, and
+    report path, then exits before constructing/running `RebuildRunner`.
+  - Added CLI regression test:
+    `tests/test_cli_main.py::test_instance_rebuild_dry_run_prints_plan_without_execution`.
+  - Updated CLI docs/contracts:
+    `docs/reference/cli.rst` and `tests/test_docs_contract.py`.
