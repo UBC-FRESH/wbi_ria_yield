@@ -3724,3 +3724,9 @@
   no new instance phase closes without reproducible rebuild evidence.
 - Added matching changelog policy milestone (this entry) to keep the policy
   auditable in both planning and historical records.
+
+## 2026-03-11 - Normalized roadmap parent-status checkboxes
+- Updated `ROADMAP.md` parent checklist items to `done` where all child items
+  were already complete.
+- Normalized parent statuses for:
+  `P12.3`, `P12.4`, `P12.5`, `P13.3`, `P13.4`, `P13.5`, `P13.6`.

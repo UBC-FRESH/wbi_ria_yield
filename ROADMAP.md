@@ -285,12 +285,12 @@
   - [x] P12.2d Investigate `PL` vs `PLC` species-account semantics in K3Z;
     if `PL` is not a valid active species in current inputs, trim `PL` from
     generated accounts/targets/docs to prevent student-facing false alarms.
-- [ ] P12.3 Stand up standalone Sphinx docs in `femic-k3z-instance`
+- [x] P12.3 Stand up standalone Sphinx docs in `femic-k3z-instance`
   - [x] P12.3a Add docs scaffold (`docs/`, `conf.py`, `index.rst`,
     docs requirements, `.readthedocs.yaml`, and docs publish workflow).
   - [x] P12.3b Publish docs for `femic-k3z-instance` and verify external URLs.
   - [x] P12.3c Add docs acceptance checks for required sections and navigation.
-- [ ] P12.4 Expand K3Z user-facing docs to TSR-style data-package depth
+- [x] P12.4 Expand K3Z user-facing docs to TSR-style data-package depth
   (match structure/depth of BC small-unit timber supply data packages)
   - [x] P12.4a Add full metadata inventory and lineage narratives by artifact
     family (inputs, transforms, outputs, validation evidence).
@@ -314,7 +314,7 @@
   - [x] P12.4h Define publication acceptance criteria before closing `P12.4`:
     standalone docs build `-W`, docs-contract coverage for required sections,
     and published GitHub Pages verification for `femic-k3z-instance`.
-- [ ] P12.5 Enforce FRESH lab Sphinx template consistency (FHOPS-aligned)
+- [x] P12.5 Enforce FRESH lab Sphinx template consistency (FHOPS-aligned)
   - [x] P12.5a Define the canonical template baseline using
     `https://github.com/UBC-FRESH/fhops` as the reference implementation.
   - [x] P12.5b Capture required template components and style conventions
@@ -358,22 +358,22 @@
   - [x] P13.2b Add CLI support for instance rebuild execution (instance-rooted, run-ided, non-interactive).
   - [x] P13.2c Ensure rebuild execution writes machine-readable reports/manifests and references all generated logs.
   - [x] P13.2d Add dry-run mode showing full planned command sequence without mutation.
-- [ ] P13.3 Add per-instance rebuild spec/config files as tracked source-of-truth
+- [x] P13.3 Add per-instance rebuild spec/config files as tracked source-of-truth
   - [x] P13.3a Define a standard rebuild spec schema (YAML) for instance command steps and invariants.
   - [x] P13.3b Ship a default template with `femic instance init` so every new instance starts with a rebuild spec.
   - [x] P13.3c Add K3Z as the reference implementation and backfill its current known-valid sequence.
   - [x] P13.3d Add schema validation + clear diagnostics for malformed rebuild specs.
-- [ ] P13.4 Add regression guardrails for rebuild outputs
+- [x] P13.4 Add regression guardrails for rebuild outputs
   - [x] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
   - [x] P13.4b Add configurable baseline snapshot/diff support for key track tables and selected XML structures.
   - [x] P13.4c Add explicit allowlist mechanism for intentional output deltas (so accepted changes are tracked in git).
   - [x] P13.4d Fail rebuild with actionable summary when invariants regress or unexpected diffs exceed thresholds.
-- [ ] P13.5 Add user-facing documentation and operator runbooks
+- [x] P13.5 Add user-facing documentation and operator runbooks
   - [x] P13.5a Add docs page: "Rebuild Repro Contract" (what it is, why it exists, expected workflow).
   - [x] P13.5b Add docs page: "How to author a new instance rebuild spec" with copy-ready examples.
   - [x] P13.5c Add docs page: "How to interpret rebuild reports and regressions".
   - [x] P13.5d Add contributor policy text making rebuild-spec + checks mandatory for new instance repos.
-- [ ] P13.6 Enforce this as the default norm for all new FEMIC instances
+- [x] P13.6 Enforce this as the default norm for all new FEMIC instances
   - [x] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
   - [x] P13.6b Add docs/contract tests requiring rebuild-spec references in sample/new instance docs.
   - [x] P13.6c Add release-gate checks requiring successful rebuild report for reference instances prior to milestone close.
@@ -3618,3 +3618,7 @@ notes.
   - Added matching policy milestone entry in `CHANGE_LOG.md`.
   - Added docs-contract enforcement in `tests/test_docs_contract.py` to ensure
     the policy note remains present in roadmap and changelog artifacts.
+- 2026-03-11 (Roadmap status normalization): marked completed parent checklist
+  items as done where all child tasks were already complete.
+  - Updated parent status for:
+    `P12.3`, `P12.4`, `P12.5`, `P13.3`, `P13.4`, `P13.5`, and `P13.6`.
