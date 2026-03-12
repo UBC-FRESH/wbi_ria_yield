@@ -46,6 +46,38 @@ def test_validate_rebuild_spec_payload_accepts_valid_minimal_payload() -> None:
     assert not errors
 
 
+def test_validate_rebuild_spec_payload_accepts_species_account_policy() -> None:
+    payload = {
+        "schema_version": "1.0",
+        "instance": {"case_id": "k3z"},
+        "runtime": {
+            "species_account_policy": {
+                "required_present": ["product.Yield.managed.PLC"],
+                "expected_absent": ["product.Yield.managed.PL"],
+            }
+        },
+        "steps": [
+            {
+                "step_id": "validate_case",
+                "kind": "femic_command",
+                "required": True,
+                "depends_on": [],
+            }
+        ],
+        "invariants": [
+            {
+                "invariant_id": "managed_area_sanity",
+                "severity": "fatal",
+                "metric": "managed_area_ha",
+                "comparator": "gt",
+                "target": 0,
+            }
+        ],
+    }
+    errors = validate_rebuild_spec_payload(payload)
+    assert not errors
+
+
 def test_validate_rebuild_spec_payload_emits_clear_errors() -> None:
     payload = {
         "schema_version": "0.9",
@@ -77,3 +109,42 @@ def test_validate_rebuild_spec_payload_emits_clear_errors() -> None:
     assert any("depends_on references unknown step_id" in msg for msg in errors)
     assert any(".severity must be one of" in msg for msg in errors)
     assert any(".comparator must be one of" in msg for msg in errors)
+
+
+def test_validate_rebuild_spec_payload_rejects_invalid_species_account_policy() -> None:
+    payload = {
+        "schema_version": "1.0",
+        "instance": {"case_id": "k3z"},
+        "runtime": {
+            "species_account_policy": {
+                "required_present": "not-a-list",
+                "expected_absent": [""],
+            }
+        },
+        "steps": [
+            {
+                "step_id": "validate_case",
+                "kind": "femic_command",
+                "required": True,
+                "depends_on": [],
+            }
+        ],
+        "invariants": [
+            {
+                "invariant_id": "managed_area_sanity",
+                "severity": "fatal",
+                "metric": "managed_area_ha",
+                "comparator": "gt",
+                "target": 0,
+            }
+        ],
+    }
+    errors = validate_rebuild_spec_payload(payload)
+    assert any(
+        "species_account_policy.required_present must be a list" in msg
+        for msg in errors
+    )
+    assert any(
+        "species_account_policy.expected_absent[0] must be a non-empty string" in msg
+        for msg in errors
+    )

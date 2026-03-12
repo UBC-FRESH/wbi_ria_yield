@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from femic.rebuild_invariants import (
+    build_species_account_policy_invariants,
     collect_rebuild_metrics,
     evaluate_invariants,
     has_fatal_invariant_failures,
@@ -130,3 +131,20 @@ def test_evaluate_invariants_supports_contains_comparators() -> None:
 
     assert results[0].status == "pass"
     assert results[1].status == "pass"
+
+
+def test_build_species_account_policy_invariants_emits_fatal_policy_checks() -> None:
+    invariants = build_species_account_policy_invariants(
+        {
+            "required_present": [
+                "product.Yield.managed.PLC",
+                "product.Yield.managed.PLC",
+            ],
+            "expected_absent": ["product.Yield.managed.PL"],
+        }
+    )
+    assert len(invariants) == 2
+    assert invariants[0]["comparator"] == "contains"
+    assert invariants[0]["target"] == "product.Yield.managed.PLC"
+    assert invariants[1]["comparator"] == "not_contains"
+    assert invariants[1]["target"] == "product.Yield.managed.PL"

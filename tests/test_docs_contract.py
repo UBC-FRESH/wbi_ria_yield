@@ -765,6 +765,7 @@ def test_author_instance_rebuild_spec_guide_covers_core_sections() -> None:
     ]
     for section in required_sections:
         assert section in guide_text
+    assert "species_account_policy" in guide_text
 
 
 def test_interpret_rebuild_reports_guide_covers_core_sections() -> None:

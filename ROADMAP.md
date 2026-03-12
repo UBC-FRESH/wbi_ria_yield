@@ -418,7 +418,7 @@ notes.
 - [ ] P15.2 Add rebuild invariants for species-account completeness
   - [x] P15.2a Add invariant checks for species-wise managed yield and
     harvested-volume account presence/non-null behavior.
-  - [ ] P15.2b Classify expected-empty vs unexpected-empty species outputs as
+  - [x] P15.2b Classify expected-empty vs unexpected-empty species outputs as
     configurable policy in rebuild spec/allowlist.
   - [ ] P15.2c Fail rebuild when unexpected species-account null regressions are
     introduced.
@@ -3797,3 +3797,24 @@ notes.
     `docs/guides/author-instance-rebuild-spec.rst`.
   - Next execution step: implement `P15.2b` configurable expected-empty policy
     semantics in rebuild spec/allowlist patterns.
+- 2026-03-11 (Phase 15 `P15.2b` completion): added reusable rebuild-spec
+  `species_account_policy` support so expected-empty vs required-present
+  account surfaces are configurable by instance.
+  - Added policy-invariant builder in
+    `src/femic/rebuild_invariants.py` that emits fatal `contains` /
+    `not_contains` checks over `accounts.list`.
+  - Wired policy expansion into `femic instance rebuild` in
+    `src/femic/cli/main.py`.
+  - Extended rebuild-spec validation + schema in:
+    `src/femic/rebuild_spec.py` and
+    `planning/femic_instance_rebuild_spec_schema.v1.yaml`.
+  - Added tests in:
+    `tests/test_rebuild_invariants.py` and
+    `tests/test_rebuild_spec.py`.
+  - Migrated K3Z to policy-based configuration in:
+    `external/femic-k3z-instance/config/rebuild.spec.yaml`.
+  - Updated authoring docs in:
+    `docs/guides/author-instance-rebuild-spec.rst`.
+  - Next execution step: implement `P15.2c` to ensure rebuild command gating
+    behavior is explicit and fail-fast for unexpected species-account null/empty
+    regressions under policy.

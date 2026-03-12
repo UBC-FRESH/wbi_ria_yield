@@ -52,6 +52,11 @@ Minimal Copy-Ready Example
      patchworks_config: "config/patchworks.runtime.windows.yaml"
      log_dir: "vdyp_io/logs"
      baseline_unexpected_diff_threshold: 0
+     species_account_policy:
+       required_present:
+         - "product.Yield.managed.PLC"
+       expected_absent:
+         - "product.Yield.managed.PL"
 
    steps:
      - step_id: "validate_case"
@@ -104,6 +109,9 @@ Invariant Authoring Rules
 - Supported comparators:
   ``eq``, ``ne``, ``gt``, ``gte``, ``lt``, ``lte``, ``exists``,
   ``not_exists``, ``contains``, ``not_contains``.
+- For species-account completeness policies, prefer
+  ``runtime.species_account_policy`` so required/expected-empty account IDs are
+  generated as fatal invariants automatically.
 - Always include remediation text that tells the operator what to do next.
 
 K3Z Reference Pattern

@@ -7,6 +7,7 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 import shutil
+from typing import Any
 import zipfile
 
 import typer
@@ -57,6 +58,7 @@ from femic.rebuild_baseline import (
 )
 from femic.rebuild_invariants import (
     append_invariant_payload_to_report,
+    build_species_account_policy_invariants,
     collect_rebuild_metrics,
     evaluate_invariants,
     has_fatal_invariant_failures,
@@ -907,6 +909,18 @@ def instance_rebuild(
         pass
 
     invariants_payload = spec_payload.get("invariants", [])
+    runtime_payload = spec_payload.get("runtime", {})
+    policy_invariants = build_species_account_policy_invariants(
+        runtime_payload.get("species_account_policy")
+        if isinstance(runtime_payload, dict)
+        else None
+    )
+    resolved_invariants: list[dict[str, Any]] = []
+    if isinstance(invariants_payload, list):
+        resolved_invariants.extend(
+            item for item in invariants_payload if isinstance(item, dict)
+        )
+    resolved_invariants.extend(policy_invariants)
     metrics = collect_rebuild_metrics(
         instance_root=context.root,
         log_dir=resolved_log_dir,
@@ -919,7 +933,6 @@ def instance_rebuild(
     baseline_snapshot_payload: dict[str, object] | None = None
     current_snapshot_payload: dict[str, object] | None = None
     baseline_status = "unavailable"
-    runtime_payload = spec_payload.get("runtime", {})
     baseline_unexpected_diff_threshold = 0
     if isinstance(runtime_payload, dict):
         raw_threshold = runtime_payload.get("baseline_unexpected_diff_threshold", 0)
@@ -970,7 +983,7 @@ def instance_rebuild(
             baseline_status = f"error: {exc}"
 
     invariant_results = evaluate_invariants(
-        invariants=invariants_payload if isinstance(invariants_payload, list) else [],
+        invariants=resolved_invariants,
         metrics=metrics,
     )
     try:

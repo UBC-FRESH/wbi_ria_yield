@@ -44,6 +44,18 @@ root:
         baseline_unexpected_diff_threshold:
           type: number
           description: "Maximum unexpected baseline diffs allowed before rebuild fails."
+        species_account_policy:
+          type: map
+          description: "Optional policy for required-present and expected-absent account IDs."
+          fields:
+            required_present:
+              type: list
+              item_type: string
+              description: "Account IDs that must exist in tracks/accounts.csv."
+            expected_absent:
+              type: list
+              item_type: string
+              description: "Account IDs that must not exist in tracks/accounts.csv."
     steps:
       type: list
       min_items: 1

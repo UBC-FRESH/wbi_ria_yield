@@ -3872,3 +3872,23 @@
   `product.HarvestedVolume.managed.PL.CC`.
 - Updated invariant authoring docs:
   `docs/guides/author-instance-rebuild-spec.rst`.
+
+## 2026-03-11 - Added configurable species-account policy in rebuild specs (`P15.2b`)
+- Added optional runtime policy block:
+  `runtime.species_account_policy`
+  with:
+  `required_present` and `expected_absent` account lists.
+- Added policy-to-invariant expansion in:
+  `src/femic/rebuild_invariants.py`
+  and wired it into:
+  `src/femic/cli/main.py` (`femic instance rebuild`).
+- Extended rebuild spec validation and schema in:
+  `src/femic/rebuild_spec.py`,
+  `planning/femic_instance_rebuild_spec_schema.v1.yaml`.
+- Added regression coverage in:
+  `tests/test_rebuild_invariants.py`,
+  `tests/test_rebuild_spec.py`.
+- Migrated K3Z to policy-based config in:
+  `external/femic-k3z-instance/config/rebuild.spec.yaml`.
+- Updated authoring guide:
+  `docs/guides/author-instance-rebuild-spec.rst`.

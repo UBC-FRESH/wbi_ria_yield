@@ -68,6 +68,29 @@ def validate_rebuild_spec_payload(payload: dict[str, Any]) -> list[str]:
     runtime = payload.get("runtime")
     if not isinstance(runtime, dict):
         errors.append("runtime must be a mapping/object.")
+    else:
+        species_policy = runtime.get("species_account_policy")
+        if species_policy is not None:
+            if not isinstance(species_policy, dict):
+                errors.append(
+                    "runtime.species_account_policy must be a mapping/object."
+                )
+            else:
+                for key in ("required_present", "expected_absent"):
+                    value = species_policy.get(key)
+                    if value is None:
+                        continue
+                    if not isinstance(value, list):
+                        errors.append(
+                            f"runtime.species_account_policy.{key} must be a list when present."
+                        )
+                        continue
+                    for idx, item in enumerate(value):
+                        if not str(item).strip():
+                            errors.append(
+                                "runtime.species_account_policy."
+                                f"{key}[{idx}] must be a non-empty string."
+                            )
 
     steps = payload.get("steps")
     if not isinstance(steps, list) or not steps:

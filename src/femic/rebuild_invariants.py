@@ -74,6 +74,48 @@ def collect_rebuild_metrics(
     return metrics
 
 
+def build_species_account_policy_invariants(
+    policy: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    """Build invariant entries from runtime species-account policy config."""
+    if not isinstance(policy, dict):
+        return []
+    required_present = _coerce_string_list(policy.get("required_present"))
+    expected_absent = _coerce_string_list(policy.get("expected_absent"))
+    remediation_required = (
+        "Rebuild tracks/accounts and verify species-account generation policy."
+    )
+    remediation_absent = (
+        "Rebuild tracks/accounts and verify expected-empty species policy."
+    )
+    invariants: list[dict[str, Any]] = []
+    for account in required_present:
+        token = _policy_token(account)
+        invariants.append(
+            {
+                "invariant_id": f"species_policy_required_{token}",
+                "severity": "fatal",
+                "metric": "accounts.list",
+                "comparator": "contains",
+                "target": account,
+                "remediation": remediation_required,
+            }
+        )
+    for account in expected_absent:
+        token = _policy_token(account)
+        invariants.append(
+            {
+                "invariant_id": f"species_policy_absent_{token}",
+                "severity": "fatal",
+                "metric": "accounts.list",
+                "comparator": "not_contains",
+                "target": account,
+                "remediation": remediation_absent,
+            }
+        )
+    return invariants
+
+
 def evaluate_invariants(
     *,
     invariants: list[dict[str, Any]],
@@ -252,6 +294,28 @@ def _compare_metric(*, comparator: str, measured: Any, target: Any) -> tuple[boo
             return contains, ""
         return not contains, ""
     return False, f"unsupported comparator: {comparator}"
+
+
+def _coerce_string_list(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for item in value:
+        text = str(item).strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        out.append(text)
+    return out
+
+
+def _policy_token(value: str) -> str:
+    token = str(value).strip().lower()
+    token = re.sub(r"[^a-z0-9]+", "_", token).strip("_")
+    return token or "account"
 
 
 def serialize_invariant_results(results: list[InvariantResult]) -> list[dict[str, Any]]:
