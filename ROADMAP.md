@@ -461,6 +461,17 @@ notes.
 - [ ] P18.4 Post-release docs/changelog/version traceability
 
 ## Detailed Next Steps Notes
+- 2026-03-12 (Phase 18 workflow bugfix): fixed TestPyPI smoke step shell
+  parsing error after successful publish.
+  - Root cause:
+    `publish-testpypi.yml` used brittle nested quoting in the version-detection
+    command, producing shell parse error near `tomllib.loads(...)`.
+  - Fix:
+    simplified version extraction command to a single robust Python `-c`
+    invocation in `.github/workflows/publish-testpypi.yml`.
+  - Validation gates passed locally:
+    `ruff format`, `ruff check`, `mypy`, `pytest`, `pre-commit --all-files`,
+    `sphinx-build -W`.
 - 2026-03-12 (Phase 18 docs clarification): added validated TestPyPI
   token-free bootstrap path to release runbook to remove ambiguity when no
   project-level "Add project" button is visible.

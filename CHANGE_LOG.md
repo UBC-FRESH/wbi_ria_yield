@@ -4235,3 +4235,21 @@
 - Documented expected behavior that first successful trusted publish creates the
   `femic` TestPyPI project and attaches the publisher.
 - Reframed token upload instructions as fallback only.
+
+## 2026-03-12 - Fixed publish-testpypi smoke-step shell parsing failure
+- Investigated failing workflow run:
+  `https://github.com/UBC-FRESH/femic/actions/runs/23023081990`.
+- Root cause:
+  - publish to TestPyPI succeeded,
+  - failure occurred afterward in smoke step due to shell quoting in version
+    extraction command (`syntax error near unexpected token tomllib.loads`).
+- Updated workflow:
+  `/.github/workflows/publish-testpypi.yml`
+  to use a simpler, robust Python one-liner for version extraction.
+- Local validation gates passed:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest`
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`
