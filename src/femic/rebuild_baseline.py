@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any
 import xml.etree.ElementTree as ET
 
+import yaml
+
 from femic.patchworks_runtime import (
     infer_patchworks_model_dir,
     load_patchworks_runtime_config,
@@ -165,6 +167,67 @@ def diff_snapshots(
         "xml_diff": xml_diff,
         "diff_count": len(table_diffs) + (1 if xml_diff["status"] == "changed" else 0),
         "baseline_match": len(table_diffs) == 0 and xml_diff["status"] == "unchanged",
+    }
+
+
+def load_diff_allowlist(path: Path) -> dict[str, Any]:
+    """Load optional YAML/JSON allowlist rules for intentional diffs."""
+
+    if not path.exists():
+        return {}
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() == ".json":
+        payload = json.loads(text)
+    else:
+        payload = yaml.safe_load(text)
+    if payload is None:
+        return {}
+    if not isinstance(payload, dict):
+        raise ValueError(f"Allowlist payload must be an object: {path}")
+    return payload
+
+
+def apply_diff_allowlist(
+    *,
+    diff_payload: dict[str, Any],
+    allowlist_payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Filter diffs through explicit allowlist and report unexpected deltas."""
+
+    allowed_tables = {
+        str(item).strip()
+        for item in allowlist_payload.get("allowed_table_diffs", [])
+        if str(item).strip()
+    }
+    allowed_xml_keys = {
+        str(item).strip()
+        for item in allowlist_payload.get("allowed_xml_keys", [])
+        if str(item).strip()
+    }
+
+    table_diffs = diff_payload.get("table_diffs", [])
+    unexpected_table_diffs = [
+        item
+        for item in table_diffs
+        if str(item.get("table", "")).strip() not in allowed_tables
+    ]
+
+    xml_diff = _as_mapping(diff_payload.get("xml_diff"))
+    xml_changed_keys = {
+        str(item).strip()
+        for item in xml_diff.get("changed_keys", [])
+        if str(item).strip()
+    }
+    unexpected_xml_keys = sorted(xml_changed_keys.difference(allowed_xml_keys))
+
+    unexpected_diff_count = len(unexpected_table_diffs) + (
+        1 if unexpected_xml_keys else 0
+    )
+    return {
+        "unexpected_table_diffs": unexpected_table_diffs,
+        "unexpected_xml_keys": unexpected_xml_keys,
+        "unexpected_diff_count": unexpected_diff_count,
+        "allowlist_match": unexpected_diff_count == 0,
     }
 
 

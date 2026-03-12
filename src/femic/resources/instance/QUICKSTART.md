@@ -8,5 +8,6 @@
    `femic prep geospatial-preflight`
 4. Copy and customize `config/run_profile.case_template.yaml`.
 5. Copy and customize `config/rebuild.spec.yaml` for your case sequence/invariants.
-6. Add/edit `config/tipsy/tsa<code>.yaml` from `config/tipsy/template.case.yaml`.
-7. Run compile workflow from this instance root.
+6. Optionally update `config/rebuild.allowlist.yaml` for intentional baseline diffs.
+7. Add/edit `config/tipsy/tsa<code>.yaml` from `config/tipsy/template.case.yaml`.
+8. Run compile workflow from this instance root.

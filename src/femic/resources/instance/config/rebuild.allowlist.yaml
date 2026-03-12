@@ -1,0 +1,13 @@
+schema_version: "1.0"
+
+# Track-table filenames allowed to differ from baseline without triggering
+# unexpected-diff guardrails.
+allowed_table_diffs: []
+
+# ForestModel XML structure keys allowed to differ from baseline.
+# Valid keys:
+#   - curve_count
+#   - attribute_count
+#   - select_count
+#   - treatment_count
+allowed_xml_keys: []

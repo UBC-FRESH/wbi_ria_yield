@@ -285,6 +285,7 @@ Subcommands
 - ``--patchworks-config PATH`` (default: ``config/patchworks.runtime.yaml``)
 - ``--baseline PATH`` (default: ``config/rebuild.baseline.json``)
 - ``--write-baseline`` (write/update baseline snapshot before diff evaluation)
+- ``--allowlist PATH`` (default: ``config/rebuild.allowlist.yaml``)
 - ``--instance-root PATH``
 
 ``instance rebuild`` writes a machine-readable report to
@@ -296,7 +297,9 @@ It also evaluates configured rebuild-spec invariants and appends measured
 remediation summary.
 When a baseline snapshot is available, the report also includes a ``baseline``
 section with table/XML structural diffs and aggregate ``baseline_match`` /
-``baseline_diff_count`` metrics.
+``baseline_diff_count`` metrics. If an allowlist file is present, rebuild also
+computes ``baseline_allowlist_match`` and ``baseline_unexpected_diff_count``
+for explicit intentional-delta tracking.
 
 ``instance validate-spec`` options
 

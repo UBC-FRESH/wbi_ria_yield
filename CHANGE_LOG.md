@@ -3584,3 +3584,23 @@
 - Added tests:
   `tests/test_rebuild_baseline.py`, plus CLI/docs contract updates in
   `tests/test_cli_main.py` and `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Added baseline diff allowlist mechanism (`P13.4c`)
+- Added allowlist parsing/filtering helpers in:
+  `src/femic/rebuild_baseline.py`
+  (`load_diff_allowlist`, `apply_diff_allowlist`).
+- `femic instance rebuild` now supports:
+  - `--allowlist PATH` (default `config/rebuild.allowlist.yaml`),
+  - `baseline_allowlist_match` and `baseline_unexpected_diff_count` metrics.
+- Rebuild report baseline payload now includes:
+  - allowlist path/payload,
+  - filtered unexpected diff summary.
+- Added default allowlist templates:
+  `src/femic/resources/instance/config/rebuild.allowlist.yaml` and
+  `instances/reference/config/rebuild.allowlist.yaml`.
+- Updated instance scaffold/quickstart to include allowlist by default.
+- Added/updated tests:
+  `tests/test_rebuild_baseline.py`,
+  `tests/test_instance_bootstrap.py`,
+  `tests/test_cli_main.py`,
+  `tests/test_docs_contract.py`.

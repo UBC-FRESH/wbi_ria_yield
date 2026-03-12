@@ -49,6 +49,7 @@ INSTANCE_TEMPLATE_FILES: tuple[Path, ...] = (
     Path("QUICKSTART.md"),
     Path("config/run_profile.case_template.yaml"),
     Path("config/rebuild.spec.yaml"),
+    Path("config/rebuild.allowlist.yaml"),
     Path("config/tipsy/template.case.yaml"),
     Path("config/patchworks.runtime.windows.yaml"),
 )

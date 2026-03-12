@@ -47,8 +47,10 @@ from femic.patchworks_runtime import (
     run_patchworks_preflight,
 )
 from femic.rebuild_baseline import (
+    apply_diff_allowlist,
     build_current_snapshot,
     diff_snapshots,
+    load_diff_allowlist,
     load_snapshot,
     resolve_baseline_path,
     save_snapshot,
@@ -388,6 +390,11 @@ INSTANCE_REBUILD_WRITE_BASELINE_OPTION = typer.Option(
     "--write-baseline",
     help="Write/update baseline snapshot before evaluating baseline diff metrics.",
 )
+INSTANCE_REBUILD_ALLOWLIST_OPTION = typer.Option(
+    Path("config/rebuild.allowlist.yaml"),
+    "--allowlist",
+    help="Optional YAML/JSON allowlist for intentional baseline diffs.",
+)
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
     "--config",
@@ -710,6 +717,7 @@ def instance_rebuild(
     patchworks_config: Path = INSTANCE_REBUILD_PATCHWORKS_CONFIG_OPTION,
     baseline: Path = INSTANCE_REBUILD_BASELINE_OPTION,
     write_baseline: bool = INSTANCE_REBUILD_WRITE_BASELINE_OPTION,
+    allowlist: Path = INSTANCE_REBUILD_ALLOWLIST_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
     context = _resolve_cli_instance_context(instance_root=instance_root)
@@ -722,6 +730,7 @@ def instance_rebuild(
         baseline_path=context.resolve_path(baseline),
         instance_root=context.root,
     )
+    resolved_allowlist = context.resolve_path(allowlist)
     effective_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
     try:
@@ -866,6 +875,8 @@ def instance_rebuild(
         patchworks_config_path=resolved_patchworks_config,
     )
     baseline_diff_payload: dict[str, object] | None = None
+    baseline_allowlist_payload: dict[str, object] | None = None
+    baseline_allowlist_result: dict[str, object] | None = None
     baseline_snapshot_payload: dict[str, object] | None = None
     current_snapshot_payload: dict[str, object] | None = None
     baseline_status = "unavailable"
@@ -890,11 +901,25 @@ def instance_rebuild(
                 )
                 metrics["baseline_match"] = baseline_diff_payload["baseline_match"]
                 metrics["baseline_diff_count"] = baseline_diff_payload["diff_count"]
+                baseline_allowlist_payload = load_diff_allowlist(resolved_allowlist)
+                if baseline_allowlist_payload:
+                    baseline_allowlist_result = apply_diff_allowlist(
+                        diff_payload=baseline_diff_payload,
+                        allowlist_payload=baseline_allowlist_payload,
+                    )
+                    metrics["baseline_allowlist_match"] = baseline_allowlist_result[
+                        "allowlist_match"
+                    ]
+                    metrics["baseline_unexpected_diff_count"] = (
+                        baseline_allowlist_result["unexpected_diff_count"]
+                    )
                 if baseline_status == "unavailable":
                     baseline_status = "evaluated"
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             metrics["baseline_match"] = None
             metrics["baseline_diff_count"] = None
+            metrics["baseline_allowlist_match"] = None
+            metrics["baseline_unexpected_diff_count"] = None
             baseline_status = f"error: {exc}"
 
     invariant_results = evaluate_invariants(
@@ -913,6 +938,9 @@ def instance_rebuild(
                 "status": baseline_status,
                 "path": str(resolved_baseline),
                 "diff": baseline_diff_payload,
+                "allowlist_path": str(resolved_allowlist),
+                "allowlist": baseline_allowlist_payload,
+                "allowlist_result": baseline_allowlist_result,
                 "current_snapshot": current_snapshot_payload,
                 "baseline_snapshot": baseline_snapshot_payload,
             }
@@ -966,7 +994,8 @@ def instance_rebuild(
             "baseline: "
             f"status={baseline_status} "
             f"path={resolved_baseline} "
-            f"diff_count={metrics.get('baseline_diff_count')}"
+            f"diff_count={metrics.get('baseline_diff_count')} "
+            f"unexpected_diff_count={metrics.get('baseline_unexpected_diff_count')}"
         )
     if report.failed or fatal_invariant_failure:
         if fatal_invariant_failure and not report.failed:

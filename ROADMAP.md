@@ -366,7 +366,7 @@
 - [ ] P13.4 Add regression guardrails for rebuild outputs
   - [x] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
   - [x] P13.4b Add configurable baseline snapshot/diff support for key track tables and selected XML structures.
-  - [ ] P13.4c Add explicit allowlist mechanism for intentional output deltas (so accepted changes are tracked in git).
+  - [x] P13.4c Add explicit allowlist mechanism for intentional output deltas (so accepted changes are tracked in git).
   - [ ] P13.4d Fail rebuild with actionable summary when invariants regress or unexpected diffs exceed thresholds.
 - [ ] P13.5 Add user-facing documentation and operator runbooks
   - [ ] P13.5a Add docs page: "Rebuild Repro Contract" (what it is, why it exists, expected workflow).
@@ -3493,3 +3493,18 @@
   - Added tests:
     `tests/test_rebuild_baseline.py`, plus CLI/docs contract updates in
     `tests/test_cli_main.py` and `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 13 `P13.4c` completion): added explicit baseline-diff
+  allowlist mechanism so intentional output deltas are tracked in git.
+  - Added allowlist support in baseline utilities:
+    `load_diff_allowlist(...)` and `apply_diff_allowlist(...)` in
+    `src/femic/rebuild_baseline.py`.
+  - `femic instance rebuild` now supports:
+    `--allowlist <path>` (default `config/rebuild.allowlist.yaml`) and records
+    `baseline_allowlist_match` + `baseline_unexpected_diff_count` metrics.
+  - Rebuild report `baseline` section now captures allowlist path/payload and
+    filtered unexpected diff results.
+  - Added allowlist template files:
+    `src/femic/resources/instance/config/rebuild.allowlist.yaml` and
+    `instances/reference/config/rebuild.allowlist.yaml`.
+  - Updated instance scaffolding (`femic instance init`) and quickstart docs
+    so every new instance starts with a tracked allowlist file.
