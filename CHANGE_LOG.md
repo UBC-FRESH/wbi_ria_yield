@@ -4292,3 +4292,19 @@
   - workflow logic is aligned with TestPyPI and functioning as intended,
   - final unblock is a PyPI-side trusted publisher entry matching the above
     claims; once configured, rerun `publish-pypi`.
+
+## 2026-03-12 - Completed Phase 18 P18.3/P18.4 with production PyPI publish (`0.1.1a1`)
+- Triggered production workflow after publisher alignment:
+  `https://github.com/UBC-FRESH/femic/actions/runs/23024083304`.
+- Workflow passed end-to-end:
+  - build and `twine check`,
+  - publish to PyPI,
+  - post-publish smoke install from PyPI (`femic --help`).
+- Published artifact traceability (PyPI API):
+  - `femic-0.1.1a1-py3-none-any.whl`
+    `sha256=09c8dfca3539815b149dee77145ba525eae33f239e88a3e3e63879d6fcc0d699`
+    uploaded `2026-03-12T21:10:52.402225Z`.
+  - `femic-0.1.1a1.tar.gz`
+    `sha256=10fb2e43abdecb0dcee5c40096230462aca9cab5e2cc7c28687a7bd8258154d7`
+    uploaded `2026-03-12T21:10:53.810540Z`.
+- Phase 18 status: all checklist items complete (`P18.1`–`P18.4`).

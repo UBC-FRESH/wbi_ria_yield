@@ -457,10 +457,22 @@ notes.
 ## Phase 18: Packaging and Publication to PyPI
 - [x] P18.1 Packaging metadata and build reproducibility checks
 - [x] P18.2 TestPyPI publication and install smoke tests
-- [ ] P18.3 Production PyPI release
-- [ ] P18.4 Post-release docs/changelog/version traceability
+- [x] P18.3 Production PyPI release
+- [x] P18.4 Post-release docs/changelog/version traceability
 
 ## Detailed Next Steps Notes
+- 2026-03-12 (Phase 18 `P18.3` + `P18.4` complete): published
+  `femic==0.1.1a1` to production PyPI via trusted publisher and validated
+  post-release smoke install in workflow.
+  - Green production run:
+    `https://github.com/UBC-FRESH/femic/actions/runs/23024083304`
+  - Published artifacts (from PyPI API):
+    - `femic-0.1.1a1-py3-none-any.whl`
+      `sha256=09c8dfca3539815b149dee77145ba525eae33f239e88a3e3e63879d6fcc0d699`
+    - `femic-0.1.1a1.tar.gz`
+      `sha256=10fb2e43abdecb0dcee5c40096230462aca9cab5e2cc7c28687a7bd8258154d7`
+  - Release summary:
+    Phase 18 checklist is now fully complete (`P18.1`–`P18.4`).
 - 2026-03-12 (Phase 18 `P18.2` complete): published pre-release
   `femic==0.1.1a1` to TestPyPI with successful end-to-end smoke install in
   GitHub Actions.
