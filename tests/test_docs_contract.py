@@ -190,6 +190,19 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
                 "--yes",
             ],
         ),
+        (
+            ["instance", "rebuild", "--help"],
+            [
+                "--run-config",
+                "--tipsy-config-dir",
+                "--log-dir",
+                "--run-id",
+                "--with-patchworks",
+                "--no-patchworks",
+                "--patchworks-config",
+                "--instance-root",
+            ],
+        ),
     ]
 
     for argv, options in checks:

@@ -791,6 +791,113 @@ def test_instance_init_calls_bootstrap(monkeypatch: pytest.MonkeyPatch) -> None:
     assert any("instance init completed" in msg for msg in messages)
 
 
+def test_instance_rebuild_runs_runner_and_reports(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=Path("instance-root"),
+            resolve_path=lambda value: Path("instance-root") / value,
+        ),
+    )
+
+    calls: dict[str, object] = {}
+
+    class FakeRunner:
+        def __init__(self, *, steps, report_sink):
+            calls["steps"] = steps
+            calls["report_sink"] = report_sink
+
+        def run(self, *, run_id, context):
+            calls["run_id"] = run_id
+            calls["context"] = context
+            return SimpleNamespace(
+                failed=False,
+                outcomes=(
+                    SimpleNamespace(
+                        step_id="validate_case",
+                        status="ok",
+                        duration_seconds=0.1,
+                        error=None,
+                    ),
+                    SimpleNamespace(
+                        step_id="post_tipsy_bundle",
+                        status="ok",
+                        duration_seconds=0.2,
+                        error=None,
+                    ),
+                ),
+            )
+
+    monkeypatch.setattr(cli_main, "RebuildRunner", FakeRunner)
+
+    cli_main.instance_rebuild(
+        run_config=Path("config/run_profile.case_template.yaml"),
+        tipsy_config_dir=Path("config/tipsy"),
+        log_dir=Path("vdyp_io/logs"),
+        run_id="rebuild_test",
+        with_patchworks=False,
+        patchworks_config=Path("config/patchworks.runtime.yaml"),
+        instance_root=Path("instance-root"),
+    )
+
+    assert calls["run_id"] == "rebuild_test"
+    assert calls["context"] == {"instance_root": "instance-root"}
+    step_ids = [step.step_id for step in calls["steps"]]
+    assert step_ids == [
+        "validate_case",
+        "geospatial_preflight",
+        "compile_upstream",
+        "post_tipsy_bundle",
+    ]
+    assert any("instance rebuild" in msg for msg in messages)
+
+
+def test_instance_rebuild_includes_patchworks_steps_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=Path("instance-root"),
+            resolve_path=lambda value: Path("instance-root") / value,
+        ),
+    )
+
+    calls: dict[str, object] = {}
+
+    class FakeRunner:
+        def __init__(self, *, steps, report_sink):
+            calls["steps"] = steps
+            calls["report_sink"] = report_sink
+
+        def run(self, *, run_id, context):
+            _ = (run_id, context)
+            return SimpleNamespace(failed=False, outcomes=())
+
+    monkeypatch.setattr(cli_main, "RebuildRunner", FakeRunner)
+    monkeypatch.setattr(cli_main.console, "print", lambda _msg: None)
+
+    cli_main.instance_rebuild(
+        run_config=Path("config/run_profile.case_template.yaml"),
+        tipsy_config_dir=Path("config/tipsy"),
+        log_dir=Path("vdyp_io/logs"),
+        run_id="rebuild_test",
+        with_patchworks=True,
+        patchworks_config=Path("config/patchworks.runtime.yaml"),
+        instance_root=Path("instance-root"),
+    )
+
+    step_ids = [step.step_id for step in calls["steps"]]
+    assert "patchworks_preflight" in step_ids
+    assert "patchworks_matrix_build" in step_ids
+
+
 def test_prep_geospatial_preflight_passes(monkeypatch: pytest.MonkeyPatch) -> None:
     messages: list[str] = []
     monkeypatch.setattr(cli_main.console, "print", messages.append)

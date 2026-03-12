@@ -355,7 +355,7 @@
   - [x] P13.1d Define failure classes (hard fail vs warning) and required remediation messaging.
 - [ ] P13.2 Add first-class rebuild orchestration to FEMIC
   - [x] P13.2a Add a reusable rebuild runner abstraction (step graph + deterministic execution + report sink).
-  - [ ] P13.2b Add CLI support for instance rebuild execution (instance-rooted, run-ided, non-interactive).
+  - [x] P13.2b Add CLI support for instance rebuild execution (instance-rooted, run-ided, non-interactive).
   - [ ] P13.2c Ensure rebuild execution writes machine-readable reports/manifests and references all generated logs.
   - [ ] P13.2d Add dry-run mode showing full planned command sequence without mutation.
 - [ ] P13.3 Add per-instance rebuild spec/config files as tracked source-of-truth
@@ -3391,3 +3391,17 @@
     `tests/test_rebuild_runner.py` covering deterministic order, failure
     handling modes, JSON sink output, unknown dependency errors, and cycle
     detection.
+- 2026-03-11 (Phase 13 `P13.2b` completion): added CLI support for
+  non-interactive, instance-rooted rebuild execution with explicit run IDs.
+  - Added `femic instance rebuild` command in `src/femic/cli/main.py`.
+  - Command now executes deterministic rebuild steps through
+    `RebuildRunner` with step dependencies:
+    case preflight, geospatial preflight, upstream compile, post-TIPSY bundle,
+    and optional Patchworks preflight + matrix build.
+  - Added machine-readable report path emission:
+    `vdyp_io/logs/instance_rebuild_report-<run_id>.json`.
+  - Added CLI regression tests in `tests/test_cli_main.py` for base/with-Patchworks
+    step graph construction and run-id/context wiring.
+  - Updated CLI docs and contracts:
+    `docs/reference/cli.rst`, `docs/guides/pipeline-overview.rst`,
+    `tests/test_docs_contract.py`.

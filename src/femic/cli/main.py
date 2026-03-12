@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import UTC, datetime
 from pathlib import Path
 import shutil
 import zipfile
@@ -45,6 +46,7 @@ from femic.patchworks_runtime import (
     run_patchworks_command,
     run_patchworks_preflight,
 )
+from femic.rebuild_runner import JsonRebuildReportSink, RebuildRunner, RebuildStep
 from femic.release_packaging import build_release_package
 from femic.pipeline.io import (
     build_pipeline_run_config,
@@ -320,6 +322,37 @@ EXPORT_RELEASE_STRICT_OPTION = typer.Option(
     True,
     "--strict/--no-strict",
     help="Fail packaging if required model-input/Patchworks artifacts are missing.",
+)
+INSTANCE_REBUILD_RUN_CONFIG_OPTION = typer.Option(
+    Path("config/run_profile.case_template.yaml"),
+    "--run-config",
+    help="Run profile used for rebuild validation and execution.",
+)
+INSTANCE_REBUILD_TIPSY_CONFIG_DIR_OPTION = typer.Option(
+    Path("config/tipsy"),
+    "--tipsy-config-dir",
+    help="Directory containing tsa*.yaml TIPSY configs for case preflight.",
+)
+INSTANCE_REBUILD_LOG_DIR_OPTION = typer.Option(
+    Path("vdyp_io/logs"),
+    "--log-dir",
+    help="Directory for rebuild runner reports and step logs.",
+)
+INSTANCE_REBUILD_RUN_ID_OPTION = typer.Option(
+    None,
+    "--run-id",
+    help="Optional rebuild run identifier (defaults to UTC timestamp).",
+    show_default=False,
+)
+INSTANCE_REBUILD_WITH_PATCHWORKS_OPTION = typer.Option(
+    False,
+    "--with-patchworks/--no-patchworks",
+    help="Include Patchworks preflight + matrix-builder steps in instance rebuild.",
+)
+INSTANCE_REBUILD_PATCHWORKS_CONFIG_OPTION = typer.Option(
+    Path("config/patchworks.runtime.yaml"),
+    "--patchworks-config",
+    help="Patchworks runtime config used when --with-patchworks is enabled.",
 )
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
@@ -606,6 +639,141 @@ def instance_init(
         console.print(
             f"[yellow]Install hint ({geo.os_family}):[/yellow] {geo.install_hint}"
         )
+
+
+@instance_app.command("rebuild")
+def instance_rebuild(
+    run_config: Path = INSTANCE_REBUILD_RUN_CONFIG_OPTION,
+    tipsy_config_dir: Path = INSTANCE_REBUILD_TIPSY_CONFIG_DIR_OPTION,
+    log_dir: Path = INSTANCE_REBUILD_LOG_DIR_OPTION,
+    run_id: str | None = INSTANCE_REBUILD_RUN_ID_OPTION,
+    with_patchworks: bool = INSTANCE_REBUILD_WITH_PATCHWORKS_OPTION,
+    patchworks_config: Path = INSTANCE_REBUILD_PATCHWORKS_CONFIG_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
+) -> None:
+    context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_run_config = context.resolve_path(run_config)
+    resolved_tipsy_config_dir = context.resolve_path(tipsy_config_dir)
+    resolved_log_dir = context.resolve_path(log_dir)
+    resolved_patchworks_config = context.resolve_path(patchworks_config)
+    effective_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+
+    steps: list[RebuildStep] = [
+        RebuildStep(
+            step_id="validate_case",
+            action=lambda _ctx: (
+                prep_validate_case(
+                    run_config=resolved_run_config,
+                    tipsy_config_dir=resolved_tipsy_config_dir,
+                    strict_warnings=True,
+                    instance_root=context.root,
+                ),
+                {"run_config": str(resolved_run_config)},
+            )[1],
+        ),
+        RebuildStep(
+            step_id="geospatial_preflight",
+            action=lambda _ctx: (
+                prep_geospatial_preflight(
+                    strict_warnings=False,
+                    skip_shapefile_smoke=False,
+                ),
+                {"geospatial_check": "ok"},
+            )[1],
+            depends_on=("validate_case",),
+        ),
+        RebuildStep(
+            step_id="compile_upstream",
+            action=lambda _ctx: (
+                run_all(
+                    data_root=Path("data"),
+                    output_root=Path("outputs"),
+                    tsa=None,
+                    resume=False,
+                    dry_run=False,
+                    verbose=True,
+                    skip_checks=False,
+                    debug_rows=None,
+                    run_id=effective_run_id,
+                    log_dir=resolved_log_dir,
+                    run_config=resolved_run_config,
+                    instance_root=context.root,
+                ),
+                {"run_id": effective_run_id},
+            )[1],
+            depends_on=("geospatial_preflight",),
+        ),
+        RebuildStep(
+            step_id="post_tipsy_bundle",
+            action=lambda _ctx: (
+                tsa_post_tipsy(
+                    tsa=None,
+                    verbose=True,
+                    run_id=effective_run_id,
+                    log_dir=resolved_log_dir,
+                    run_config=resolved_run_config,
+                    instance_root=context.root,
+                ),
+                {"post_tipsy": "ok"},
+            )[1],
+            depends_on=("compile_upstream",),
+        ),
+    ]
+    if with_patchworks:
+        steps.extend(
+            [
+                RebuildStep(
+                    step_id="patchworks_preflight",
+                    action=lambda _ctx: (
+                        patchworks_preflight(
+                            config=resolved_patchworks_config,
+                            instance_root=context.root,
+                        ),
+                        {"patchworks_preflight": "ok"},
+                    )[1],
+                    depends_on=("post_tipsy_bundle",),
+                ),
+                RebuildStep(
+                    step_id="patchworks_matrix_build",
+                    action=lambda _ctx: (
+                        patchworks_matrix_build(
+                            config=resolved_patchworks_config,
+                            log_dir=resolved_log_dir,
+                            run_id=effective_run_id,
+                            interactive=False,
+                            instance_root=context.root,
+                        ),
+                        {"patchworks_matrix_build": "ok"},
+                    )[1],
+                    depends_on=("patchworks_preflight",),
+                ),
+            ]
+        )
+
+    report_path = resolved_log_dir / f"instance_rebuild_report-{effective_run_id}.json"
+    runner = RebuildRunner(
+        steps=steps,
+        report_sink=JsonRebuildReportSink(path=report_path),
+    )
+    report = runner.run(
+        run_id=effective_run_id,
+        context={"instance_root": str(context.root)},
+    )
+
+    status = "[green]ok[/green]" if not report.failed else "[red]failed[/red]"
+    console.print(
+        f"instance rebuild {status} run_id={effective_run_id} "
+        f"steps={len(report.outcomes)} report={report_path}"
+    )
+    for outcome in report.outcomes:
+        console.print(
+            f"- {outcome.step_id}: {outcome.status} "
+            f"duration={outcome.duration_seconds:.2f}s"
+        )
+        if outcome.error:
+            console.print(f"  [red]{outcome.error}[/red]")
+    if report.failed:
+        raise typer.Exit(code=1)
 
 
 @app.command("run")

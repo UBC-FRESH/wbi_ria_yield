@@ -18,6 +18,12 @@ Run from your active instance root (maintainers can use
 
    cd instances/reference
 
+For deterministic orchestration using the new rebuild runner abstraction, use:
+
+.. code-block:: bash
+
+   femic instance rebuild --run-config config/run_profile.<case>.yaml --run-id <id>
+
 1. Run upstream compilation:
 
    .. code-block:: bash

@@ -3456,3 +3456,19 @@
 - Added regression/unit coverage in `tests/test_rebuild_runner.py`:
   deterministic order, failure modes, report sink writing, unknown dependency
   rejection, and cycle detection.
+
+## 2026-03-11 - Added CLI instance rebuild execution (`P13.2b`)
+- Added new CLI command:
+  `femic instance rebuild` in `src/femic/cli/main.py`.
+- Command executes deterministic non-interactive rebuild steps via
+  `RebuildRunner` with dependency ordering:
+  case preflight, geospatial preflight, upstream compile, post-TIPSY bundle,
+  and optional Patchworks preflight + matrix build.
+- Added run-id and instance-root support for rebuild execution:
+  `--run-id`, `--instance-root`, and optional `--with-patchworks`.
+- Added machine-readable report output path:
+  `vdyp_io/logs/instance_rebuild_report-<run_id>.json`.
+- Updated tests:
+  `tests/test_cli_main.py` and `tests/test_docs_contract.py`.
+- Updated docs:
+  `docs/reference/cli.rst` and `docs/guides/pipeline-overview.rst`.

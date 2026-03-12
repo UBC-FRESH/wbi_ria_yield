@@ -263,6 +263,7 @@ Instance Workspace
 Subcommands
 
 - ``init``: ``python -m femic instance init [OPTIONS]``
+- ``rebuild``: ``python -m femic instance rebuild [OPTIONS]``
 
 ``instance init`` options
 
@@ -270,3 +271,13 @@ Subcommands
 - ``--overwrite`` (overwrite existing scaffold template files)
 - ``--download-bc-vri / --no-download-bc-vri`` (default: ``--download-bc-vri``)
 - ``--yes`` / ``-y`` (assume yes for prompts)
+
+``instance rebuild`` options
+
+- ``--run-config PATH`` (default: ``config/run_profile.case_template.yaml``)
+- ``--tipsy-config-dir PATH`` (default: ``config/tipsy``)
+- ``--log-dir PATH`` (default: ``vdyp_io/logs``)
+- ``--run-id TEXT`` (optional; defaults to UTC timestamp)
+- ``--with-patchworks / --no-patchworks`` (default: ``--no-patchworks``)
+- ``--patchworks-config PATH`` (default: ``config/patchworks.runtime.yaml``)
+- ``--instance-root PATH``
