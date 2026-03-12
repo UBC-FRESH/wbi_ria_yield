@@ -291,12 +291,29 @@
   - [x] P12.3b Publish docs for `femic-k3z-instance` and verify external URLs.
   - [x] P12.3c Add docs acceptance checks for required sections and navigation.
 - [ ] P12.4 Expand K3Z user-facing docs to TSR-style data-package depth
+  (match structure/depth of BC small-unit timber supply data packages)
   - [ ] P12.4a Add full metadata inventory and lineage narratives by artifact
     family (inputs, transforms, outputs, validation evidence).
   - [ ] P12.4b Add full operator runbook coverage (fresh setup, rebuild,
     diagnostics, troubleshooting, and release checklist).
   - [ ] P12.4c Add user edit-policy matrix and interpretation guidance aligned
     to classroom workflows and scenario comparison needs.
+  - [ ] P12.4d Build exemplar structure crosswalk from BC reference data
+    packages (`TFL26`, `CFA`, `FNWL`) to K3Z standalone docs sections,
+    including: Introduction, Land Base Definition, Non-Timber Assumptions,
+    Harvesting Assumptions, Growth & Yield, Natural Disturbance, Modeling
+    Assumptions, Analysis Report, Discussion, and References.
+  - [ ] P12.4e Add standalone K3Z data-package page set covering:
+    land-base definition + netdown logic, assumptions registry
+    (timber/non-timber/model), base-case analysis outputs + interpretation,
+    and discussion/limitations/known uncertainty sources.
+  - [ ] P12.4f Require explicit evidence/provenance tables for each artifact
+    family with update date, source path/URL, transform stage, and QA status.
+  - [ ] P12.4g Add student usability acceptance content across major pages:
+    what to edit vs regenerate, and how to validate rebuild/rerun outputs.
+  - [ ] P12.4h Define publication acceptance criteria before closing `P12.4`:
+    standalone docs build `-W`, docs-contract coverage for required sections,
+    and published GitHub Pages verification for `femic-k3z-instance`.
 - [ ] P12.5 Enforce FRESH lab Sphinx template consistency (FHOPS-aligned)
   - [ ] P12.5a Define the canonical template baseline using
     `https://github.com/UBC-FRESH/fhops` as the reference implementation.
@@ -308,6 +325,8 @@
     lab docs present a consistent user experience.
   - [ ] P12.5d Add a template-compliance checklist in CI/docs-contract tests to
     prevent drift across FRESH lab documentation projects.
+  - [ ] P12.5e Ensure FHOPS template alignment preserves BC data-package depth
+    expectations for K3Z documentation content.
 - [ ] P12.6 Finalize and operationalize docs ownership
   - [ ] P12.6a Define update cadence and ownership for K3Z docs/content refresh.
   - [ ] P12.6b Define release tagging/versioning policy for docs alongside model
@@ -3243,3 +3262,18 @@
     - required reproducibility sections and script references in
       `rebuild-and-qa.rst`,
     - required troubleshooting topics in `troubleshooting.rst`.
+- 2026-03-11 (Phase 12 roadmap amendment: TSR-grade K3Z data-package depth):
+  refined Phase 12 docs scope to explicitly target BC small-unit data-package
+  structure/depth expectations using three exemplar references.
+  - Added `P12.4d/P12.4e/P12.4f/P12.4g/P12.4h` to enforce:
+    exemplar section crosswalk, standalone K3Z data-package page set,
+    evidence/provenance tables, student usability acceptance content, and
+    publication acceptance criteria.
+  - Added `P12.5e` to ensure FHOPS template alignment does not dilute
+    BC data-package depth expectations.
+  - Exemplar references for structure baseline:
+    `reference/TFL26_Information_Package_Sept-2018_v1.1.pdf`,
+    `reference/CFA_Analysis_Report.pdf`,
+    `reference/FNWL_Analysis_Report.pdf`.
+  - Next execution sequence locked:
+    `P12.4d -> P12.4e -> P12.4f -> P12.4g -> P12.4h`.

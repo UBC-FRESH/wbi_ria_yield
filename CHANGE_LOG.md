@@ -3306,3 +3306,19 @@
   - required reproducibility sections and rebuild-script reference in
     `docs/rebuild-and-qa.rst`,
   - required troubleshooting topics in `docs/troubleshooting.rst`.
+
+## 2026-03-11 - Amended Phase 12 roadmap for TSR-grade K3Z data-package docs
+- Refined `P12.4` scope to explicitly target BC small-unit timber supply
+  data-package structure/depth quality.
+- Added concrete roadmap subtasks:
+  - `P12.4d` exemplar section crosswalk (`TFL26`, `CFA`, `FNWL`),
+  - `P12.4e` standalone K3Z data-package page set,
+  - `P12.4f` evidence/provenance table requirements,
+  - `P12.4g` student usability acceptance content requirements,
+  - `P12.4h` publication acceptance criteria (`-W` build, docs-contract,
+    GitHub Pages verification).
+- Added `P12.5e` to ensure FHOPS template alignment preserves BC data-package
+  depth expectations.
+- Added matching `ROADMAP.md` detailed next-steps note with locked execution
+  sequence:
+  `P12.4d -> P12.4e -> P12.4f -> P12.4g -> P12.4h`.
