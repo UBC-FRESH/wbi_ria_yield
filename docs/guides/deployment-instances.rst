@@ -18,6 +18,7 @@ From an empty directory:
 By default this scaffolds:
 
 - ``config/`` and ``config/tipsy/`` templates
+- ``config/rebuild.spec.yaml`` default rebuild spec template
 - ``data/`` and ``data/downloads/``
 - ``output/``
 - ``vdyp_io/logs/``

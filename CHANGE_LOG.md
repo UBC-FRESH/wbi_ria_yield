@@ -3508,3 +3508,16 @@
   `planning/femic_instance_rebuild_contract.md`.
 - Added docs-contract enforcement:
   `tests/test_docs_contract.py::test_instance_rebuild_spec_schema_artifact_is_present_and_structured`.
+
+## 2026-03-11 - Shipped default rebuild spec template in instance init (`P13.3b`)
+- Added default rebuild-spec template:
+  `src/femic/resources/instance/config/rebuild.spec.yaml`.
+- Updated instance bootstrap template list so `femic instance init` writes:
+  `config/rebuild.spec.yaml` for every new instance workspace.
+- Updated instance quickstart template:
+  `src/femic/resources/instance/QUICKSTART.md`.
+- Updated deployment docs:
+  `docs/guides/deployment-instances.rst`.
+- Updated test/contracts:
+  `tests/test_instance_bootstrap.py`,
+  `tests/test_docs_contract.py`.

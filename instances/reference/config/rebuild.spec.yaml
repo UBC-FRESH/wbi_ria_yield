@@ -1,0 +1,72 @@
+schema_version: "1.0"
+
+instance:
+  case_id: "case-template"
+  instance_root: "."
+
+runtime:
+  run_config: "config/run_profile.case_template.yaml"
+  tipsy_config_dir: "config/tipsy"
+  patchworks_config: "config/patchworks.runtime.windows.yaml"
+  log_dir: "vdyp_io/logs"
+
+steps:
+  - step_id: "validate_case"
+    kind: "femic_command"
+    command: "femic prep validate-case --run-config ${runtime.run_config}"
+    required: true
+    depends_on: []
+    mutable_artifacts: []
+    expected_outputs:
+      - "case preflight success signal"
+  - step_id: "geospatial_preflight"
+    kind: "femic_command"
+    command: "femic prep geospatial-preflight"
+    required: true
+    depends_on:
+      - "validate_case"
+    mutable_artifacts: []
+    expected_outputs:
+      - "geospatial runtime success signal"
+  - step_id: "compile_upstream"
+    kind: "femic_command"
+    command: "femic run --run-config ${runtime.run_config}"
+    required: true
+    depends_on:
+      - "geospatial_preflight"
+    mutable_artifacts:
+      - "data/*"
+      - "vdyp_io/logs/*"
+    expected_outputs:
+      - "run_manifest-<run_id>.json"
+  - step_id: "post_tipsy_bundle"
+    kind: "femic_command"
+    command: "femic tsa post-tipsy --run-config ${runtime.run_config} --tsa <code>"
+    required: true
+    depends_on:
+      - "compile_upstream"
+    mutable_artifacts:
+      - "data/model_input_bundle/*"
+      - "vdyp_io/logs/*"
+    expected_outputs:
+      - "post-tipsy manifest and bundle tables"
+
+invariants:
+  - invariant_id: "accounts_targets_presence"
+    severity: "fatal"
+    metric: "accounts.targets.required_present"
+    comparator: "eq"
+    target: true
+    remediation: "Re-run matrix build and inspect accounts.csv/protoaccounts.csv."
+  - invariant_id: "managed_area_sanity"
+    severity: "fatal"
+    metric: "managed_area_ha"
+    comparator: "gt"
+    target: 0
+    remediation: "Check IFM assignment logic and source checkpoint inputs."
+  - invariant_id: "block_join_consistency"
+    severity: "fatal"
+    metric: "block_join_mismatch_count"
+    comparator: "eq"
+    target: 0
+    remediation: "Rebuild blocks.shp and verify BLOCK join keys."

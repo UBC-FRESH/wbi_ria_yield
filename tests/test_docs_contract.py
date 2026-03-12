@@ -218,6 +218,7 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
 
 def test_case_onboarding_templates_exist() -> None:
     assert Path("instances/reference/config/run_profile.case_template.yaml").exists()
+    assert Path("instances/reference/config/rebuild.spec.yaml").exists()
     assert Path("instances/reference/config/tipsy/template.case.yaml").exists()
 
 
