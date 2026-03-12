@@ -411,6 +411,11 @@ INSTANCE_EVIDENCE_LOG_DIR_OPTION = typer.Option(
     "--log-dir",
     help="Log directory used when auto-selecting latest rebuild report.",
 )
+INSTANCE_REFERENCE_ROOT_OPTION = typer.Option(
+    Path("instances/reference"),
+    "--reference-root",
+    help="Repository-relative path to the maintainer reference instance.",
+)
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
     "--config",
@@ -1171,6 +1176,21 @@ def instance_promote_evidence(
     console.print(
         "[green]Promoted rebuild evidence[/green] "
         f"report={resolved_report} output={resolved_output} status={normalized['status']}"
+    )
+
+
+@instance_app.command("refresh-reference-evidence")
+def instance_refresh_reference_evidence(
+    report: Path | None = INSTANCE_EVIDENCE_REPORT_OPTION,
+    reference_root: Path = INSTANCE_REFERENCE_ROOT_OPTION,
+) -> None:
+    """Refresh maintainer reference evidence artifact from latest rebuild report."""
+
+    instance_promote_evidence(
+        report=report,
+        output=Path("evidence/reference_rebuild_report.latest.json"),
+        log_dir=Path("vdyp_io/logs"),
+        instance_root=reference_root,
     )
 
 

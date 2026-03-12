@@ -1172,6 +1172,24 @@ def test_instance_promote_evidence_writes_normalized_payload(
     assert any("Promoted rebuild evidence" in msg for msg in messages)
 
 
+def test_instance_refresh_reference_evidence_uses_reference_defaults(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def _fake_promote(**kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr(cli_main, "instance_promote_evidence", _fake_promote)
+
+    cli_main.instance_refresh_reference_evidence(report=None, reference_root=Path("r"))
+
+    assert captured["report"] is None
+    assert captured["instance_root"] == Path("r")
+    assert captured["output"] == Path("evidence/reference_rebuild_report.latest.json")
+    assert captured["log_dir"] == Path("vdyp_io/logs")
+
+
 def test_collect_rebuild_artifact_references_filters_missing(
     tmp_path: Path,
 ) -> None:

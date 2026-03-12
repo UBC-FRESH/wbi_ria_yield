@@ -219,6 +219,10 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
             ["instance", "promote-evidence", "--help"],
             ["--report", "--output", "--log-dir", "--instance-root"],
         ),
+        (
+            ["instance", "refresh-reference-evidence", "--help"],
+            ["--report", "--reference-root"],
+        ),
     ]
 
     for argv, options in checks:

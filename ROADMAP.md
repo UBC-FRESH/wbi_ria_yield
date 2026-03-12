@@ -396,7 +396,7 @@ notes.
     (`status`, `regression_gate`, summary counts, source report path).
   - [x] P14.1c Add CLI/docs-contract coverage and reference CLI docs updates.
 - [ ] P14.2 Add reusable evidence-refresh automation for maintainers
-  - [ ] P14.2a Add script/helper command to refresh
+  - [x] P14.2a Add script/helper command to refresh
     `instances/reference/evidence/reference_rebuild_report.latest.json` from
     current logs.
   - [ ] P14.2b Add contributor runbook step for evidence refresh during release
@@ -3653,3 +3653,16 @@ notes.
     `docs/reference/cli.rst`,
     `tests/test_docs_contract.py`,
     `tests/test_cli_main.py`.
+- 2026-03-11 (Phase 14 `P14.2a` completion): added maintainer helper command
+  to refresh reference rebuild evidence from current logs.
+  - Added command:
+    `femic instance refresh-reference-evidence` in `src/femic/cli/main.py`.
+  - Command wraps `instance promote-evidence` with reference defaults:
+    `--reference-root instances/reference`,
+    output `evidence/reference_rebuild_report.latest.json`,
+    log dir `vdyp_io/logs`.
+  - Updated docs and test/contract coverage in:
+    `docs/reference/cli.rst`,
+    `docs/guides/deployment-instances.rst`,
+    `tests/test_cli_main.py`,
+    `tests/test_docs_contract.py`.

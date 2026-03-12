@@ -3743,3 +3743,16 @@
   `docs/reference/cli.rst`,
   `tests/test_docs_contract.py`,
   `tests/test_cli_main.py`.
+
+## 2026-03-11 - Added maintainer evidence-refresh helper (`P14.2a`)
+- Added new command:
+  `femic instance refresh-reference-evidence` in `src/femic/cli/main.py`.
+- Command refreshes reference evidence using default maintainer paths:
+  `instances/reference` root,
+  `vdyp_io/logs` source,
+  `evidence/reference_rebuild_report.latest.json` output.
+- Updated docs and tests:
+  `docs/reference/cli.rst`,
+  `docs/guides/deployment-instances.rst`,
+  `tests/test_cli_main.py`,
+  `tests/test_docs_contract.py`.

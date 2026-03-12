@@ -155,3 +155,9 @@ The release gate expects:
 - ``regression_gate.step_failure: false``
 - ``regression_gate.fatal_invariant_failure: false``
 - ``regression_gate.unexpected_diff_regression: false``
+
+Maintainer evidence refresh command:
+
+.. code-block:: bash
+
+   python -m femic instance refresh-reference-evidence

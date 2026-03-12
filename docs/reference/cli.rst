@@ -266,6 +266,7 @@ Subcommands
 - ``rebuild``: ``python -m femic instance rebuild [OPTIONS]``
 - ``validate-spec``: ``python -m femic instance validate-spec [OPTIONS]``
 - ``promote-evidence``: ``python -m femic instance promote-evidence [OPTIONS]``
+- ``refresh-reference-evidence``: ``python -m femic instance refresh-reference-evidence [OPTIONS]``
 
 ``instance init`` options
 
@@ -316,3 +317,8 @@ Rebuild exits non-zero when unexpected baseline diffs exceed
 - ``--output PATH`` (default: ``evidence/reference_rebuild_report.latest.json``)
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
 - ``--instance-root PATH``
+
+``instance refresh-reference-evidence`` options
+
+- ``--report PATH`` (optional; defaults to latest report in reference ``vdyp_io/logs``)
+- ``--reference-root PATH`` (default: ``instances/reference``)
