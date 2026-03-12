@@ -461,6 +461,19 @@ notes.
 - [ ] P18.4 Post-release docs/changelog/version traceability
 
 ## Detailed Next Steps Notes
+- 2026-03-12 (Phase 17 docs refinement): switched K3Z appendix from
+  filename-only inventory to inline-rendered figures in the standalone
+  instance docs.
+  - Updated `external/femic-k3z-instance/docs/figure-appendix.rst` to embed:
+    analysis-area map, strata figure, all VDYP LMH envelopes, all VDYP fit
+    diagnostics, and all TIPSY-vs-natural overlay plots.
+  - Retained filename references in captions for traceability/QA.
+  - Updated docs contract checks in `tests/test_docs_contract.py` to require
+    new appendix section headings and figure directives.
+  - Validation checks passed:
+    `pytest tests/test_docs_contract.py`,
+    `sphinx-build -b html external/femic-k3z-instance/docs ... -W`,
+    `sphinx-build -b html docs _build/html -W`.
 - 2026-03-12 (Phase 18 `P18.1` completion + `P18.2/P18.3` automation prep):
   added deterministic packaging runbook + CI/workflow scaffolding for staged
   TestPyPI -> PyPI publication.

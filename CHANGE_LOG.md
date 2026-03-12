@@ -4167,3 +4167,21 @@
   - execute actual TestPyPI publish + smoke (`P18.2`),
   - execute production PyPI publish (`P18.3`),
   - record final version/hash/date traceability (`P18.4`).
+
+## 2026-03-12 - K3Z appendix now renders actual plot figures inline
+- Updated canonical student docs in
+  `external/femic-k3z-instance/docs/figure-appendix.rst` to include rendered
+  figures, not just filenames.
+- Added inline figure blocks for:
+  - analysis-area map (`docs/_static/k3z_analysis_area_map.png`),
+  - strata distribution plot,
+  - all `vdyp_lmh_tsak3z-*.png` figures,
+  - all `vdyp_fitdiag_tsak3z-*.png` figures,
+  - all `tipsy_vdyp_tsak3z-*.png` figures.
+- Kept filename/source references in figure captions for traceability.
+- Updated parent docs contract checks in `tests/test_docs_contract.py` to
+  enforce new appendix section headings and figure directives.
+- Validation checks passed:
+  - `pytest tests/test_docs_contract.py`
+  - `sphinx-build -b html external/femic-k3z-instance/docs external/femic-k3z-instance/_build/html -W`
+  - `sphinx-build -b html docs _build/html -W`

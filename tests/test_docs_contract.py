@@ -521,10 +521,19 @@ def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> N
     assert ":ref:`k3z-figure-appendix`" in analysis_text
 
     appendix_text = (docs_root / "figure-appendix.rst").read_text()
-    for heading in ("Core Teaching Figures", "Full Plot Inventory"):
+    for heading in (
+        "Analysis Area Map",
+        "Strata Distribution Figure",
+        "VDYP Low/Medium/High Envelopes",
+        "VDYP Fit Diagnostics",
+        "TIPSY vs Natural Curve Overlays",
+        "Full Plot Inventory",
+    ):
         assert heading in appendix_text
     for snippet in (
         ".. _k3z-figure-appendix:",
+        ".. figure:: _static/k3z_analysis_area_map.png",
+        ".. figure:: ../plots/strata-tsak3z.png",
         "k3z_analysis_area_map.png",
         "plots/strata-tsak3z.png",
         "plots/vdyp_lmh_tsak3z-",
