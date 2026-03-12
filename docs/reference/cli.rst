@@ -281,3 +281,7 @@ Subcommands
 - ``--with-patchworks / --no-patchworks`` (default: ``--no-patchworks``)
 - ``--patchworks-config PATH`` (default: ``config/patchworks.runtime.yaml``)
 - ``--instance-root PATH``
+
+``instance rebuild`` writes a machine-readable report to
+``vdyp_io/logs/instance_rebuild_report-<run_id>.json`` and records discovered
+manifest/log artifact references under ``artifact_references``.

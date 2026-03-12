@@ -898,6 +898,26 @@ def test_instance_rebuild_includes_patchworks_steps_when_enabled(
     assert "patchworks_matrix_build" in step_ids
 
 
+def test_collect_rebuild_artifact_references_filters_missing(
+    tmp_path: Path,
+) -> None:
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    run_id = "rtest"
+    (log_dir / f"run_manifest-{run_id}.json").write_text("{}", encoding="utf-8")
+    (log_dir / f"instance_rebuild_report-{run_id}.json").write_text(
+        "{}",
+        encoding="utf-8",
+    )
+
+    refs = cli_main._collect_rebuild_artifact_references(log_dir=log_dir, run_id=run_id)
+
+    assert len(refs["run_manifests"]) == 1
+    assert refs["patchworks_manifests"] == []
+    assert refs["patchworks_logs"] == []
+    assert len(refs["rebuild_reports"]) == 1
+
+
 def test_prep_geospatial_preflight_passes(monkeypatch: pytest.MonkeyPatch) -> None:
     messages: list[str] = []
     monkeypatch.setattr(cli_main.console, "print", messages.append)

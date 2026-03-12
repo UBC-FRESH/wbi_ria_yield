@@ -560,6 +560,29 @@ def _resolve_cli_instance_context(
     return context
 
 
+def _collect_rebuild_artifact_references(
+    *, log_dir: Path, run_id: str
+) -> dict[str, list[str]]:
+    run_manifest = log_dir / f"run_manifest-{run_id}.json"
+    patchworks_manifest = log_dir / f"patchworks_matrixbuilder_manifest-{run_id}.json"
+    patchworks_stdout = log_dir / f"patchworks_matrixbuilder_stdout-{run_id}.log"
+    patchworks_stderr = log_dir / f"patchworks_matrixbuilder_stderr-{run_id}.log"
+    report_path = log_dir / f"instance_rebuild_report-{run_id}.json"
+
+    groups = {
+        "run_manifests": [run_manifest],
+        "patchworks_manifests": [patchworks_manifest],
+        "patchworks_logs": [patchworks_stdout, patchworks_stderr],
+        "rebuild_reports": [report_path],
+    }
+    references: dict[str, list[str]] = {}
+    for group_name, paths in groups.items():
+        references[group_name] = [
+            str(path.resolve()) for path in paths if path.exists()
+        ]
+    return references
+
+
 @app.callback()
 def main(
     version: bool = VERSION_OPTION,
@@ -759,11 +782,27 @@ def instance_rebuild(
         run_id=effective_run_id,
         context={"instance_root": str(context.root)},
     )
+    artifact_refs = _collect_rebuild_artifact_references(
+        log_dir=resolved_log_dir,
+        run_id=effective_run_id,
+    )
+    try:
+        report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+        report_payload["artifact_references"] = artifact_refs
+        report_path.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
+    except (OSError, json.JSONDecodeError):
+        pass
 
     status = "[green]ok[/green]" if not report.failed else "[red]failed[/red]"
     console.print(
         f"instance rebuild {status} run_id={effective_run_id} "
         f"steps={len(report.outcomes)} report={report_path}"
+    )
+    console.print(
+        "artifact_refs: "
+        f"run_manifests={len(artifact_refs.get('run_manifests', []))} "
+        f"patchworks_manifests={len(artifact_refs.get('patchworks_manifests', []))} "
+        f"patchworks_logs={len(artifact_refs.get('patchworks_logs', []))}"
     )
     for outcome in report.outcomes:
         console.print(

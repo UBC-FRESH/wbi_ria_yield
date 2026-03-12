@@ -356,7 +356,7 @@
 - [ ] P13.2 Add first-class rebuild orchestration to FEMIC
   - [x] P13.2a Add a reusable rebuild runner abstraction (step graph + deterministic execution + report sink).
   - [x] P13.2b Add CLI support for instance rebuild execution (instance-rooted, run-ided, non-interactive).
-  - [ ] P13.2c Ensure rebuild execution writes machine-readable reports/manifests and references all generated logs.
+  - [x] P13.2c Ensure rebuild execution writes machine-readable reports/manifests and references all generated logs.
   - [ ] P13.2d Add dry-run mode showing full planned command sequence without mutation.
 - [ ] P13.3 Add per-instance rebuild spec/config files as tracked source-of-truth
   - [ ] P13.3a Define a standard rebuild spec schema (YAML) for instance command steps and invariants.
@@ -3405,3 +3405,14 @@
   - Updated CLI docs and contracts:
     `docs/reference/cli.rst`, `docs/guides/pipeline-overview.rst`,
     `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 13 `P13.2c` completion): extended instance rebuild output
+  reporting to include explicit manifest/log artifact references.
+  - Added artifact-reference collector:
+    `_collect_rebuild_artifact_references(...)` in `src/femic/cli/main.py`.
+  - `femic instance rebuild` now enriches
+    `instance_rebuild_report-<run_id>.json` with `artifact_references` that
+    capture discovered run-manifest, Patchworks manifest/log, and report files.
+  - Added CLI regression coverage:
+    `tests/test_cli_main.py::test_collect_rebuild_artifact_references_filters_missing`.
+  - Updated CLI reference docs to document report artifact-reference behavior:
+    `docs/reference/cli.rst`.

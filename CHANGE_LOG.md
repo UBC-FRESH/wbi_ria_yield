@@ -3472,3 +3472,18 @@
   `tests/test_cli_main.py` and `tests/test_docs_contract.py`.
 - Updated docs:
   `docs/reference/cli.rst` and `docs/guides/pipeline-overview.rst`.
+
+## 2026-03-11 - Added rebuild report artifact references (`P13.2c`)
+- Extended `femic instance rebuild` report handling to include explicit
+  artifact references for generated manifests/logs.
+- Added helper in `src/femic/cli/main.py`:
+  `_collect_rebuild_artifact_references(log_dir, run_id)`.
+- Rebuild reports (`instance_rebuild_report-<run_id>.json`) now include
+  `artifact_references` with discovered:
+  - run manifests,
+  - Patchworks manifests,
+  - Patchworks stdout/stderr logs,
+  - rebuild report file.
+- Added regression coverage:
+  `tests/test_cli_main.py::test_collect_rebuild_artifact_references_filters_missing`.
+- Updated CLI docs in `docs/reference/cli.rst`.
