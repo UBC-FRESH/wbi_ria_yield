@@ -196,13 +196,11 @@ Run package build/release-readiness checks locally:
 
 ```bash
 python -m pip install build twine
-python -m build
-twine check dist/*
-python -m venv /tmp/femic-wheel-smoke
-/tmp/femic-wheel-smoke/bin/pip install dist/*.whl
-/tmp/femic-wheel-smoke/bin/femic --help
-/tmp/femic-wheel-smoke/bin/femic instance init --instance-root /tmp/femic-wheel-smoke-instance --no-download-bc-vri --yes
+scripts/release_package_checks.sh
 ```
+
+For staged publication (TestPyPI then PyPI), use:
+`docs/guides/pypi-release-runbook.rst`.
 
 ### Reproducibility Controls
 

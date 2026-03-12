@@ -455,12 +455,38 @@ notes.
 - [x] P17.5 Add docs contract checks for submodule-first K3Z docs
 
 ## Phase 18: Packaging and Publication to PyPI
-- [ ] P18.1 Packaging metadata and build reproducibility checks
+- [x] P18.1 Packaging metadata and build reproducibility checks
 - [ ] P18.2 TestPyPI publication and install smoke tests
 - [ ] P18.3 Production PyPI release
 - [ ] P18.4 Post-release docs/changelog/version traceability
 
 ## Detailed Next Steps Notes
+- 2026-03-12 (Phase 18 `P18.1` completion + `P18.2/P18.3` automation prep):
+  added deterministic packaging runbook + CI/workflow scaffolding for staged
+  TestPyPI -> PyPI publication.
+  - Added release runbook:
+    `docs/guides/pypi-release-runbook.rst` and wired it in
+    `docs/guides/index.rst`.
+  - Added local helper:
+    `scripts/release_package_checks.sh` to run
+    `python -m build`, `twine check`, wheel install smoke, and a wheel
+    reproducibility check under fixed `SOURCE_DATE_EPOCH`.
+  - Updated CI packaging workflow:
+    `.github/workflows/package-release-checks.yml` now sets deterministic build
+    epoch and enforces wheel reproducibility across consecutive builds.
+  - Added staged publish workflows:
+    `.github/workflows/publish-testpypi.yml` and
+    `.github/workflows/publish-pypi.yml` (OIDC/trusted-publisher ready).
+  - Updated user-facing release instructions in `README.md` to point to the
+    runbook and helper script.
+  - Validation gates passed:
+    `ruff format`, `ruff check`, `mypy`, `pytest (491 passed)`,
+    `pre-commit --all-files`, `sphinx-build -W`, and
+    `scripts/release_package_checks.sh`.
+  - Remaining for Phase 18 completion:
+    run actual TestPyPI and PyPI publish executions (`P18.2`/`P18.3`) once
+    publisher credentials/trust bindings are active; then record final
+    artifact/version traceability (`P18.4`).
 - 2026-03-12 (Phase 17 `P17.4` completion): converted FEMIC K3Z page to
   pointer/overview model and aligned docs contracts to submodule-first
   ownership.

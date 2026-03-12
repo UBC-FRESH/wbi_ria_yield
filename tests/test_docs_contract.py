@@ -35,6 +35,7 @@ GUIDE_PAGES = [
     "patchworks-wine-runtime",
     "ubc-vpn-license-connectivity",
     "geospatial-runtime-bootstrap",
+    "pypi-release-runbook",
     "legacy-traceability",
     "sphinx-template-baseline",
 ]
@@ -75,6 +76,18 @@ def test_guides_pages_are_in_docs_tree() -> None:
         page_path = GUIDES_ROOT / f"{slug}.rst"
         assert page_path.exists(), f"missing guide page: {page_path}"
         assert slug in guides_index, f"missing toctree entry for {slug}"
+
+
+def test_release_runbook_and_workflows_exist() -> None:
+    runbook = GUIDES_ROOT / "pypi-release-runbook.rst"
+    assert runbook.exists()
+    runbook_text = runbook.read_text(encoding="utf-8")
+    assert "TestPyPI" in runbook_text
+    assert "Production PyPI publication" in runbook_text
+    assert "scripts/release_package_checks.sh" in runbook_text
+
+    assert Path(".github/workflows/publish-testpypi.yml").exists()
+    assert Path(".github/workflows/publish-pypi.yml").exists()
 
 
 def test_legacy_notebook_coverage_matrix_is_complete() -> None:

@@ -4137,3 +4137,33 @@
   - `pre-commit run --all-files`
   - `sphinx-build -b html docs _build/html -W`
   - `sphinx-build -b html external/femic-k3z-instance/docs external/femic-k3z-instance/_build/html -W`
+
+## 2026-03-12 - Phase 18 packaging runbook + deterministic wheel checks + publish workflow scaffolding (`P18.1`)
+- Completed `P18.1` and prepared `P18.2/P18.3` automation:
+  - Added release runbook:
+    `docs/guides/pypi-release-runbook.rst` and linked it from
+    `docs/guides/index.rst`.
+  - Added local packaging helper:
+    `scripts/release_package_checks.sh` covering
+    `python -m build`, `twine check`, wheel install smoke, and wheel
+    reproducibility checks with fixed `SOURCE_DATE_EPOCH`.
+  - Updated CI packaging checks:
+    `.github/workflows/package-release-checks.yml` now sets deterministic build
+    epoch and verifies wheel hash stability across consecutive builds.
+  - Added staged publication workflows:
+    `.github/workflows/publish-testpypi.yml` and
+    `.github/workflows/publish-pypi.yml`.
+  - Updated release instructions in `README.md` to use the helper script and
+    runbook.
+- Validation gates passed:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`491 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`
+  - `scripts/release_package_checks.sh`
+- Remaining Phase 18 work:
+  - execute actual TestPyPI publish + smoke (`P18.2`),
+  - execute production PyPI publish (`P18.3`),
+  - record final version/hash/date traceability (`P18.4`).
