@@ -154,9 +154,11 @@ def load_patchworks_runtime_config(path: Path) -> PatchworksRuntimeConfig:
     if not license_env:
         raise PatchworksConfigError("patchworks.license_env must not be empty")
 
-    license_value = str(
-        patchworks.get("license_value", os.environ.get(license_env, ""))
-    ).strip()
+    raw_license_value = patchworks.get("license_value")
+    if raw_license_value is None or not str(raw_license_value).strip():
+        license_value = str(os.environ.get(license_env, "")).strip()
+    else:
+        license_value = str(raw_license_value).strip()
     if not license_value:
         raise PatchworksConfigError(
             "Missing license value: set patchworks.license_value or export "
@@ -282,6 +284,15 @@ def infer_patchworks_model_dir(config: PatchworksRuntimeConfig) -> Path:
         "tracks",
         "yield",
     }
+    # Strong signal: `.../tracks` and `.../yield` siblings define model root.
+    if (
+        config.matrix_output_dir.name.lower() == "tracks"
+        and config.forestmodel_xml_path.parent.name.lower() == "yield"
+        and config.matrix_output_dir.parent.resolve()
+        == config.forestmodel_xml_path.parent.parent.resolve()
+    ):
+        return config.matrix_output_dir.parent.resolve()
+
     candidates: list[Path] = []
     for candidate in (
         config.fragments_path.parent,

@@ -133,6 +133,32 @@ def test_parse_license_server_requires_user_host_format() -> None:
         parse_license_server("auth.spatial.ca")
 
 
+def test_load_patchworks_runtime_config_uses_env_when_license_value_null(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cfg_path = tmp_path / "patchworks.runtime.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "patchworks:",
+                "  jar_path: patchworks/patchworks.jar",
+                "  license_env: SPS_LICENSE_SERVER",
+                "  license_value: null",
+                "  spshome: Z:\\Patchworks",
+                "matrix_builder:",
+                "  fragments_path: data/fragments.dbf",
+                "  output_dir: output/tracks",
+                "  forestmodel_xml_path: output/forestmodel.xml",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("SPS_LICENSE_SERVER", "envuser@auth.spatial.ca")
+    cfg = load_patchworks_runtime_config(cfg_path)
+    assert cfg.license_value == "envuser@auth.spatial.ca"
+
+
 def test_to_wine_windows_path_maps_posix(tmp_path: Path) -> None:
     path = (tmp_path / "a b/c.txt").resolve()
     path.parent.mkdir(parents=True)
@@ -562,6 +588,29 @@ def test_infer_patchworks_model_dir_uses_runtime_layout(tmp_path: Path) -> None:
     cfg_path = _write_runtime_config(tmp_path)
     cfg = load_patchworks_runtime_config(cfg_path)
     expected_root = tmp_path.resolve()
+    assert infer_patchworks_model_dir(cfg) == expected_root
+
+
+def test_infer_patchworks_model_dir_prefers_tracks_yield_pair(tmp_path: Path) -> None:
+    cfg_path = tmp_path / "runtime.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "patchworks:",
+                "  jar_path: C:/Patchworks/patchworks.jar",
+                "  license_env: SPS_LICENSE_SERVER",
+                "  license_value: sps_user@auth.spatial.ca",
+                "  spshome: C:/Patchworks",
+                "matrix_builder:",
+                "  fragments_path: output/fragments/fragments.dbf",
+                "  output_dir: models/k3z_patchworks_model/tracks",
+                "  forestmodel_xml_path: models/k3z_patchworks_model/yield/forestmodel.xml",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    cfg = load_patchworks_runtime_config(cfg_path)
+    expected_root = (tmp_path / "models" / "k3z_patchworks_model").resolve()
     assert infer_patchworks_model_dir(cfg) == expected_root
 
 

@@ -3987,3 +3987,38 @@
   - `tests/test_cli_main.py`
   - `tests/test_docs_contract.py`
   - `tests/test_account_surface.py`
+
+## 2026-03-12 - Fixed K3Z matrix-builder regression (block-key mismatch + missing seral accounts)
+- Recovered K3Z model coherence after regression where Patchworks reported
+  `218` shapefile/csv block join mismatches and missing `feature.Seral.*`
+  accounts.
+- Runtime + code fixes:
+  - Updated `external/femic-k3z-instance/config/patchworks.runtime.windows.yaml`:
+    - `matrix_builder.forestmodel_xml_path` now points to
+      `../models/k3z_patchworks_model/yield/forestmodel.xml`.
+    - `patchworks.license_value: null` (env-driven license credential).
+  - Patched `src/femic/patchworks_runtime.py`:
+    - `infer_patchworks_model_dir()` now prefers shared model root when
+      `tracks/` and `yield/` are sibling folders.
+    - `load_patchworks_runtime_config()` now treats null/blank
+      `patchworks.license_value` as fallback to `SPS_LICENSE_SERVER` env.
+- Regenerated K3Z model artifacts:
+  - Rebuilt `yield/forestmodel.xml` (and output mirror) with seral-stage
+    feature/product attributes enabled from `config/seral.k3z.yaml`.
+  - Rebuilt model-local `blocks/blocks.shp` + `blocks/topology_blocks_200r.csv`
+    with `BLOCK <- BLOCK`.
+  - Reran matrix builder successfully:
+    `run_id=k3z_regression_fix_final_20260312c`.
+  - `tracks/accounts.csv` resynced from `protoaccounts.csv` with backup.
+- Post-fix checks:
+  - block join parity check now reports `csv_only=0`, `shp_only=0`.
+  - `tracks/accounts.csv` now includes `feature.Seral.regenerating|young|immature|mature|overmature`.
+  - Matrix-builder stderr confirms completion with managed area
+    `1781.3132360577583` ha, passive area `0.0`.
+- Validation gates passed:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`489 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`

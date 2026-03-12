@@ -3896,3 +3896,30 @@ notes.
   - Expanded docs contract checks in `tests/test_docs_contract.py` to lock
     required species-account interpretation sections.
   - Phase 15 checklist is now complete.
+- 2026-03-12 (K3Z regression recovery): restored matrix-builder coherence for
+  K3Z after block-key mismatch + missing-seral-account regression.
+  - Root causes addressed:
+    - runtime config drifted `forestmodel_xml_path` away from model-local
+      `models/k3z_patchworks_model/yield/forestmodel.xml`.
+    - `build-blocks` model-root inference selected instance root in mixed
+      `output/` + `models/` layouts.
+    - `patchworks.license_value: null` was interpreted as literal `"None"`
+      instead of falling back to `SPS_LICENSE_SERVER` env.
+  - Implemented fixes:
+    - Patched `src/femic/patchworks_runtime.py`:
+      - `infer_patchworks_model_dir()` now prefers `tracks`/`yield` sibling
+        roots when present.
+      - `load_patchworks_runtime_config()` now treats null/blank
+        `patchworks.license_value` as env fallback.
+    - Added/updated tests in `tests/test_patchworks_runtime.py` for both
+      behaviors.
+    - Rebuilt K3Z forestmodel with seral stage attributes from
+      `data/model_input_bundle/*` + `config/seral.k3z.yaml`, then reran matrix
+      build (`run_id: k3z_regression_fix_final_20260312c`).
+    - Rebuilt model-local `blocks.shp`/`topology_blocks_200r.csv` with
+      `BLOCK <- BLOCK` and verified join-key parity (`csv_only=0`,
+      `shp_only=0`).
+  - Validation status:
+    - `tracks/accounts.csv` now contains `feature.Seral.*` rows again.
+    - matrix-builder stderr reports successful completion with
+      `Managed : 1781.3132360577583` and no passive area.
