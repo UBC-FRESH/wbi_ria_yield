@@ -19,6 +19,7 @@ By default this scaffolds:
 
 - ``config/`` and ``config/tipsy/`` templates
 - ``config/rebuild.spec.yaml`` default rebuild spec template
+- ``runbooks/REBUILD_RUNBOOK.md`` rebuild runbook placeholder
 - ``data/`` and ``data/downloads/``
 - ``output/``
 - ``vdyp_io/logs/``

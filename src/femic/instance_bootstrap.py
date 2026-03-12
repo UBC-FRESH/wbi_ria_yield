@@ -39,6 +39,7 @@ class InstanceInitResult:
 INSTANCE_DIRS: tuple[Path, ...] = (
     Path("config"),
     Path("config/tipsy"),
+    Path("runbooks"),
     Path("data"),
     Path("data/downloads"),
     Path("output"),
@@ -50,6 +51,7 @@ INSTANCE_TEMPLATE_FILES: tuple[Path, ...] = (
     Path("config/run_profile.case_template.yaml"),
     Path("config/rebuild.spec.yaml"),
     Path("config/rebuild.allowlist.yaml"),
+    Path("runbooks/REBUILD_RUNBOOK.md"),
     Path("config/tipsy/template.case.yaml"),
     Path("config/patchworks.runtime.windows.yaml"),
 )

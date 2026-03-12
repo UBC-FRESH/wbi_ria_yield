@@ -231,6 +231,7 @@ def test_case_onboarding_templates_exist() -> None:
     assert Path("instances/reference/config/run_profile.case_template.yaml").exists()
     assert Path("instances/reference/config/rebuild.spec.yaml").exists()
     assert Path("instances/reference/config/rebuild.allowlist.yaml").exists()
+    assert Path("instances/reference/runbooks/REBUILD_RUNBOOK.md").exists()
     assert Path("instances/reference/config/tipsy/template.case.yaml").exists()
 
 

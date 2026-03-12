@@ -3679,3 +3679,18 @@
   `docs/guides/deployment-instances.rst`.
 - Added docs-contract enforcement:
   `tests/test_docs_contract.py::test_contributor_policy_requires_rebuild_spec_and_checks`.
+
+## 2026-03-11 - Added rebuild runbook placeholders to instance scaffolding (`P13.6a`)
+- Extended instance bootstrap templates in:
+  `src/femic/instance_bootstrap.py` to include
+  `runbooks/REBUILD_RUNBOOK.md`.
+- Added scaffolded placeholder file:
+  `src/femic/resources/instance/runbooks/REBUILD_RUNBOOK.md`.
+- Synced maintainer reference instance scaffold:
+  `instances/reference/runbooks/REBUILD_RUNBOOK.md`.
+- Updated bootstrap docs:
+  `src/femic/resources/instance/QUICKSTART.md`,
+  `docs/guides/deployment-instances.rst`.
+- Added/updated tests:
+  `tests/test_instance_bootstrap.py`,
+  `tests/test_docs_contract.py`.

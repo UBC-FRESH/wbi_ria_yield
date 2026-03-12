@@ -374,7 +374,7 @@
   - [x] P13.5c Add docs page: "How to interpret rebuild reports and regressions".
   - [x] P13.5d Add contributor policy text making rebuild-spec + checks mandatory for new instance repos.
 - [ ] P13.6 Enforce this as the default norm for all new FEMIC instances
-  - [ ] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
+  - [x] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
   - [ ] P13.6b Add docs/contract tests requiring rebuild-spec references in sample/new instance docs.
   - [ ] P13.6c Add release-gate checks requiring successful rebuild report for reference instances prior to milestone close.
   - [ ] P13.6d Add roadmap/changelog policy note: no new instance phase closes without reproducible rebuild evidence.
@@ -3566,3 +3566,18 @@
     `docs/guides/deployment-instances.rst`.
   - Added docs-contract enforcement:
     `tests/test_docs_contract.py::test_contributor_policy_requires_rebuild_spec_and_checks`.
+- 2026-03-11 (Phase 13 `P13.6a` completion): extended instance scaffolding so
+  all new instance workspaces include rebuild runbook placeholders by default.
+  - Updated `femic instance init` template set in
+    `src/femic/instance_bootstrap.py` to include
+    `runbooks/REBUILD_RUNBOOK.md` and create `runbooks/` directory.
+  - Added runbook template resource:
+    `src/femic/resources/instance/runbooks/REBUILD_RUNBOOK.md`.
+  - Synced maintainer reference instance placeholder:
+    `instances/reference/runbooks/REBUILD_RUNBOOK.md`.
+  - Updated bootstrap docs/quickstart references in
+    `src/femic/resources/instance/QUICKSTART.md` and
+    `docs/guides/deployment-instances.rst`.
+  - Added regression checks in
+    `tests/test_instance_bootstrap.py` and
+    `tests/test_docs_contract.py`.

@@ -17,6 +17,7 @@ def test_bootstrap_instance_workspace_writes_templates(tmp_path: Path) -> None:
     assert (result.instance_root / "config/run_profile.case_template.yaml").is_file()
     assert (result.instance_root / "config/rebuild.spec.yaml").is_file()
     assert (result.instance_root / "config/rebuild.allowlist.yaml").is_file()
+    assert (result.instance_root / "runbooks/REBUILD_RUNBOOK.md").is_file()
     assert (result.instance_root / "config/tipsy/template.case.yaml").is_file()
     assert (result.instance_root / ".gitignore").is_file()
     assert (result.instance_root / "QUICKSTART.md").is_file()
