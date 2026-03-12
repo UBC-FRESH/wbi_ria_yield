@@ -306,6 +306,56 @@ def test_k3z_instance_standalone_docs_scaffold_exists() -> None:
         assert slug in index_text
 
 
+def test_k3z_instance_standalone_docs_required_sections_and_navigation() -> None:
+    docs_root = K3Z_INSTANCE_ROOT / "docs"
+    index_text = (docs_root / "index.rst").read_text()
+    assert "K3Z Instance User Guide" in index_text
+    assert ":caption: Guide" in index_text
+
+    getting_started_text = (docs_root / "getting-started.rst").read_text()
+    for heading in (
+        "Purpose",
+        "Prerequisites",
+        "Quickstart",
+        "Authoritative Paths",
+    ):
+        assert heading in getting_started_text
+    for snippet in (
+        "femic prep validate-case",
+        "femic run --run-config",
+        "femic patchworks matrix-build",
+    ):
+        assert snippet in getting_started_text
+
+    model_anatomy_text = (docs_root / "model-anatomy.rst").read_text()
+    for heading in ("Directory Map", "Generated vs Editable"):
+        assert heading in model_anatomy_text
+    for snippet in (
+        "models/k3z_patchworks_model/",
+        "config/seral.k3z.yaml",
+        "tracks/*.csv",
+    ):
+        assert snippet in model_anatomy_text
+
+    rebuild_qa_text = (docs_root / "rebuild-and-qa.rst").read_text()
+    for heading in (
+        "Deterministic Rebuild Script",
+        "Outputs",
+        "Key Invariants",
+        "Baseline Workflow",
+    ):
+        assert heading in rebuild_qa_text
+    assert "scripts/k3z/rebuild_k3z_instance.py" in rebuild_qa_text
+
+    troubleshooting_text = (docs_root / "troubleshooting.rst").read_text()
+    for heading in (
+        "Patchworks Launches But Reports Block Join Errors",
+        "Species Accounts Missing or Zero",
+        "Patchworks Runtime Preflight Fails",
+    ):
+        assert heading in troubleshooting_text
+
+
 def test_sample_model_pages_are_in_docs_tree() -> None:
     assert (DOCS_ROOT / "index.rst").exists()
     index_text = (DOCS_ROOT / "index.rst").read_text()

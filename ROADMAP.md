@@ -288,8 +288,8 @@
 - [ ] P12.3 Stand up standalone Sphinx docs in `femic-k3z-instance`
   - [x] P12.3a Add docs scaffold (`docs/`, `conf.py`, `index.rst`,
     docs requirements, `.readthedocs.yaml`, and docs publish workflow).
-  - [ ] P12.3b Publish docs for `femic-k3z-instance` and verify external URLs.
-  - [ ] P12.3c Add docs acceptance checks for required sections and navigation.
+  - [x] P12.3b Publish docs for `femic-k3z-instance` and verify external URLs.
+  - [x] P12.3c Add docs acceptance checks for required sections and navigation.
 - [ ] P12.4 Expand K3Z user-facing docs to TSR-style data-package depth
   - [ ] P12.4a Add full metadata inventory and lineage narratives by artifact
     family (inputs, transforms, outputs, validation evidence).
@@ -3225,3 +3225,21 @@
     standalone K3Z docs scaffold presence and key toctree entries.
   - Verified standalone docs build:
     `python -m sphinx -b html docs docs/_build/html -W` in submodule root.
+- 2026-03-11 (Phase 12 `P12.3b` complete + FEMIC RTD-theme alignment):
+  published and validated standalone K3Z docs, then aligned FEMIC docs publish
+  deps to the same Read the Docs theme baseline.
+  - Verified `femic-k3z-instance` docs deployment run success and URL:
+    `https://ubc-fresh.github.io/femic-k3z-instance/`.
+  - Added FEMIC docs dependency file: `docs/requirements.txt`
+    (`sphinx`, `sphinx-rtd-theme`).
+  - Updated FEMIC docs workflow to install docs deps from
+    `docs/requirements.txt` so GitHub Pages builds use RTD theme consistently.
+- 2026-03-11 (Phase 12 `P12.3c` complete): added standalone K3Z docs acceptance
+  checks for required navigation and section coverage.
+  - Expanded docs contract tests in `tests/test_docs_contract.py` to require:
+    - guide toctree structure in `external/femic-k3z-instance/docs/index.rst`,
+    - required headings and command snippets in `getting-started.rst`,
+    - required anatomy/edit-policy sections in `model-anatomy.rst`,
+    - required reproducibility sections and script references in
+      `rebuild-and-qa.rst`,
+    - required troubleshooting topics in `troubleshooting.rst`.

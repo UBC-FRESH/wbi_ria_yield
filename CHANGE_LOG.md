@@ -3285,3 +3285,24 @@
   - FEMIC main repo gates:
     `ruff format src tests`, `ruff check src tests`, `mypy src`, `pytest`,
     `pre-commit run --all-files`, `python -m sphinx -b html docs _build/html -W`.
+
+## 2026-03-11 - Published K3Z docs and aligned FEMIC docs to RTD theme deps
+- Verified `femic-k3z-instance` GitHub Pages docs are online at:
+  `https://ubc-fresh.github.io/femic-k3z-instance/` (`docs-pages` deploy success).
+- Added FEMIC docs dependency manifest:
+  - `docs/requirements.txt` with `sphinx>=7.0` and `sphinx-rtd-theme>=2.0`.
+- Updated FEMIC docs workflow (`.github/workflows/docs-pages.yml`) to install
+  docs dependencies from `docs/requirements.txt` so published FEMIC docs use
+  the same Read the Docs theme baseline.
+
+## 2026-03-11 - Added standalone K3Z docs acceptance checks (P12.3c)
+- Expanded docs-contract coverage in `tests/test_docs_contract.py` to enforce
+  required standalone K3Z docs navigation and section content under
+  `external/femic-k3z-instance/docs/`.
+- New checks require:
+  - guide toctree structure in `docs/index.rst`,
+  - required headings and command snippets in `docs/getting-started.rst`,
+  - required anatomy/edit-policy sections in `docs/model-anatomy.rst`,
+  - required reproducibility sections and rebuild-script reference in
+    `docs/rebuild-and-qa.rst`,
+  - required troubleshooting topics in `docs/troubleshooting.rst`.
