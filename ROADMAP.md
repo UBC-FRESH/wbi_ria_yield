@@ -387,6 +387,25 @@ evidence is present and passing (report + regression-gate status), and that
 evidence is tracked or explicitly referenced in roadmap/changelog milestone
 notes.
 
+## Phase 14: Evidence Automation + Ongoing Instance Operations
+- [x] P14.1 Add CLI support to promote rebuild reports into normalized
+  evidence artifacts
+  - [x] P14.1a Add `femic instance promote-evidence` command with latest-report
+    discovery and explicit `--report` override.
+  - [x] P14.1b Emit normalized evidence payload for release-gate consumption
+    (`status`, `regression_gate`, summary counts, source report path).
+  - [x] P14.1c Add CLI/docs-contract coverage and reference CLI docs updates.
+- [ ] P14.2 Add reusable evidence-refresh automation for maintainers
+  - [ ] P14.2a Add script/helper command to refresh
+    `instances/reference/evidence/reference_rebuild_report.latest.json` from
+    current logs.
+  - [ ] P14.2b Add contributor runbook step for evidence refresh during release
+    preparation.
+- [ ] P14.3 Add drift-monitoring hooks for long-lived instance repositories
+  - [ ] P14.3a Add optional warning threshold checks for trend drift in rebuild
+    evidence summaries.
+  - [ ] P14.3b Add docs on interpreting evidence-trend drift across releases.
+
 ## Detailed Next Steps Notes
 - 2026-03-11 (repo-root cleanup: legacy notebook archive move):
   moved legacy notebook artifacts out of repository root into a dedicated
@@ -3622,3 +3641,15 @@ notes.
   items as done where all child tasks were already complete.
   - Updated parent status for:
     `P12.3`, `P12.4`, `P12.5`, `P13.3`, `P13.4`, `P13.5`, and `P13.6`.
+- 2026-03-11 (Phase 14 kickoff, `P14.1a/P14.1b/P14.1c` completion): added
+  CLI automation to promote rebuild reports into normalized evidence artifacts.
+  - Added command:
+    `femic instance promote-evidence` in `src/femic/cli/main.py`.
+  - Command supports explicit `--report` input or auto-selects latest
+    `instance_rebuild_report-*.json` under `--log-dir`, and writes normalized
+    payloads to `--output` (default
+    `evidence/reference_rebuild_report.latest.json`).
+  - Updated CLI reference docs and docs-contract/CLI test coverage in:
+    `docs/reference/cli.rst`,
+    `tests/test_docs_contract.py`,
+    `tests/test_cli_main.py`.

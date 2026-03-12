@@ -395,6 +395,22 @@ INSTANCE_REBUILD_ALLOWLIST_OPTION = typer.Option(
     "--allowlist",
     help="Optional YAML/JSON allowlist for intentional baseline diffs.",
 )
+INSTANCE_EVIDENCE_REPORT_OPTION = typer.Option(
+    None,
+    "--report",
+    help="Path to instance_rebuild_report-<run_id>.json. Defaults to latest in --log-dir.",
+    show_default=False,
+)
+INSTANCE_EVIDENCE_OUTPUT_OPTION = typer.Option(
+    Path("evidence/reference_rebuild_report.latest.json"),
+    "--output",
+    help="Output path for normalized rebuild evidence payload.",
+)
+INSTANCE_EVIDENCE_LOG_DIR_OPTION = typer.Option(
+    Path("vdyp_io/logs"),
+    "--log-dir",
+    help="Log directory used when auto-selecting latest rebuild report.",
+)
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
     "--config",
@@ -1061,6 +1077,101 @@ def instance_validate_spec(
             console.print(f"[red]-[/red] {issue}")
         raise typer.Exit(code=1)
     console.print(f"[green]Rebuild spec valid[/green] {resolved_spec}")
+
+
+@instance_app.command("promote-evidence")
+def instance_promote_evidence(
+    report: Path | None = INSTANCE_EVIDENCE_REPORT_OPTION,
+    output: Path = INSTANCE_EVIDENCE_OUTPUT_OPTION,
+    log_dir: Path = INSTANCE_EVIDENCE_LOG_DIR_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
+) -> None:
+    context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_log_dir = context.resolve_path(log_dir)
+    if report is None:
+        candidates = sorted(resolved_log_dir.glob("instance_rebuild_report-*.json"))
+        if not candidates:
+            console.print(f"[red]No rebuild reports found in:[/red] {resolved_log_dir}")
+            raise typer.Exit(code=1)
+        resolved_report = candidates[-1]
+    else:
+        resolved_report = context.resolve_path(report)
+    resolved_output = context.resolve_path(output)
+
+    try:
+        source_payload = json.loads(resolved_report.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        console.print(f"[red]Invalid rebuild report:[/red] {resolved_report}: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    invariant_results = source_payload.get("invariant_results", [])
+    pass_count = sum(
+        1
+        for item in invariant_results
+        if isinstance(item, dict) and item.get("status") == "pass"
+    )
+    warn_count = sum(
+        1
+        for item in invariant_results
+        if isinstance(item, dict) and item.get("status") == "warn"
+    )
+    fail_count = sum(
+        1
+        for item in invariant_results
+        if isinstance(item, dict) and item.get("status") == "fail"
+    )
+    metrics = source_payload.get("metrics", {})
+    baseline_diff_count = (
+        metrics.get("baseline_diff_count") if isinstance(metrics, dict) else None
+    )
+    regression_gate = source_payload.get("regression_gate", {})
+    if not isinstance(regression_gate, dict):
+        regression_gate = {}
+    failed = bool(
+        source_payload.get("failed")
+        or regression_gate.get("step_failure")
+        or regression_gate.get("fatal_invariant_failure")
+        or regression_gate.get("unexpected_diff_regression")
+    )
+    normalized = {
+        "report_schema_version": "1.0",
+        "instance_id": context.root.name or "instance",
+        "run_id": source_payload.get("run_id"),
+        "status": "failed" if failed else "ok",
+        "report_path": str(resolved_report),
+        "regression_gate": {
+            "step_failure": bool(regression_gate.get("step_failure", False)),
+            "fatal_invariant_failure": bool(
+                regression_gate.get("fatal_invariant_failure", False)
+            ),
+            "unexpected_diff_regression": bool(
+                regression_gate.get("unexpected_diff_regression", False)
+            ),
+            "baseline_unexpected_diff_threshold": regression_gate.get(
+                "baseline_unexpected_diff_threshold"
+            ),
+            "baseline_unexpected_diff_count": regression_gate.get(
+                "baseline_unexpected_diff_count"
+            ),
+        },
+        "summary": {
+            "invariant_pass_count": pass_count,
+            "invariant_warn_count": warn_count,
+            "invariant_fail_count": fail_count,
+            "baseline_diff_count": baseline_diff_count,
+        },
+    }
+    try:
+        resolved_output.parent.mkdir(parents=True, exist_ok=True)
+        resolved_output.write_text(json.dumps(normalized, indent=2), encoding="utf-8")
+    except OSError as exc:
+        console.print(f"[red]Failed writing evidence:[/red] {resolved_output}: {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        "[green]Promoted rebuild evidence[/green] "
+        f"report={resolved_report} output={resolved_output} status={normalized['status']}"
+    )
 
 
 @app.command("run")

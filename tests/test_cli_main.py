@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import builtins
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -1115,6 +1116,60 @@ def test_instance_validate_spec_reports_schema_issues(
     assert exc_info.value.exit_code == 1
     assert any("Rebuild spec validation failed" in msg for msg in messages)
     assert any("Missing required root key: steps" in msg for msg in messages)
+
+
+def test_instance_promote_evidence_writes_normalized_payload(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    instance_root = tmp_path / "instance-root"
+    log_dir = instance_root / "vdyp_io" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    report_path = log_dir / "instance_rebuild_report-r1.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "run_id": "r1",
+                "failed": False,
+                "invariant_results": [{"status": "pass"}, {"status": "warn"}],
+                "metrics": {"baseline_diff_count": 0},
+                "regression_gate": {
+                    "step_failure": False,
+                    "fatal_invariant_failure": False,
+                    "unexpected_diff_regression": False,
+                    "baseline_unexpected_diff_threshold": 0,
+                    "baseline_unexpected_diff_count": 0,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=instance_root,
+            resolve_path=lambda value: instance_root / value,
+        ),
+    )
+
+    cli_main.instance_promote_evidence(
+        report=Path("vdyp_io/logs/instance_rebuild_report-r1.json"),
+        output=Path("evidence/reference_rebuild_report.latest.json"),
+        log_dir=Path("vdyp_io/logs"),
+        instance_root=instance_root,
+    )
+
+    output_path = instance_root / "evidence/reference_rebuild_report.latest.json"
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert payload["run_id"] == "r1"
+    assert payload["status"] == "ok"
+    assert payload["summary"]["invariant_pass_count"] == 1
+    assert payload["summary"]["invariant_warn_count"] == 1
+    assert any("Promoted rebuild evidence" in msg for msg in messages)
 
 
 def test_collect_rebuild_artifact_references_filters_missing(

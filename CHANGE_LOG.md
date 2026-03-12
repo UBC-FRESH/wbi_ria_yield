@@ -3730,3 +3730,16 @@
   were already complete.
 - Normalized parent statuses for:
   `P12.3`, `P12.4`, `P12.5`, `P13.3`, `P13.4`, `P13.5`, `P13.6`.
+
+## 2026-03-11 - Added rebuild-evidence promotion CLI (`P14.1`)
+- Added new command:
+  `femic instance promote-evidence` in `src/femic/cli/main.py`.
+- Command can ingest an explicit rebuild report (`--report`) or auto-select the
+  latest `instance_rebuild_report-*.json` from `--log-dir`, then write a
+  normalized evidence artifact to `--output`.
+- Normalized payload now includes:
+  `status`, `regression_gate`, invariant summary counts, and source report path.
+- Updated docs and contract/test coverage:
+  `docs/reference/cli.rst`,
+  `tests/test_docs_contract.py`,
+  `tests/test_cli_main.py`.
