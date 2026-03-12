@@ -3807,3 +3807,18 @@
   - add required docs/contracts for species-account interpretation.
 - Added detailed next-steps execution sequence in `ROADMAP.md`:
   `P15.1a -> P15.1b -> P15.1c -> P15.2a -> P15.2b -> P15.2c`.
+
+## 2026-03-11 - Added protoaccounts exclusion support for species-surface hygiene (`P15.1a`)
+- Audited current K3Z species surfaces and confirmed `PL` curves are currently
+  zero-signal while `PLC` retains non-zero signal in
+  `external/femic-k3z-instance/models/k3z_patchworks_model/yield/forestmodel.xml`.
+- Extended Patchworks runtime config with optional:
+  `matrix_builder.accounts_exclude_regex` (regex list) in
+  `src/femic/patchworks_runtime.py`.
+- During non-interactive matrix build, `protoaccounts -> accounts` promotion
+  now supports row filtering by `ATTRIBUTE`/`ACCOUNT` regex match.
+- Matrix-build manifest `accounts_sync` now records:
+  `excluded_patterns` and `excluded_row_count`.
+- Added regression coverage in `tests/test_patchworks_runtime.py` for:
+  config parsing and regex-based account exclusion behavior.
+- Updated operator docs in `docs/guides/patchworks-wine-runtime.rst`.

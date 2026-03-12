@@ -9,6 +9,7 @@ import importlib
 import json
 import os
 from pathlib import Path
+import re
 import shlex
 import shutil
 import subprocess
@@ -44,6 +45,7 @@ class PatchworksRuntimeConfig:
     fragments_path: Path
     matrix_output_dir: Path
     forestmodel_xml_path: Path
+    accounts_exclude_regex: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -182,6 +184,21 @@ def load_patchworks_runtime_config(path: Path) -> PatchworksRuntimeConfig:
         field="matrix_builder.forestmodel_xml_path",
         base_dir=base_dir,
     )
+    raw_accounts_exclude_regex = matrix_builder.get("accounts_exclude_regex", [])
+    accounts_exclude_regex: tuple[str, ...]
+    if raw_accounts_exclude_regex is None:
+        accounts_exclude_regex = ()
+    elif isinstance(raw_accounts_exclude_regex, list):
+        values = [
+            str(value).strip()
+            for value in raw_accounts_exclude_regex
+            if str(value).strip()
+        ]
+        accounts_exclude_regex = tuple(values)
+    else:
+        raise PatchworksConfigError(
+            "matrix_builder.accounts_exclude_regex must be a list of regex strings"
+        )
 
     return PatchworksRuntimeConfig(
         config_path=resolved_path,
@@ -194,6 +211,7 @@ def load_patchworks_runtime_config(path: Path) -> PatchworksRuntimeConfig:
         fragments_path=fragments_path,
         matrix_output_dir=matrix_output_dir,
         forestmodel_xml_path=forestmodel_xml_path,
+        accounts_exclude_regex=accounts_exclude_regex,
     )
 
 
@@ -521,20 +539,44 @@ def _resolve_accounts_backup_path(*, tracks_dir: Path) -> Path:
 def _promote_protoaccounts_to_accounts(
     *,
     matrix_output_dir: Path,
-) -> tuple[Path | None, Path | None, Path]:
+    exclude_regex: tuple[str, ...] = (),
+) -> tuple[Path | None, Path | None, Path, int]:
     tracks_dir = matrix_output_dir.expanduser().resolve()
     protoaccounts_path = tracks_dir / "protoaccounts.csv"
     accounts_path = tracks_dir / "accounts.csv"
     if not protoaccounts_path.exists():
-        return None, None, protoaccounts_path
+        return None, None, protoaccounts_path, 0
 
     backup_path: Path | None = None
     if accounts_path.exists():
         backup_path = _resolve_accounts_backup_path(tracks_dir=tracks_dir)
         accounts_path.replace(backup_path)
 
-    shutil.copy2(protoaccounts_path, accounts_path)
-    return accounts_path, backup_path, protoaccounts_path
+    if not exclude_regex:
+        shutil.copy2(protoaccounts_path, accounts_path)
+        return accounts_path, backup_path, protoaccounts_path, 0
+
+    patterns = tuple(re.compile(pattern) for pattern in exclude_regex)
+    with (
+        protoaccounts_path.open("r", encoding="utf-8", newline="") as src,
+        accounts_path.open("w", encoding="utf-8", newline="") as dst,
+    ):
+        reader = csv.DictReader(src)
+        fieldnames = list(reader.fieldnames or ["GROUP", "ATTRIBUTE", "ACCOUNT", "SUM"])
+        writer = csv.DictWriter(dst, fieldnames=fieldnames)
+        writer.writeheader()
+        excluded_count = 0
+        for row in reader:
+            attribute = str(row.get("ATTRIBUTE", ""))
+            account = str(row.get("ACCOUNT", ""))
+            if any(
+                pattern.search(attribute) or pattern.search(account)
+                for pattern in patterns
+            ):
+                excluded_count += 1
+                continue
+            writer.writerow({key: row.get(key, "") for key in fieldnames})
+    return accounts_path, backup_path, protoaccounts_path, excluded_count
 
 
 def run_patchworks_command(
@@ -609,6 +651,7 @@ def run_patchworks_command(
     accounts_backup_path: Path | None = None
     protoaccounts_path: Path | None = None
     accounts_sync_status = "not_requested"
+    accounts_excluded_row_count = 0
     output_for_scan = (proc.stderr or "") + "\n" + (proc.stdout or "")
     fatal_stderr_matches = _detect_fatal_output(output_for_scan)
     if fatal_stderr_matches:
@@ -624,8 +667,10 @@ def run_patchworks_command(
             accounts_synced_path,
             accounts_backup_path,
             protoaccounts_path,
+            accounts_excluded_row_count,
         ) = _promote_protoaccounts_to_accounts(
-            matrix_output_dir=config.matrix_output_dir
+            matrix_output_dir=config.matrix_output_dir,
+            exclude_regex=config.accounts_exclude_regex,
         )
         if accounts_synced_path is not None:
             accounts_sync_status = "synced"
@@ -674,6 +719,8 @@ def run_patchworks_command(
             "backup_path": (
                 str(accounts_backup_path) if accounts_backup_path is not None else None
             ),
+            "excluded_patterns": list(config.accounts_exclude_regex),
+            "excluded_row_count": accounts_excluded_row_count,
         },
         "logs": {
             "stdout": str(stdout_log),

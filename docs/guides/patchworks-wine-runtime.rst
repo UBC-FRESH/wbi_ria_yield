@@ -35,6 +35,7 @@ Use ``config/patchworks.runtime.yaml``:
      fragments_path: output/patchworks_k3z_validated/fragments/fragments.dbf
      output_dir: output/patchworks_k3z_validated/tracks
      forestmodel_xml_path: output/patchworks_k3z_validated/forestmodel.xml
+     accounts_exclude_regex: []  # optional regex filters for proto/accounts rows
 
 CLI Workflow
 ------------
@@ -72,6 +73,9 @@ For non-interactive matrix builds, FEMIC now also promotes
 ``tracks/protoaccounts.csv`` to ``tracks/accounts.csv`` when present.
 If ``accounts.csv`` already exists, it is moved to a timestamped backup
 (``accounts_backup_YYYYMMDD_HHMMSS.csv``) before replacement.
+If ``matrix_builder.accounts_exclude_regex`` is configured, matching rows are
+removed during promotion (based on ``ATTRIBUTE``/``ACCOUNT``) and the manifest
+captures both the applied patterns and excluded row count.
 
 The manifest includes command string, return code, config paths, and log paths.
 Matrix runs now fail hard when fatal runtime signatures are detected in process

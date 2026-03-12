@@ -408,7 +408,7 @@ notes.
 
 ## Phase 15: K3Z Species-Account Semantics + Output Hygiene
 - [ ] P15.1 Resolve `PL` vs `PLC` semantics for K3Z species-wise outputs
-  - [ ] P15.1a Audit `tracks/accounts.csv`, `forestmodel.xml`, and source
+  - [x] P15.1a Audit `tracks/accounts.csv`, `forestmodel.xml`, and source
     species-code mappings to confirm whether `PL` is a valid modeled species
     for K3Z or a legacy loose-end.
   - [ ] P15.1b If `PL` is not valid for K3Z, remove it from generated account
@@ -3733,3 +3733,20 @@ notes.
   species-wise null regressions.
   - Execution order for next implementation pass:
     `P15.1a -> P15.1b -> P15.1c -> P15.2a -> P15.2b -> P15.2c`.
+- 2026-03-11 (Phase 15 `P15.1a` completion + `P15.1b` implementation support):
+  audited current K3Z species surfaces and added runtime support to exclude
+  known-empty account rows during `protoaccounts -> accounts` promotion.
+  - Audit evidence from
+    `external/femic-k3z-instance/models/k3z_patchworks_model/yield/forestmodel.xml`:
+    `managed_prop_PL_*` and `unmanaged_prop_PL_*` curves are all zero; `PLC`
+    retains non-zero signal.
+  - Added optional runtime config key:
+    `matrix_builder.accounts_exclude_regex` in
+    `src/femic/patchworks_runtime.py`.
+  - Matrix-build manifests now record
+    `accounts_sync.excluded_patterns` and `accounts_sync.excluded_row_count`.
+  - Added tests in `tests/test_patchworks_runtime.py` for config parsing and
+    regex-based exclusion behavior.
+  - Added operator docs in `docs/guides/patchworks-wine-runtime.rst`.
+  - Next execution step: apply the exclusion pattern in K3Z instance runtime
+    config and verify account/target surfaces after matrix rebuild.

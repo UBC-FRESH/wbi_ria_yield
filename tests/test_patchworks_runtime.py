@@ -51,6 +51,7 @@ def test_load_patchworks_runtime_config_resolves_relative_paths(tmp_path: Path) 
     assert cfg.fragments_path == (tmp_path / "data/fragments.dbf").resolve()
     assert cfg.matrix_output_dir == (tmp_path / "output/tracks").resolve()
     assert cfg.forestmodel_xml_path == (tmp_path / "output/forestmodel.xml").resolve()
+    assert cfg.accounts_exclude_regex == ()
 
 
 def test_load_patchworks_runtime_config_handles_parent_relative_paths(
@@ -93,6 +94,34 @@ def test_load_patchworks_runtime_config_handles_parent_relative_paths(
             repo_root / "output/patchworks_k3z_validated/fragments/fragments.dbf"
         ).resolve()
     )
+    assert cfg.accounts_exclude_regex == ()
+
+
+def test_load_patchworks_runtime_config_parses_accounts_exclude_regex(
+    tmp_path: Path,
+) -> None:
+    cfg_path = tmp_path / "patchworks.runtime.yaml"
+    cfg_path.write_text(
+        "\n".join(
+            [
+                "patchworks:",
+                "  jar_path: patchworks/patchworks.jar",
+                "  license_env: SPS_LICENSE_SERVER",
+                "  license_value: frst424@auth.spatial.ca",
+                "  spshome: Z:\\Patchworks",
+                "matrix_builder:",
+                "  fragments_path: data/fragments.dbf",
+                "  output_dir: output/tracks",
+                "  forestmodel_xml_path: output/forestmodel.xml",
+                "  accounts_exclude_regex:",
+                '    - "\\\\.PL(\\\\.|$)"',
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    cfg = load_patchworks_runtime_config(cfg_path)
+    assert cfg.accounts_exclude_regex == ("\\.PL(\\.|$)",)
 
 
 def test_parse_license_server_requires_user_host_format() -> None:
@@ -308,6 +337,7 @@ def test_run_patchworks_command_promotes_protoaccounts_and_backs_up_accounts(
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert manifest["accounts_sync"]["status"] == "synced"
     assert manifest["accounts_sync"]["backup_path"] == str(backups[0])
+    assert manifest["accounts_sync"]["excluded_row_count"] == 0
 
 
 def test_run_patchworks_command_reports_missing_protoaccounts_sync(
@@ -343,6 +373,61 @@ def test_run_patchworks_command_reports_missing_protoaccounts_sync(
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert manifest["accounts_sync"]["status"] == "skipped_missing_protoaccounts"
     assert manifest["accounts_sync"]["accounts_path"] is None
+    assert manifest["accounts_sync"]["excluded_row_count"] == 0
+
+
+def test_run_patchworks_command_excludes_accounts_by_regex(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cfg_path = _write_runtime_config(tmp_path)
+    cfg = load_patchworks_runtime_config(cfg_path)
+    cfg_path.write_text(
+        cfg_path.read_text(encoding="utf-8")
+        + '\n  accounts_exclude_regex:\n    - "\\\\.PL(\\\\.|$)"\n',
+        encoding="utf-8",
+    )
+    cfg = load_patchworks_runtime_config(cfg_path)
+
+    cfg.jar_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.jar_path.touch()
+    cfg.fragments_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.fragments_path.touch()
+    cfg.forestmodel_xml_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg.forestmodel_xml_path.touch()
+    cfg.matrix_output_dir.mkdir(parents=True, exist_ok=True)
+    (cfg.matrix_output_dir / "protoaccounts.csv").write_text(
+        (
+            "GROUP,ATTRIBUTE,ACCOUNT,SUM\n"
+            "_MANAGED_,product.Yield.managed.PL,product.Yield.managed.PL,1\n"
+            "_MANAGED_,product.Yield.managed.PLC,product.Yield.managed.PLC,1\n"
+        ),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        "femic.patchworks_runtime.find_wine_executable", lambda: "/usr/bin/wine64"
+    )
+    monkeypatch.setattr("femic.patchworks_runtime.is_windows_host", lambda: False)
+    monkeypatch.setattr(
+        "femic.patchworks_runtime.subprocess.run",
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=0, stdout="ok", stderr=""),
+    )
+
+    result = run_patchworks_command(
+        config=cfg,
+        interactive=False,
+        log_dir=tmp_path / "logs",
+        run_id="pwfilter",
+    )
+
+    assert result.returncode == 0
+    accounts_text = (cfg.matrix_output_dir / "accounts.csv").read_text(encoding="utf-8")
+    assert "product.Yield.managed.PL,product.Yield.managed.PL" not in accounts_text
+    assert "product.Yield.managed.PLC,product.Yield.managed.PLC" in accounts_text
+
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert manifest["accounts_sync"]["excluded_patterns"] == ["\\.PL(\\.|$)"]
+    assert manifest["accounts_sync"]["excluded_row_count"] == 1
 
 
 def test_run_patchworks_command_fails_on_fatal_stderr_signature(
