@@ -716,6 +716,16 @@ def test_reference_rebuild_evidence_payload_is_present_and_passing() -> None:
     assert gate["unexpected_diff_regression"] is False
 
 
+def test_phase_13_closure_policy_requires_rebuild_evidence_note() -> None:
+    roadmap_text = Path("ROADMAP.md").read_text(encoding="utf-8")
+    changelog_text = Path("CHANGE_LOG.md").read_text(encoding="utf-8")
+    required_phrase = (
+        "no new instance phase closes without reproducible rebuild evidence"
+    )
+    assert required_phrase in roadmap_text.lower()
+    assert required_phrase in changelog_text.lower()
+
+
 def test_author_instance_rebuild_spec_guide_covers_core_sections() -> None:
     guide_text = (GUIDES_ROOT / "author-instance-rebuild-spec.rst").read_text()
     required_sections = [

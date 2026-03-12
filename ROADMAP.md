@@ -377,7 +377,15 @@
   - [x] P13.6a Extend `femic instance init` scaffolding to always include rebuild spec + runbook placeholders.
   - [x] P13.6b Add docs/contract tests requiring rebuild-spec references in sample/new instance docs.
   - [x] P13.6c Add release-gate checks requiring successful rebuild report for reference instances prior to milestone close.
-  - [ ] P13.6d Add roadmap/changelog policy note: no new instance phase closes without reproducible rebuild evidence.
+  - [x] P13.6d Add roadmap/changelog policy note: no new instance phase closes without reproducible rebuild evidence.
+
+Phase 13 Closure Policy (Mandatory)
+-----------------------------------
+
+No new instance phase is considered complete unless reproducible rebuild
+evidence is present and passing (report + regression-gate status), and that
+evidence is tracked or explicitly referenced in roadmap/changelog milestone
+notes.
 
 ## Detailed Next Steps Notes
 - 2026-03-11 (repo-root cleanup: legacy notebook archive move):
@@ -3604,3 +3612,9 @@
     fields in:
     `docs/guides/deployment-instances.rst` and
     `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 13 `P13.6d` completion): formalized closure policy that no
+  new instance phase can close without reproducible rebuild evidence.
+  - Added mandatory policy section under Phase 13 in `ROADMAP.md`.
+  - Added matching policy milestone entry in `CHANGE_LOG.md`.
+  - Added docs-contract enforcement in `tests/test_docs_contract.py` to ensure
+    the policy note remains present in roadmap and changelog artifacts.

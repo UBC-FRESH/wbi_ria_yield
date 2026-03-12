@@ -3718,3 +3718,9 @@
 - Added docs-contract coverage:
   `tests/test_docs_contract.py` now requires evidence artifact presence,
   release-workflow gate wiring, and passing evidence payload fields.
+
+## 2026-03-11 - Added phase-closure policy requiring rebuild evidence (`P13.6d`)
+- Added explicit Phase 13 closure policy in `ROADMAP.md`:
+  no new instance phase closes without reproducible rebuild evidence.
+- Added matching changelog policy milestone (this entry) to keep the policy
+  auditable in both planning and historical records.
