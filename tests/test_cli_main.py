@@ -1338,6 +1338,53 @@ def test_instance_refresh_reference_evidence_uses_reference_defaults(
     assert captured["max_baseline_diff_increase"] == 2
 
 
+def test_instance_account_surface_writes_summary_json(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    instance_root = tmp_path / "instance-root"
+    tracks_dir = instance_root / "tracks"
+    tracks_dir.mkdir(parents=True, exist_ok=True)
+    (tracks_dir / "accounts.csv").write_text(
+        "GROUP,ATTRIBUTE,ACCOUNT,SUM\n"
+        "_MANAGED_,x,product.Yield.managed.CW,1\n"
+        "_MANAGED_,x,product.HarvestedVolume.managed.CW.CC,1\n"
+        "_MANAGED_,x,feature.Seral.mature.985501000,1\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=instance_root,
+            resolve_path=lambda value: instance_root / value,
+        ),
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "load_patchworks_runtime_config",
+        lambda _path: SimpleNamespace(matrix_output_dir=tracks_dir),
+    )
+
+    cli_main.instance_account_surface(
+        config=Path("config/patchworks.runtime.windows.yaml"),
+        output=Path("vdyp_io/logs/account_surface.json"),
+        instance_root=instance_root,
+    )
+
+    payload = json.loads(
+        (instance_root / "vdyp_io/logs/account_surface.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert payload["species_count"] == 1
+    assert payload["species_complete_count"] == 1
+    assert payload["au_count"] == 1
+    assert any("account surface summary" in msg for msg in messages)
+
+
 def test_collect_rebuild_artifact_references_filters_missing(
     tmp_path: Path,
 ) -> None:

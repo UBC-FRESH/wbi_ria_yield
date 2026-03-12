@@ -3930,3 +3930,21 @@
   - Patchworks runtime tests (`tests/test_patchworks_runtime.py`,
     `tests/test_cli_main.py`)
   - K3Z tracked manifests/config in `external/femic-k3z-instance/`.
+
+## 2026-03-11 - Added account-surface QA diagnostics helper (`P15.3a`)
+- Added new command:
+  - `femic instance account-surface`
+- Added account-surface summarizer:
+  - `src/femic/account_surface.py`
+  - summarizes account/target coverage proxies from `tracks/accounts.csv`:
+    - species-level `product.Yield.managed.*` and
+      `product.HarvestedVolume.managed.*.CC` presence,
+    - AU-level `feature.Seral.*.<au>` and
+      `product.Seral.area.*.<au>.CC` coverage.
+- Added CLI wiring and JSON output support in:
+  - `src/femic/cli/main.py`
+- Added regression tests:
+  - `tests/test_account_surface.py`
+  - `tests/test_cli_main.py`
+- Updated command reference docs:
+  - `docs/reference/cli.rst`

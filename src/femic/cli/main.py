@@ -15,6 +15,7 @@ import yaml
 from rich.console import Console
 
 from femic import __version__
+from femic.account_surface import summarize_account_surface
 from femic.geospatial_preflight import run_geospatial_preflight
 from femic.instance_bootstrap import bootstrap_instance_workspace
 from femic.instance_context import (
@@ -434,6 +435,12 @@ INSTANCE_EVIDENCE_MAX_BASELINE_DIFF_INCREASE_OPTION = typer.Option(
         "Optional threshold for allowed increase in summary.baseline_diff_count "
         "compared to existing output evidence."
     ),
+    show_default=False,
+)
+INSTANCE_ACCOUNT_SURFACE_OUTPUT_OPTION = typer.Option(
+    None,
+    "--output",
+    help="Optional JSON output path for account-surface summary.",
     show_default=False,
 )
 PATCHWORKS_CONFIG_OPTION = typer.Option(
@@ -1282,6 +1289,56 @@ def instance_refresh_reference_evidence(
         max_baseline_diff_increase=max_baseline_diff_increase,
         instance_root=reference_root,
     )
+
+
+@instance_app.command("account-surface")
+def instance_account_surface(
+    config: Path = PATCHWORKS_CONFIG_OPTION,
+    output: Path | None = INSTANCE_ACCOUNT_SURFACE_OUTPUT_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
+) -> None:
+    """Summarize species/AU account coverage from tracks/accounts.csv."""
+    context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_config = context.resolve_path(config)
+    try:
+        runtime_config = load_patchworks_runtime_config(resolved_config)
+    except (
+        FileNotFoundError,
+        PatchworksConfigError,
+        json.JSONDecodeError,
+        yaml.YAMLError,
+    ) as exc:
+        console.print(f"[red]Patchworks config error:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    accounts_csv_path = runtime_config.matrix_output_dir / "accounts.csv"
+    if not accounts_csv_path.exists():
+        console.print(f"[red]accounts.csv not found:[/red] {accounts_csv_path}")
+        raise typer.Exit(code=1)
+
+    summary = summarize_account_surface(accounts_csv_path=accounts_csv_path)
+    if output is not None:
+        output_path = context.resolve_path(output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        console.print(f"summary_json: {output_path}")
+
+    console.print(
+        "[green]account surface summary[/green] "
+        f"accounts={summary['total_accounts']} "
+        f"species={summary['species_count']} "
+        f"complete_species={summary['species_complete_count']} "
+        f"au={summary['au_count']}"
+    )
+    if summary["species_missing_yield"]:
+        console.print(
+            "species_missing_yield: " + ", ".join(summary["species_missing_yield"])
+        )
+    if summary["species_missing_harvest_cc"]:
+        console.print(
+            "species_missing_harvest_cc: "
+            + ", ".join(summary["species_missing_harvest_cc"])
+        )
 
 
 @app.command("run")

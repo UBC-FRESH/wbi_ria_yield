@@ -423,7 +423,7 @@ notes.
   - [x] P15.2c Fail rebuild when unexpected species-account null regressions are
     introduced.
 - [ ] P15.3 Add operator diagnostics for account-surface QA
-  - [ ] P15.3a Add a CLI/report helper to summarize account/target coverage by
+  - [x] P15.3a Add a CLI/report helper to summarize account/target coverage by
     species and AU from rebuilt tracks.
   - [ ] P15.3b Add a deterministic troubleshooting flow for "total OK,
     species-wise empty" failures.
@@ -3847,3 +3847,17 @@ notes.
     `sps_user@auth.spatial.ca` across FEMIC + K3Z instance repo content.
   - Purpose: avoid shipping user-identifying credentials in public-facing
     documentation/config examples while preserving executable examples/tests.
+- 2026-03-11 (Phase 15 `P15.3a` completion): added first-class operator
+  diagnostics helper for account-surface QA.
+  - Added `femic instance account-surface` command in
+    `src/femic/cli/main.py`.
+  - Added account-surface parser/summarizer in
+    `src/femic/account_surface.py` that reports:
+    species-level yield/harvest account coverage and AU-level seral account
+    coverage from `tracks/accounts.csv`.
+  - Added tests in:
+    `tests/test_account_surface.py`, `tests/test_cli_main.py`.
+  - Updated CLI docs in:
+    `docs/reference/cli.rst`.
+  - Next execution step: implement `P15.3b` deterministic troubleshooting flow
+    for "total OK, species-wise empty" failure signatures.

@@ -267,6 +267,7 @@ Subcommands
 - ``validate-spec``: ``python -m femic instance validate-spec [OPTIONS]``
 - ``promote-evidence``: ``python -m femic instance promote-evidence [OPTIONS]``
 - ``refresh-reference-evidence``: ``python -m femic instance refresh-reference-evidence [OPTIONS]``
+- ``account-surface``: ``python -m femic instance account-surface [OPTIONS]``
 
 ``instance init`` options
 
@@ -326,3 +327,14 @@ Rebuild exits non-zero when unexpected baseline diffs exceed
 - ``--reference-root PATH`` (default: ``instances/reference``)
 - ``--max-warn-increase INT`` (optional drift warning threshold)
 - ``--max-baseline-diff-increase INT`` (optional drift warning threshold)
+
+``instance account-surface`` options
+
+- ``--config PATH`` (default: ``config/patchworks.runtime.yaml``)
+- ``--output PATH`` (optional JSON output path for diagnostics summary)
+- ``--instance-root PATH``
+
+``instance account-surface`` reads ``tracks/accounts.csv`` from the configured
+Patchworks matrix output folder and summarizes species-level account coverage
+(``product.Yield.managed.*`` and ``product.HarvestedVolume.managed.*.CC``)
+plus AU-level seral account coverage.
