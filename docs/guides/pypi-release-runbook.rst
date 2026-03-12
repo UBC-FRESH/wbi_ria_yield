@@ -56,6 +56,14 @@ the same built ``dist/*`` files for TestPyPI and PyPI publication.
 TestPyPI publication and smoke
 ------------------------------
 
+Before first publish, configure trusted publishing on TestPyPI:
+
+1. TestPyPI project: ``femic``.
+2. Publisher type: GitHub Actions.
+3. Repository owner/name: ``UBC-FRESH/femic``.
+4. Workflow filename: ``publish-testpypi.yml``.
+5. Environment name: ``testpypi``.
+
 Upload artifacts:
 
 .. code-block:: bash
@@ -79,6 +87,14 @@ Install smoke in a clean environment:
 Production PyPI publication
 ---------------------------
 
+Before first production publish, configure trusted publishing on PyPI:
+
+1. PyPI project: ``femic``.
+2. Publisher type: GitHub Actions.
+3. Repository owner/name: ``UBC-FRESH/femic``.
+4. Workflow filename: ``publish-pypi.yml``.
+5. Environment name: ``pypi``.
+
 Publish the same artifact set used in TestPyPI validation:
 
 .. code-block:: bash
@@ -98,3 +114,14 @@ After successful PyPI publication:
    ``Detailed Next Steps Notes`` with validation outcomes.
 4. Keep install instructions in ``README.md`` aligned with the published
    version.
+
+Trusted publishing troubleshooting
+----------------------------------
+
+If GitHub Actions fails with ``invalid-publisher`` during publish:
+
+- confirm the workflow filename and environment name exactly match the
+  trusted-publisher entry on TestPyPI/PyPI,
+- confirm repository owner/name is ``UBC-FRESH/femic``,
+- confirm the publish job runs from ``refs/heads/main`` (or an allowed ref),
+- re-run the workflow after saving trusted-publisher settings.

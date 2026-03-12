@@ -461,6 +461,22 @@ notes.
 - [ ] P18.4 Post-release docs/changelog/version traceability
 
 ## Detailed Next Steps Notes
+- 2026-03-12 (Phase 18 `P18.2` execution attempt): triggered
+  `publish-testpypi` workflow and confirmed current blocker is trusted
+  publisher configuration, not packaging artifacts.
+  - Workflow run:
+    `https://github.com/UBC-FRESH/femic/actions/runs/23022440859`
+    failed at `Publish to TestPyPI` with `invalid-publisher`.
+  - Claims emitted by GitHub for debugging:
+    - `repository`: `UBC-FRESH/femic`
+    - `workflow_ref`:
+      `UBC-FRESH/femic/.github/workflows/publish-testpypi.yml@refs/heads/main`
+    - `environment`: `testpypi`
+  - Updated `docs/guides/pypi-release-runbook.rst` with explicit trusted
+    publisher setup requirements for TestPyPI/PyPI and troubleshooting steps.
+  - Next action for `P18.2`:
+    configure matching trusted publisher entries on TestPyPI, then re-run
+    `publish-testpypi` and perform install smoke.
 - 2026-03-12 (Phase 17 docs refinement): switched K3Z appendix from
   filename-only inventory to inline-rendered figures in the standalone
   instance docs.
@@ -4096,7 +4112,7 @@ notes.
     `vdyp_io/logs/k3z_rebuild_report-k3z_rethread_win_20260312_1300.json`:
     `tipsy_curve_mode=vdyp_transform`, `matrix_returncode=0`,
     `block_join_csv_only=0`, `block_join_shp_only=0`.
-  - Updated K3Z appendix heading/captions to “Treated (Scaled-VDYP) Curve
-    Overlays” so student-facing docs match the actual curve mode.
+  - Updated K3Z appendix heading/captions to "Treated (Scaled-VDYP) Curve
+    Overlays" so student-facing docs match the actual curve mode.
   - Next step: publish refreshed submodule docs commit and update parent
     submodule pointer so GitHub Pages serves the regenerated overlays.

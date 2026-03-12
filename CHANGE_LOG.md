@@ -4207,3 +4207,22 @@
   - Full repo gates were re-run; one pre-existing main-docs API autosummary
     warning set still fails `docs _build/html -W` and remains outside this K3Z
     figure-refresh scope.
+
+## 2026-03-12 - Phase 18 TestPyPI execution attempt blocked by trusted-publisher configuration
+- Triggered GitHub Actions workflow `publish-testpypi` against `main`:
+  `https://github.com/UBC-FRESH/femic/actions/runs/23022440859`.
+- Packaging/build validation succeeded in workflow; publish step failed with:
+  `invalid-publisher` (no matching trusted publisher configured on TestPyPI for
+  emitted OIDC claims).
+- Captured key claims for setup alignment:
+  - repository: `UBC-FRESH/femic`
+  - workflow ref:
+    `UBC-FRESH/femic/.github/workflows/publish-testpypi.yml@refs/heads/main`
+  - environment: `testpypi`
+- Updated release runbook with explicit trusted-publisher setup and
+  troubleshooting guidance:
+  `docs/guides/pypi-release-runbook.rst`.
+- Phase 18 status after this execution:
+  - `P18.1` complete,
+  - `P18.2` blocked pending TestPyPI trusted publisher config,
+  - `P18.3/P18.4` pending `P18.2` completion.
