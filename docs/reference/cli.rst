@@ -283,6 +283,8 @@ Subcommands
 - ``--with-patchworks / --no-patchworks`` (default: ``--no-patchworks``)
 - ``--dry-run`` (print planned step sequence without execution)
 - ``--patchworks-config PATH`` (default: ``config/patchworks.runtime.yaml``)
+- ``--baseline PATH`` (default: ``config/rebuild.baseline.json``)
+- ``--write-baseline`` (write/update baseline snapshot before diff evaluation)
 - ``--instance-root PATH``
 
 ``instance rebuild`` writes a machine-readable report to
@@ -292,6 +294,9 @@ It also evaluates configured rebuild-spec invariants and appends measured
 ``metrics`` plus ``invariant_results`` to the report. Any invariant with
 ``severity: fatal`` that evaluates false causes command failure with a
 remediation summary.
+When a baseline snapshot is available, the report also includes a ``baseline``
+section with table/XML structural diffs and aggregate ``baseline_match`` /
+``baseline_diff_count`` metrics.
 
 ``instance validate-spec`` options
 

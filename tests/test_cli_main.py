@@ -856,6 +856,8 @@ def test_instance_rebuild_runs_runner_and_reports(
         with_patchworks=False,
         dry_run=False,
         patchworks_config=Path("config/patchworks.runtime.yaml"),
+        baseline=Path("config/rebuild.baseline.json"),
+        write_baseline=False,
         instance_root=Path("instance-root"),
     )
 
@@ -918,6 +920,8 @@ def test_instance_rebuild_includes_patchworks_steps_when_enabled(
         with_patchworks=True,
         dry_run=False,
         patchworks_config=Path("config/patchworks.runtime.yaml"),
+        baseline=Path("config/rebuild.baseline.json"),
+        write_baseline=False,
         instance_root=Path("instance-root"),
     )
 
@@ -967,6 +971,8 @@ def test_instance_rebuild_dry_run_prints_plan_without_execution(
         with_patchworks=True,
         dry_run=True,
         patchworks_config=Path("config/patchworks.runtime.yaml"),
+        baseline=Path("config/rebuild.baseline.json"),
+        write_baseline=False,
         instance_root=Path("instance-root"),
     )
 

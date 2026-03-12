@@ -3568,3 +3568,19 @@
   `tests/test_rebuild_invariants.py`.
 - Updated CLI reference docs:
   `docs/reference/cli.rst`.
+
+## 2026-03-11 - Added baseline snapshot/diff support for rebuild outputs (`P13.4b`)
+- Added baseline snapshot module:
+  `src/femic/rebuild_baseline.py`.
+- Added structural snapshot support for key track tables and ForestModel XML
+  shape counts, including JSON save/load and diff utilities.
+- `femic instance rebuild` now supports:
+  - `--baseline PATH` (baseline JSON location),
+  - `--write-baseline` (initialize/update baseline),
+  - report-level `baseline` payload output with diff details.
+- Rebuild metrics now include:
+  - `baseline_match`,
+  - `baseline_diff_count`.
+- Added tests:
+  `tests/test_rebuild_baseline.py`, plus CLI/docs contract updates in
+  `tests/test_cli_main.py` and `tests/test_docs_contract.py`.

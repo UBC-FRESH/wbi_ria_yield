@@ -365,7 +365,7 @@
   - [x] P13.3d Add schema validation + clear diagnostics for malformed rebuild specs.
 - [ ] P13.4 Add regression guardrails for rebuild outputs
   - [x] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
-  - [ ] P13.4b Add configurable baseline snapshot/diff support for key track tables and selected XML structures.
+  - [x] P13.4b Add configurable baseline snapshot/diff support for key track tables and selected XML structures.
   - [ ] P13.4c Add explicit allowlist mechanism for intentional output deltas (so accepted changes are tracked in git).
   - [ ] P13.4d Fail rebuild with actionable summary when invariants regress or unexpected diffs exceed thresholds.
 - [ ] P13.5 Add user-facing documentation and operator runbooks
@@ -3481,3 +3481,15 @@
   - Added regression tests:
     `tests/test_rebuild_invariants.py`, and updated CLI/docs coverage in
     `docs/reference/cli.rst`.
+- 2026-03-11 (Phase 13 `P13.4b` completion): added configurable baseline
+  snapshot + structural diff support for rebuild outputs.
+  - Added module:
+    `src/femic/rebuild_baseline.py` to build/load/save baseline snapshots and
+    diff key track-table + ForestModel XML structures.
+  - `femic instance rebuild` now supports:
+    `--baseline <path>` and `--write-baseline`, computes `baseline_match` /
+    `baseline_diff_count` metrics, and records baseline diff payloads in the
+    rebuild report under `baseline`.
+  - Added tests:
+    `tests/test_rebuild_baseline.py`, plus CLI/docs contract updates in
+    `tests/test_cli_main.py` and `tests/test_docs_contract.py`.

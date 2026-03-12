@@ -202,6 +202,8 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
                 "--no-patchworks",
                 "--dry-run",
                 "--patchworks-config",
+                "--baseline",
+                "--write-baseline",
                 "--instance-root",
             ],
         ),

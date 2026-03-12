@@ -46,6 +46,13 @@ from femic.patchworks_runtime import (
     run_patchworks_command,
     run_patchworks_preflight,
 )
+from femic.rebuild_baseline import (
+    build_current_snapshot,
+    diff_snapshots,
+    load_snapshot,
+    resolve_baseline_path,
+    save_snapshot,
+)
 from femic.rebuild_invariants import (
     append_invariant_payload_to_report,
     collect_rebuild_metrics,
@@ -371,6 +378,16 @@ INSTANCE_REBUILD_PATCHWORKS_CONFIG_OPTION = typer.Option(
     "--patchworks-config",
     help="Patchworks runtime config used when --with-patchworks is enabled.",
 )
+INSTANCE_REBUILD_BASELINE_OPTION = typer.Option(
+    Path("config/rebuild.baseline.json"),
+    "--baseline",
+    help="Baseline snapshot JSON for structural diff checks.",
+)
+INSTANCE_REBUILD_WRITE_BASELINE_OPTION = typer.Option(
+    False,
+    "--write-baseline",
+    help="Write/update baseline snapshot before evaluating baseline diff metrics.",
+)
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
     "--config",
@@ -691,6 +708,8 @@ def instance_rebuild(
     with_patchworks: bool = INSTANCE_REBUILD_WITH_PATCHWORKS_OPTION,
     dry_run: bool = INSTANCE_REBUILD_DRY_RUN_OPTION,
     patchworks_config: Path = INSTANCE_REBUILD_PATCHWORKS_CONFIG_OPTION,
+    baseline: Path = INSTANCE_REBUILD_BASELINE_OPTION,
+    write_baseline: bool = INSTANCE_REBUILD_WRITE_BASELINE_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
     context = _resolve_cli_instance_context(instance_root=instance_root)
@@ -699,6 +718,10 @@ def instance_rebuild(
     resolved_tipsy_config_dir = context.resolve_path(tipsy_config_dir)
     resolved_log_dir = context.resolve_path(log_dir)
     resolved_patchworks_config = context.resolve_path(patchworks_config)
+    resolved_baseline = resolve_baseline_path(
+        baseline_path=context.resolve_path(baseline),
+        instance_root=context.root,
+    )
     effective_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
 
     try:
@@ -842,6 +865,38 @@ def instance_rebuild(
         run_id=effective_run_id,
         patchworks_config_path=resolved_patchworks_config,
     )
+    baseline_diff_payload: dict[str, object] | None = None
+    baseline_snapshot_payload: dict[str, object] | None = None
+    current_snapshot_payload: dict[str, object] | None = None
+    baseline_status = "unavailable"
+    if resolved_patchworks_config.exists():
+        try:
+            current_snapshot_payload = build_current_snapshot(
+                patchworks_config_path=resolved_patchworks_config
+            )
+            if write_baseline or not resolved_baseline.exists():
+                save_snapshot(
+                    path=resolved_baseline,
+                    snapshot=current_snapshot_payload,
+                )
+                baseline_status = (
+                    "written" if write_baseline else "initialized_missing_baseline"
+                )
+            if resolved_baseline.exists():
+                baseline_snapshot_payload = load_snapshot(resolved_baseline)
+                baseline_diff_payload = diff_snapshots(
+                    baseline=baseline_snapshot_payload,
+                    current=current_snapshot_payload,
+                )
+                metrics["baseline_match"] = baseline_diff_payload["baseline_match"]
+                metrics["baseline_diff_count"] = baseline_diff_payload["diff_count"]
+                if baseline_status == "unavailable":
+                    baseline_status = "evaluated"
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            metrics["baseline_match"] = None
+            metrics["baseline_diff_count"] = None
+            baseline_status = f"error: {exc}"
+
     invariant_results = evaluate_invariants(
         invariants=invariants_payload if isinstance(invariants_payload, list) else [],
         metrics=metrics,
@@ -852,6 +907,18 @@ def instance_rebuild(
             metrics=metrics,
             invariant_results=invariant_results,
         )
+        if baseline_status != "unavailable":
+            report_payload = json.loads(report_path.read_text(encoding="utf-8"))
+            report_payload["baseline"] = {
+                "status": baseline_status,
+                "path": str(resolved_baseline),
+                "diff": baseline_diff_payload,
+                "current_snapshot": current_snapshot_payload,
+                "baseline_snapshot": baseline_snapshot_payload,
+            }
+            report_path.write_text(
+                json.dumps(report_payload, indent=2), encoding="utf-8"
+            )
     except (OSError, json.JSONDecodeError):
         pass
 
@@ -894,6 +961,13 @@ def instance_rebuild(
             )
             if item.status in {"warn", "fail"} and item.remediation:
                 console.print(f"  remediation: {item.remediation}")
+    if baseline_status != "unavailable":
+        console.print(
+            "baseline: "
+            f"status={baseline_status} "
+            f"path={resolved_baseline} "
+            f"diff_count={metrics.get('baseline_diff_count')}"
+        )
     if report.failed or fatal_invariant_failure:
         if fatal_invariant_failure and not report.failed:
             console.print("[red]Fatal rebuild invariant regression detected.[/red]")
