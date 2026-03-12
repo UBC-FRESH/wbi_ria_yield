@@ -395,16 +395,16 @@ notes.
   - [x] P14.1b Emit normalized evidence payload for release-gate consumption
     (`status`, `regression_gate`, summary counts, source report path).
   - [x] P14.1c Add CLI/docs-contract coverage and reference CLI docs updates.
-- [ ] P14.2 Add reusable evidence-refresh automation for maintainers
+- [x] P14.2 Add reusable evidence-refresh automation for maintainers
   - [x] P14.2a Add script/helper command to refresh
     `instances/reference/evidence/reference_rebuild_report.latest.json` from
     current logs.
   - [x] P14.2b Add contributor runbook step for evidence refresh during release
     preparation.
-- [ ] P14.3 Add drift-monitoring hooks for long-lived instance repositories
+- [x] P14.3 Add drift-monitoring hooks for long-lived instance repositories
   - [x] P14.3a Add optional warning threshold checks for trend drift in rebuild
     evidence summaries.
-  - [ ] P14.3b Add docs on interpreting evidence-trend drift across releases.
+  - [x] P14.3b Add docs on interpreting evidence-trend drift across releases.
 
 ## Detailed Next Steps Notes
 - 2026-03-11 (repo-root cleanup: legacy notebook archive move):
@@ -3689,3 +3689,12 @@ notes.
     `docs/guides/deployment-instances.rst`,
     `tests/test_cli_main.py`,
     `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 14 `P14.3b` completion): added release-operator guidance
+  for interpreting evidence trend drift across releases.
+  - Expanded `docs/guides/interpret-rebuild-reports.rst` with
+    `Evidence Trend Drift Across Releases`, including:
+    `trend_drift` field interpretation, threshold semantics, and a
+    thresholded release workflow using
+    `femic instance refresh-reference-evidence`.
+  - Extended docs-contract enforcement in `tests/test_docs_contract.py` to
+    require the drift-interpretation section and key `trend_drift` markers.

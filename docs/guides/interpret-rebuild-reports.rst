@@ -95,6 +95,42 @@ The run is blocked when any of these are true:
 - ``fatal_invariant_failure``
 - ``unexpected_diff_regression``
 
+Evidence Trend Drift Across Releases
+------------------------------------
+
+When evidence is promoted with
+``femic instance promote-evidence`` (or via
+``femic instance refresh-reference-evidence``), the normalized artifact includes
+``trend_drift`` for release-over-release interpretation.
+
+Key fields:
+
+- ``trend_drift.previous_summary``
+- ``trend_drift.warn_increase``
+- ``trend_drift.baseline_diff_increase``
+- ``trend_drift.thresholds.max_warn_increase``
+- ``trend_drift.thresholds.max_baseline_diff_increase``
+- ``trend_drift.warnings``
+
+Interpretation rule:
+
+- Positive ``warn_increase`` means more warning-level invariant results than
+  the previously promoted evidence.
+- Positive ``baseline_diff_increase`` means additional structural drift versus
+  the previously promoted evidence.
+- Non-empty ``trend_drift.warnings`` means configured thresholds were exceeded
+  and should trigger explicit maintainer review before release.
+
+Recommended release workflow:
+
+1. Refresh evidence with thresholds:
+   ``femic instance refresh-reference-evidence --reference-root . --max-warn-increase 0 --max-baseline-diff-increase 0``
+2. Inspect ``trend_drift`` deltas and warning messages.
+3. If drift is intentional, document rationale in roadmap/changelog and update
+   baseline/allowlist artifacts as needed.
+4. Re-run rebuild and evidence refresh until drift warnings are either cleared
+   or explicitly accepted with documented rationale.
+
 Triage Workflow
 ---------------
 

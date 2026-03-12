@@ -3783,3 +3783,16 @@
   `docs/guides/deployment-instances.rst`,
   `tests/test_cli_main.py`,
   `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Added trend-drift interpretation guide coverage (`P14.3b`)
+- Expanded `docs/guides/interpret-rebuild-reports.rst` with a dedicated
+  "Evidence Trend Drift Across Releases" section.
+- Added operator guidance for interpreting:
+  `trend_drift.previous_summary`,
+  `trend_drift.warn_increase`,
+  `trend_drift.baseline_diff_increase`,
+  threshold fields, and warning semantics.
+- Added thresholded release workflow examples using:
+  `femic instance refresh-reference-evidence --max-warn-increase ... --max-baseline-diff-increase ...`.
+- Extended docs-contract checks in `tests/test_docs_contract.py` to enforce
+  the new section and required drift markers.

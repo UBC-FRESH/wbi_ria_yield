@@ -773,10 +773,19 @@ def test_interpret_rebuild_reports_guide_covers_core_sections() -> None:
         "Invariant Results",
         "Baseline and Allowlist Diffs",
         "Regression Gate",
+        "Evidence Trend Drift Across Releases",
         "Triage Workflow",
     ]
     for section in required_sections:
         assert section in guide_text
+    for marker in (
+        "trend_drift.previous_summary",
+        "trend_drift.warn_increase",
+        "trend_drift.baseline_diff_increase",
+        "--max-warn-increase",
+        "--max-baseline-diff-increase",
+    ):
+        assert marker in guide_text
 
 
 def test_k3z_reference_rebuild_spec_exists_and_matches_schema_basics() -> None:
