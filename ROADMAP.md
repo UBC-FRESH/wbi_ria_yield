@@ -407,13 +407,13 @@ notes.
   - [x] P14.3b Add docs on interpreting evidence-trend drift across releases.
 
 ## Phase 15: K3Z Species-Account Semantics + Output Hygiene
-- [ ] P15.1 Resolve `PL` vs `PLC` semantics for K3Z species-wise outputs
+- [x] P15.1 Resolve `PL` vs `PLC` semantics for K3Z species-wise outputs
   - [x] P15.1a Audit `tracks/accounts.csv`, `forestmodel.xml`, and source
     species-code mappings to confirm whether `PL` is a valid modeled species
     for K3Z or a legacy loose-end.
   - [x] P15.1b If `PL` is not valid for K3Z, remove it from generated account
    /target surfaces and keep `PLC` canonical.
-  - [ ] P15.1c Add explicit docs note so students understand species-code
+  - [x] P15.1c Add explicit docs note so students understand species-code
     expectations and do not interpret empty `PL` as runtime failure.
 - [ ] P15.2 Add rebuild invariants for species-account completeness
   - [ ] P15.2a Add invariant checks for species-wise managed yield and
@@ -3766,3 +3766,14 @@ notes.
     `accounts_sync.excluded_row_count=5`.
   - Next execution step: `P15.1c` docs note for student-facing species-code
     interpretation.
+- 2026-03-11 (Phase 15 `P15.1c` completion): added explicit student-facing
+  PL/PLC interpretation guidance in both standalone K3Z docs and FEMIC sample
+  model docs.
+  - Updated
+    `external/femic-k3z-instance/docs/base-case-analysis.rst` with
+    `Species Code Note (PL vs PLC)` defining `PLC` as canonical and clarifying
+    that absent `PL` accounts are expected for K3Z.
+  - Updated `docs/sample-models/k3z.rst` with
+    `Species Code Semantics: PL vs PLC` including the active exclusion policy.
+  - Added docs-contract guard in `tests/test_docs_contract.py` so this
+    semantics note remains present.

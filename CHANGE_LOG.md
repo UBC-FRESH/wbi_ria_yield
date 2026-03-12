@@ -3837,3 +3837,15 @@
   `vdyp_io/logs/patchworks_matrixbuilder_manifest-k3z_plc_cleanup_20260312b.json`:
   `accounts_sync.excluded_patterns=["\\.PL(\\.|$)"]`,
   `accounts_sync.excluded_row_count=5`.
+
+## 2026-03-11 - Added explicit student guidance for PL vs PLC semantics (`P15.1c`)
+- Updated standalone K3Z docs:
+  `external/femic-k3z-instance/docs/base-case-analysis.rst`
+  with a dedicated `Species Code Note (PL vs PLC)` section.
+- Updated FEMIC sample-model docs:
+  `docs/sample-models/k3z.rst`
+  with `Species Code Semantics: PL vs PLC`, including explicit interpretation
+  guidance that missing `PL` account boxes are expected in K3Z.
+- Added docs-contract enforcement in:
+  `tests/test_docs_contract.py`
+  requiring the PL/PLC semantics section/marker text in the sample-model page.

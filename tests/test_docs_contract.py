@@ -607,6 +607,8 @@ def test_k3z_sample_model_docs_keep_required_sections() -> None:
     ]
     for heading in required_k3z_sections:
         assert heading in k3z_text, f"k3z.rst missing required section: {heading}"
+    assert "Species Code Semantics: PL vs PLC" in k3z_text
+    assert "Use ``PLC`` account series for lodgepole-pine interpretation." in k3z_text
     assert "plots/strata-tsak3z.png" in k3z_text
     assert "plots/vdyp_lmh_tsak3z-*.png" in k3z_text
     assert "plots/tipsy_vdyp_tsak3z-*.png" in k3z_text

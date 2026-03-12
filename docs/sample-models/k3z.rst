@@ -257,6 +257,23 @@ This lets students answer both:
 The PIN also defines a Seral Stages map layer using ``DitherTheme`` over
 ``feature.Seral.*`` in ``analysis/base.pin``.
 
+Species Code Semantics: PL vs PLC
+---------------------------------
+
+For K3Z teaching outputs, ``PLC`` is treated as the canonical species code in
+student-facing species-wise account surfaces.
+
+``PL`` account rows are intentionally filtered during matrix-builder account
+promotion using:
+``matrix_builder.accounts_exclude_regex: ["\\.PL(\\.|$)"]``
+in
+``external/femic-k3z-instance/config/patchworks.runtime.windows.yaml``.
+
+Interpretation rule for students:
+
+- Missing ``PL`` account boxes in Patchworks for K3Z are expected.
+- Use ``PLC`` account series for lodgepole-pine interpretation.
+
 Scenario Comparison Guidance
 ----------------------------
 
