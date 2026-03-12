@@ -3796,3 +3796,14 @@
   `femic instance refresh-reference-evidence --max-warn-increase ... --max-baseline-diff-increase ...`.
 - Extended docs-contract checks in `tests/test_docs_contract.py` to enforce
   the new section and required drift markers.
+
+## 2026-03-11 - Opened Phase 15 for K3Z species-account semantics hardening
+- Added new roadmap phase:
+  `Phase 15: K3Z Species-Account Semantics + Output Hygiene`.
+- Added concrete task tree to:
+  - resolve `PL` vs `PLC` account semantics for K3Z,
+  - add rebuild invariants for species-account completeness,
+  - add operator diagnostics for account-surface QA,
+  - add required docs/contracts for species-account interpretation.
+- Added detailed next-steps execution sequence in `ROADMAP.md`:
+  `P15.1a -> P15.1b -> P15.1c -> P15.2a -> P15.2b -> P15.2c`.

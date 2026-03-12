@@ -406,6 +406,36 @@ notes.
     evidence summaries.
   - [x] P14.3b Add docs on interpreting evidence-trend drift across releases.
 
+## Phase 15: K3Z Species-Account Semantics + Output Hygiene
+- [ ] P15.1 Resolve `PL` vs `PLC` semantics for K3Z species-wise outputs
+  - [ ] P15.1a Audit `tracks/accounts.csv`, `forestmodel.xml`, and source
+    species-code mappings to confirm whether `PL` is a valid modeled species
+    for K3Z or a legacy loose-end.
+  - [ ] P15.1b If `PL` is not valid for K3Z, remove it from generated account
+   /target surfaces and keep `PLC` canonical.
+  - [ ] P15.1c Add explicit docs note so students understand species-code
+    expectations and do not interpret empty `PL` as runtime failure.
+- [ ] P15.2 Add rebuild invariants for species-account completeness
+  - [ ] P15.2a Add invariant checks for species-wise managed yield and
+    harvested-volume account presence/non-null behavior.
+  - [ ] P15.2b Classify expected-empty vs unexpected-empty species outputs as
+    configurable policy in rebuild spec/allowlist.
+  - [ ] P15.2c Fail rebuild when unexpected species-account null regressions are
+    introduced.
+- [ ] P15.3 Add operator diagnostics for account-surface QA
+  - [ ] P15.3a Add a CLI/report helper to summarize account/target coverage by
+    species and AU from rebuilt tracks.
+  - [ ] P15.3b Add a deterministic troubleshooting flow for "total OK,
+    species-wise empty" failures.
+  - [ ] P15.3c Wire diagnostics outputs into rebuild evidence/runbook guidance.
+- [ ] P15.4 Update K3Z standalone docs and FEMIC sample-model docs
+  - [ ] P15.4a Update k3z guide pages with species-account interpretation and
+    PL/PLC decision record.
+  - [ ] P15.4b Add user-facing "expected empty account" matrix and validation
+    checklist.
+  - [ ] P15.4c Add docs-contract coverage for required species-account
+    interpretation sections.
+
 ## Detailed Next Steps Notes
 - 2026-03-11 (repo-root cleanup: legacy notebook archive move):
   moved legacy notebook artifacts out of repository root into a dedicated
@@ -3698,3 +3728,8 @@ notes.
     `femic instance refresh-reference-evidence`.
   - Extended docs-contract enforcement in `tests/test_docs_contract.py` to
     require the drift-interpretation section and key `trend_drift` markers.
+- 2026-03-11 (Phase 15 kickoff): opened species-account semantic hardening
+  plan for K3Z to resolve `PL`/`PLC` ambiguity and prevent silent
+  species-wise null regressions.
+  - Execution order for next implementation pass:
+    `P15.1a -> P15.1b -> P15.1c -> P15.2a -> P15.2b -> P15.2c`.
