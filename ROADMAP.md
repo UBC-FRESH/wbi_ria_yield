@@ -425,7 +425,7 @@ notes.
 - [ ] P15.3 Add operator diagnostics for account-surface QA
   - [x] P15.3a Add a CLI/report helper to summarize account/target coverage by
     species and AU from rebuilt tracks.
-  - [ ] P15.3b Add a deterministic troubleshooting flow for "total OK,
+  - [x] P15.3b Add a deterministic troubleshooting flow for "total OK,
     species-wise empty" failures.
   - [ ] P15.3c Wire diagnostics outputs into rebuild evidence/runbook guidance.
 - [ ] P15.4 Update K3Z standalone docs and FEMIC sample-model docs
@@ -3861,3 +3861,21 @@ notes.
     `docs/reference/cli.rst`.
   - Next execution step: implement `P15.3b` deterministic troubleshooting flow
     for "total OK, species-wise empty" failure signatures.
+- 2026-03-11 (Phase 15 `P15.3b` completion): added deterministic
+  troubleshooting flow for "total OK, species-wise empty" failures and wired it
+  into diagnostics output expectations.
+  - Extended `femic instance account-surface` diagnostics in
+    `src/femic/account_surface.py` to compute:
+    `diagnosis.total_ok_species_empty_signature` plus ordered
+    `recommended_next_checks`.
+  - Updated CLI output in `src/femic/cli/main.py` to emit explicit
+    troubleshooting steps when the signature is detected.
+  - Added regression tests in:
+    `tests/test_account_surface.py`, `tests/test_cli_main.py`,
+    `tests/test_docs_contract.py`.
+  - Updated docs:
+    `docs/guides/troubleshooting.rst`,
+    `docs/reference/cli.rst`,
+    `external/femic-k3z-instance/docs/troubleshooting.rst`.
+  - Next execution step: implement `P15.3c` to wire diagnostics outputs into
+    rebuild evidence/runbook guidance.

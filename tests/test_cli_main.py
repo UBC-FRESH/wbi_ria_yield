@@ -1385,6 +1385,58 @@ def test_instance_account_surface_writes_summary_json(
     assert any("account surface summary" in msg for msg in messages)
 
 
+def test_instance_account_surface_emits_total_ok_species_empty_diagnosis(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    tracks_dir = tmp_path / "tracks"
+    tracks_dir.mkdir(parents=True, exist_ok=True)
+    (tracks_dir / "accounts.csv").write_text(
+        "GROUP,ATTRIBUTE,ACCOUNT,SUM\n_MANAGED_,x,product.Yield.managed.Total,1\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=tmp_path,
+            resolve_path=lambda value: tmp_path / value,
+        ),
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "load_patchworks_runtime_config",
+        lambda _path: SimpleNamespace(matrix_output_dir=tracks_dir),
+    )
+    monkeypatch.setattr(
+        cli_main,
+        "summarize_account_surface",
+        lambda **_kwargs: {
+            "total_accounts": 2,
+            "species_count": 0,
+            "species_complete_count": 0,
+            "au_count": 0,
+            "species_missing_yield": [],
+            "species_missing_harvest_cc": [],
+            "diagnosis": {
+                "total_ok_species_empty_signature": True,
+                "recommended_next_checks": ["check-one", "check-two"],
+            },
+        },
+    )
+
+    cli_main.instance_account_surface(
+        config=Path("config/patchworks.runtime.windows.yaml"),
+        output=None,
+        instance_root=tmp_path,
+    )
+
+    assert any("total OK, species-wise empty" in msg for msg in messages)
+    assert any("check-one" in msg for msg in messages)
+
+
 def test_collect_rebuild_artifact_references_filters_missing(
     tmp_path: Path,
 ) -> None:

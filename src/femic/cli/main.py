@@ -1316,7 +1316,11 @@ def instance_account_surface(
         console.print(f"[red]accounts.csv not found:[/red] {accounts_csv_path}")
         raise typer.Exit(code=1)
 
-    summary = summarize_account_surface(accounts_csv_path=accounts_csv_path)
+    summary = summarize_account_surface(
+        accounts_csv_path=accounts_csv_path,
+        products_csv_path=runtime_config.matrix_output_dir / "products.csv",
+        curves_csv_path=runtime_config.matrix_output_dir / "curves.csv",
+    )
     if output is not None:
         output_path = context.resolve_path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1339,6 +1343,15 @@ def instance_account_surface(
             "species_missing_harvest_cc: "
             + ", ".join(summary["species_missing_harvest_cc"])
         )
+    diagnosis = summary.get("diagnosis", {})
+    if isinstance(diagnosis, dict) and diagnosis.get(
+        "total_ok_species_empty_signature"
+    ):
+        console.print(
+            "[red]diagnosis:[/red] detected `total OK, species-wise empty` signature."
+        )
+        for step in diagnosis.get("recommended_next_checks", []):
+            console.print(f"- {step}")
 
 
 @app.command("run")

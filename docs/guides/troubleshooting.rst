@@ -61,3 +61,44 @@ Recovery:
 1. Set Pages source to **GitHub Actions**.
 2. Ensure deploy guard matches intended trigger (push/manual).
 3. Re-run workflow and validate guide URLs directly.
+
+Total Managed OK, Species-wise Managed Empty
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Failure signature:
+
+- ``product.Yield.managed.Total`` reports nonzero behavior in Patchworks.
+- Species-wise managed accounts are empty/near-zero unexpectedly.
+
+Deterministic troubleshooting flow:
+
+1. Run account-surface diagnostics and capture JSON evidence:
+
+   .. code-block:: bash
+
+      python -m femic instance account-surface \
+        --config config/patchworks.runtime.windows.yaml \
+        --output vdyp_io/logs/account_surface-<run_id>.json \
+        --instance-root <instance-root>
+
+2. If diagnostics prints ``total OK, species-wise empty``:
+
+   - Inspect ``tracks/products.csv`` and ``tracks/curves.csv`` for missing or
+     zero-signal species labels.
+   - Inspect matrix manifest ``accounts_sync.excluded_patterns`` for
+     over-broad regex exclusions.
+3. Re-run deterministic rebuild with Patchworks:
+
+   .. code-block:: bash
+
+      python -m femic instance rebuild \
+        --spec config/rebuild.spec.yaml \
+        --with-patchworks \
+        --instance-root <instance-root>
+
+4. Confirm fatal species policy invariants pass:
+   ``required_present``, ``expected_absent``, ``required_nonzero``,
+   ``expected_zero``.
+5. If still failing, compare against baseline/allowlist diff output in
+   ``instance_rebuild_report-<run_id>.json`` and only allowlist intentional
+   deltas.

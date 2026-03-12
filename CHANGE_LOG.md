@@ -3948,3 +3948,22 @@
   - `tests/test_cli_main.py`
 - Updated command reference docs:
   - `docs/reference/cli.rst`
+
+## 2026-03-11 - Added deterministic species-empty troubleshooting flow (`P15.3b`)
+- Extended account-surface diagnostics:
+  - `src/femic/account_surface.py` now computes:
+    `diagnosis.total_ok_species_empty_signature` and
+    `diagnosis.recommended_next_checks`.
+  - When `tracks/products.csv` + `tracks/curves.csv` are available,
+    diagnostics now distinguishes account presence from nonzero label signal.
+- Updated CLI behavior:
+  - `src/femic/cli/main.py` prints explicit next-check steps when
+    `total OK, species-wise empty` is detected.
+- Updated troubleshooting docs:
+  - `docs/guides/troubleshooting.rst`
+  - `external/femic-k3z-instance/docs/troubleshooting.rst`
+  - `docs/reference/cli.rst`
+- Added tests:
+  - `tests/test_account_surface.py`
+  - `tests/test_cli_main.py`
+  - `tests/test_docs_contract.py` (required troubleshooting snippets).

@@ -338,3 +338,7 @@ Rebuild exits non-zero when unexpected baseline diffs exceed
 Patchworks matrix output folder and summarizes species-level account coverage
 (``product.Yield.managed.*`` and ``product.HarvestedVolume.managed.*.CC``)
 plus AU-level seral account coverage.
+When ``tracks/products.csv`` and ``tracks/curves.csv`` are available it also
+computes a deterministic diagnosis for the
+``total OK, species-wise empty`` failure signature and prints recommended
+next-check steps.

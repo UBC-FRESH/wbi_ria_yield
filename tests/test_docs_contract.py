@@ -429,6 +429,12 @@ def test_k3z_instance_standalone_docs_required_sections_and_navigation() -> None
         "Patchworks Runtime Preflight Fails",
     ):
         assert heading in troubleshooting_text
+    for snippet in (
+        "femic instance account-surface",
+        "total OK, species-wise empty",
+        "required_nonzero",
+    ):
+        assert snippet in troubleshooting_text
 
 
 def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> None:
