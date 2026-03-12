@@ -834,8 +834,21 @@ def test_instance_rebuild_runs_runner_and_reports(
             )
 
     monkeypatch.setattr(cli_main, "RebuildRunner", FakeRunner)
+    monkeypatch.setattr(
+        cli_main,
+        "load_rebuild_spec",
+        lambda _path: {
+            "schema_version": "1.0",
+            "instance": {"case_id": "x"},
+            "runtime": {},
+            "steps": [{}],
+            "invariants": [{}],
+        },
+    )
+    monkeypatch.setattr(cli_main, "validate_rebuild_spec_payload", lambda _payload: [])
 
     cli_main.instance_rebuild(
+        spec=Path("config/rebuild.spec.yaml"),
         run_config=Path("config/run_profile.case_template.yaml"),
         tipsy_config_dir=Path("config/tipsy"),
         log_dir=Path("vdyp_io/logs"),
@@ -882,9 +895,22 @@ def test_instance_rebuild_includes_patchworks_steps_when_enabled(
             return SimpleNamespace(failed=False, outcomes=())
 
     monkeypatch.setattr(cli_main, "RebuildRunner", FakeRunner)
+    monkeypatch.setattr(
+        cli_main,
+        "load_rebuild_spec",
+        lambda _path: {
+            "schema_version": "1.0",
+            "instance": {"case_id": "x"},
+            "runtime": {},
+            "steps": [{}],
+            "invariants": [{}],
+        },
+    )
+    monkeypatch.setattr(cli_main, "validate_rebuild_spec_payload", lambda _payload: [])
     monkeypatch.setattr(cli_main.console, "print", lambda _msg: None)
 
     cli_main.instance_rebuild(
+        spec=Path("config/rebuild.spec.yaml"),
         run_config=Path("config/run_profile.case_template.yaml"),
         tipsy_config_dir=Path("config/tipsy"),
         log_dir=Path("vdyp_io/logs"),
@@ -919,8 +945,21 @@ def test_instance_rebuild_dry_run_prints_plan_without_execution(
             raise AssertionError("runner should not be constructed in dry-run mode")
 
     monkeypatch.setattr(cli_main, "RebuildRunner", FailRunner)
+    monkeypatch.setattr(
+        cli_main,
+        "load_rebuild_spec",
+        lambda _path: {
+            "schema_version": "1.0",
+            "instance": {"case_id": "x"},
+            "runtime": {},
+            "steps": [{}],
+            "invariants": [{}],
+        },
+    )
+    monkeypatch.setattr(cli_main, "validate_rebuild_spec_payload", lambda _payload: [])
 
     cli_main.instance_rebuild(
+        spec=Path("config/rebuild.spec.yaml"),
         run_config=Path("config/run_profile.case_template.yaml"),
         tipsy_config_dir=Path("config/tipsy"),
         log_dir=Path("vdyp_io/logs"),
@@ -934,6 +973,37 @@ def test_instance_rebuild_dry_run_prints_plan_without_execution(
     assert any("instance rebuild dry-run" in msg for msg in messages)
     assert any("1. validate_case" in msg for msg in messages)
     assert any("patchworks_matrix_build" in msg for msg in messages)
+
+
+def test_instance_validate_spec_reports_schema_issues(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(cli_main.console, "print", messages.append)
+    monkeypatch.setattr(
+        cli_main,
+        "_resolve_cli_instance_context",
+        lambda **_kwargs: SimpleNamespace(
+            root=Path("instance-root"),
+            resolve_path=lambda value: Path("instance-root") / value,
+        ),
+    )
+    monkeypatch.setattr(cli_main, "load_rebuild_spec", lambda _path: {})
+    monkeypatch.setattr(
+        cli_main,
+        "validate_rebuild_spec_payload",
+        lambda _payload: ["Missing required root key: steps"],
+    )
+
+    with pytest.raises(typer.Exit) as exc_info:
+        cli_main.instance_validate_spec(
+            spec=Path("config/rebuild.spec.yaml"),
+            instance_root=Path("instance-root"),
+        )
+
+    assert exc_info.value.exit_code == 1
+    assert any("Rebuild spec validation failed" in msg for msg in messages)
+    assert any("Missing required root key: steps" in msg for msg in messages)
 
 
 def test_collect_rebuild_artifact_references_filters_missing(

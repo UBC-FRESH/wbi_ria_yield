@@ -193,6 +193,7 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
         (
             ["instance", "rebuild", "--help"],
             [
+                "--spec",
                 "--run-config",
                 "--tipsy-config-dir",
                 "--log-dir",
@@ -203,6 +204,10 @@ def test_cli_reference_mentions_current_high_value_options() -> None:
                 "--patchworks-config",
                 "--instance-root",
             ],
+        ),
+        (
+            ["instance", "validate-spec", "--help"],
+            ["--spec", "--instance-root"],
         ),
     ]
 

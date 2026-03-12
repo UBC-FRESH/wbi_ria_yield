@@ -47,6 +47,7 @@ from femic.patchworks_runtime import (
     run_patchworks_preflight,
 )
 from femic.rebuild_runner import JsonRebuildReportSink, RebuildRunner, RebuildStep
+from femic.rebuild_spec import load_rebuild_spec, validate_rebuild_spec_payload
 from femic.release_packaging import build_release_package
 from femic.pipeline.io import (
     build_pipeline_run_config,
@@ -327,6 +328,11 @@ INSTANCE_REBUILD_RUN_CONFIG_OPTION = typer.Option(
     Path("config/run_profile.case_template.yaml"),
     "--run-config",
     help="Run profile used for rebuild validation and execution.",
+)
+INSTANCE_REBUILD_SPEC_OPTION = typer.Option(
+    Path("config/rebuild.spec.yaml"),
+    "--spec",
+    help="Path to rebuild spec YAML used for schema validation and execution contract checks.",
 )
 INSTANCE_REBUILD_TIPSY_CONFIG_DIR_OPTION = typer.Option(
     Path("config/tipsy"),
@@ -671,6 +677,7 @@ def instance_init(
 
 @instance_app.command("rebuild")
 def instance_rebuild(
+    spec: Path = INSTANCE_REBUILD_SPEC_OPTION,
     run_config: Path = INSTANCE_REBUILD_RUN_CONFIG_OPTION,
     tipsy_config_dir: Path = INSTANCE_REBUILD_TIPSY_CONFIG_DIR_OPTION,
     log_dir: Path = INSTANCE_REBUILD_LOG_DIR_OPTION,
@@ -681,11 +688,24 @@ def instance_rebuild(
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
     context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_spec = context.resolve_path(spec)
     resolved_run_config = context.resolve_path(run_config)
     resolved_tipsy_config_dir = context.resolve_path(tipsy_config_dir)
     resolved_log_dir = context.resolve_path(log_dir)
     resolved_patchworks_config = context.resolve_path(patchworks_config)
     effective_run_id = run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+
+    try:
+        spec_payload = load_rebuild_spec(resolved_spec)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        console.print(f"[red]Invalid rebuild spec:[/red] {resolved_spec}: {exc}")
+        raise typer.Exit(code=1) from exc
+    spec_errors = validate_rebuild_spec_payload(spec_payload)
+    if spec_errors:
+        console.print(f"[red]Rebuild spec validation failed:[/red] {resolved_spec}")
+        for issue in spec_errors:
+            console.print(f"[red]-[/red] {issue}")
+        raise typer.Exit(code=1)
 
     steps: list[RebuildStep] = [
         RebuildStep(
@@ -829,6 +849,27 @@ def instance_rebuild(
             console.print(f"  [red]{outcome.error}[/red]")
     if report.failed:
         raise typer.Exit(code=1)
+
+
+@instance_app.command("validate-spec")
+def instance_validate_spec(
+    spec: Path = INSTANCE_REBUILD_SPEC_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
+) -> None:
+    context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_spec = context.resolve_path(spec)
+    try:
+        payload = load_rebuild_spec(resolved_spec)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        console.print(f"[red]Invalid rebuild spec:[/red] {resolved_spec}: {exc}")
+        raise typer.Exit(code=1) from exc
+    issues = validate_rebuild_spec_payload(payload)
+    if issues:
+        console.print(f"[red]Rebuild spec validation failed:[/red] {resolved_spec}")
+        for issue in issues:
+            console.print(f"[red]-[/red] {issue}")
+        raise typer.Exit(code=1)
+    console.print(f"[green]Rebuild spec valid[/green] {resolved_spec}")
 
 
 @app.command("run")

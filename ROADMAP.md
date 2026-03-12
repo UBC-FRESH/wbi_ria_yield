@@ -362,7 +362,7 @@
   - [x] P13.3a Define a standard rebuild spec schema (YAML) for instance command steps and invariants.
   - [x] P13.3b Ship a default template with `femic instance init` so every new instance starts with a rebuild spec.
   - [x] P13.3c Add K3Z as the reference implementation and backfill its current known-valid sequence.
-  - [ ] P13.3d Add schema validation + clear diagnostics for malformed rebuild specs.
+  - [x] P13.3d Add schema validation + clear diagnostics for malformed rebuild specs.
 - [ ] P13.4 Add regression guardrails for rebuild outputs
   - [ ] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
   - [ ] P13.4b Add configurable baseline snapshot/diff support for key track tables and selected XML structures.
@@ -3454,3 +3454,16 @@
     `config/rebuild.spec.yaml` as the authoritative sequence source.
   - Extended parent docs-contract checks to require the K3Z rebuild spec and
     validate core schema-aligned fields and required step IDs.
+- 2026-03-11 (Phase 13 `P13.3d` completion): added rebuild-spec schema
+  validation with explicit diagnostics for malformed specs.
+  - Added module:
+    `src/femic/rebuild_spec.py` with load + validation helpers and
+    human-readable issue reporting.
+  - `femic instance rebuild` now validates `--spec` before planning/execution
+    and exits with detailed field-level diagnostics on malformed specs.
+  - Added command:
+    `femic instance validate-spec --spec <path>` for direct schema checks.
+  - Added tests:
+    `tests/test_rebuild_spec.py`, plus CLI/contract coverage updates in
+    `tests/test_cli_main.py` and `tests/test_docs_contract.py`.
+  - Updated CLI reference docs for `--spec` and `instance validate-spec`.

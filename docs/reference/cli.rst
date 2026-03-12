@@ -264,6 +264,7 @@ Subcommands
 
 - ``init``: ``python -m femic instance init [OPTIONS]``
 - ``rebuild``: ``python -m femic instance rebuild [OPTIONS]``
+- ``validate-spec``: ``python -m femic instance validate-spec [OPTIONS]``
 
 ``instance init`` options
 
@@ -274,6 +275,7 @@ Subcommands
 
 ``instance rebuild`` options
 
+- ``--spec PATH`` (default: ``config/rebuild.spec.yaml``)
 - ``--run-config PATH`` (default: ``config/run_profile.case_template.yaml``)
 - ``--tipsy-config-dir PATH`` (default: ``config/tipsy``)
 - ``--log-dir PATH`` (default: ``vdyp_io/logs``)
@@ -286,3 +288,8 @@ Subcommands
 ``instance rebuild`` writes a machine-readable report to
 ``vdyp_io/logs/instance_rebuild_report-<run_id>.json`` and records discovered
 manifest/log artifact references under ``artifact_references``.
+
+``instance validate-spec`` options
+
+- ``--spec PATH`` (default: ``config/rebuild.spec.yaml``)
+- ``--instance-root PATH``

@@ -3535,3 +3535,18 @@
 - Added contract checks in parent repo:
   `tests/test_docs_contract.py` now requires K3Z rebuild-spec presence and
   validates core schema-aligned fields and required step IDs.
+
+## 2026-03-11 - Added rebuild-spec schema validation diagnostics (`P13.3d`)
+- Added rebuild-spec validation module:
+  `src/femic/rebuild_spec.py`.
+- `femic instance rebuild` now validates `--spec` (default:
+  `config/rebuild.spec.yaml`) before execution and prints clear field-level
+  diagnostics for malformed specs.
+- Added explicit validation command:
+  `femic instance validate-spec --spec <path>`.
+- Added tests:
+  `tests/test_rebuild_spec.py`,
+  `tests/test_cli_main.py` (validation diagnostics path),
+  `tests/test_docs_contract.py` (CLI contract coverage).
+- Updated CLI docs:
+  `docs/reference/cli.rst`.
