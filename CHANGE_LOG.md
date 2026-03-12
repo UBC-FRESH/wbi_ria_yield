@@ -3756,3 +3756,15 @@
   `docs/guides/deployment-instances.rst`,
   `tests/test_cli_main.py`,
   `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Added contributor runbook evidence-refresh step (`P14.2b`)
+- Updated runbook templates:
+  `src/femic/resources/instance/runbooks/REBUILD_RUNBOOK.md`,
+  `instances/reference/runbooks/REBUILD_RUNBOOK.md`.
+- Added release-prep command step:
+  `femic instance refresh-reference-evidence --reference-root .`
+  plus required post-refresh evidence checks.
+- Updated deployment guidance:
+  `docs/guides/deployment-instances.rst`.
+- Added docs-contract enforcement in:
+  `tests/test_docs_contract.py`.

@@ -161,3 +161,9 @@ Maintainer evidence refresh command:
 .. code-block:: bash
 
    python -m femic instance refresh-reference-evidence
+
+Contributor release-prep runbook step:
+
+- add this command to your instance ``runbooks/REBUILD_RUNBOOK.md`` release
+  checklist and confirm the refreshed evidence payload reports ``status: ok``
+  before opening/reviewing a release PR.

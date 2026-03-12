@@ -399,7 +399,7 @@ notes.
   - [x] P14.2a Add script/helper command to refresh
     `instances/reference/evidence/reference_rebuild_report.latest.json` from
     current logs.
-  - [ ] P14.2b Add contributor runbook step for evidence refresh during release
+  - [x] P14.2b Add contributor runbook step for evidence refresh during release
     preparation.
 - [ ] P14.3 Add drift-monitoring hooks for long-lived instance repositories
   - [ ] P14.3a Add optional warning threshold checks for trend drift in rebuild
@@ -3666,3 +3666,13 @@ notes.
     `docs/guides/deployment-instances.rst`,
     `tests/test_cli_main.py`,
     `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 14 `P14.2b` completion): added explicit contributor
+  runbook release-prep step for evidence refresh.
+  - Updated instance runbook templates:
+    `src/femic/resources/instance/runbooks/REBUILD_RUNBOOK.md` and
+    `instances/reference/runbooks/REBUILD_RUNBOOK.md` to include
+    `femic instance refresh-reference-evidence --reference-root .`
+    and expected post-refresh checks.
+  - Updated `docs/guides/deployment-instances.rst` with contributor
+    release-prep requirement text.
+  - Added docs-contract enforcement in `tests/test_docs_contract.py`.

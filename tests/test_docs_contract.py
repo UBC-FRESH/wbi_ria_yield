@@ -241,6 +241,9 @@ def test_case_onboarding_templates_exist() -> None:
     assert Path("instances/reference/config/rebuild.allowlist.yaml").exists()
     assert Path("instances/reference/runbooks/REBUILD_RUNBOOK.md").exists()
     assert Path("instances/reference/config/tipsy/template.case.yaml").exists()
+    runbook_text = Path("instances/reference/runbooks/REBUILD_RUNBOOK.md").read_text()
+    assert "femic instance refresh-reference-evidence" in runbook_text
+    assert "evidence/reference_rebuild_report.latest.json" in runbook_text
 
 
 def test_case_onboarding_guide_keeps_template_and_preflight_links() -> None:

@@ -21,5 +21,14 @@ femic instance rebuild \
 - `vdyp_io/logs/instance_rebuild_report-<run_id>.json`
 - Referenced manifests/logs listed under `artifact_references`.
 
+## Evidence Refresh Step (Release Prep)
+```bash
+femic instance refresh-reference-evidence --reference-root .
+```
+After refresh, verify:
+- `evidence/reference_rebuild_report.latest.json` exists,
+- `status` is `ok`,
+- `regression_gate` booleans are all false.
+
 ## Local Notes
 - Document case-specific overrides, expected warnings, and accepted deltas here.
