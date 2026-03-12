@@ -311,7 +311,7 @@
     family with update date, source path/URL, transform stage, and QA status.
   - [x] P12.4g Add student usability acceptance content across major pages:
     what to edit vs regenerate, and how to validate rebuild/rerun outputs.
-  - [ ] P12.4h Define publication acceptance criteria before closing `P12.4`:
+  - [x] P12.4h Define publication acceptance criteria before closing `P12.4`:
     standalone docs build `-W`, docs-contract coverage for required sections,
     and published GitHub Pages verification for `femic-k3z-instance`.
 - [ ] P12.5 Enforce FRESH lab Sphinx template consistency (FHOPS-aligned)
@@ -3290,3 +3290,12 @@
     provenance-table columns plus operator usability sections.
   - Marked complete: `P12.4d`, `P12.4e`, `P12.4f`, `P12.4g`.
   - Remaining for `P12.4`: `P12.4h` (publish acceptance verification).
+- 2026-03-11 (Phase 12 `P12.4h` completion): publication acceptance criteria
+  verified for standalone K3Z TSR-style docs update.
+  - Verified standalone docs warnings-as-errors build succeeds:
+    `python -m sphinx -b html docs docs/_build/html -W` (submodule).
+  - Verified parent docs-contract coverage includes required TSR headings and
+    provenance/usability sections (`tests/test_docs_contract.py`).
+  - Verified GitHub Pages deployment/run and live navigation for new pages:
+    run `22981643203` (`success`) and URL
+    `https://ubc-fresh.github.io/femic-k3z-instance/`.

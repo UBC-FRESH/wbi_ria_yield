@@ -3340,3 +3340,12 @@
     `How to Validate Reruns`).
 - Marked roadmap tasks complete: `P12.4d`, `P12.4e`, `P12.4f`, `P12.4g`
   (with `P12.4h` remaining as publish acceptance verification).
+
+## 2026-03-11 - Completed `P12.4h` publish acceptance verification
+- Verified standalone `femic-k3z-instance` docs build with warnings-as-errors:
+  `python -m sphinx -b html docs docs/_build/html -W`.
+- Verified docs-contract coverage for required TSR-style sections/provenance
+  and operator usability content in `tests/test_docs_contract.py`.
+- Verified published GitHub Pages deployment and live nav for new pages:
+  - run `22981643203` (`success`)
+  - `https://ubc-fresh.github.io/femic-k3z-instance/`
