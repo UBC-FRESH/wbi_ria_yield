@@ -4273,3 +4273,22 @@
   - `pytest` (`491 passed`)
   - `pre-commit run --all-files`
   - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-12 - Phase 18 P18.3 attempt blocked by production PyPI trusted publisher
+- Triggered production workflow:
+  `https://github.com/UBC-FRESH/femic/actions/runs/23023862800`.
+- Build and artifact validation stages succeeded; failure occurred at
+  `Publish to PyPI` with:
+  `invalid-publisher` (OIDC token valid, but no matching trusted publisher on
+  production PyPI).
+- Debug claims from workflow:
+  - `sub`: `repo:UBC-FRESH/femic:environment:pypi`
+  - `repository`: `UBC-FRESH/femic`
+  - `workflow_ref`:
+    `UBC-FRESH/femic/.github/workflows/publish-pypi.yml@refs/heads/main`
+  - `ref`: `refs/heads/main`
+  - `environment`: `pypi`
+- Outcome:
+  - workflow logic is aligned with TestPyPI and functioning as intended,
+  - final unblock is a PyPI-side trusted publisher entry matching the above
+    claims; once configured, rerun `publish-pypi`.

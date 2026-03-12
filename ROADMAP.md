@@ -479,6 +479,23 @@ notes.
   - Next:
     execute `P18.3` production PyPI publish using the now-matched workflow and
     then complete `P18.4` traceability recording.
+- 2026-03-12 (Phase 18 `P18.3` execution attempt): production publish workflow
+  is blocked by PyPI trusted-publisher configuration (not by workflow/build
+  logic).
+  - Failing run:
+    `https://github.com/UBC-FRESH/femic/actions/runs/23023862800`
+  - Failure:
+    `invalid-publisher` during OIDC exchange in `Publish to PyPI`.
+  - Emitted claims:
+    - `sub`: `repo:UBC-FRESH/femic:environment:pypi`
+    - `repository`: `UBC-FRESH/femic`
+    - `workflow_ref`:
+      `UBC-FRESH/femic/.github/workflows/publish-pypi.yml@refs/heads/main`
+    - `ref`: `refs/heads/main`
+    - `environment`: `pypi`
+  - Next unblock action:
+    create/update matching trusted publisher on production PyPI, then rerun
+    `publish-pypi`; smoke step is already wired and will verify install.
 - 2026-03-12 (Phase 18 workflow bugfix): fixed TestPyPI smoke step shell
   parsing error after successful publish.
   - Root cause:
