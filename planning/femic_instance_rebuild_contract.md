@@ -13,6 +13,9 @@ This contract is the authority for:
 Machine-readable source of truth:
 `planning/femic_instance_rebuild_contract.v1.yaml`.
 
+Rebuild-spec schema for per-instance command/invariant configuration:
+`planning/femic_instance_rebuild_spec_schema.v1.yaml`.
+
 ## 1. Required Inputs and Prerequisites (`P13.1a`)
 
 ### Required input artifact families
@@ -112,4 +115,3 @@ Required message fields:
   - roadmap entry update,
   - changelog update,
   - contract test updates in `tests/test_docs_contract.py`.
-

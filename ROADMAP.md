@@ -359,7 +359,7 @@
   - [x] P13.2c Ensure rebuild execution writes machine-readable reports/manifests and references all generated logs.
   - [x] P13.2d Add dry-run mode showing full planned command sequence without mutation.
 - [ ] P13.3 Add per-instance rebuild spec/config files as tracked source-of-truth
-  - [ ] P13.3a Define a standard rebuild spec schema (YAML) for instance command steps and invariants.
+  - [x] P13.3a Define a standard rebuild spec schema (YAML) for instance command steps and invariants.
   - [ ] P13.3b Ship a default template with `femic instance init` so every new instance starts with a rebuild spec.
   - [ ] P13.3c Add K3Z as the reference implementation and backfill its current known-valid sequence.
   - [ ] P13.3d Add schema validation + clear diagnostics for malformed rebuild specs.
@@ -3426,3 +3426,13 @@
     `tests/test_cli_main.py::test_instance_rebuild_dry_run_prints_plan_without_execution`.
   - Updated CLI docs/contracts:
     `docs/reference/cli.rst` and `tests/test_docs_contract.py`.
+- 2026-03-11 (Phase 13 `P13.3a` completion): defined the standard YAML rebuild
+  spec schema for instance command steps and invariants.
+  - Added schema artifact:
+    `planning/femic_instance_rebuild_spec_schema.v1.yaml`.
+  - Schema now standardizes root keys (`instance`, `runtime`, `steps`,
+    `invariants`) plus step and invariant field structure/constraints.
+  - Linked schema from canonical rebuild contract:
+    `planning/femic_instance_rebuild_contract.md`.
+  - Added docs-contract enforcement:
+    `tests/test_docs_contract.py::test_instance_rebuild_spec_schema_artifact_is_present_and_structured`.

@@ -627,6 +627,33 @@ def test_instance_rebuild_contract_artifacts_are_present_and_complete() -> None:
     assert payload["post_rebuild_invariants"], "invariants list must not be empty"
 
 
+def test_instance_rebuild_spec_schema_artifact_is_present_and_structured() -> None:
+    schema_path = Path("planning/femic_instance_rebuild_spec_schema.v1.yaml")
+    assert schema_path.is_file()
+    payload = yaml.safe_load(schema_path.read_text())
+
+    assert payload["schema_id"] == "femic_instance_rebuild_spec_schema_v1"
+    assert payload["version"] == "1.0"
+    root = payload["root"]
+    assert root["type"] == "map"
+    assert set(root["required"]) == {
+        "schema_version",
+        "instance",
+        "runtime",
+        "steps",
+        "invariants",
+    }
+    fields = root["fields"]
+    assert fields["steps"]["type"] == "list"
+    assert fields["invariants"]["type"] == "list"
+    step_fields = fields["steps"]["item"]["fields"]
+    for required in ("step_id", "kind", "required", "depends_on", "expected_outputs"):
+        assert required in step_fields
+    invariant_fields = fields["invariants"]["item"]["fields"]
+    for required in ("invariant_id", "severity", "metric", "comparator", "target"):
+        assert required in invariant_fields
+
+
 def test_legacy_slug_references_are_limited_to_audit_trail_files() -> None:
     allowed_paths = {
         Path("ROADMAP.md"),

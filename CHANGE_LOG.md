@@ -3496,3 +3496,15 @@
   `tests/test_cli_main.py::test_instance_rebuild_dry_run_prints_plan_without_execution`.
 - Updated CLI docs/contract checks:
   `docs/reference/cli.rst`, `tests/test_docs_contract.py`.
+
+## 2026-03-11 - Defined rebuild spec schema (`P13.3a`)
+- Added standard YAML schema artifact:
+  `planning/femic_instance_rebuild_spec_schema.v1.yaml`.
+- Schema now defines required root structure for instance rebuild specs:
+  `schema_version`, `instance`, `runtime`, `steps`, and `invariants`.
+- Standardized step and invariant field structure/constraints (for example
+  `step_id`, `kind`, dependency lists, invariant comparator/severity fields).
+- Linked schema from canonical contract doc:
+  `planning/femic_instance_rebuild_contract.md`.
+- Added docs-contract enforcement:
+  `tests/test_docs_contract.py::test_instance_rebuild_spec_schema_artifact_is_present_and_structured`.

@@ -1,0 +1,118 @@
+schema_id: "femic_instance_rebuild_spec_schema_v1"
+version: "1.0"
+description: "Standard YAML schema for FEMIC instance rebuild specs."
+
+root:
+  type: map
+  required:
+    - schema_version
+    - instance
+    - runtime
+    - steps
+    - invariants
+  fields:
+    schema_version:
+      type: string
+      allowed:
+        - "1.0"
+    instance:
+      type: map
+      required:
+        - case_id
+      fields:
+        case_id:
+          type: string
+          description: "Short instance identifier (for example: k3z)."
+        instance_root:
+          type: string
+          description: "Optional explicit root override; defaults to CLI context."
+    runtime:
+      type: map
+      fields:
+        run_config:
+          type: string
+          description: "Primary run profile path."
+        tipsy_config_dir:
+          type: string
+          description: "TIPSY config directory path."
+        patchworks_config:
+          type: string
+          description: "Patchworks runtime config path."
+        log_dir:
+          type: string
+          description: "Directory used for manifests/reports/logs."
+    steps:
+      type: list
+      min_items: 1
+      item:
+        type: map
+        required:
+          - step_id
+          - kind
+          - required
+        fields:
+          step_id:
+            type: string
+            pattern: "^[a-z0-9_]+$"
+          kind:
+            type: string
+            allowed:
+              - femic_command
+              - manual_boundary
+              - quality_gate
+          command:
+            type: string
+            description: "Command template for executable steps."
+          depends_on:
+            type: list
+            item_type: string
+          required:
+            type: boolean
+          mutable_artifacts:
+            type: list
+            item_type: string
+          expected_outputs:
+            type: list
+            item_type: string
+          notes:
+            type: string
+    invariants:
+      type: list
+      min_items: 1
+      item:
+        type: map
+        required:
+          - invariant_id
+          - severity
+          - metric
+          - comparator
+          - target
+        fields:
+          invariant_id:
+            type: string
+            pattern: "^[a-z0-9_]+$"
+          severity:
+            type: string
+            allowed:
+              - fatal
+              - warn
+          metric:
+            type: string
+            description: "Named metric extracted from rebuild artifacts."
+          comparator:
+            type: string
+            allowed:
+              - eq
+              - ne
+              - gt
+              - gte
+              - lt
+              - lte
+              - exists
+              - not_exists
+          target:
+            type: any
+          remediation:
+            type: string
+            description: "Operator-facing remediation guidance on failure."
+
