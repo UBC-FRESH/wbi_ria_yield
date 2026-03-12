@@ -4022,3 +4022,118 @@
   - `pytest` (`489 passed`)
   - `pre-commit run --all-files`
   - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-12 - Added roadmap phases 16-18 for API docs, submodule-first K3Z student docs, and PyPI release path
+- Extended `ROADMAP.md` with new phases:
+  - `Phase 16: Full Developer API Documentation Coverage (FEMIC Package)`
+  - `Phase 17: K3Z TSR-Style Student Documentation (Submodule-First)`
+  - `Phase 18: Packaging and Publication to PyPI`
+- Locked implementation defaults in roadmap notes:
+  - canonical K3Z student docs live in
+    `external/femic-k3z-instance/docs/`;
+  - FEMIC docs keep a concise pointer/overview page (no duplicated deep K3Z narrative);
+  - API docs target public-surface module coverage with Google-style docstrings;
+  - release execution path is TestPyPI first, then production PyPI.
+- Recorded phase-start constraint:
+  `P17.0` must first sync the `external/femic-k3z-instance` submodule baseline
+  before K3Z docs enhancements proceed.
+
+## 2026-03-12 - Started Phase 16/17 execution: synced K3Z submodule baseline and added API docs scaffold
+- Completed `P17.0` (submodule baseline sync):
+  - Fast-forwarded `external/femic-k3z-instance` from `e3285ad` to `9748707`
+    (`origin/main`) so standalone docs and rebuild spec contract files are
+    present in this workspace.
+- Completed initial API documentation milestones:
+  - `P16.1`: Added API contract page at `docs/reference/api/index.rst`
+    defining scope/exclusions (`femic.resources` excluded, private members
+    excluded by default).
+  - `P16.3`: Added Sphinx API module index at
+    `docs/reference/api/modules.rst` and wired docs landing page entry in
+    `docs/index.rst`.
+  - `P16.4`: Added docs-contract test
+    `test_api_reference_pages_are_in_docs_tree_and_list_public_modules` in
+    `tests/test_docs_contract.py`.
+- Build-system/doc tooling update:
+  - Added `src/` path injection in `docs/conf.py` so autodoc/autosummary can
+    import `femic` modules during docs builds.
+- Validation gates passed for this checkpoint:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`490 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-12 - Completed Phase 16 docstring coverage pass (`P16.2`)
+- Added missing public docstrings and normalized style (Google-style concise
+  summaries) across key runtime/CLI/doc-facing modules:
+  - `src/femic/__main__.py`
+  - `src/femic/cli/main.py`
+  - `src/femic/patchworks_runtime.py`
+  - `src/femic/pipeline/io.py`
+  - `src/femic/pipeline/plots.py`
+  - `src/femic/pipeline/tipsy_legacy.py`
+  - `src/femic/rebuild_runner.py`
+  - `src/femic/vdyp/reporting.py`
+- Verified public-surface docstring completeness via AST scan:
+  - `0` missing docstrings for non-private defs in `src/femic`
+    (excluding resource payload modules).
+- Validation gates passed after docstring updates:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`490 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-12 - Completed Phase 17 TSR-style K3Z docs expansion in submodule (`P17.1`, `P17.2`, `P17.3`, `P17.5`)
+- Updated standalone docs information architecture:
+  - Added `figure-appendix` to
+    `external/femic-k3z-instance/docs/index.rst`.
+- Added TSR-style land-base and area-accounting content:
+  - `external/femic-k3z-instance/docs/land-base-and-netdown.rst` now includes:
+    - analysis-area map section,
+    - total area/THLB summary table,
+    - AU area table,
+    - explicit THLB netdown placeholder table (baseline netdown currently 0).
+- Added figure appendix and cross-references:
+  - New page:
+    `external/femic-k3z-instance/docs/figure-appendix.rst`
+    with core teaching figure catalog and full `plots/` inventory.
+  - Added base-case linkages in
+    `external/femic-k3z-instance/docs/base-case-analysis.rst`.
+  - Updated crosswalk mapping in
+    `external/femic-k3z-instance/docs/data-package-crosswalk.rst`.
+- Added map artifact for student docs:
+  - `external/femic-k3z-instance/docs/_static/k3z_analysis_area_map.png`
+    generated from `output/patchworks_k3z_validated/fragments/fragments.shp`.
+- Expanded docs contract checks in `tests/test_docs_contract.py` for new
+  appendix and required section headings.
+- Validation gates passed for this checkpoint:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`490 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`
+  - `sphinx-build -b html external/femic-k3z-instance/docs external/femic-k3z-instance/_build/html -W`
+
+## 2026-03-12 - Completed FEMIC-side K3Z pointer-page consolidation (`P17.4`)
+- Replaced FEMIC K3Z sample-model page with concise pointer contract:
+  - `docs/sample-models/k3z.rst` now points users to canonical standalone docs
+    in `UBC-FRESH/femic-k3z-instance` and its published docs site.
+  - Maintains FEMIC-local integration guidance only:
+    submodule sync commands and rebuild spec/runbook paths.
+- Updated docs contract tests to enforce pointer-page model:
+  - `tests/test_docs_contract.py` now checks required pointer sections, canonical
+    links, and submodule command snippets instead of legacy deep narrative
+    section headings.
+- Phase 17 is now fully complete (`P17.0` through `P17.5`).
+- Validation gates passed for this checkpoint:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`490 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`
+  - `sphinx-build -b html external/femic-k3z-instance/docs external/femic-k3z-instance/_build/html -W`

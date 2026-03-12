@@ -436,7 +436,134 @@ notes.
   - [x] P15.4c Add docs-contract coverage for required species-account
     interpretation sections.
 
+## Phase 16: Full Developer API Documentation Coverage (FEMIC Package)
+- [x] P16.1 Define API doc contract and exclusion policy
+- [x] P16.2 Systematically inject/normalize Google-style docstrings across
+  `src/femic`
+- [x] P16.3 Build full Sphinx API reference (public surface only)
+- [x] P16.4 Add API-doc coverage guardrails in tests/CI
+- [x] P16.5 Validate docs build and cross-link integrity
+
+## Phase 17: K3Z TSR-Style Student Documentation (Submodule-First)
+- [x] P17.0 Sync submodule baseline to latest intended
+  `femic-k3z-instance` commit
+- [x] P17.1 Define K3Z doc information architecture in submodule docs
+- [x] P17.2 Add TSR-style core content (area, THLB, AU accounting,
+  maps/figures)
+- [x] P17.3 Add figure appendix and in-text references
+- [x] P17.4 Keep FEMIC docs as pointer page to submodule canonical docs
+- [x] P17.5 Add docs contract checks for submodule-first K3Z docs
+
+## Phase 18: Packaging and Publication to PyPI
+- [ ] P18.1 Packaging metadata and build reproducibility checks
+- [ ] P18.2 TestPyPI publication and install smoke tests
+- [ ] P18.3 Production PyPI release
+- [ ] P18.4 Post-release docs/changelog/version traceability
+
 ## Detailed Next Steps Notes
+- 2026-03-12 (Phase 17 `P17.4` completion): converted FEMIC K3Z page to
+  pointer/overview model and aligned docs contracts to submodule-first
+  ownership.
+  - Replaced `docs/sample-models/k3z.rst` with a concise pointer page linking:
+    - canonical repo/docs:
+      `https://github.com/UBC-FRESH/femic-k3z-instance`,
+      `https://ubc-fresh.github.io/femic-k3z-instance/`,
+    - submodule sync commands and FEMIC-local integration paths.
+  - Updated `tests/test_docs_contract.py` K3Z sample-model assertions to
+    enforce pointer-page contract (required sections + canonical links +
+    submodule commands), replacing old deep narrative heading checks.
+  - Phase 17 checklist now fully complete (`P17.0`–`P17.5`).
+  - Validation gates passed:
+    `ruff format`, `ruff check`, `mypy`, `pytest (490 passed)`,
+    `pre-commit --all-files`,
+    `sphinx-build -W` for parent docs and standalone
+    `external/femic-k3z-instance/docs`.
+- 2026-03-12 (Phase 17 `P17.1/P17.2/P17.3/P17.5` completion): expanded
+  standalone K3Z student docs to TSR-style structure with area accounting, map,
+  and full figure appendix coverage.
+  - Updated standalone guide IA in
+    `external/femic-k3z-instance/docs/index.rst` to include
+    `figure-appendix.rst` and keep K3Z docs rooted in submodule Sphinx.
+  - Extended
+    `external/femic-k3z-instance/docs/land-base-and-netdown.rst` with:
+    - analysis-area map section using generated
+      `docs/_static/k3z_analysis_area_map.png`,
+    - total analysis area/THLB summary table,
+    - AU-level area accounting table (14 AUs),
+    - explicit THLB netdown placeholder table with zeroed reductions.
+  - Extended
+    `external/femic-k3z-instance/docs/base-case-analysis.rst` with appendix
+    linkage so interpretation sections reference canonical figures.
+  - Added new
+    `external/femic-k3z-instance/docs/figure-appendix.rst` containing:
+    - core teaching figure catalog with captions,
+    - full inventory list of all current `plots/*tsak3z*` artifacts.
+  - Updated
+    `external/femic-k3z-instance/docs/data-package-crosswalk.rst` to map TSR
+    figure/map exhibits to the new appendix and linked pages.
+  - Added/expanded docs contract checks in `tests/test_docs_contract.py` for:
+    - required `figure-appendix` navigation entry,
+    - required new land-base section headings,
+    - required appendix anchor/content and base-case appendix references.
+  - Validation gates passed:
+    `ruff format`, `ruff check`, `mypy`, `pytest (490 passed)`,
+    `pre-commit --all-files`,
+    `sphinx-build -W` for both parent docs and standalone
+    `external/femic-k3z-instance/docs`.
+- 2026-03-12 (Phase 16 `P16.2` completion): finished public-surface docstring
+  coverage for FEMIC Python modules and normalized command/helper docstrings.
+  - Added/normalized missing public docstrings in:
+    `src/femic/__main__.py`,
+    `src/femic/cli/main.py`,
+    `src/femic/patchworks_runtime.py`,
+    `src/femic/pipeline/io.py`,
+    `src/femic/pipeline/plots.py`,
+    `src/femic/pipeline/tipsy_legacy.py`,
+    `src/femic/rebuild_runner.py`,
+    `src/femic/vdyp/reporting.py`.
+  - Verified public-surface docstring completeness with a static AST scan
+    (`missing count: 0` for non-private defs in `src/femic`, excluding
+    resources payload modules).
+  - Kept behavior unchanged (documentation-only updates in code paths).
+- 2026-03-12 (Phase 16/17 execution kick-off): synced K3Z submodule baseline
+  and landed initial FEMIC API reference scaffolding with guardrails.
+  - Completed `P17.0` by fast-forwarding
+    `external/femic-k3z-instance` from `e3285ad` to `9748707`, restoring
+    standalone docs scaffold and `config/rebuild.spec.yaml` expected by
+    contract tests.
+  - Completed `P16.1` by adding API contract policy page:
+    `docs/reference/api/index.rst` (public module scope, exclusions, and
+    private-member policy).
+  - Completed `P16.3` by wiring API docs into Sphinx:
+    `docs/index.rst` now links `reference/api/index`;
+    `docs/reference/api/modules.rst` enumerates public modules for generated
+    API stubs.
+  - Completed `P16.4` by extending docs contract tests in
+    `tests/test_docs_contract.py` to require API reference pages and expected
+    module entries.
+  - Updated Sphinx config in `docs/conf.py` to add `src/` import path so
+    autodoc/autosummary can resolve `femic` modules during docs build.
+  - Validation gates (this checkpoint): `ruff format`, `ruff check`, `mypy`,
+    `pytest` (`490 passed`), `pre-commit --all-files`, and
+    `sphinx-build -W` all passed.
+- 2026-03-12 (Phase 16-18 roadmap extension lock-in): added the
+  decision-complete implementation plan for API docs coverage, submodule-first
+  K3Z student docs, and staged package publication.
+  - Added new roadmap phase checklists:
+    - `Phase 16: Full Developer API Documentation Coverage (FEMIC Package)`
+    - `Phase 17: K3Z TSR-Style Student Documentation (Submodule-First)`
+    - `Phase 18: Packaging and Publication to PyPI`
+  - Locked documentation model:
+    `external/femic-k3z-instance/docs/` is canonical for student-facing K3Z
+    content, while FEMIC docs keep a short pointer/overview page.
+  - Locked API docs policy defaults:
+    Google-style docstrings, public-surface API publication, and
+    autosummary/autodoc Sphinx coverage for `src/femic` public modules.
+  - Locked release flow:
+    package publication executes via TestPyPI validation first, then PyPI.
+  - Implementation reminder:
+    current local submodule checkout is behind upstream and lacks a local docs
+    tree; `P17.0` must sync `external/femic-k3z-instance` before docs work.
 - 2026-03-11 (repo-root cleanup: legacy notebook archive move):
   moved legacy notebook artifacts out of repository root into a dedicated
   archive location.

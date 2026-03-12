@@ -12,6 +12,7 @@ from femic.cli.main import app
 DOCS_ROOT = Path("docs")
 GUIDES_ROOT = DOCS_ROOT / "guides"
 SAMPLE_MODELS_ROOT = DOCS_ROOT / "sample-models"
+API_ROOT = DOCS_ROOT / "reference" / "api"
 COVERAGE_CSV = GUIDES_ROOT / "legacy_notebook_coverage.csv"
 K3Z_INSTANCE_ROOT = Path("external/femic-k3z-instance")
 
@@ -372,6 +373,7 @@ def test_k3z_instance_standalone_docs_scaffold_exists() -> None:
         "land-base-and-netdown",
         "assumptions-registry",
         "base-case-analysis",
+        "figure-appendix",
         "metadata-and-lineage",
         "operator-runbook",
         "edit-policy-and-scenarios",
@@ -458,7 +460,11 @@ def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> N
         "Land Base Definition",
         "Exclusions from Contributing Forest",
         "Reductions from THLB (Netdown Logic)",
+        "Analysis Area Map",
+        "Total Area and THLB Summary",
+        "Area by AU",
         "Provenance Table",
+        "THLB Netdown Placeholder Table",
         "What to Edit vs Regenerate",
         "How to Validate Reruns",
     ):
@@ -498,6 +504,21 @@ def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> N
         "References",
     ):
         assert heading in analysis_text
+    assert "Figure Appendix Linkage" in analysis_text
+    assert ":ref:`k3z-figure-appendix`" in analysis_text
+
+    appendix_text = (docs_root / "figure-appendix.rst").read_text()
+    for heading in ("Core Teaching Figures", "Full Plot Inventory"):
+        assert heading in appendix_text
+    for snippet in (
+        ".. _k3z-figure-appendix:",
+        "k3z_analysis_area_map.png",
+        "plots/strata-tsak3z.png",
+        "plots/vdyp_lmh_tsak3z-",
+        "plots/vdyp_fitdiag_tsak3z-",
+        "plots/tipsy_vdyp_tsak3z-",
+    ):
+        assert snippet in appendix_text
 
     metadata_text = (docs_root / "metadata-and-lineage.rst").read_text()
     for heading in (
@@ -600,33 +621,46 @@ def test_sample_model_pages_are_in_docs_tree() -> None:
         assert slug in sample_models_index, f"missing toctree entry for {slug}"
 
 
+def test_api_reference_pages_are_in_docs_tree_and_list_public_modules() -> None:
+    index_text = (DOCS_ROOT / "index.rst").read_text()
+    assert "reference/api/index" in index_text
+
+    api_index = (API_ROOT / "index.rst").read_text()
+    assert "API contract" in api_index
+    assert "femic.resources" in api_index
+    assert "private members" in api_index
+    assert "modules" in api_index
+
+    modules_page = (API_ROOT / "modules.rst").read_text()
+    for module_name in (
+        "femic.cli.main",
+        "femic.patchworks_runtime",
+        "femic.pipeline.stages",
+        "femic.rebuild_runner",
+    ):
+        assert module_name in modules_page
+    assert "femic.resources" not in modules_page
+
+
 def test_k3z_sample_model_docs_keep_required_sections() -> None:
     k3z_text = (SAMPLE_MODELS_ROOT / "k3z.rst").read_text()
     required_k3z_sections = [
-        "Purpose and Scope",
-        "Model Anatomy",
-        "Build and Rebuild Workflow",
-        "Parameter Risk and Suggested Ranges",
-        "Edit Policy: Safe vs Generated",
-        "Backup and Recovery Conventions",
-        "Scenario Comparison Guidance",
-        "Expected-Empty Account Matrix and Validation Checklist",
-        "Regenerated Strata/AU Build Plots",
-        "Release Readiness Checklist",
-        "Troubleshooting",
+        "Purpose",
+        "Canonical Student Docs",
+        "Submodule Sync Commands",
+        "FEMIC-Local Integration Notes",
     ]
     for heading in required_k3z_sections:
         assert heading in k3z_text, f"k3z.rst missing required section: {heading}"
-    assert "Species Code Semantics: PL vs PLC" in k3z_text
-    assert "Use ``PLC`` account series for lodgepole-pine interpretation." in k3z_text
-    assert "Expected-Empty Account Matrix and Validation Checklist" in k3z_text
-    assert "total OK, species-wise empty" in k3z_text
-    assert "plots/strata-tsak3z.png" in k3z_text
-    assert "plots/vdyp_lmh_tsak3z-*.png" in k3z_text
-    assert "plots/tipsy_vdyp_tsak3z-*.png" in k3z_text
+    assert "https://github.com/UBC-FRESH/femic-k3z-instance" in k3z_text
+    assert "https://ubc-fresh.github.io/femic-k3z-instance/" in k3z_text
+    assert "external/femic-k3z-instance" in k3z_text
+    assert "git submodule update --init --recursive" in k3z_text
+    assert "git submodule update --remote external/femic-k3z-instance" in k3z_text
     assert "config/rebuild.spec.yaml" in k3z_text
     assert "config/rebuild.allowlist.yaml" in k3z_text
     assert "runbooks/REBUILD_RUNBOOK.md" in k3z_text
+    assert "k3z-metadata-lineage.rst" in k3z_text
 
     lineage_text = (SAMPLE_MODELS_ROOT / "k3z-metadata-lineage.rst").read_text()
     required_lineage_sections = [
