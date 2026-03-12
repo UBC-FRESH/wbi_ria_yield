@@ -46,6 +46,12 @@ from femic.patchworks_runtime import (
     run_patchworks_command,
     run_patchworks_preflight,
 )
+from femic.rebuild_invariants import (
+    append_invariant_payload_to_report,
+    collect_rebuild_metrics,
+    evaluate_invariants,
+    has_fatal_invariant_failures,
+)
 from femic.rebuild_runner import JsonRebuildReportSink, RebuildRunner, RebuildStep
 from femic.rebuild_spec import load_rebuild_spec, validate_rebuild_spec_payload
 from femic.release_packaging import build_release_package
@@ -829,6 +835,26 @@ def instance_rebuild(
     except (OSError, json.JSONDecodeError):
         pass
 
+    invariants_payload = spec_payload.get("invariants", [])
+    metrics = collect_rebuild_metrics(
+        instance_root=context.root,
+        log_dir=resolved_log_dir,
+        run_id=effective_run_id,
+        patchworks_config_path=resolved_patchworks_config,
+    )
+    invariant_results = evaluate_invariants(
+        invariants=invariants_payload if isinstance(invariants_payload, list) else [],
+        metrics=metrics,
+    )
+    try:
+        append_invariant_payload_to_report(
+            report_path=report_path,
+            metrics=metrics,
+            invariant_results=invariant_results,
+        )
+    except (OSError, json.JSONDecodeError):
+        pass
+
     status = "[green]ok[/green]" if not report.failed else "[red]failed[/red]"
     console.print(
         f"instance rebuild {status} run_id={effective_run_id} "
@@ -847,7 +873,30 @@ def instance_rebuild(
         )
         if outcome.error:
             console.print(f"  [red]{outcome.error}[/red]")
-    if report.failed:
+    fatal_invariant_failure = has_fatal_invariant_failures(invariant_results)
+    if invariant_results:
+        summary = {
+            "pass": sum(1 for item in invariant_results if item.status == "pass"),
+            "warn": sum(1 for item in invariant_results if item.status == "warn"),
+            "fail": sum(1 for item in invariant_results if item.status == "fail"),
+        }
+        console.print(
+            "invariants: "
+            f"pass={summary['pass']} warn={summary['warn']} fail={summary['fail']}"
+        )
+        for item in invariant_results:
+            marker = "green" if item.status == "pass" else "yellow"
+            if item.status == "fail":
+                marker = "red"
+            console.print(
+                f"[{marker}]- {item.invariant_id}: {item.status}[/{marker}] "
+                f"{item.message}"
+            )
+            if item.status in {"warn", "fail"} and item.remediation:
+                console.print(f"  remediation: {item.remediation}")
+    if report.failed or fatal_invariant_failure:
+        if fatal_invariant_failure and not report.failed:
+            console.print("[red]Fatal rebuild invariant regression detected.[/red]")
         raise typer.Exit(code=1)
 
 

@@ -288,6 +288,10 @@ Subcommands
 ``instance rebuild`` writes a machine-readable report to
 ``vdyp_io/logs/instance_rebuild_report-<run_id>.json`` and records discovered
 manifest/log artifact references under ``artifact_references``.
+It also evaluates configured rebuild-spec invariants and appends measured
+``metrics`` plus ``invariant_results`` to the report. Any invariant with
+``severity: fatal`` that evaluates false causes command failure with a
+remediation summary.
 
 ``instance validate-spec`` options
 

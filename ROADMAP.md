@@ -364,7 +364,7 @@
   - [x] P13.3c Add K3Z as the reference implementation and backfill its current known-valid sequence.
   - [x] P13.3d Add schema validation + clear diagnostics for malformed rebuild specs.
 - [ ] P13.4 Add regression guardrails for rebuild outputs
-  - [ ] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
+  - [x] P13.4a Add invariant checks for known-risk dimensions (managed species yields, seral accounts, topology/block joins).
   - [ ] P13.4b Add configurable baseline snapshot/diff support for key track tables and selected XML structures.
   - [ ] P13.4c Add explicit allowlist mechanism for intentional output deltas (so accepted changes are tracked in git).
   - [ ] P13.4d Fail rebuild with actionable summary when invariants regress or unexpected diffs exceed thresholds.
@@ -3467,3 +3467,17 @@
     `tests/test_rebuild_spec.py`, plus CLI/contract coverage updates in
     `tests/test_cli_main.py` and `tests/test_docs_contract.py`.
   - Updated CLI reference docs for `--spec` and `instance validate-spec`.
+- 2026-03-11 (Phase 13 `P13.4a` completion): added operational invariant
+  extraction and evaluation for known regression risk dimensions.
+  - Added module:
+    `src/femic/rebuild_invariants.py` with metric collectors for managed area,
+    managed species yield-account presence, seral-account presence,
+    topology edge count, and matrix-builder block join mismatch detection.
+  - `femic instance rebuild` now evaluates spec invariants against measured
+    metrics, prints pass/warn/fail summaries with remediation text, and fails
+    the command when any `severity: fatal` invariant regresses.
+  - Rebuild reports now persist `metrics` and `invariant_results` sections
+    alongside existing step outcomes and artifact references.
+  - Added regression tests:
+    `tests/test_rebuild_invariants.py`, and updated CLI/docs coverage in
+    `docs/reference/cli.rst`.

@@ -3550,3 +3550,21 @@
   `tests/test_docs_contract.py` (CLI contract coverage).
 - Updated CLI docs:
   `docs/reference/cli.rst`.
+
+## 2026-03-11 - Added rebuild invariant guardrails for known-risk dimensions (`P13.4a`)
+- Added rebuild invariant metric/evaluation module:
+  `src/femic/rebuild_invariants.py`.
+- `femic instance rebuild` now:
+  - computes post-run metrics for managed area, managed species yield-account
+    presence, seral account presence, topology edge count, and block-join
+    mismatch detection from matrix-builder logs,
+  - evaluates configured spec invariants against those metrics,
+  - prints pass/warn/fail invariant summaries with remediation hints,
+  - fails with exit code `1` on any `severity: fatal` invariant regression.
+- Rebuild report payloads now include:
+  - `metrics`,
+  - `invariant_results`.
+- Added tests:
+  `tests/test_rebuild_invariants.py`.
+- Updated CLI reference docs:
+  `docs/reference/cli.rst`.
