@@ -3818,3 +3818,9 @@ notes.
   - Next execution step: implement `P15.2c` to ensure rebuild command gating
     behavior is explicit and fail-fast for unexpected species-account null/empty
     regressions under policy.
+- 2026-03-11 (packaging hotfix): fixed wheel package-data omission that caused
+  release workflow wheel-smoke failure when `femic instance init` attempted to
+  copy `resources/instance/runbooks/REBUILD_RUNBOOK.md`.
+  - Added package-data include in `pyproject.toml`:
+    `resources/instance/runbooks/*`.
+  - Verified build output now includes runbook template in wheel payload.

@@ -3892,3 +3892,12 @@
   `external/femic-k3z-instance/config/rebuild.spec.yaml`.
 - Updated authoring guide:
   `docs/guides/author-instance-rebuild-spec.rst`.
+
+## 2026-03-11 - Fixed wheel package-data omission for instance runbook template
+- Added missing package-data include in `pyproject.toml`:
+  `resources/instance/runbooks/*`.
+- This restores wheel-install smoke behavior where
+  `femic instance init` copies:
+  `femic/resources/instance/runbooks/REBUILD_RUNBOOK.md`.
+- Verified distribution build now contains the runbook resource in both sdist
+  and wheel build outputs.
