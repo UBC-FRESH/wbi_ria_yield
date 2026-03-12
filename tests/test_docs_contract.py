@@ -308,6 +308,7 @@ def test_k3z_instance_standalone_docs_scaffold_exists() -> None:
         "metadata-and-lineage",
         "operator-runbook",
         "edit-policy-and-scenarios",
+        "docs-ownership-and-release",
         "rebuild-and-qa",
         "troubleshooting",
     ):
@@ -452,6 +453,15 @@ def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> N
         "How to Validate Reruns",
     ):
         assert heading in policy_text
+
+    governance_text = (docs_root / "docs-ownership-and-release.rst").read_text()
+    for heading in (
+        "Ownership Matrix",
+        "Update Cadence",
+        "Release Tagging and Versioning Policy",
+        "Contributor Onboarding and Review Workflow",
+    ):
+        assert heading in governance_text
 
 
 def test_k3z_standalone_docs_do_not_reference_parent_repo_paths() -> None:

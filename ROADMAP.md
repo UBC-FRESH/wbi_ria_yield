@@ -327,11 +327,11 @@
     prevent drift across FRESH lab documentation projects.
   - [x] P12.5e Ensure FHOPS template alignment preserves BC data-package depth
     expectations for K3Z documentation content.
-- [ ] P12.6 Finalize and operationalize docs ownership
-  - [ ] P12.6a Define update cadence and ownership for K3Z docs/content refresh.
-  - [ ] P12.6b Define release tagging/versioning policy for docs alongside model
+- [x] P12.6 Finalize and operationalize docs ownership
+  - [x] P12.6a Define update cadence and ownership for K3Z docs/content refresh.
+  - [x] P12.6b Define release tagging/versioning policy for docs alongside model
     snapshots.
-  - [ ] P12.6c Add contributor onboarding guidance for docs changes and review.
+  - [x] P12.6c Add contributor onboarding guidance for docs changes and review.
 - [ ] P12.7 Cross-platform geospatial dependency bootstrap hardening (`fiona`/`GDAL`)
   - [ ] P12.7a Define and test known-valid install rituals for Linux and Windows
     (including Windows-specific `fiona`/`GDAL` handling for local `.venv` setup).
@@ -3339,3 +3339,13 @@
     `test_fhops_aligned_sphinx_template_contract`.
   - Confirmed K3Z TSR data-package depth pages remain required via existing
     docs contracts.
+- 2026-03-11 (Phase 12 `P12.6a/P12.6b/P12.6c` completion): formalized docs
+  ownership and release operations for standalone K3Z documentation.
+  - Added standalone governance page:
+    `external/femic-k3z-instance/docs/docs-ownership-and-release.rst`.
+  - Wired new page into standalone docs navigation:
+    `external/femic-k3z-instance/docs/index.rst`.
+  - Captured ownership matrix, refresh cadence, release tagging policy, and
+    contributor onboarding/review workflow requirements.
+  - Extended docs-contract checks (`tests/test_docs_contract.py`) to require
+    the new page and its core governance sections.

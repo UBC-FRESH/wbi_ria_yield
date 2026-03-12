@@ -3390,3 +3390,16 @@
 - Added docs-contract checklist test:
   `test_fhops_aligned_sphinx_template_contract`.
 - Preserved K3Z TSR data-package depth requirements via existing contract tests.
+
+## 2026-03-11 - Operationalized K3Z docs ownership + release workflow (`P12.6`)
+- Added standalone K3Z docs governance page:
+  `external/femic-k3z-instance/docs/docs-ownership-and-release.rst`.
+- Wired the page into standalone docs navigation via:
+  `external/femic-k3z-instance/docs/index.rst`.
+- Documented:
+  - ownership matrix (primary/backup owners by docs area),
+  - refresh cadence (rebuild/monthly/quarterly/event-driven),
+  - release tagging/versioning policy for docs + model snapshots,
+  - contributor onboarding and review checklist.
+- Extended parent docs-contract tests (`tests/test_docs_contract.py`) to
+  require the governance page and core headings.
