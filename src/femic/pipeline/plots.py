@@ -9,11 +9,13 @@ from typing import Any
 
 
 def strata_plot_paths(tsa_code: str, root: Path = Path("plots")) -> tuple[Path, Path]:
+    """Return PDF/PNG output paths for strata diagnostics for one TSA/case code."""
     tsa = str(tsa_code).zfill(2)
     return root / f"strata-tsa{tsa}.pdf", root / f"strata-tsa{tsa}.png"
 
 
 def tipsy_vdyp_plot_path(au: int, tsa_code: str, root: Path = Path("plots")) -> Path:
+    """Return the canonical TIPSY-vs-VDYP overlay plot path for an AU."""
     tsa = str(tsa_code).zfill(2)
     return root / f"tipsy_vdyp_tsa{tsa}-{au}.png"
 

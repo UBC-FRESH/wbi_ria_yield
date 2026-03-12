@@ -677,6 +677,7 @@ def main(
     version: bool = VERSION_OPTION,
     debug: bool = DEBUG_OPTION,
 ) -> None:
+    """Handle top-level CLI flags before delegating to subcommands."""
     if debug:
         _enable_rich_tracebacks()
     if version:
@@ -704,6 +705,7 @@ def instance_init(
         help="Assume yes for interactive prompts.",
     ),
 ) -> None:
+    """Create and initialize an instance workspace from packaged templates."""
     context = _resolve_cli_instance_context(
         instance_root=instance_root,
         allow_legacy_fallback=False,
@@ -768,6 +770,7 @@ def instance_rebuild(
     allowlist: Path = INSTANCE_REBUILD_ALLOWLIST_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Execute the reproducible instance rebuild flow and write evidence artifacts."""
     context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_spec = context.resolve_path(spec)
     resolved_run_config = context.resolve_path(run_config)
@@ -1163,6 +1166,7 @@ def instance_validate_spec(
     spec: Path = INSTANCE_REBUILD_SPEC_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Validate rebuild-spec structure and required fields for an instance."""
     context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_spec = context.resolve_path(spec)
     try:
@@ -1190,6 +1194,7 @@ def instance_promote_evidence(
     ),
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Promote a rebuild report into normalized release-gate evidence JSON."""
     context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_log_dir = context.resolve_path(log_dir)
     if report is None:
@@ -1450,6 +1455,7 @@ def run_all(
     run_config: Path | None = RUN_CONFIG_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Run the end-to-end data-prep pipeline from current CLI inputs/profile."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_output_root = instance_context.resolve_path(output_root)
     resolved_log_dir = instance_context.resolve_path(log_dir)
@@ -1553,6 +1559,7 @@ def prep_run(
     verbose: bool = VERBOSE_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Placeholder prep command retained for CLI compatibility."""
     _ = (data_root, output_root, tsa, resume, dry_run, verbose, instance_root)
     _emit_stub("femic prep run")
 
@@ -1564,6 +1571,7 @@ def prep_validate_case(
     strict_warnings: bool = CASE_STRICT_WARNINGS_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Validate run config, case selections, and required input paths."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_run_config = instance_context.resolve_path(run_config)
     resolved_tipsy_config_dir = instance_context.resolve_path(tipsy_config_dir)
@@ -1697,6 +1705,7 @@ def prep_geospatial_preflight(
         help="Skip Fiona shapefile read/write smoke test.",
     ),
 ) -> None:
+    """Verify geospatial runtime dependencies and optional shapefile smoke checks."""
     result = run_geospatial_preflight(run_shapefile_smoke=not skip_shapefile_smoke)
     console.print(
         "[green]Geospatial preflight passed[/green] "
@@ -1729,6 +1738,7 @@ def vdyp_run(
     verbose: bool = VERBOSE_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Placeholder VDYP command retained for CLI compatibility."""
     _ = (data_root, output_root, tsa, resume, dry_run, verbose, instance_root)
     _emit_stub("femic vdyp run")
 
@@ -1748,6 +1758,7 @@ def vdyp_report(
     min_curve_events: int | None = VDYP_MIN_CURVE_EVENTS_OPTION,
     min_run_events: int | None = VDYP_MIN_RUN_EVENTS_OPTION,
 ) -> None:
+    """Summarize VDYP logs and enforce warning/error budget thresholds."""
     summary = summarize_vdyp_logs(
         curve_log_path=curve_log,
         run_log_path=run_log,
@@ -1813,6 +1824,7 @@ def tsa_run(
     verbose: bool = VERBOSE_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Placeholder TSA command retained for CLI compatibility."""
     _ = (data_root, output_root, tsa, resume, dry_run, verbose, instance_root)
     _emit_stub("femic tsa run")
 
@@ -1826,6 +1838,7 @@ def tsa_post_tipsy(
     run_config: Path | None = RUN_CONFIG_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Build post-TIPSY bundle tables for selected TSA/case targets."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_log_dir = instance_context.resolve_path(Path(log_dir))
     resolved_run_config = (
@@ -1918,6 +1931,7 @@ def tipsy_validate(
     tsa: list[str] | None = TSA_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Validate per-TSA TIPSY YAML config availability and parseability."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_config_dir = instance_context.resolve_path(config_dir)
     found = discover_tipsy_config_tsas(resolved_config_dir)
@@ -1955,6 +1969,7 @@ def export_patchworks(
     seral_stage_config: Path | None = EXPORT_SERAL_STAGE_CONFIG_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Export a Patchworks model package for the selected TSA/case targets."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_bundle_dir = instance_context.resolve_path(bundle_dir)
     resolved_checkpoint = instance_context.resolve_path(checkpoint)
@@ -2015,6 +2030,7 @@ def export_woodstock(
     fragments_crs: str = EXPORT_FRAGMENTS_CRS_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Export Woodstock CSV artifacts for the selected TSA/case targets."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_bundle_dir = instance_context.resolve_path(bundle_dir)
     resolved_checkpoint = instance_context.resolve_path(checkpoint)
@@ -2067,6 +2083,7 @@ def export_release(
     strict: bool = EXPORT_RELEASE_STRICT_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Assemble and validate a user-facing release bundle."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     effective_case_id = case_id.strip() if case_id and case_id.strip() else "case"
     resolved_output_root = instance_context.resolve_path(output_root)
@@ -2106,6 +2123,7 @@ def patchworks_preflight(
     config: Path = PATCHWORKS_CONFIG_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Run Patchworks runtime preflight checks from a config file."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_config = instance_context.resolve_path(config)
     try:
@@ -2151,6 +2169,7 @@ def patchworks_matrix_build(
     ),
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Run Patchworks matrix-builder and emit logs/manifests."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_config = instance_context.resolve_path(config)
     resolved_log_dir = instance_context.resolve_path(log_dir)
@@ -2218,6 +2237,7 @@ def patchworks_build_blocks(
     ),
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
+    """Generate model-local Patchworks blocks (and optional topology) artifacts."""
     instance_context = _resolve_cli_instance_context(instance_root=instance_root)
     resolved_config = instance_context.resolve_path(config)
     resolved_model_dir = (

@@ -61,6 +61,7 @@ class JsonRebuildReportSink:
         self.path = path
 
     def write(self, report: RebuildExecutionReport) -> None:
+        """Serialize a rebuild execution report to the configured JSON path."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(asdict(report), indent=2), encoding="utf-8")
 
@@ -126,6 +127,7 @@ class RebuildRunner:
         run_id: str,
         context: dict[str, Any] | None = None,
     ) -> RebuildExecutionReport:
+        """Execute configured steps, persist report if configured, and return it."""
         ordered_steps = self._resolve_order()
         started_at = self._now_fn()
         runtime_context = dict(context or {})

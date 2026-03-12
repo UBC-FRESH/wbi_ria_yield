@@ -647,6 +647,7 @@ def resolve_run_paths(
     instance_root: Path | None = None,
     log_dir: Path | None = None,
 ) -> RunPaths:
+    """Resolve canonical script/repo/log paths for a pipeline run invocation."""
     repo_root = (
         instance_root.expanduser().resolve()
         if instance_root is not None

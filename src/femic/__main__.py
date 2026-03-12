@@ -6,6 +6,7 @@ from femic.cli.main import app
 
 
 def main() -> None:
+    """Invoke the Typer application for `python -m femic`."""
     app()
 
 

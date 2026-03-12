@@ -67,6 +67,7 @@ def _raise_unimplemented_legacy_tipsy_rule(
 
 # --- cell 50 ---
 def tipsy_minsi_tsa08(leading_species):
+    """Return legacy minimum site index threshold for TSA 08 by leading species."""
     if leading_species in species_pine:
         return 15.0
     elif leading_species in species_aspen:
@@ -141,6 +142,7 @@ tipsy_exclusion = {
 
 # --- cell 54 ---
 def tipsy_params_tsa08(au_id, au_data, vdyp_out):
+    """Build legacy TSA08 TIPSY establishment/future parameter dictionaries."""
     tp = {"e": {}, "f": {}}
     # spp_pct = {spp:data['pct'] for spp, data in au_data['species'].items()}
     # spp_1 = list(spp_pct.keys())[0]
@@ -193,6 +195,7 @@ def tipsy_params_tsa08(au_id, au_data, vdyp_out):
 
 
 def tipsy_params_tsa16(au_id, au_data, vdyp_out):
+    """Build legacy TSA16 TIPSY establishment/future parameter dictionaries."""
     tp = {"e": {}, "f": {}}
     spp_1 = list(au_data["species"].keys())[0]
     if spp_1 in species_aspen:
@@ -328,6 +331,7 @@ def tipsy_params_tsa16(au_id, au_data, vdyp_out):
 
 
 def tipsy_params_tsa24(au_id, au_data, vdyp_out):
+    """Build legacy TSA24 TIPSY establishment/future parameter dictionaries."""
     tp = {"e": {}, "f": {}}
     spp_1 = list(au_data["species"].keys())[0]
     si = compute_vdyp_site_index(vdyp_out)
@@ -546,6 +550,7 @@ def tipsy_params_tsa24(au_id, au_data, vdyp_out):
 
 
 def tipsy_params_tsa40(au_id, au_data, vdyp_out):
+    """Build legacy TSA40 TIPSY establishment/future parameter dictionaries."""
     tp = {"e": {}, "f": {}}
     spp_1 = list(au_data["species"].keys())[0]
     si = compute_vdyp_site_index(vdyp_out)
@@ -642,6 +647,7 @@ def tipsy_params_tsa40(au_id, au_data, vdyp_out):
 
 
 def tipsy_params_tsa41(au_id, au_data, vdyp_out):
+    """Build legacy TSA41 TIPSY establishment/future parameter dictionaries."""
     tp = {"e": {}, "f": {}}
     si = compute_vdyp_site_index(vdyp_out)
     bec = au_data["ss"].BEC_ZONE_CODE.iloc[0]

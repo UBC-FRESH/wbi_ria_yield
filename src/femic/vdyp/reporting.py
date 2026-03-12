@@ -14,6 +14,8 @@ JsonMap = dict[str, Any]
 
 @dataclass(frozen=True)
 class VdypLogSummary:
+    """Aggregate counters and mismatch diagnostics parsed from VDYP JSONL logs."""
+
     curve_events: int
     curve_status_counts: dict[str, int]
     curve_stage_counts: dict[str, int]
@@ -33,6 +35,8 @@ class VdypLogSummary:
 
 @dataclass(frozen=True)
 class VdypWarningBudget:
+    """Threshold configuration for pass/fail evaluation of VDYP warning signals."""
+
     max_curve_warnings: int | None = None
     max_first_point_mismatches: int | None = None
     max_curve_parse_errors: int | None = None
@@ -80,6 +84,7 @@ def summarize_vdyp_logs(
     tolerance: float,
     mismatch_limit: int = 10,
 ) -> VdypLogSummary:
+    """Parse VDYP logs and return normalized counts plus first-point QA summaries."""
     curve_rows, curve_parse_errors = _read_jsonl(curve_log_path)
     run_rows, run_parse_errors = _read_jsonl(run_log_path)
 
@@ -136,6 +141,7 @@ def summarize_vdyp_logs(
 def evaluate_warning_budget(
     summary: VdypLogSummary, budget: VdypWarningBudget
 ) -> list[str]:
+    """Return budget-violation messages for the provided VDYP log summary."""
     violations: list[str] = []
     if budget.max_curve_warnings is not None:
         if summary.curve_warning_events > budget.max_curve_warnings:

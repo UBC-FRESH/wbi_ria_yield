@@ -61,6 +61,7 @@ class PatchworksPreflightResult:
 
     @property
     def ok(self) -> bool:
+        """Return `True` when preflight checks reported no errors."""
         return not self.errors
 
 

@@ -19,6 +19,7 @@ Forest Estate Model Input Compiler (FEMIC) documentation.
    :maxdepth: 2
    :caption: Reference
 
+   reference/api/index
    reference/cli
    reference/patchworks-export
    reference/woodstock-export
