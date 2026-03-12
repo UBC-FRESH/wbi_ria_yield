@@ -46,5 +46,14 @@ jobs:
           python -m venv /tmp/femic-pypi-smoke
           /tmp/femic-pypi-smoke/bin/pip install --upgrade pip
           version="$(python -c "from pathlib import Path; import tomllib; print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])")"
-          /tmp/femic-pypi-smoke/bin/pip install "femic==${version}"
+          for attempt in {1..10}; do
+            if /tmp/femic-pypi-smoke/bin/pip install "femic==${version}"; then
+              break
+            fi
+            if [[ "$attempt" -eq 10 ]]; then
+              echo "PyPI index did not surface femic==${version} after retries."
+              exit 1
+            fi
+            sleep 15
+          done
           /tmp/femic-pypi-smoke/bin/femic --help
