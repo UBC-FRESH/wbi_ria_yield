@@ -3322,3 +3322,21 @@
 - Added matching `ROADMAP.md` detailed next-steps note with locked execution
   sequence:
   `P12.4d -> P12.4e -> P12.4f -> P12.4g -> P12.4h`.
+
+## 2026-03-11 - Added TSR-style K3Z standalone data-package docs (`P12.4d/e/f/g`)
+- Added standalone K3Z docs pages in `external/femic-k3z-instance/docs/`:
+  - `data-package-crosswalk.rst`
+  - `land-base-and-netdown.rst`
+  - `assumptions-registry.rst`
+  - `base-case-analysis.rst`
+- Wired the new pages into standalone docs navigation via
+  `external/femic-k3z-instance/docs/index.rst`.
+- Added docs-contract checks in `tests/test_docs_contract.py` to enforce:
+  - exemplar crosswalk coverage and references (`TFL26`, `CFA`, `FNWL`),
+  - required TSR-style section headings,
+  - provenance table columns (`Update Date`, `Source Path/URL`,
+    `Transform Stage`, `QA Status`),
+  - operator-facing usability sections (`What to Edit vs Regenerate`,
+    `How to Validate Reruns`).
+- Marked roadmap tasks complete: `P12.4d`, `P12.4e`, `P12.4f`, `P12.4g`
+  (with `P12.4h` remaining as publish acceptance verification).

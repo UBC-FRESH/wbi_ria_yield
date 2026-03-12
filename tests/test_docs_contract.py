@@ -300,6 +300,10 @@ def test_k3z_instance_standalone_docs_scaffold_exists() -> None:
     for slug in (
         "getting-started",
         "model-anatomy",
+        "data-package-crosswalk",
+        "land-base-and-netdown",
+        "assumptions-registry",
+        "base-case-analysis",
         "rebuild-and-qa",
         "troubleshooting",
     ):
@@ -354,6 +358,66 @@ def test_k3z_instance_standalone_docs_required_sections_and_navigation() -> None
         "Patchworks Runtime Preflight Fails",
     ):
         assert heading in troubleshooting_text
+
+
+def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> None:
+    docs_root = K3Z_INSTANCE_ROOT / "docs"
+
+    crosswalk_text = (docs_root / "data-package-crosswalk.rst").read_text()
+    for heading in ("Section Crosswalk", "Reference Exemplars"):
+        assert heading in crosswalk_text
+    for exemplar in (
+        "TFL26_Information_Package_Sept-2018_v1.1.pdf",
+        "CFA_Analysis_Report.pdf",
+        "FNWL_Analysis_Report.pdf",
+    ):
+        assert exemplar in crosswalk_text
+
+    landbase_text = (docs_root / "land-base-and-netdown.rst").read_text()
+    for heading in (
+        "Introduction",
+        "Land Base Definition",
+        "Exclusions from Contributing Forest",
+        "Reductions from THLB (Netdown Logic)",
+        "Provenance Table",
+        "What to Edit vs Regenerate",
+        "How to Validate Reruns",
+    ):
+        assert heading in landbase_text
+    for column in (
+        "Update Date",
+        "Source Path/URL",
+        "Transform Stage",
+        "QA Status",
+    ):
+        assert column in landbase_text
+
+    assumptions_text = (docs_root / "assumptions-registry.rst").read_text()
+    for heading in (
+        "Non-Timber Assumptions",
+        "Harvesting Assumptions",
+        "Growth and Yield Assumptions",
+        "Natural Disturbance Assumptions",
+        "Modeling Assumptions",
+        "Provenance Table",
+        "What to Edit vs Regenerate",
+        "How to Validate Reruns",
+        "References",
+    ):
+        assert heading in assumptions_text
+
+    analysis_text = (docs_root / "base-case-analysis.rst").read_text()
+    for heading in (
+        "Analysis Report",
+        "Base Case Output and Interpretation",
+        "Discussion",
+        "Known Limitations and Uncertainty",
+        "Provenance Table",
+        "What to Edit vs Regenerate",
+        "How to Validate Reruns",
+        "References",
+    ):
+        assert heading in analysis_text
 
 
 def test_sample_model_pages_are_in_docs_tree() -> None:

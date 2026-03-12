@@ -298,18 +298,18 @@
     diagnostics, troubleshooting, and release checklist).
   - [ ] P12.4c Add user edit-policy matrix and interpretation guidance aligned
     to classroom workflows and scenario comparison needs.
-  - [ ] P12.4d Build exemplar structure crosswalk from BC reference data
+  - [x] P12.4d Build exemplar structure crosswalk from BC reference data
     packages (`TFL26`, `CFA`, `FNWL`) to K3Z standalone docs sections,
     including: Introduction, Land Base Definition, Non-Timber Assumptions,
     Harvesting Assumptions, Growth & Yield, Natural Disturbance, Modeling
     Assumptions, Analysis Report, Discussion, and References.
-  - [ ] P12.4e Add standalone K3Z data-package page set covering:
+  - [x] P12.4e Add standalone K3Z data-package page set covering:
     land-base definition + netdown logic, assumptions registry
     (timber/non-timber/model), base-case analysis outputs + interpretation,
     and discussion/limitations/known uncertainty sources.
-  - [ ] P12.4f Require explicit evidence/provenance tables for each artifact
+  - [x] P12.4f Require explicit evidence/provenance tables for each artifact
     family with update date, source path/URL, transform stage, and QA status.
-  - [ ] P12.4g Add student usability acceptance content across major pages:
+  - [x] P12.4g Add student usability acceptance content across major pages:
     what to edit vs regenerate, and how to validate rebuild/rerun outputs.
   - [ ] P12.4h Define publication acceptance criteria before closing `P12.4`:
     standalone docs build `-W`, docs-contract coverage for required sections,
@@ -3277,3 +3277,16 @@
     `reference/FNWL_Analysis_Report.pdf`.
   - Next execution sequence locked:
     `P12.4d -> P12.4e -> P12.4f -> P12.4g -> P12.4h`.
+- 2026-03-11 (Phase 12 `P12.4d/P12.4e/P12.4f/P12.4g` execution):
+  added TSR-grade K3Z standalone data-package docs and acceptance checks using
+  the TFL26/CFA/FNWL exemplar structure as the baseline.
+  - Added standalone docs pages:
+    `data-package-crosswalk.rst`, `land-base-and-netdown.rst`,
+    `assumptions-registry.rst`, `base-case-analysis.rst`.
+  - Wired new pages into standalone docs navigation in
+    `external/femic-k3z-instance/docs/index.rst`.
+  - Added docs-contract coverage in `tests/test_docs_contract.py` requiring:
+    crosswalk sections, exemplar references, TSR-style required headings, and
+    provenance-table columns plus operator usability sections.
+  - Marked complete: `P12.4d`, `P12.4e`, `P12.4f`, `P12.4g`.
+  - Remaining for `P12.4`: `P12.4h` (publish acceptance verification).
