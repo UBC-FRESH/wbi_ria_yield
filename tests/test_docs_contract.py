@@ -18,6 +18,7 @@ K3Z_INSTANCE_ROOT = Path("external/femic-k3z-instance")
 GUIDE_PAGES = [
     "pipeline-overview",
     "deployment-instances",
+    "rebuild-repro-contract",
     "data-access-inventory",
     "public-data-mirror-runbook",
     "case-onboarding",
@@ -663,6 +664,19 @@ def test_instance_rebuild_spec_schema_artifact_is_present_and_structured() -> No
     invariant_fields = fields["invariants"]["item"]["fields"]
     for required in ("invariant_id", "severity", "metric", "comparator", "target"):
         assert required in invariant_fields
+
+
+def test_rebuild_repro_contract_guide_covers_core_sections() -> None:
+    guide_text = (GUIDES_ROOT / "rebuild-repro-contract.rst").read_text()
+    required_sections = [
+        "Purpose",
+        "Contract Sources",
+        "Expected Operator Workflow",
+        "Required Evidence Artifacts",
+        "Failure Classes",
+    ]
+    for section in required_sections:
+        assert section in guide_text
 
 
 def test_k3z_reference_rebuild_spec_exists_and_matches_schema_basics() -> None:

@@ -3621,3 +3621,17 @@
   `instances/reference/config/rebuild.spec.yaml`.
 - Added regression test:
   `tests/test_cli_main.py::test_instance_rebuild_fails_when_unexpected_diffs_exceed_threshold`.
+
+## 2026-03-11 - Added Rebuild Repro Contract guide (`P13.5a`)
+- Added new user-facing guide page:
+  `docs/guides/rebuild-repro-contract.rst`.
+- Guide now documents:
+  - what the rebuild repro contract is and why it exists,
+  - authoritative contract/schema source files,
+  - expected operator workflow,
+  - required rebuild evidence artifacts,
+  - failure-class expectations.
+- Added guide to navigation:
+  `docs/guides/index.rst`.
+- Added docs-contract test coverage:
+  `tests/test_docs_contract.py::test_rebuild_repro_contract_guide_covers_core_sections`.
