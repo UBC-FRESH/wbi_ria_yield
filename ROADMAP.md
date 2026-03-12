@@ -315,17 +315,17 @@
     standalone docs build `-W`, docs-contract coverage for required sections,
     and published GitHub Pages verification for `femic-k3z-instance`.
 - [ ] P12.5 Enforce FRESH lab Sphinx template consistency (FHOPS-aligned)
-  - [ ] P12.5a Define the canonical template baseline using
+  - [x] P12.5a Define the canonical template baseline using
     `https://github.com/UBC-FRESH/fhops` as the reference implementation.
-  - [ ] P12.5b Capture required template components and style conventions
+  - [x] P12.5b Capture required template components and style conventions
     (theme/extensions, navigation structure, build/publish settings, RTD/GitHub
     Pages behavior, and warning-as-error policy).
-  - [ ] P12.5c Apply the shared template baseline to
+  - [x] P12.5c Apply the shared template baseline to
     `femic-k3z-instance` docs, then reconcile FEMIC docs where needed so FRESH
     lab docs present a consistent user experience.
-  - [ ] P12.5d Add a template-compliance checklist in CI/docs-contract tests to
+  - [x] P12.5d Add a template-compliance checklist in CI/docs-contract tests to
     prevent drift across FRESH lab documentation projects.
-  - [ ] P12.5e Ensure FHOPS template alignment preserves BC data-package depth
+  - [x] P12.5e Ensure FHOPS template alignment preserves BC data-package depth
     expectations for K3Z documentation content.
 - [ ] P12.6 Finalize and operationalize docs ownership
   - [ ] P12.6a Define update cadence and ownership for K3Z docs/content refresh.
@@ -3324,3 +3324,18 @@
     instance-local FEMIC command workflows and generic exemplar citations.
   - Added docs-contract guard:
     `test_k3z_standalone_docs_do_not_reference_parent_repo_paths`.
+- 2026-03-11 (Phase 12 `P12.5a/P12.5b/P12.5c/P12.5d/P12.5e` completion):
+  standardized FEMIC + standalone K3Z docs stacks against an FHOPS-aligned
+  Sphinx template baseline with automated drift checks.
+  - Added baseline guide:
+    `docs/guides/sphinx-template-baseline.rst` and wired it into Guides index.
+  - Aligned both docs configs with shared template controls:
+    `autodoc_typehints="description"`, RTD theme options
+    (`collapse_navigation=False`, `navigation_depth=3`), and template path.
+  - Aligned standalone docs workflow to match current Pages baseline
+    (Node24 env flag, `configure-pages`, artifact/deploy action versions,
+    pull-request/main gating parity).
+  - Added docs-contract enforcement:
+    `test_fhops_aligned_sphinx_template_contract`.
+  - Confirmed K3Z TSR data-package depth pages remain required via existing
+    docs contracts.

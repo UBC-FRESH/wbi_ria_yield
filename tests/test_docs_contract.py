@@ -30,6 +30,7 @@ GUIDE_PAGES = [
     "patchworks-wine-runtime",
     "ubc-vpn-license-connectivity",
     "legacy-traceability",
+    "sphinx-template-baseline",
 ]
 SAMPLE_MODEL_PAGES = [
     "k3z",
@@ -464,6 +465,42 @@ def test_k3z_standalone_docs_do_not_reference_parent_repo_paths() -> None:
         text = path.read_text()
         for snippet in forbidden_snippets:
             assert snippet not in text, f"{path} references parent-repo path: {snippet}"
+
+
+def test_fhops_aligned_sphinx_template_contract() -> None:
+    parent_conf = Path("docs/conf.py").read_text()
+    standalone_conf = (K3Z_INSTANCE_ROOT / "docs/conf.py").read_text()
+    parent_workflow = Path(".github/workflows/docs-pages.yml").read_text()
+    standalone_workflow = (
+        K3Z_INSTANCE_ROOT / ".github/workflows/docs-pages.yml"
+    ).read_text()
+    baseline_guide = (GUIDES_ROOT / "sphinx-template-baseline.rst").read_text()
+
+    for conf_text in (parent_conf, standalone_conf):
+        for required in (
+            '"sphinx.ext.autodoc"',
+            '"sphinx.ext.autosummary"',
+            '"sphinx.ext.napoleon"',
+            '"sphinx.ext.viewcode"',
+            'autodoc_typehints = "description"',
+            '"collapse_navigation": False',
+            '"navigation_depth": 3',
+        ):
+            assert required in conf_text
+        assert "sphinx_rtd_theme" in conf_text
+
+    for workflow_text in (parent_workflow, standalone_workflow):
+        for required in (
+            "pages: write",
+            "id-token: write",
+            "actions/upload-pages-artifact@v4",
+            "actions/deploy-pages@v4",
+            "sphinx-build",
+            "-W",
+        ):
+            assert required in workflow_text
+
+    assert "https://github.com/UBC-FRESH/fhops" in baseline_guide
 
 
 def test_sample_model_pages_are_in_docs_tree() -> None:

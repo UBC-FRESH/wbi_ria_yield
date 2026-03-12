@@ -24,3 +24,4 @@ export modules.
    patchworks-wine-runtime
    ubc-vpn-license-connectivity
    legacy-traceability
+   sphinx-template-baseline

@@ -3374,3 +3374,19 @@
   `metadata-and-lineage.rst`.
 - Added parent docs-contract guard in `tests/test_docs_contract.py`:
   `test_k3z_standalone_docs_do_not_reference_parent_repo_paths`.
+
+## 2026-03-11 - Completed FHOPS-aligned Sphinx template consistency (`P12.5`)
+- Added canonical baseline guide:
+  `docs/guides/sphinx-template-baseline.rst` and linked it from
+  `docs/guides/index.rst`.
+- Aligned FEMIC and standalone K3Z Sphinx configs with shared template
+  settings:
+  - `autodoc_typehints = "description"`
+  - RTD theme options (`collapse_navigation=False`, `navigation_depth=3`)
+  - `templates_path = ["_templates"]`
+- Aligned standalone docs Pages workflow to current baseline:
+  Node24 env flag, `configure-pages`, `upload-pages-artifact@v4`,
+  deploy gating parity.
+- Added docs-contract checklist test:
+  `test_fhops_aligned_sphinx_template_contract`.
+- Preserved K3Z TSR data-package depth requirements via existing contract tests.
