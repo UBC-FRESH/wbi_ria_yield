@@ -4185,3 +4185,25 @@
   - `pytest tests/test_docs_contract.py`
   - `sphinx-build -b html external/femic-k3z-instance/docs external/femic-k3z-instance/_build/html -W`
   - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-12 - Refreshed K3Z appendix overlays to treated/scaled-VDYP outputs
+- Regenerated all `tipsy_vdyp_tsak3z-*.png` figures in
+  `external/femic-k3z-instance/plots/` from current rebuilt K3Z inputs:
+  - `data/tipsy_curves_tsak3z.csv` (treated curves)
+  - `data/vdyp_curves_smooth-tsak3z.feather` (reference VDYP)
+  - `data/model_input_bundle/au_table.csv` (AU -> stratum/SI + managed IDs)
+- Updated K3Z appendix wording in
+  `external/femic-k3z-instance/docs/figure-appendix.rst` to use treated/scaled
+  terminology (`Treated (Scaled-VDYP) Curve Overlays`).
+- Updated parent docs contract expectation in `tests/test_docs_contract.py` to
+  match the new heading text.
+- Verification performed (no guessing):
+  - Rebuild report confirms `tipsy_curve_mode=vdyp_transform`,
+    `matrix_returncode=0`.
+  - Matrix-builder log confirms successful track rebuild with full managed area.
+- Validation:
+  - `pytest tests/test_docs_contract.py -q` (pass)
+  - `sphinx-build -b html external/femic-k3z-instance/docs external/femic-k3z-instance/_build/html -W` (pass)
+  - Full repo gates were re-run; one pre-existing main-docs API autosummary
+    warning set still fails `docs _build/html -W` and remains outside this K3Z
+    figure-refresh scope.

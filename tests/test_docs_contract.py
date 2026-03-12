@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import csv
 import json
@@ -526,7 +526,7 @@ def test_k3z_instance_tsr_data_package_pages_exist_with_required_sections() -> N
         "Strata Distribution Figure",
         "VDYP Low/Medium/High Envelopes",
         "VDYP Fit Diagnostics",
-        "TIPSY vs Natural Curve Overlays",
+        "Treated \\(Scaled-VDYP\\) Curve Overlays",
         "Full Plot Inventory",
     ):
         assert heading in appendix_text

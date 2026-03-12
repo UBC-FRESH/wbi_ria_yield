@@ -4089,3 +4089,14 @@ notes.
     - `tracks/accounts.csv` now contains `feature.Seral.*` rows again.
     - matrix-builder stderr reports successful completion with
       `Managed : 1781.3132360577583` and no passive area.
+- 2026-03-12 (K3Z docs-figure refresh): regenerated instance appendix
+  `tipsy_vdyp_tsak3z-*.png` overlays from current `vdyp_transform` rebuild
+  outputs and aligned figure wording to treated/scaled-VDYP semantics.
+  - Verified rebuild provenance from
+    `vdyp_io/logs/k3z_rebuild_report-k3z_rethread_win_20260312_1300.json`:
+    `tipsy_curve_mode=vdyp_transform`, `matrix_returncode=0`,
+    `block_join_csv_only=0`, `block_join_shp_only=0`.
+  - Updated K3Z appendix heading/captions to “Treated (Scaled-VDYP) Curve
+    Overlays” so student-facing docs match the actual curve mode.
+  - Next step: publish refreshed submodule docs commit and update parent
+    submodule pointer so GitHub Pages serves the regenerated overlays.
