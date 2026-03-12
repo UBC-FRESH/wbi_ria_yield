@@ -3635,3 +3635,18 @@
   `docs/guides/index.rst`.
 - Added docs-contract test coverage:
   `tests/test_docs_contract.py::test_rebuild_repro_contract_guide_covers_core_sections`.
+
+## 2026-03-11 - Added rebuild-spec authoring guide with copy-ready examples (`P13.5b`)
+- Added new guide:
+  `docs/guides/author-instance-rebuild-spec.rst`.
+- Guide includes:
+  - required spec structure,
+  - minimal copy-ready YAML example,
+  - step/invariant authoring rules,
+  - K3Z reference-spec pointer,
+  - dry-run and full rebuild command examples.
+- Updated docs navigation/linking:
+  `docs/guides/index.rst`,
+  `docs/guides/rebuild-repro-contract.rst`.
+- Added docs-contract test coverage:
+  `tests/test_docs_contract.py::test_author_instance_rebuild_spec_guide_covers_core_sections`.

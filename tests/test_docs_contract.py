@@ -19,6 +19,7 @@ GUIDE_PAGES = [
     "pipeline-overview",
     "deployment-instances",
     "rebuild-repro-contract",
+    "author-instance-rebuild-spec",
     "data-access-inventory",
     "public-data-mirror-runbook",
     "case-onboarding",
@@ -674,6 +675,22 @@ def test_rebuild_repro_contract_guide_covers_core_sections() -> None:
         "Expected Operator Workflow",
         "Required Evidence Artifacts",
         "Failure Classes",
+    ]
+    for section in required_sections:
+        assert section in guide_text
+
+
+def test_author_instance_rebuild_spec_guide_covers_core_sections() -> None:
+    guide_text = (GUIDES_ROOT / "author-instance-rebuild-spec.rst").read_text()
+    required_sections = [
+        "Purpose",
+        "Start from Template",
+        "Core Sections",
+        "Minimal Copy-Ready Example",
+        "Step Authoring Rules",
+        "Invariant Authoring Rules",
+        "K3Z Reference Pattern",
+        "Dry-Run and Execute",
     ]
     for section in required_sections:
         assert section in guide_text

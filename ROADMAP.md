@@ -370,7 +370,7 @@
   - [x] P13.4d Fail rebuild with actionable summary when invariants regress or unexpected diffs exceed thresholds.
 - [ ] P13.5 Add user-facing documentation and operator runbooks
   - [x] P13.5a Add docs page: "Rebuild Repro Contract" (what it is, why it exists, expected workflow).
-  - [ ] P13.5b Add docs page: "How to author a new instance rebuild spec" with copy-ready examples.
+  - [x] P13.5b Add docs page: "How to author a new instance rebuild spec" with copy-ready examples.
   - [ ] P13.5c Add docs page: "How to interpret rebuild reports and regressions".
   - [ ] P13.5d Add contributor policy text making rebuild-spec + checks mandatory for new instance repos.
 - [ ] P13.6 Enforce this as the default norm for all new FEMIC instances
@@ -3533,3 +3533,13 @@
   - Added guide navigation entry in `docs/guides/index.rst`.
   - Added docs-contract coverage:
     `tests/test_docs_contract.py::test_rebuild_repro_contract_guide_covers_core_sections`.
+- 2026-03-11 (Phase 13 `P13.5b` completion): added authoring guide for new
+  instance rebuild specs with copy-ready templates and execution workflow.
+  - Added docs page:
+    `docs/guides/author-instance-rebuild-spec.rst`.
+  - Covered required spec sections, step/invariant authoring rules, minimal
+    YAML example, K3Z reference spec usage, and dry-run/full rebuild commands.
+  - Added guide navigation entries/links in:
+    `docs/guides/index.rst` and `docs/guides/rebuild-repro-contract.rst`.
+  - Added docs-contract coverage:
+    `tests/test_docs_contract.py::test_author_instance_rebuild_spec_guide_covers_core_sections`.

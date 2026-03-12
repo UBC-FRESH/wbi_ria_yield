@@ -12,6 +12,7 @@ export modules.
    pipeline-overview
    deployment-instances
    rebuild-repro-contract
+   author-instance-rebuild-spec
    data-access-inventory
    public-data-mirror-runbook
    case-onboarding
