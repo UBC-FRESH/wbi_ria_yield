@@ -44,6 +44,7 @@ For deterministic orchestration using the new rebuild runner abstraction, use:
 
       femic export patchworks --tsa <code>
       femic export woodstock --tsa <code>
+      femic export dual --tsa <code> --with-ws3-smoke --ws3-command "<ws3 smoke command>"
 
 Stage Boundaries
 ----------------

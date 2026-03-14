@@ -469,10 +469,32 @@ notes.
 - [x] P19.6 Build canonical TSA29 student docs in instance repo
 - [x] P19.7 Link TSA29 repo back into FEMIC as submodule + pointer docs
 - [x] P19.8 Add contract tests and release handoff (v0.1.0)
-- [ ] P19.9 Add dual-output fork contract (Patchworks + Woodstock)
+- [x] P19.9 Add dual-output fork contract (Patchworks + Woodstock)
 - [ ] P19.10 Add ws3 smoke-test integration and evidence gate
 
 ## Detailed Next Steps Notes
+- 2026-03-14 (Phase 19 `P19.9` complete, `P19.10` in progress):
+  implemented dual-output orchestration and ws3 smoke-test command support in
+  FEMIC CLI/runtime.
+  - Added new export command:
+    `femic export dual` to generate Patchworks and Woodstock outputs from the
+    same bundle/checkpoint inputs, with optional ws3 smoke execution.
+  - Added new instance command:
+    `femic instance ws3-smoke` to validate Woodstock datasets and optionally
+    execute a ws3 simulation command, emitting JSON evidence.
+  - Added `src/femic/ws3_smoke.py` with machine-readable smoke results and
+    sanity checks (file presence, row counts, nonzero aggregate volume/area,
+    optional command return code and captured logs).
+  - Updated docs:
+    `docs/reference/cli.rst`,
+    `docs/guides/model-input-bundle-and-export.rst`,
+    `docs/guides/pipeline-overview.rst`.
+  - Added tests:
+    `tests/test_ws3_smoke.py` and new CLI wiring checks in
+    `tests/test_cli_main.py`.
+  - Remaining for `P19.10`:
+    execute ws3 smoke against an actual ws3 model instance path and capture
+    green evidence in TSA29 instance repository workflows.
 - 2026-03-14 (Phase 19 extension - dual-output + ws3 integration):
   extended TSA29 planning so the pipeline must fork to both Patchworks and
   Woodstock outputs, with ws3 simulation smoke tests as required validation.

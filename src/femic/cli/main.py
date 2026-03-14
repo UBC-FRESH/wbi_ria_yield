@@ -83,6 +83,7 @@ from femic.vdyp.reporting import (
     evaluate_warning_budget,
     summarize_vdyp_logs,
 )
+from femic.ws3_smoke import run_ws3_smoke
 from femic.workflows.legacy import run_data_prep, run_post_tipsy_bundle_with_manifest
 
 app = typer.Typer(
@@ -342,6 +343,48 @@ EXPORT_RELEASE_STRICT_OPTION = typer.Option(
     "--strict/--no-strict",
     help="Fail packaging if required model-input/Patchworks artifacts are missing.",
 )
+EXPORT_DUAL_PATCHWORKS_OUTPUT_DIR_OPTION = typer.Option(
+    Path("output/patchworks"),
+    "--patchworks-output-dir",
+    help="Output directory for Patchworks ForestModel + fragments.",
+)
+EXPORT_DUAL_WOODSTOCK_OUTPUT_DIR_OPTION = typer.Option(
+    DEFAULT_WOODSTOCK_OUTPUT_DIR,
+    "--woodstock-output-dir",
+    help="Output directory for Woodstock compatibility CSV files.",
+)
+EXPORT_DUAL_WITH_WS3_SMOKE_OPTION = typer.Option(
+    False,
+    "--with-ws3-smoke/--no-ws3-smoke",
+    help="Run ws3 smoke validation after Woodstock export.",
+)
+EXPORT_DUAL_WS3_COMMAND_OPTION = typer.Option(
+    None,
+    "--ws3-command",
+    help="Optional shell command that executes ws3 smoke simulation.",
+    show_default=False,
+)
+EXPORT_DUAL_WS3_WORKDIR_OPTION = typer.Option(
+    None,
+    "--ws3-workdir",
+    help="Optional working directory for ws3 command execution.",
+    show_default=False,
+)
+EXPORT_DUAL_WS3_REPORT_OPTION = typer.Option(
+    Path("evidence/ws3_smoke_report.latest.json"),
+    "--ws3-report",
+    help="Output path for ws3 smoke JSON report.",
+)
+EXPORT_DUAL_WS3_REQUIRE_COMMAND_OPTION = typer.Option(
+    False,
+    "--ws3-require-command/--ws3-allow-no-command",
+    help="Fail ws3 smoke step when --ws3-command is not provided.",
+)
+EXPORT_DUAL_WS3_TIMEOUT_OPTION = typer.Option(
+    600,
+    "--ws3-timeout-seconds",
+    help="Timeout in seconds for ws3 smoke command execution.",
+)
 INSTANCE_REBUILD_RUN_CONFIG_OPTION = typer.Option(
     Path("config/run_profile.case_template.yaml"),
     "--run-config",
@@ -442,6 +485,38 @@ INSTANCE_ACCOUNT_SURFACE_OUTPUT_OPTION = typer.Option(
     "--output",
     help="Optional JSON output path for account-surface summary.",
     show_default=False,
+)
+INSTANCE_WS3_SMOKE_WOODSTOCK_DIR_OPTION = typer.Option(
+    DEFAULT_WOODSTOCK_OUTPUT_DIR,
+    "--woodstock-dir",
+    help="Woodstock output directory to validate.",
+)
+INSTANCE_WS3_SMOKE_OUTPUT_OPTION = typer.Option(
+    Path("evidence/ws3_smoke_report.latest.json"),
+    "--output",
+    help="Output path for ws3 smoke JSON report.",
+)
+INSTANCE_WS3_SMOKE_COMMAND_OPTION = typer.Option(
+    None,
+    "--ws3-command",
+    help="Optional shell command that executes ws3 smoke simulation.",
+    show_default=False,
+)
+INSTANCE_WS3_SMOKE_WORKDIR_OPTION = typer.Option(
+    None,
+    "--ws3-workdir",
+    help="Optional working directory for ws3 command execution.",
+    show_default=False,
+)
+INSTANCE_WS3_SMOKE_REQUIRE_COMMAND_OPTION = typer.Option(
+    False,
+    "--require-command/--allow-no-command",
+    help="Fail when ws3 command is not provided.",
+)
+INSTANCE_WS3_SMOKE_TIMEOUT_OPTION = typer.Option(
+    600,
+    "--timeout-seconds",
+    help="Timeout in seconds for ws3 command execution.",
 )
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
@@ -2116,6 +2191,166 @@ def export_release(
     )
     console.print(f"manifest: {result.manifest_path}")
     console.print(f"handoff_notes: {result.handoff_notes_path}")
+
+
+@export_app.command("dual")
+def export_dual(
+    tsa: list[str] | None = TSA_OPTION,
+    bundle_dir: Path = EXPORT_BUNDLE_DIR_OPTION,
+    checkpoint: Path = EXPORT_CHECKPOINT_OPTION,
+    patchworks_output_dir: Path = EXPORT_DUAL_PATCHWORKS_OUTPUT_DIR_OPTION,
+    woodstock_output_dir: Path = EXPORT_DUAL_WOODSTOCK_OUTPUT_DIR_OPTION,
+    start_year: int = EXPORT_START_YEAR_OPTION,
+    horizon_years: int = EXPORT_HORIZON_YEARS_OPTION,
+    cc_min_age: int = EXPORT_CC_MIN_AGE_OPTION,
+    cc_max_age: int = EXPORT_CC_MAX_AGE_OPTION,
+    cc_transition_ifm: str | None = EXPORT_CC_TRANSITION_IFM_OPTION,
+    fragments_crs: str = EXPORT_FRAGMENTS_CRS_OPTION,
+    ifm_source_col: str | None = EXPORT_IFM_SOURCE_COL_OPTION,
+    ifm_threshold: float | None = EXPORT_IFM_THRESHOLD_OPTION,
+    ifm_target_managed_share: float | None = (EXPORT_IFM_TARGET_MANAGED_SHARE_OPTION),
+    seral_stage_config: Path | None = EXPORT_SERAL_STAGE_CONFIG_OPTION,
+    with_ws3_smoke: bool = EXPORT_DUAL_WITH_WS3_SMOKE_OPTION,
+    ws3_command: str | None = EXPORT_DUAL_WS3_COMMAND_OPTION,
+    ws3_workdir: Path | None = EXPORT_DUAL_WS3_WORKDIR_OPTION,
+    ws3_report: Path = EXPORT_DUAL_WS3_REPORT_OPTION,
+    ws3_require_command: bool = EXPORT_DUAL_WS3_REQUIRE_COMMAND_OPTION,
+    ws3_timeout_seconds: int = EXPORT_DUAL_WS3_TIMEOUT_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
+) -> None:
+    """Export both Patchworks and Woodstock artifacts, then optionally run ws3 smoke."""
+    instance_context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_bundle_dir = instance_context.resolve_path(bundle_dir)
+    resolved_checkpoint = instance_context.resolve_path(checkpoint)
+    resolved_patchworks_output_dir = instance_context.resolve_path(
+        patchworks_output_dir
+    )
+    resolved_woodstock_output_dir = instance_context.resolve_path(woodstock_output_dir)
+    resolved_seral_stage_config = (
+        instance_context.resolve_path(seral_stage_config)
+        if isinstance(seral_stage_config, Path)
+        else None
+    )
+    resolved_ws3_report = instance_context.resolve_path(ws3_report)
+    resolved_ws3_workdir = (
+        instance_context.resolve_path(ws3_workdir)
+        if isinstance(ws3_workdir, Path)
+        else None
+    )
+    targets = (
+        [str(v).zfill(2) if str(v).isdigit() else str(v).lower() for v in tsa]
+        if tsa
+        else []
+    )
+    if not targets:
+        console.print("[red]Provide at least one TSA via --tsa for dual export.[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        patchworks_result = export_patchworks_package(
+            bundle_dir=resolved_bundle_dir,
+            checkpoint_path=resolved_checkpoint,
+            output_dir=resolved_patchworks_output_dir,
+            tsa_list=targets,
+            start_year=start_year,
+            horizon_years=horizon_years,
+            cc_min_age=cc_min_age,
+            cc_max_age=cc_max_age,
+            cc_transition_ifm=cc_transition_ifm,
+            fragments_crs=fragments_crs,
+            ifm_source_col=ifm_source_col,
+            ifm_threshold=ifm_threshold,
+            ifm_target_managed_share=ifm_target_managed_share,
+            seral_stage_config_path=resolved_seral_stage_config,
+        )
+        woodstock_result = export_woodstock_package(
+            bundle_dir=resolved_bundle_dir,
+            checkpoint_path=resolved_checkpoint,
+            output_dir=resolved_woodstock_output_dir,
+            tsa_list=targets,
+            cc_min_age=cc_min_age,
+            cc_max_age=cc_max_age,
+            fragments_crs=fragments_crs,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(f"[red]Dual export failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(
+        "[green]dual export completed[/green] "
+        f"tsa={patchworks_result.tsa_list} "
+        f"patchworks_curves={patchworks_result.curve_count} "
+        f"woodstock_yields={woodstock_result.yield_rows}"
+    )
+    console.print(
+        f"patchworks_forestmodel_xml: {patchworks_result.forestmodel_xml_path}"
+    )
+    console.print(f"woodstock_yields_csv: {woodstock_result.yields_csv_path}")
+
+    if with_ws3_smoke:
+        smoke = run_ws3_smoke(
+            woodstock_dir=resolved_woodstock_output_dir,
+            output_path=resolved_ws3_report,
+            ws3_command=ws3_command,
+            ws3_workdir=resolved_ws3_workdir,
+            timeout_seconds=ws3_timeout_seconds,
+            require_command=ws3_require_command,
+        )
+        if smoke.status == "ok":
+            console.print(
+                f"[green]ws3 smoke ok[/green] report={resolved_ws3_report} "
+                f"message={smoke.message}"
+            )
+        elif smoke.status == "warn":
+            console.print(
+                f"[yellow]ws3 smoke warning[/yellow] report={resolved_ws3_report} "
+                f"message={smoke.message}"
+            )
+        else:
+            console.print(
+                f"[red]ws3 smoke failed[/red] report={resolved_ws3_report} "
+                f"message={smoke.message}"
+            )
+            raise typer.Exit(code=1)
+
+
+@instance_app.command("ws3-smoke")
+def instance_ws3_smoke(
+    woodstock_dir: Path = INSTANCE_WS3_SMOKE_WOODSTOCK_DIR_OPTION,
+    output: Path = INSTANCE_WS3_SMOKE_OUTPUT_OPTION,
+    ws3_command: str | None = INSTANCE_WS3_SMOKE_COMMAND_OPTION,
+    ws3_workdir: Path | None = INSTANCE_WS3_SMOKE_WORKDIR_OPTION,
+    require_command: bool = INSTANCE_WS3_SMOKE_REQUIRE_COMMAND_OPTION,
+    timeout_seconds: int = INSTANCE_WS3_SMOKE_TIMEOUT_OPTION,
+    instance_root: Path | None = INSTANCE_ROOT_OPTION,
+) -> None:
+    """Run ws3 smoke validation for Woodstock outputs and emit a JSON report."""
+    context = _resolve_cli_instance_context(instance_root=instance_root)
+    resolved_woodstock_dir = context.resolve_path(woodstock_dir)
+    resolved_output = context.resolve_path(output)
+    resolved_ws3_workdir = (
+        context.resolve_path(ws3_workdir) if isinstance(ws3_workdir, Path) else None
+    )
+    result = run_ws3_smoke(
+        woodstock_dir=resolved_woodstock_dir,
+        output_path=resolved_output,
+        ws3_command=ws3_command,
+        ws3_workdir=resolved_ws3_workdir,
+        timeout_seconds=timeout_seconds,
+        require_command=require_command,
+    )
+    color = "green" if result.status == "ok" else "yellow"
+    if result.status == "failed":
+        color = "red"
+    console.print(
+        f"[{color}]ws3 smoke {result.status}[/{color}] "
+        f"rows(y/a/ac/t)=({result.yields_rows}/{result.areas_rows}/"
+        f"{result.actions_rows}/{result.transitions_rows}) "
+        f"report={resolved_output}"
+    )
+    console.print(result.message)
+    if result.status == "failed":
+        raise typer.Exit(code=1)
 
 
 @patchworks_app.command("preflight")

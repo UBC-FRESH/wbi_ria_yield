@@ -4349,3 +4349,23 @@
 - Updated roadmap to track this as open Phase 19 work:
   - `P19.9 Add dual-output fork contract (Patchworks + Woodstock)`,
   - `P19.10 Add ws3 smoke-test integration and evidence gate`.
+
+## 2026-03-14 - Added dual-export orchestration and ws3 smoke command path (`P19.9`)
+- Implemented `femic export dual` to produce Patchworks + Woodstock outputs in
+  a single command execution using shared bundle/checkpoint inputs.
+- Implemented `femic instance ws3-smoke` to validate Woodstock export
+  structure/sanity and optionally execute a ws3 simulation command.
+- Added new runtime helper module:
+  `src/femic/ws3_smoke.py` with JSON evidence output and optional stdout/stderr
+  capture for ws3 command runs.
+- Updated docs for operator usage:
+  - `docs/reference/cli.rst`
+  - `docs/guides/model-input-bundle-and-export.rst`
+  - `docs/guides/pipeline-overview.rst`
+- Added regression coverage:
+  - `tests/test_ws3_smoke.py`
+  - new `export dual` / `instance ws3-smoke` CLI wiring tests in
+    `tests/test_cli_main.py`
+- Phase status:
+  `P19.9` complete; `P19.10` remains open pending execution against a real ws3
+  model instance and captured green evidence.
