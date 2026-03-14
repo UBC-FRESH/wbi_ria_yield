@@ -469,8 +469,23 @@ notes.
 - [x] P19.6 Build canonical TSA29 student docs in instance repo
 - [x] P19.7 Link TSA29 repo back into FEMIC as submodule + pointer docs
 - [x] P19.8 Add contract tests and release handoff (v0.1.0)
+- [ ] P19.9 Add dual-output fork contract (Patchworks + Woodstock)
+- [ ] P19.10 Add ws3 smoke-test integration and evidence gate
 
 ## Detailed Next Steps Notes
+- 2026-03-14 (Phase 19 extension - dual-output + ws3 integration):
+  extended TSA29 planning so the pipeline must fork to both Patchworks and
+  Woodstock outputs, with ws3 simulation smoke tests as required validation.
+  - Created feature branch for this workstream firewall:
+    `feature/compile-tsa29-instance-ws3-fork`.
+  - Rewrote plan doc:
+    `planning/TSA29_dataset_compile_plan.md` with explicit:
+    - fork-stage contract (`Patchworks` and `Woodstock` outputs),
+    - ws3 ingestion and simulation smoke-test workflow,
+    - ws3 evidence artifacts and sanity gates.
+  - Added new open Phase 19 tasks:
+    `P19.9` (dual-output contract) and
+    `P19.10` (ws3 smoke-test gate).
 - 2026-03-14 (Phase 19 kickoff + initial delivery):
   published initial standalone TSA29 instance repository and linked it back into
   FEMIC.

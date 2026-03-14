@@ -4333,3 +4333,19 @@
 - Remaining Phase 19 item:
   `P19.5` (full Patchworks-enabled rebuild validation and evidence promotion to
   green status).
+
+## 2026-03-14 - Extended TSA29 plan for dual-output pipeline and ws3 smoke tests
+- Created dedicated feature branch to firewall ongoing TSA29 compile work from
+  `main`:
+  `feature/compile-tsa29-instance-ws3-fork`.
+- Extended TSA29 planning contract in
+  `planning/TSA29_dataset_compile_plan.md` to require pipeline fork outputs:
+  - Patchworks branch (secondary teaching/training path),
+  - Woodstock branch (primary ws3 research path).
+- Added explicit ws3 integration contract:
+  - create/link ws3 model instance using FEMIC Woodstock outputs,
+  - execute ws3 simulation smoke test,
+  - record ws3 smoke evidence and sanity checks.
+- Updated roadmap to track this as open Phase 19 work:
+  - `P19.9 Add dual-output fork contract (Patchworks + Woodstock)`,
+  - `P19.10 Add ws3 smoke-test integration and evidence gate`.
