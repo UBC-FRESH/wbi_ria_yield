@@ -1604,6 +1604,9 @@ def test_export_dual_runs_patchworks_and_woodstock(
         ws3_report=Path("evidence/ws3_smoke_report.latest.json"),
         ws3_require_command=False,
         ws3_timeout_seconds=600,
+        ws3_repo_path=None,
+        ws3_builtin_smoke=False,
+        ws3_bridge_dir=None,
         instance_root=instance_root,
     )
 
@@ -1645,6 +1648,9 @@ def test_instance_ws3_smoke_fails_on_failed_result(
             ws3_workdir=None,
             require_command=False,
             timeout_seconds=600,
+            ws3_repo_path=None,
+            builtin_model_smoke=True,
+            ws3_bridge_dir=None,
             instance_root=instance_root,
         )
     assert exc_info.value.exit_code == 1

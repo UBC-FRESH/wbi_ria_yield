@@ -7,8 +7,11 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 import pandas as pd
+
+from femic.ws3_bridge import build_ws3_sections_from_femic_woodstock
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,9 @@ class Ws3SmokeResult:
     ws3_returncode: int | None
     ws3_stdout_log: str | None
     ws3_stderr_log: str | None
+    ws3_bridge_dir: str | None
+    ws3_bridge_model_name: str | None
+    ws3_builtin_smoke_executed: bool
     message: str
     timestamp_utc: str
 
@@ -41,6 +47,10 @@ def run_ws3_smoke(
     ws3_workdir: Path | None = None,
     timeout_seconds: int = 600,
     require_command: bool = False,
+    ws3_repo_path: Path | None = None,
+    run_builtin_model_smoke: bool = False,
+    ws3_bridge_dir: Path | None = None,
+    ws3_bridge_model_name: str = "femic_tsa_ws3",
 ) -> Ws3SmokeResult:
     """Validate Woodstock exports and optionally execute a ws3 smoke command."""
     resolved_dir = woodstock_dir.expanduser().resolve()
@@ -68,6 +78,9 @@ def run_ws3_smoke(
             ws3_returncode=None,
             ws3_stdout_log=None,
             ws3_stderr_log=None,
+            ws3_bridge_dir=None,
+            ws3_bridge_model_name=None,
+            ws3_builtin_smoke_executed=False,
             message=f"Missing required Woodstock artifacts: {', '.join(missing)}",
             timestamp_utc=now,
         )
@@ -113,6 +126,9 @@ def run_ws3_smoke(
             ws3_returncode=None,
             ws3_stdout_log=None,
             ws3_stderr_log=None,
+            ws3_bridge_dir=None,
+            ws3_bridge_model_name=None,
+            ws3_builtin_smoke_executed=False,
             message="Woodstock tables are present but failed sanity thresholds.",
             timestamp_utc=now,
         )
@@ -123,6 +139,9 @@ def run_ws3_smoke(
     ws3_returncode: int | None = None
     ws3_stdout_log: Path | None = None
     ws3_stderr_log: Path | None = None
+    bridge_dir: Path | None = None
+    bridge_model_name: str | None = None
+    ws3_builtin_smoke_executed = False
     status = "ok"
     message = "Woodstock structure and sanity checks passed."
     if ws3_command:
@@ -157,6 +176,29 @@ def run_ws3_smoke(
             message = f"ws3 command failed with return code {ws3_returncode}."
         else:
             message = "Woodstock checks passed and ws3 smoke command exited cleanly."
+    elif run_builtin_model_smoke:
+        ws3_builtin_smoke_executed = True
+        bridge_dir = (
+            ws3_bridge_dir.expanduser().resolve()
+            if ws3_bridge_dir is not None
+            else (resolved_dir / "ws3_bridge")
+        )
+        bridge_model_name = ws3_bridge_model_name
+        bridge = build_ws3_sections_from_femic_woodstock(
+            woodstock_dir=resolved_dir,
+            output_dir=bridge_dir,
+            model_name=bridge_model_name,
+        )
+        builtin_status, builtin_message = _run_builtin_ws3_model_smoke(
+            ws3_repo_path=ws3_repo_path,
+            model_path=bridge.output_dir,
+            model_name=bridge.model_name,
+        )
+        if builtin_status != "ok":
+            status = "failed"
+        else:
+            status = "ok"
+        message = builtin_message
     elif require_command:
         status = "failed"
         message = "No ws3 command provided while require_command=true."
@@ -182,6 +224,9 @@ def run_ws3_smoke(
         ws3_returncode=ws3_returncode,
         ws3_stdout_log=str(ws3_stdout_log) if ws3_stdout_log is not None else None,
         ws3_stderr_log=str(ws3_stderr_log) if ws3_stderr_log is not None else None,
+        ws3_bridge_dir=str(bridge_dir) if bridge_dir is not None else None,
+        ws3_bridge_model_name=bridge_model_name,
+        ws3_builtin_smoke_executed=ws3_builtin_smoke_executed,
         message=message,
         timestamp_utc=now,
     )
@@ -203,3 +248,52 @@ def _iso_utc(value: datetime) -> str:
     return (
         value.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     )
+
+
+def _run_builtin_ws3_model_smoke(
+    *,
+    ws3_repo_path: Path | None,
+    model_path: Path,
+    model_name: str,
+) -> tuple[str, str]:
+    try:
+        if ws3_repo_path is not None:
+            repo_root = ws3_repo_path.expanduser().resolve()
+            if str(repo_root) not in sys.path:
+                sys.path.insert(0, str(repo_root))
+        from ws3.forest import ForestModel  # type: ignore[import-not-found]
+    except Exception as exc:  # pragma: no cover - environment dependent
+        return ("failed", f"Failed to import ws3 runtime: {exc}")
+
+    try:
+        fm = ForestModel(
+            model_name=model_name,
+            model_path=str(model_path),
+            base_year=2026,
+            horizon=2,
+            period_length=10,
+        )
+        fm.import_landscape_section()
+        fm.import_areas_section(convert_periods_to_years=10)
+        fm.import_yields_section(convert_periods_to_years=10)
+        fm.import_actions_section(convert_periods_to_years=10)
+        fm.import_transitions_section(convert_periods_to_years=10)
+        fm.initialize_areas()
+        fm.compile_actions()
+        action_codes = sorted(fm.actions.keys())
+        if not action_codes:
+            return ("failed", "ws3 model loaded but has no actions.")
+        acode = action_codes[0]
+        total_area = float(fm.inventory(0))
+        target_area = max(0.01, total_area * 0.01)
+        fm.areaselector.operate(period=1, acode=acode, target_area=target_area)
+        schedule = fm.compile_schedule()
+        schedule_len = len(schedule) if schedule is not None else 0
+        if schedule_len <= 0:
+            return ("failed", "ws3 model loaded but produced empty schedule.")
+        return (
+            "ok",
+            f"ws3 builtin smoke passed (actions={len(action_codes)}, schedule_rows={schedule_len}).",
+        )
+    except Exception as exc:  # pragma: no cover - environment dependent
+        return ("failed", f"ws3 builtin smoke failed: {exc}")

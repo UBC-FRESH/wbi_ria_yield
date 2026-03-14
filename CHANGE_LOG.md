@@ -4369,3 +4369,30 @@
 - Phase status:
   `P19.9` complete; `P19.10` remains open pending execution against a real ws3
   model instance and captured green evidence.
+
+## 2026-03-14 - Added builtin ws3 bridge smoke integration (`P19.10` progress)
+- Added `src/femic/ws3_bridge.py` with
+  `build_ws3_sections_from_femic_woodstock(...)` to convert FEMIC Woodstock CSV
+  exports into ws3-compatible Woodstock section files
+  (`.lan/.are/.yld/.act/.trn`).
+- Extended `src/femic/ws3_smoke.py` so ws3 smoke can:
+  - build bridge section files,
+  - optionally inject a local ws3 checkout via `--ws3-repo-path`,
+  - run builtin `ws3.forest.ForestModel` load/compile/schedule smoke logic,
+  - emit bridge metadata in JSON evidence output.
+- Extended CLI options:
+  - `femic export dual`: `--ws3-repo-path`, `--ws3-builtin-smoke`,
+    `--ws3-bridge-dir`.
+  - `femic instance ws3-smoke`: `--ws3-repo-path`, `--builtin-model-smoke`,
+    `--ws3-bridge-dir`.
+- Updated docs/tests for this contract:
+  - `docs/reference/cli.rst`, `docs/reference/api/modules.rst`
+  - `tests/test_ws3_bridge.py`, `tests/test_ws3_smoke.py`,
+    `tests/test_cli_main.py`, `tests/test_docs_contract.py`
+- Validation gates passed locally:
+  - `ruff format src tests`
+  - `ruff check src tests`
+  - `mypy src`
+  - `pytest` (`500 passed`)
+  - `pre-commit run --all-files`
+  - `sphinx-build -b html docs _build/html -W`

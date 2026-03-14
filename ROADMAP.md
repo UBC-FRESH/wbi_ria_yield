@@ -473,6 +473,31 @@ notes.
 - [ ] P19.10 Add ws3 smoke-test integration and evidence gate
 
 ## Detailed Next Steps Notes
+- 2026-03-14 (Phase 19 `P19.10` progress): added builtin ws3 model smoke path
+  that converts FEMIC Woodstock CSV exports into ws3-ingestible Woodstock
+  section files and runs a minimal `ForestModel` compile/schedule check.
+  - Added bridge module:
+    `src/femic/ws3_bridge.py` with
+    `build_ws3_sections_from_femic_woodstock(...)` to generate
+    `.lan/.are/.yld/.act/.trn`.
+  - Extended ws3 smoke runtime:
+    `src/femic/ws3_smoke.py` now supports builtin smoke execution, optional
+    `--ws3-repo-path` PYTHONPATH injection, and report fields for bridge output
+    location/model name.
+  - Extended CLI wiring:
+    `femic export dual` now supports
+    `--ws3-repo-path`, `--ws3-builtin-smoke`, `--ws3-bridge-dir`;
+    `femic instance ws3-smoke` now supports
+    `--ws3-repo-path`, `--builtin-model-smoke`, `--ws3-bridge-dir`.
+  - Added tests/docs coverage:
+    `tests/test_ws3_bridge.py`, updates to
+    `tests/test_ws3_smoke.py`, `tests/test_cli_main.py`,
+    `tests/test_docs_contract.py`,
+    `docs/reference/cli.rst`,
+    `docs/reference/api/modules.rst`.
+  - Remaining for `P19.10`:
+    run this against a real TSA29 Woodstock output + ws3 model workflow and
+    publish green ws3 smoke evidence in the TSA29 instance repo.
 - 2026-03-14 (Phase 19 `P19.9` complete, `P19.10` in progress):
   implemented dual-output orchestration and ws3 smoke-test command support in
   FEMIC CLI/runtime.

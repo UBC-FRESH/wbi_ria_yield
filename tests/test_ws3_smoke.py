@@ -66,6 +66,7 @@ def test_run_ws3_smoke_warns_without_command(tmp_path: Path) -> None:
     result = run_ws3_smoke(
         woodstock_dir=woodstock_dir,
         output_path=report_path,
+        run_builtin_model_smoke=False,
     )
 
     assert result.status == "warn"
@@ -87,6 +88,7 @@ def test_run_ws3_smoke_ok_with_command(tmp_path: Path) -> None:
         output_path=report_path,
         ws3_command="true",
         timeout_seconds=5,
+        run_builtin_model_smoke=False,
     )
 
     assert result.status == "ok"
@@ -99,7 +101,27 @@ def test_run_ws3_smoke_fails_when_missing_files(tmp_path: Path) -> None:
     woodstock_dir = tmp_path / "output" / "woodstock"
     woodstock_dir.mkdir(parents=True, exist_ok=True)
 
-    result = run_ws3_smoke(woodstock_dir=woodstock_dir)
+    result = run_ws3_smoke(woodstock_dir=woodstock_dir, run_builtin_model_smoke=False)
 
     assert result.status == "failed"
     assert result.required_files_present is False
+
+
+def test_run_ws3_smoke_builtin_reports_import_failure(tmp_path: Path) -> None:
+    woodstock_dir = tmp_path / "output" / "woodstock"
+    report_path = tmp_path / "evidence" / "ws3_smoke_report.latest.json"
+    _write_minimal_woodstock(woodstock_dir)
+
+    result = run_ws3_smoke(
+        woodstock_dir=woodstock_dir,
+        output_path=report_path,
+        ws3_repo_path=tmp_path / "does_not_exist",
+        run_builtin_model_smoke=True,
+    )
+
+    assert result.status == "failed"
+    assert result.ws3_builtin_smoke_executed is True
+    assert (
+        "Failed to import ws3 runtime" in result.message
+        or "failed" in result.message.lower()
+    )

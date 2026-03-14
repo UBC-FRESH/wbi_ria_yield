@@ -385,6 +385,23 @@ EXPORT_DUAL_WS3_TIMEOUT_OPTION = typer.Option(
     "--ws3-timeout-seconds",
     help="Timeout in seconds for ws3 smoke command execution.",
 )
+EXPORT_DUAL_WS3_REPO_PATH_OPTION = typer.Option(
+    None,
+    "--ws3-repo-path",
+    help="Optional path to local ws3 source checkout (added to PYTHONPATH for builtin smoke).",
+    show_default=False,
+)
+EXPORT_DUAL_WS3_BUILTIN_SMOKE_OPTION = typer.Option(
+    False,
+    "--ws3-builtin-smoke/--no-ws3-builtin-smoke",
+    help="Run builtin ws3 model smoke using FEMIC->ws3 bridge files.",
+)
+EXPORT_DUAL_WS3_BRIDGE_DIR_OPTION = typer.Option(
+    None,
+    "--ws3-bridge-dir",
+    help="Optional output directory for generated ws3 Woodstock section files.",
+    show_default=False,
+)
 INSTANCE_REBUILD_RUN_CONFIG_OPTION = typer.Option(
     Path("config/run_profile.case_template.yaml"),
     "--run-config",
@@ -517,6 +534,23 @@ INSTANCE_WS3_SMOKE_TIMEOUT_OPTION = typer.Option(
     600,
     "--timeout-seconds",
     help="Timeout in seconds for ws3 command execution.",
+)
+INSTANCE_WS3_SMOKE_REPO_PATH_OPTION = typer.Option(
+    None,
+    "--ws3-repo-path",
+    help="Optional path to local ws3 source checkout (added to PYTHONPATH for builtin smoke).",
+    show_default=False,
+)
+INSTANCE_WS3_SMOKE_BUILTIN_OPTION = typer.Option(
+    True,
+    "--builtin-model-smoke/--no-builtin-model-smoke",
+    help="Run builtin ws3 model smoke using FEMIC->ws3 bridge files.",
+)
+INSTANCE_WS3_SMOKE_BRIDGE_DIR_OPTION = typer.Option(
+    None,
+    "--ws3-bridge-dir",
+    help="Optional output directory for generated ws3 Woodstock section files.",
+    show_default=False,
 )
 PATCHWORKS_CONFIG_OPTION = typer.Option(
     DEFAULT_PATCHWORKS_CONFIG_PATH,
@@ -2216,6 +2250,9 @@ def export_dual(
     ws3_report: Path = EXPORT_DUAL_WS3_REPORT_OPTION,
     ws3_require_command: bool = EXPORT_DUAL_WS3_REQUIRE_COMMAND_OPTION,
     ws3_timeout_seconds: int = EXPORT_DUAL_WS3_TIMEOUT_OPTION,
+    ws3_repo_path: Path | None = EXPORT_DUAL_WS3_REPO_PATH_OPTION,
+    ws3_builtin_smoke: bool = EXPORT_DUAL_WS3_BUILTIN_SMOKE_OPTION,
+    ws3_bridge_dir: Path | None = EXPORT_DUAL_WS3_BRIDGE_DIR_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
     """Export both Patchworks and Woodstock artifacts, then optionally run ws3 smoke."""
@@ -2235,6 +2272,16 @@ def export_dual(
     resolved_ws3_workdir = (
         instance_context.resolve_path(ws3_workdir)
         if isinstance(ws3_workdir, Path)
+        else None
+    )
+    resolved_ws3_repo_path = (
+        instance_context.resolve_path(ws3_repo_path)
+        if isinstance(ws3_repo_path, Path)
+        else None
+    )
+    resolved_ws3_bridge_dir = (
+        instance_context.resolve_path(ws3_bridge_dir)
+        if isinstance(ws3_bridge_dir, Path)
         else None
     )
     targets = (
@@ -2295,6 +2342,9 @@ def export_dual(
             ws3_workdir=resolved_ws3_workdir,
             timeout_seconds=ws3_timeout_seconds,
             require_command=ws3_require_command,
+            ws3_repo_path=resolved_ws3_repo_path,
+            run_builtin_model_smoke=ws3_builtin_smoke,
+            ws3_bridge_dir=resolved_ws3_bridge_dir,
         )
         if smoke.status == "ok":
             console.print(
@@ -2322,6 +2372,9 @@ def instance_ws3_smoke(
     ws3_workdir: Path | None = INSTANCE_WS3_SMOKE_WORKDIR_OPTION,
     require_command: bool = INSTANCE_WS3_SMOKE_REQUIRE_COMMAND_OPTION,
     timeout_seconds: int = INSTANCE_WS3_SMOKE_TIMEOUT_OPTION,
+    ws3_repo_path: Path | None = INSTANCE_WS3_SMOKE_REPO_PATH_OPTION,
+    builtin_model_smoke: bool = INSTANCE_WS3_SMOKE_BUILTIN_OPTION,
+    ws3_bridge_dir: Path | None = INSTANCE_WS3_SMOKE_BRIDGE_DIR_OPTION,
     instance_root: Path | None = INSTANCE_ROOT_OPTION,
 ) -> None:
     """Run ws3 smoke validation for Woodstock outputs and emit a JSON report."""
@@ -2331,6 +2384,14 @@ def instance_ws3_smoke(
     resolved_ws3_workdir = (
         context.resolve_path(ws3_workdir) if isinstance(ws3_workdir, Path) else None
     )
+    resolved_ws3_repo_path = (
+        context.resolve_path(ws3_repo_path) if isinstance(ws3_repo_path, Path) else None
+    )
+    resolved_ws3_bridge_dir = (
+        context.resolve_path(ws3_bridge_dir)
+        if isinstance(ws3_bridge_dir, Path)
+        else None
+    )
     result = run_ws3_smoke(
         woodstock_dir=resolved_woodstock_dir,
         output_path=resolved_output,
@@ -2338,6 +2399,9 @@ def instance_ws3_smoke(
         ws3_workdir=resolved_ws3_workdir,
         timeout_seconds=timeout_seconds,
         require_command=require_command,
+        ws3_repo_path=resolved_ws3_repo_path,
+        run_builtin_model_smoke=builtin_model_smoke,
+        ws3_bridge_dir=resolved_ws3_bridge_dir,
     )
     color = "green" if result.status == "ok" else "yellow"
     if result.status == "failed":

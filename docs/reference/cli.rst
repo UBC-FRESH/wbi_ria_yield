@@ -220,6 +220,9 @@ Subcommands
 - ``--ws3-report PATH`` (default: ``evidence/ws3_smoke_report.latest.json``)
 - ``--ws3-require-command / --ws3-allow-no-command`` (default: allow no command)
 - ``--ws3-timeout-seconds INTEGER`` (default: ``600``)
+- ``--ws3-repo-path PATH`` (optional local ws3 checkout path for builtin smoke)
+- ``--ws3-builtin-smoke / --no-ws3-builtin-smoke`` (default: ``--no-ws3-builtin-smoke``)
+- ``--ws3-bridge-dir PATH`` (optional output directory for generated ws3 section files)
 - ``--instance-root PATH``
 
 ``export release`` options
@@ -376,4 +379,7 @@ next-check steps.
 - ``--ws3-workdir PATH`` (optional command working directory)
 - ``--require-command / --allow-no-command`` (default: allow no command)
 - ``--timeout-seconds INTEGER`` (default: ``600``)
+- ``--ws3-repo-path PATH`` (optional local ws3 checkout path for builtin smoke)
+- ``--builtin-model-smoke / --no-builtin-model-smoke`` (default: ``--builtin-model-smoke``)
+- ``--ws3-bridge-dir PATH`` (optional output directory for generated ws3 section files)
 - ``--instance-root PATH``
