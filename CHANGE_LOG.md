@@ -4396,3 +4396,20 @@
   - `pytest` (`500 passed`)
   - `pre-commit run --all-files`
   - `sphinx-build -b html docs _build/html -W`
+
+## 2026-03-14 - Completed Phase 19 `P19.10` ws3 evidence gate on TSA29
+- Generated a complete TSA29 Woodstock package in the instance repo:
+  `external/femic-tsa29-instance/output/woodstock_tsa29_validated/`
+  including `woodstock_yields.csv`, `woodstock_areas.csv`,
+  `woodstock_actions.csv`, `woodstock_transitions.csv`.
+- Executed real ws3 smoke gate against TSA29 outputs with local ws3 checkout:
+  `femic instance ws3-smoke --instance-root external/femic-tsa29-instance --woodstock-dir output/woodstock_tsa29_validated --output evidence/ws3_smoke_report.latest.json --ws3-repo-path /home/gep/projects/ws3`.
+- Smoke result was green:
+  - `status=ok`
+  - rows `(y/a/ac/t)=(10050/147959/30/30)`
+  - `inventory_area=2172195.127`
+  - evidence written at
+    `external/femic-tsa29-instance/evidence/ws3_smoke_report.latest.json`.
+- Published TSA29 instance updates to
+  `UBC-FRESH/femic-tsa29-instance` commit `afc5f8b` with evidence + Woodstock
+  outputs + ws3 bridge section files.

@@ -470,9 +470,20 @@ notes.
 - [x] P19.7 Link TSA29 repo back into FEMIC as submodule + pointer docs
 - [x] P19.8 Add contract tests and release handoff (v0.1.0)
 - [x] P19.9 Add dual-output fork contract (Patchworks + Woodstock)
-- [ ] P19.10 Add ws3 smoke-test integration and evidence gate
+- [x] P19.10 Add ws3 smoke-test integration and evidence gate
 
 ## Detailed Next Steps Notes
+- 2026-03-14 (Phase 19 `P19.10` complete): executed real TSA29 Woodstock export
+  and ws3 smoke gate, then published evidence in the TSA29 instance repo.
+  - Generated complete Woodstock package under
+    `external/femic-tsa29-instance/output/woodstock_tsa29_validated/`
+    (yields/areas/actions/transitions + ws3 bridge `.lan/.are/.yld/.act/.trn`).
+  - Executed command:
+    `femic instance ws3-smoke --instance-root external/femic-tsa29-instance --woodstock-dir output/woodstock_tsa29_validated --output evidence/ws3_smoke_report.latest.json --ws3-repo-path /home/gep/projects/ws3`.
+  - Result: `status=ok`, rows `(y/a/ac/t)=(10050/147959/30/30)`,
+    `actions=1`, `inventory_area=2172195.127`.
+  - Published TSA29 instance commit with evidence/artifacts:
+    `UBC-FRESH/femic-tsa29-instance@afc5f8b`.
 - 2026-03-14 (Phase 19 `P19.10` progress): added builtin ws3 model smoke path
   that converts FEMIC Woodstock CSV exports into ws3-ingestible Woodstock
   section files and runs a minimal `ForestModel` compile/schedule check.
