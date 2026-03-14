@@ -6,3 +6,7 @@
 	path = external/femic-k3z-instance
 	url = https://github.com/UBC-FRESH/femic-k3z-instance.git
 	branch = main
+[submodule "external/femic-tsa29-instance"]
+	path = external/femic-tsa29-instance
+	url = https://github.com/UBC-FRESH/femic-tsa29-instance.git
+	branch = main

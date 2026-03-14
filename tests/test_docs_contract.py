@@ -15,6 +15,7 @@ SAMPLE_MODELS_ROOT = DOCS_ROOT / "sample-models"
 API_ROOT = DOCS_ROOT / "reference" / "api"
 COVERAGE_CSV = GUIDES_ROOT / "legacy_notebook_coverage.csv"
 K3Z_INSTANCE_ROOT = Path("external/femic-k3z-instance")
+TSA29_INSTANCE_ROOT = Path("external/femic-tsa29-instance")
 
 GUIDE_PAGES = [
     "pipeline-overview",
@@ -41,6 +42,7 @@ GUIDE_PAGES = [
 ]
 SAMPLE_MODEL_PAGES = [
     "k3z",
+    "tsa29",
     "k3z-metadata-lineage",
 ]
 
@@ -367,6 +369,36 @@ def test_k3z_instance_repo_submodule_docs_contract() -> None:
     assert (
         "git submodule update --remote external/femic-k3z-instance" in onboarding_text
     )
+
+
+def test_tsa29_instance_repo_submodule_docs_contract() -> None:
+    deploy_text = (GUIDES_ROOT / "deployment-instances.rst").read_text()
+    onboarding_text = (GUIDES_ROOT / "case-onboarding.rst").read_text()
+    tsa29_text = (SAMPLE_MODELS_ROOT / "tsa29.rst").read_text()
+
+    for text in (deploy_text, onboarding_text, tsa29_text):
+        assert "UBC-FRESH/femic-tsa29-instance" in text
+        assert "external/femic-tsa29-instance" in text
+
+    assert "git submodule update --init --recursive" in tsa29_text
+    assert "git submodule update --remote external/femic-tsa29-instance" in deploy_text
+    assert (
+        "git submodule update --remote external/femic-tsa29-instance" in onboarding_text
+    )
+
+
+def test_tsa29_instance_standalone_docs_scaffold_exists() -> None:
+    docs_root = TSA29_INSTANCE_ROOT / "docs"
+    assert docs_root.is_dir()
+    assert (docs_root / "conf.py").is_file()
+    assert (docs_root / "index.rst").is_file()
+    assert (docs_root / "requirements.txt").is_file()
+    assert (TSA29_INSTANCE_ROOT / ".readthedocs.yaml").is_file()
+    assert (TSA29_INSTANCE_ROOT / ".github/workflows/docs-pages.yml").is_file()
+    assert (
+        TSA29_INSTANCE_ROOT / "evidence/reference_rebuild_report.latest.json"
+    ).is_file()
+    assert (TSA29_INSTANCE_ROOT / "metadata/lineage_registry.yaml").is_file()
 
 
 def test_k3z_instance_standalone_docs_scaffold_exists() -> None:

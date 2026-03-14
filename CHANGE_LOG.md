@@ -4308,3 +4308,28 @@
     `sha256=10fb2e43abdecb0dcee5c40096230462aca9cab5e2cc7c28687a7bd8258154d7`
     uploaded `2026-03-12T21:10:53.810540Z`.
 - Phase 18 status: all checklist items complete (`P18.1`–`P18.4`).
+
+## 2026-03-14 - Phase 19 kickoff: TSA29 instance repo published and linked as submodule
+- Published standalone TSA29 instance repository and release tag:
+  `https://github.com/UBC-FRESH/femic-tsa29-instance` (`v0.1.0`).
+- Added parent-repo contract and planning artifact:
+  `planning/tsa29-instance-contract.md`.
+- Delivered TSA29 snapshot-first baseline in standalone repo with:
+  - runnable configs (`run_profile.tsa29.yaml`, `tipsy/tsa29.yaml`),
+  - rebuild contract files (`rebuild.spec.yaml`, `rebuild.allowlist.yaml`),
+  - curated TSA29 bundle/output artifacts,
+  - canonical student docs (Sphinx) including figure appendix with rendered
+    plots,
+  - lineage/checksum/evidence metadata (`metadata/*`, `evidence/*`).
+- Applied thin-instance policy for large artifacts:
+  externalized very large files and tracked their hashes and manifests
+  (`metadata/large_artifacts.sha256`,
+  `output/patchworks_tsa29_validated/ARTIFACTS.md`).
+- Linked TSA29 back into FEMIC:
+  - added submodule `external/femic-tsa29-instance`,
+  - added FEMIC pointer page `docs/sample-models/tsa29.rst`,
+  - updated guide references in deployment/onboarding docs,
+  - added docs-contract tests for TSA29 submodule/docs presence.
+- Remaining Phase 19 item:
+  `P19.5` (full Patchworks-enabled rebuild validation and evidence promotion to
+  green status).

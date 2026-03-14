@@ -139,3 +139,24 @@ To pull latest K3Z baseline updates:
 .. code-block:: bash
 
    git submodule update --remote external/femic-k3z-instance
+
+TSA29 Example Instance Baseline
+-------------------------------
+
+Use the canonical TSA29 example instance repository when you need a current,
+student-usable baseline with rebuild/evidence wiring:
+
+- ``https://github.com/UBC-FRESH/femic-tsa29-instance``
+- linked in FEMIC at ``external/femic-tsa29-instance``
+
+From a FEMIC checkout:
+
+.. code-block:: bash
+
+   git submodule update --init --recursive
+
+To pull latest TSA29 baseline updates:
+
+.. code-block:: bash
+
+   git submodule update --remote external/femic-tsa29-instance

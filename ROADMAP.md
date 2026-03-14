@@ -460,7 +460,37 @@ notes.
 - [x] P18.3 Production PyPI release
 - [x] P18.4 Post-release docs/changelog/version traceability
 
+## Phase 19: TSA29 Example Instance Repository (Standalone + Linked)
+- [x] P19.1 Define TSA29 instance contract, scope, and acceptance gates
+- [x] P19.2 Bootstrap and structure femic-tsa29-instance repository
+- [x] P19.3 Assemble ASAP-usable TSA29 snapshot payload
+- [x] P19.4 Add rebuild spec + invariant policy + evidence workflow
+- [ ] P19.5 Execute rebuild validation and publish evidence
+- [x] P19.6 Build canonical TSA29 student docs in instance repo
+- [x] P19.7 Link TSA29 repo back into FEMIC as submodule + pointer docs
+- [x] P19.8 Add contract tests and release handoff (v0.1.0)
+
 ## Detailed Next Steps Notes
+- 2026-03-14 (Phase 19 kickoff + initial delivery):
+  published initial standalone TSA29 instance repository and linked it back into
+  FEMIC.
+  - Published repo/tag:
+    `https://github.com/UBC-FRESH/femic-tsa29-instance` @ `v0.1.0`.
+  - Completed deliverables:
+    - authored instance contract in
+      `planning/tsa29-instance-contract.md`,
+    - bootstrapped TSA29 repo structure/config/rebuild runbook/docs,
+    - assembled thin snapshot payload with curated TSA29 artifacts + checksums,
+    - added evidence baseline artifact
+      `evidence/reference_rebuild_report.latest.json`,
+    - added FEMIC submodule link at `external/femic-tsa29-instance`,
+    - added FEMIC TSA29 pointer docs and docs-contract tests.
+  - Intentional thin-instance policy:
+    very large artifacts were externalized and referenced via
+    `metadata/large_artifacts.sha256` and output manifest docs.
+  - Remaining step for full phase closure (`P19.5`):
+    run full Patchworks-enabled rebuild in a validated runtime host and publish
+    a green evidence update replacing the current warning-state baseline.
 - 2026-03-12 (Phase 18 `P18.3` + `P18.4` complete): published
   `femic==0.1.1a1` to production PyPI via trusted publisher and validated
   post-release smoke install in workflow.

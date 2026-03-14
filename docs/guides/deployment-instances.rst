@@ -127,6 +127,23 @@ Refresh the K3Z example submodule to latest upstream commit:
 
    git submodule update --remote external/femic-k3z-instance
 
+Canonical TSA29 Example Instance Repository
+-------------------------------------------
+
+FEMIC publishes a standalone TSA29 teaching/research instance at:
+
+- ``https://github.com/UBC-FRESH/femic-tsa29-instance``
+
+The same repository is linked back into FEMIC via git submodule:
+
+- ``external/femic-tsa29-instance``
+
+Refresh the TSA29 example submodule to latest upstream commit:
+
+.. code-block:: bash
+
+   git submodule update --remote external/femic-tsa29-instance
+
 Contributor Baseline for New Instance Repositories
 --------------------------------------------------
 
